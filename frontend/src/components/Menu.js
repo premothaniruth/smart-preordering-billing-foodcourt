@@ -1,5 +1,4 @@
 import React from "react";
-
 const Menu = ({ menu, addToCart, selectedShop, setSelectedShop }) => {
   return (
     <div>

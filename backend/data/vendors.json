@@ -18,3 +18,5 @@
     "passwordHash": "$2b$10$F0nI0d2lw3ViqR/69TROqOpxh6cksLbN7UnXOzdKhXTX94QSHTdQm"
   }
 ]
+const vendors = getVendors();
+console.log("Loaded vendors:", vendors);
