@@ -1,0 +1,26 @@
+[
+  {
+    "shopId": 1,
+    "shopName": "North Indian Meals",
+    "items": [
+      { "id": 1, "name": "Paneer Butter Masala", "price": 120, "available": true },
+      { "id": 2, "name": "Dal Makhani", "price": 100, "available": true }
+    ]
+  },
+  {
+    "shopId": 2,
+    "shopName": "South Indian Delights",
+    "items": [
+      { "id": 3, "name": "Masala Dosa", "price": 70, "available": true },
+      { "id": 4, "name": "Idli Vada", "price": 60, "available": true }
+    ]
+  },
+  {
+    "shopId": 3,
+    "shopName": "Beverage Corner",
+    "items": [
+      { "id": 5, "name": "Cold Coffee", "price": 40, "available": true },
+      { "id": 6, "name": "Mango Juice", "price": 30, "available": true }
+    ]
+  }
+]

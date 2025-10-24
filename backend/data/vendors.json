@@ -1,0 +1,20 @@
+[
+  {
+    "vendorId": 1,
+    "shopId": 1,
+    "username": "northvendor",
+    "passwordHash": "$2b$10$q5TfnuOR9tAf258UogdtIuj7Mea6TdYzJb3vQyOr9/jbzJLJ/9XF6"
+  },
+  {
+    "vendorId": 2,
+    "shopId": 2,
+    "username": "southvendor",
+    "passwordHash": "$2b$10$IY6m7q4UVTFh49P3kvYqg.Q/Hf5ZKWNreXrNk8xH9EktKZUQYVUpu"
+  },
+  {
+    "vendorId": 3,
+    "shopId": 3,
+    "username": "beveragevendor",
+    "passwordHash": "$2b$10$F0nI0d2lw3ViqR/69TROqOpxh6cksLbN7UnXOzdKhXTX94QSHTdQm"
+  }
+]
