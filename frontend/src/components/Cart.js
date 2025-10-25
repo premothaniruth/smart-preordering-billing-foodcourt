@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { clickSpark } from "../utils/clickSpark";
 
 /**
  * Cart
@@ -63,7 +64,7 @@ const Cart = ({ cart, removeFromCart, decrementFromCart, incrementFromCart, sche
             <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
               <button 
                 className="icon-btn" 
-                onClick={() => decrementFromCart(i)}
+                onClick={(e) => { try { clickSpark(e); } catch {}; decrementFromCart(i); }}
                 style={{ width: 28, height: 28, fontSize: 16, background: '#fff', color: '#111', border: '1px solid #111', borderRadius: 6 }}
               >
                 −
@@ -71,7 +72,7 @@ const Cart = ({ cart, removeFromCart, decrementFromCart, incrementFromCart, sche
               <span style={{ fontWeight: "bold", minWidth: 25, textAlign: "center", fontSize: 14 }}>{c.quantity}</span>
               <button 
                 className="icon-btn" 
-                onClick={() => { if (remaining <= 0) return; incrementFromCart(i); }}
+                onClick={(e) => { if (remaining <= 0) return; try { clickSpark(e); } catch {}; incrementFromCart(i); }}
                 disabled={remaining <= 0}
                 style={{ width: 28, height: 28, fontSize: 16, background: '#fff', color: '#111', border: '1px solid #111', borderRadius: 6 }}
               >
@@ -133,7 +134,7 @@ const Cart = ({ cart, removeFromCart, decrementFromCart, incrementFromCart, sche
           </div>
           
           <button 
-            onClick={handlePayment} 
+            onClick={(e) => { try { clickSpark(e); } catch {}; handlePayment(); }} 
             style={{ width: "100%", marginTop: 15, background: "#27ae60", padding: "14px", fontSize: "16px", fontWeight: "bold" }}
           >
             Place Order (₹{total})
