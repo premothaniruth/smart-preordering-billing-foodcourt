@@ -10,6 +10,9 @@ import Analytics from "./components/Analytics";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
+const ORDER_PLACED_SOUND = "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBDWM0/K/gC4EH29+3WgyBCk4XoCWJhcBTnLcWswB";
+const READY_SOUND = "data:audio/wav;base64,UklGRmQFAABXQVZFZm10IBAAAAABAAEARKwAAESsAAABAAgAZGF0YUAFAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA";
+
 function App() {
   const [menu, setMenu] = useState([]);
   const [cart, setCart] = useState([]);
@@ -26,15 +29,30 @@ function App() {
     });
   }, [selectedShop]);
 
-  const addToCart = (item, shopId) => {
+  const playSound = (soundUrl) => {
+    const audio = new Audio(soundUrl);
+    audio.play().catch(err => console.log("Audio play failed:", err));
+  };
+
+  const addToCart = (item, shopId, selectedOption = null) => {
+    const cartItem = {
+      ...item,
+      selectedOption,
+      finalPrice: item.price + (selectedOption?.priceModifier || 0)
+    };
+
     setCart((prev) => {
-      const idx = prev.findIndex((c) => c.item.id === item.id && c.shopId === shopId);
+      const idx = prev.findIndex((c) => 
+        c.item.id === item.id && 
+        c.shopId === shopId && 
+        c.item.selectedOption?.name === selectedOption?.name
+      );
       if (idx >= 0) {
         const newCart = [...prev];
         newCart[idx] = { ...newCart[idx], quantity: newCart[idx].quantity + 1 };
         return newCart;
       } else {
-        return [...prev, { item, shopId, quantity: 1 }];
+        return [...prev, { item: cartItem, shopId, quantity: 1 }];
       }
     });
   };
@@ -54,13 +72,25 @@ function App() {
     setCart((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const incrementFromCart = (item, shopId) => {
-    addToCart(item, shopId);
+  const incrementFromCart = (index) => {
+    setCart((prev) => {
+      const newCart = [...prev];
+      newCart[index] = { ...newCart[index], quantity: newCart[index].quantity + 1 };
+      return newCart;
+    });
   };
 
   const handlePaymentSuccess = () => {
+    const orderItems = cart.map((c) => ({
+      id: c.item.id,
+      name: c.item.name,
+      price: c.item.finalPrice,
+      quantity: c.quantity,
+      option: c.item.selectedOption?.name || null
+    }));
+
     placeOrder({
-      items: cart.map((c) => ({ ...c.item, quantity: c.quantity })),
+      items: orderItems,
       scheduledTime,
       user: "Employee XYZ",
       shopId: selectedShop,
@@ -68,7 +98,16 @@ function App() {
       setCart([]);
       setScheduledTime("");
       setOrderSummary(response.orderSummary);
+      
+      playSound(ORDER_PLACED_SOUND);
       toast.success(`Order placed! Billing ID: ${response.billingId}`);
+
+      setTimeout(() => {
+        playSound(READY_SOUND);
+        toast.info(`🔔 Order ${response.billingId} is ready for pickup!`, {
+          autoClose: 10000,
+        });
+      }, 60000);
     });
   };
 
@@ -110,40 +149,37 @@ function App() {
             {view === "dashboard" && <AdminDashboard token={vendorToken} />}
             {view === "analytics" && <Analytics token={vendorToken} />}
             {view === "user" && (
-              <>
-                <Menu
-                  menu={menu}
-                  addToCart={addToCart}
-                  selectedShop={selectedShop}
-                  setSelectedShop={setSelectedShop}
-                />
-                <Cart
-                  cart={cart}
-                  removeFromCart={removeFromCart}
-                  decrementFromCart={decrementFromCart}
-                  incrementFromCart={incrementFromCart}
-                  scheduledTime={scheduledTime}
-                  setScheduledTime={setScheduledTime}
-                />
-                <Payment
-                  cart={cart}
-                  scheduledTime={scheduledTime}
-                  onSuccess={handlePaymentSuccess}
-                />
-                {orderSummary && (
-                  <div className="order-summary">
-                    <h3>Order Summary</h3>
-                    <div><strong>Billing ID:</strong> {orderSummary.billingId}</div>
-                    <div><strong>User:</strong> {orderSummary.user}</div>
-                    <ul>
-                      {orderSummary.items.map((item, idx) => (
-                        <li key={idx}>{item.name} x {item.quantity || 1} - ₹{item.price * (item.quantity || 1)}</li>
-                      ))}
-                    </ul>
-                    <div><strong>Total:</strong> ₹{orderSummary.totalAmount}</div>
-                  </div>
-                )}
-              </>
+              <div className="layout-container">
+                <div className="menu-section">
+                  <Menu
+                    menu={menu}
+                    addToCart={addToCart}
+                    cart={cart}
+                    selectedShop={selectedShop}
+                    setSelectedShop={setSelectedShop}
+                  />
+                </div>
+                <div className="cart-section">
+                  <Cart
+                    cart={cart}
+                    removeFromCart={removeFromCart}
+                    decrementFromCart={decrementFromCart}
+                    incrementFromCart={incrementFromCart}
+                    scheduledTime={scheduledTime}
+                    setScheduledTime={setScheduledTime}
+                    onPayment={handlePaymentSuccess}
+                  />
+                  {orderSummary && (
+                    <div className="order-summary" style={{ marginTop: 20 }}>
+                      <h3>Order Confirmation</h3>
+                      <div><strong>Billing ID:</strong> {orderSummary.billingId}</div>
+                      <div><strong>User:</strong> {orderSummary.user}</div>
+                      <div><strong>Total:</strong> ₹{orderSummary.totalAmount}</div>
+                      <div><strong>Estimated Ready:</strong> 1 minute</div>
+                    </div>
+                  )}
+                </div>
+              </div>
             )}
           </>
         ) : (
@@ -151,38 +187,37 @@ function App() {
             {view === "user" && (
               <>
                 <button onClick={() => setView("login")}>Vendor Login</button>
-                <Menu
-                  menu={menu}
-                  addToCart={addToCart}
-                  selectedShop={selectedShop}
-                  setSelectedShop={setSelectedShop}
-                />
-                <Cart
-                  cart={cart}
-                  removeFromCart={removeFromCart}
-                  decrementFromCart={decrementFromCart}
-                  incrementFromCart={incrementFromCart}
-                  scheduledTime={scheduledTime}
-                  setScheduledTime={setScheduledTime}
-                />
-                <Payment
-                  cart={cart}
-                  scheduledTime={scheduledTime}
-                  onSuccess={handlePaymentSuccess}
-                />
-                {orderSummary && (
-                  <div className="order-summary">
-                    <h3>Order Summary</h3>
-                    <div><strong>Billing ID:</strong> {orderSummary.billingId}</div>
-                    <div><strong>User:</strong> {orderSummary.user}</div>
-                    <ul>
-                      {orderSummary.items.map((item, idx) => (
-                        <li key={idx}>{item.name} x {item.quantity || 1} - ₹{item.price * (item.quantity || 1)}</li>
-                      ))}
-                    </ul>
-                    <div><strong>Total:</strong> ₹{orderSummary.totalAmount}</div>
+                <div className="layout-container">
+                  <div className="menu-section">
+                    <Menu
+                      menu={menu}
+                      addToCart={addToCart}
+                      cart={cart}
+                      selectedShop={selectedShop}
+                      setSelectedShop={setSelectedShop}
+                    />
                   </div>
-                )}
+                  <div className="cart-section">
+                    <Cart
+                      cart={cart}
+                      removeFromCart={removeFromCart}
+                      decrementFromCart={decrementFromCart}
+                      incrementFromCart={incrementFromCart}
+                      scheduledTime={scheduledTime}
+                      setScheduledTime={setScheduledTime}
+                      onPayment={handlePaymentSuccess}
+                    />
+                    {orderSummary && (
+                      <div className="order-summary" style={{ marginTop: 20 }}>
+                        <h3>Order Confirmation</h3>
+                        <div><strong>Billing ID:</strong> {orderSummary.billingId}</div>
+                        <div><strong>User:</strong> {orderSummary.user}</div>
+                        <div><strong>Total:</strong> ₹{orderSummary.totalAmount}</div>
+                        <div><strong>Estimated Ready:</strong> 1 minute</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </>
             )}
             {view === "login" && <Login onLogin={handleLogin} />}

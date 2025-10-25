@@ -4,6 +4,7 @@ const bodyParser = require("body-parser");
 const fs = require("fs");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const path = require("path");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -12,10 +13,14 @@ const JWT_SECRET = process.env.JWT_SECRET || "MySuperSecretKeyForJWT";
 app.use(cors());
 app.use(bodyParser.json());
 
+// Serve static images
+app.use('/images', express.static(path.join(__dirname, 'data', 'images')));
+
 // File paths
 const menuFile = __dirname + "/data/menu.json";
 const ordersFile = __dirname + "/data/orders.json";
 const vendorsFile = __dirname + "/data/vendors.json";
+const billingCounterFile = __dirname + "/data/billing_counter.json";
 
 // Helper functions
 const getMenu = () => JSON.parse(fs.readFileSync(menuFile, "utf8"));
@@ -24,11 +29,41 @@ const getOrders = () => JSON.parse(fs.readFileSync(ordersFile, "utf8"));
 const saveOrders = (orders) => fs.writeFileSync(ordersFile, JSON.stringify(orders, null, 2));
 const getVendors = () => JSON.parse(fs.readFileSync(vendorsFile, "utf8"));
 
-// Generate unique billing ID
+// Billing counter management
+const getBillingCounter = () => {
+  try {
+    return JSON.parse(fs.readFileSync(billingCounterFile, "utf8"));
+  } catch {
+    return { date: new Date().toDateString(), counter: 0 };
+  }
+};
+
+const saveBillingCounter = (data) => {
+  fs.writeFileSync(billingCounterFile, JSON.stringify(data, null, 2));
+};
+
+// Generate 5-digit billing ID (resets daily)
 const generateBillingId = () => {
-  const timestamp = Date.now().toString(36).toUpperCase();
-  const randomPart = Math.floor(Math.random() * 1000).toString().padStart(3, "0");
-  return `BILL-${timestamp}-${randomPart}`;
+  const today = new Date().toDateString();
+  let billingData = getBillingCounter();
+
+  // Reset counter if new day
+  if (billingData.date !== today) {
+    billingData = { date: today, counter: 0 };
+  }
+
+  // Increment counter
+  billingData.counter += 1;
+
+  // Wrap around at 99999
+  if (billingData.counter > 99999) {
+    billingData.counter = 1;
+  }
+
+  saveBillingCounter(billingData);
+
+  // Format as 5-digit string
+  return billingData.counter.toString().padStart(5, '0');
 };
 
 // Middleware: Authenticate vendor
@@ -56,7 +91,7 @@ app.get("/menu", (req, res) => {
   }
 });
 
-// Place order with billing ID
+// Place order with 5-digit billing ID
 app.post("/order", (req, res) => {
   try {
     const { items, user, scheduledTime, shopId } = req.body;
@@ -73,7 +108,8 @@ app.post("/order", (req, res) => {
       scheduledTime: scheduledTime || null,
       status: "pending",
       createdAt: new Date().toISOString(),
-      billingId
+      billingId,
+      estimatedReadyTime: new Date(Date.now() + 60000).toISOString() // 1 minute from now
     };
 
     orders.push(newOrder);
@@ -83,7 +119,8 @@ app.post("/order", (req, res) => {
       billingId,
       user: newOrder.user,
       totalAmount,
-      items
+      items,
+      estimatedReadyTime: newOrder.estimatedReadyTime
     };
 
     res.json({ 
@@ -211,4 +248,5 @@ app.get("/analytics", authenticateVendor, (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Backend running on http://localhost:${PORT}`);
+  console.log(`Images served from: http://localhost:${PORT}/images/`);
 });

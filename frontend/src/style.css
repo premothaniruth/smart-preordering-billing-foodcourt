@@ -1,3 +1,4 @@
+/* ===== GLOBAL STYLES ===== */
 body, html, #root {
   height: 100%;
   margin: 0;
@@ -11,6 +12,7 @@ body, html, #root {
   box-sizing: border-box;
 }
 
+/* ===== HEADER ===== */
 header {
   background: rgba(255, 255, 255, 0.95);
   padding: 15px 30px;
@@ -33,9 +35,10 @@ header h1 {
   color: #2c3e50;
 }
 
+/* ===== MAIN CONTAINER ===== */
 .app-container {
   padding: 20px;
-  max-width: 1100px;
+  max-width: 1400px;
   margin: 20px auto;
   background: rgba(255, 255, 255, 0.95);
   border-radius: 10px;
@@ -43,6 +46,31 @@ header h1 {
   min-height: 500px;
 }
 
+/* ===== LAYOUT ===== */
+.layout-container {
+  display: flex;
+  gap: 20px;
+}
+
+.menu-section {
+  flex: 1;
+  min-width: 0;
+}
+
+.cart-section {
+  width: 350px;
+  position: sticky;
+  top: 100px;
+  height: fit-content;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+/* ===== BUTTONS ===== */
 button {
   padding: 8px 16px;
   border: none;
@@ -57,13 +85,20 @@ button {
 
 button:hover {
   background: #2980b9;
+  transform: translateY(-1px);
+}
+
+button:active {
+  transform: translateY(0);
 }
 
 button:disabled {
   background: #95a5a6;
   cursor: not-allowed;
+  transform: none;
 }
 
+/* ===== FORM ELEMENTS ===== */
 input, select {
   padding: 8px 12px;
   border: 1px solid #ddd;
@@ -72,10 +107,33 @@ input, select {
   margin-right: 8px;
 }
 
-h2, h3 {
-  color: #2c3e50;
+input:focus, select:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
 }
 
+/* ===== TYPOGRAPHY ===== */
+h2, h3 {
+  color: #2c3e50;
+  margin-top: 20px;
+  margin-bottom: 15px;
+}
+
+h2 {
+  font-size: 24px;
+}
+
+h3 {
+  font-size: 18px;
+}
+
+ul {
+  padding-left: 0;
+  list-style: none;
+}
+
+/* ===== ORDER SUMMARY ===== */
 .order-summary {
   margin-top: 20px;
   padding: 20px;
@@ -89,7 +147,520 @@ h2, h3 {
   color: #27ae60;
 }
 
-ul {
-  padding-left: 0;
-  list-style: none;
+.order-summary div {
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+/* ===== MENU GRID ===== */
+.menu-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 15px;
+  margin-top: 15px;
+}
+
+/* Responsive grid */
+@media (max-width: 1400px) {
+  .menu-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 1200px) {
+  .menu-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .cart-section {
+    width: 300px;
+  }
+}
+
+@media (max-width: 900px) {
+  .layout-container {
+    flex-direction: column;
+  }
+  .cart-section {
+    width: 100%;
+    position: relative;
+    top: 0;
+  }
+  .menu-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .menu-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===== MENU ITEM CARD ===== */
+.menu-item-card {
+  background: white;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+  display: flex;
+  flex-direction: column;
+}
+
+.menu-item-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.menu-item-image {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+}
+
+.menu-item-content {
+  padding: 12px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.menu-item-name {
+  font-weight: bold;
+  font-size: 14px;
+  margin-bottom: 4px;
+  color: #2c3e50;
+}
+
+.menu-item-price {
+  color: #27ae60;
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.menu-item-badge {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: inline-block;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.menu-item-actions {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: auto;
+}
+
+/* ===== ICON BUTTONS ===== */
+.icon-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  padding: 0;
+  margin: 0;
+  font-weight: bold;
+  transition: all 0.2s;
+}
+
+.icon-btn:hover {
+  transform: scale(1.1);
+}
+
+.icon-btn:active {
+  transform: scale(0.95);
+}
+
+/* ===== CART ITEM ===== */
+.cart-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: white;
+  border-radius: 6px;
+  margin-bottom: 10px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.cart-item:hover {
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+/* ===== MODAL STYLES ===== */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal-content {
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.modal-content h3 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #2c3e50;
+  font-size: 20px;
+}
+
+.modal-content label {
+  display: block;
+  font-size: 16px;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  margin-bottom: 10px;
+  transition: background 0.2s;
+  cursor: pointer;
+}
+
+.modal-content label:hover {
+  background: #e9ecef;
+}
+
+.modal-content input[type="radio"] {
+  margin-right: 10px;
+  cursor: pointer;
+}
+
+.modal-content button {
+  margin-right: 10px;
+}
+
+/* ===== TABLE STYLES (Admin Dashboard) ===== */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+table th {
+  background: #34495e;
+  color: white;
+  padding: 12px;
+  text-align: left;
+  font-weight: 600;
+}
+
+table td {
+  padding: 12px;
+  border-bottom: 1px solid #ecf0f1;
+}
+
+table tr:hover {
+  background: #f8f9fa;
+}
+
+table tr:last-child td {
+  border-bottom: none;
+}
+
+/* ===== VENDOR LOGIN FORM ===== */
+form {
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+form input {
+  width: 100%;
+  margin-bottom: 15px;
+}
+
+form button {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+}
+
+/* ===== MENU EDITOR ===== */
+.menu-editor-item {
+  border: 1px solid #ddd;
+  padding: 15px;
+  margin-bottom: 15px;
+  border-radius: 8px;
+  background: #f8f9fa;
+}
+
+.menu-editor-item input {
+  margin-bottom: 10px;
+}
+
+.menu-editor-item label {
+  display: inline-block;
+  margin-right: 15px;
+  margin-bottom: 10px;
+}
+
+/* ===== ANALYTICS CHART ===== */
+.recharts-wrapper {
+  margin-top: 20px;
+}
+
+/* ===== SCROLLBAR STYLING ===== */
+.cart-section::-webkit-scrollbar {
+  width: 8px;
+}
+
+.cart-section::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.cart-section::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+}
+
+.cart-section::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* ===== UTILITY CLASSES ===== */
+.text-center {
+  text-align: center;
+}
+
+.mt-10 {
+  margin-top: 10px;
+}
+
+.mt-15 {
+  margin-top: 15px;
+}
+
+.mt-20 {
+  margin-top: 20px;
+}
+
+.mb-10 {
+  margin-bottom: 10px;
+}
+
+.mb-15 {
+  margin-bottom: 15px;
+}
+
+.mb-20 {
+  margin-bottom: 20px;
+}
+
+/* ===== TOAST NOTIFICATIONS (react-toastify) ===== */
+.Toastify__toast {
+  border-radius: 8px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.Toastify__toast--success {
+  background: #27ae60;
+}
+
+.Toastify__toast--error {
+  background: #e74c3c;
+}
+
+.Toastify__toast--info {
+  background: #3498db;
+}
+
+/* ===== LOADING SPINNER ===== */
+.spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #3498db;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin: 20px auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ===== EMPTY STATE ===== */
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #95a5a6;
+  font-style: italic;
+}
+
+/* ===== FILTER SECTION ===== */
+.filter-section {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.filter-section label {
+  font-weight: 500;
+  color: #2c3e50;
+}
+
+.filter-section select {
+  min-width: 150px;
+}
+
+/* ===== BADGE STYLES ===== */
+.badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.badge-success {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.badge-danger {
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.badge-warning {
+  background: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeaa7;
+}
+
+.badge-info {
+  background: #d1ecf1;
+  color: #0c5460;
+  border: 1px solid #bee5eb;
+}
+
+/* ===== SECTION DIVIDER ===== */
+.section-divider {
+  border: none;
+  border-top: 2px solid #ecf0f1;
+  margin: 20px 0;
+}
+
+/* ===== CARD STYLES ===== */
+.card {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  margin-bottom: 20px;
+}
+
+.card-header {
+  font-size: 18px;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #ecf0f1;
+}
+
+/* ===== ANIMATIONS ===== */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.pulse {
+  animation: pulse 2s infinite;
+}
+
+/* ===== ACCESSIBILITY ===== */
+button:focus,
+input:focus,
+select:focus {
+  outline: 2px solid #3498db;
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  button {
+    border: 2px solid currentColor;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ===== PRINT STYLES ===== */
+@media print {
+  header,
+  button,
+  .cart-section {
+    display: none;
+  }
+  
+  .app-container {
+    box-shadow: none;
+    background: white;
+  }
 }

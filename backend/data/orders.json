@@ -100,5 +100,26 @@
     "scheduledTime": null,
     "status": "pending",
     "createdAt": "2025-10-25T02:25:18.713Z"
+  },
+  {
+    "id": 7,
+    "items": [
+      {
+        "id": 1,
+        "name": "Paneer Butter Masala",
+        "price": 120,
+        "available": true,
+        "image": "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=200&h=150&fit=crop",
+        "isRecommended": true,
+        "isHotSeller": true,
+        "quantity": 1
+      }
+    ],
+    "shopId": 1,
+    "user": "Employee XYZ",
+    "scheduledTime": null,
+    "status": "pending",
+    "createdAt": "2025-10-25T02:59:41.146Z",
+    "billingId": "BILL-MH5OYXGA-486"
   }
 ]

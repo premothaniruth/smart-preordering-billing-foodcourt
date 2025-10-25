@@ -3,126 +3,138 @@
     "shopId": 1,
     "shopName": "North Indian Meals",
     "items": [
-      {
-        "id": 1,
-        "name": "Paneer Butter Masala",
-        "price": 120,
-        "available": true,
-        "image": "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=200&h=150&fit=crop",
-        "isRecommended": true,
-        "isHotSeller": true
+      { "id": 1, "name": "Paneer Butter Masala", "price": 120, "available": true, "image": "/images/paneer-butter-masala.jpg", "isRecommended": true, "isHotSeller": true, "isVeg": true },
+      { "id": 2, "name": "Dal Makhani", "price": 100, "available": true, "image": "/images/dal-makhani.jpg", "isRecommended": false, "isHotSeller": true, "isVeg": true },
+      { "id": 3, "name": "Butter Chicken", "price": 150, "available": true, "image": "/images/butter-chicken.jpg", "isRecommended": true, "isHotSeller": false, "isVeg": false },
+      { "id": 4, "name": "Naan", "price": 20, "available": true, "image": "/images/naan.jpg", "isRecommended": false, "isHotSeller": false, "isVeg": true },
+      { 
+        "id": 5, 
+        "name": "Biryani", 
+        "price": 150, 
+        "available": true, 
+        "image": "/images/biryani.jpg", 
+        "isRecommended": true, 
+        "isHotSeller": true, 
+        "isVeg": true,
+        "hasOptions": true,
+        "options": [
+          { "name": "Veg Biryani", "priceModifier": 0 },
+          { "name": "Mushroom Biryani", "priceModifier": 20 },
+          { "name": "Paneer Biryani", "priceModifier": 30 }
+        ]
       },
-      {
-        "id": 2,
-        "name": "Dal Makhani",
-        "price": 100,
-        "available": true,
-        "image": "https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=200&h=150&fit=crop",
-        "isRecommended": false,
-        "isHotSeller": true
-      },
-      {
-        "id": 11,
-        "name": "Naan",
-        "price": 20,
-        "available": true,
-        "image": "https://images.unsplash.com/photo-1619888309589-c0b25c9c4ecc?w=200&h=150&fit=crop",
-        "isRecommended": false,
-        "isHotSeller": false
-      },
-      {
-        "id": 12,
-        "name": "Biryani",
-        "price": 150,
-        "available": true,
-        "image": "https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=200&h=150&fit=crop",
-        "isRecommended": true,
-        "isHotSeller": false
-      }
+      { "id": 6, "name": "Palak Paneer", "price": 110, "available": true, "image": "/images/palak-paneer.jpg", "isRecommended": false, "isHotSeller": false, "isVeg": true },
+      { "id": 7, "name": "Rogan Josh", "price": 160, "available": true, "image": "/images/rogan-josh.jpg", "isRecommended": false, "isHotSeller": true, "isVeg": false },
+      { "id": 8, "name": "Chole Bhature", "price": 90, "available": true, "image": "/images/chole-bhature.jpg", "isRecommended": true, "isHotSeller": false, "isVeg": true },
+      { "id": 9, "name": "Tandoori Roti", "price": 15, "available": true, "image": "/images/tandoori-roti.jpg", "isRecommended": false, "isHotSeller": false, "isVeg": true },
+      { "id": 10, "name": "Chicken Tikka", "price": 140, "available": true, "image": "/images/chicken-tikka.jpg", "isRecommended": false, "isHotSeller": true, "isVeg": false },
+      { "id": 11, "name": "Aloo Gobi", "price": 80, "available": true, "image": "/images/aloo-gobi.jpg", "isRecommended": false, "isHotSeller": false, "isVeg": true },
+      { "id": 12, "name": "Kadai Paneer", "price": 125, "available": true, "image": "/images/kadai-paneer.jpg", "isRecommended": true, "isHotSeller": false, "isVeg": true },
+      { "id": 13, "name": "Rajma Chawal", "price": 95, "available": true, "image": "/images/rajma-chawal.jpg", "isRecommended": false, "isHotSeller": true, "isVeg": true },
+      { "id": 14, "name": "Garlic Naan", "price": 25, "available": true, "image": "/images/garlic-naan.jpg", "isRecommended": false, "isHotSeller": false, "isVeg": true },
+      { "id": 15, "name": "Mutton Curry", "price": 180, "available": true, "image": "/images/mutton-curry.jpg", "isRecommended": false, "isHotSeller": false, "isVeg": false },
+      { "id": 16, "name": "Paneer Tikka", "price": 130, "available": true, "image": "/images/paneer-tikka.jpg", "isRecommended": true, "isHotSeller": true, "isVeg": true },
+      { "id": 17, "name": "Jeera Rice", "price": 70, "available": true, "image": "/images/jeera-rice.jpg", "isRecommended": false, "isHotSeller": false, "isVeg": true },
+      { "id": 18, "name": "Mix Veg", "price": 85, "available": true, "image": "/images/mix-veg.jpg", "isRecommended": false, "isHotSeller": false, "isVeg": true },
+      { "id": 19, "name": "Chicken Biryani", "price": 170, "available": true, "image": "/images/chicken-biryani.jpg", "isRecommended": true, "isHotSeller": true, "isVeg": false },
+      { "id": 20, "name": "Raita", "price": 30, "available": true, "image": "/images/raita.jpg", "isRecommended": false, "isHotSeller": false, "isVeg": true }
     ]
   },
   {
     "shopId": 2,
     "shopName": "South Indian Delights",
     "items": [
-      {
-        "id": 3,
-        "name": "Masala Dosa",
-        "price": 70,
-        "available": true,
-        "image": "https://images.unsplash.com/photo-1630383249896-424e482df921?w=200&h=150&fit=crop",
-        "isRecommended": true,
-        "isHotSeller": false
+      { "id": 21, "name": "Masala Dosa", "price": 70, "available": true, "image": "/images/masala-dosa.jpg", "isRecommended": true, "isHotSeller": true, "isVeg": true },
+      { "id": 22, "name": "Idli Vada", "price": 60, "available": true, "image": "/images/idli-vada.jpg", "isRecommended": false, "isHotSeller": true, "isVeg": true },
+      { "id": 23, "name": "Sambar Rice", "price": 80, "available": true, "image": "/images/sambar-rice.jpg", "isRecommended": false, "isHotSeller": false, "isVeg": true },
+      { 
+        "id": 24, 
+        "name": "Filter Coffee", 
+        "price": 30, 
+        "available": true, 
+        "image": "/images/filter-coffee.jpg", 
+        "isRecommended": true, 
+        "isHotSeller": true, 
+        "isVeg": true,
+        "hasOptions": true,
+        "options": [
+          { "name": "Regular", "priceModifier": 0 },
+          { "name": "Strong", "priceModifier": 5 },
+          { "name": "Light", "priceModifier": 0 }
+        ]
       },
-      {
-        "id": 4,
-        "name": "Idli Vada",
-        "price": 60,
-        "available": true,
-        "image": "https://images.unsplash.com/photo-1589301773859-cb0700fe5cf4?w=200&h=150&fit=crop",
-        "isRecommended": false,
-        "isHotSeller": true
-      },
-      {
-        "id": 13,
-        "name": "Sambar Rice",
-        "price": 80,
-        "available": true,
-        "image": "https://images.unsplash.com/photo-1596797038530-2c107229654b?w=200&h=150&fit=crop",
-        "isRecommended": false,
-        "isHotSeller": false
-      },
-      {
-        "id": 14,
-        "name": "Filter Coffee",
-        "price": 30,
-        "available": true,
-        "image": "https://images.unsplash.com/photo-1517487881594-2787fef5ebf7?w=200&h=150&fit=crop",
-        "isRecommended": true,
-        "isHotSeller": true
-      }
+      { "id": 25, "name": "Rava Dosa", "price": 75, "available": true, "image": "/images/rava-dosa.jpg", "isRecommended": false, "isHotSeller": false, "isVeg": true },
+      { "id": 26, "name": "Medu Vada", "price": 50, "available": true, "image": "/images/medu-vada.jpg", "isRecommended": true, "isHotSeller": false, "isVeg": true },
+      { "id": 27, "name": "Pongal", "price": 65, "available": true, "image": "/images/pongal.jpg", "isRecommended": false, "isHotSeller": false, "isVeg": true },
+      { "id": 28, "name": "Upma", "price": 55, "available": true, "image": "/images/upma.jpg", "isRecommended": false, "isHotSeller": false, "isVeg": true },
+      { "id": 29, "name": "Uttapam", "price": 70, "available": true, "image": "/images/uttapam.jpg", "isRecommended": true, "isHotSeller": true, "isVeg": true },
+      { "id": 30, "name": "Curd Rice", "price": 60, "available": true, "image": "/images/curd-rice.jpg", "isRecommended": false, "isHotSeller": false, "isVeg": true },
+      { "id": 31, "name": "Pesarattu", "price": 75, "available": true, "image": "/images/pesarattu.jpg", "isRecommended": false, "isHotSeller": false, "isVeg": true },
+      { "id": 32, "name": "Coconut Chutney", "price": 20, "available": true, "image": "/images/coconut-chutney.jpg", "isRecommended": false, "isHotSeller": false, "isVeg": true },
+      { "id": 33, "name": "Rasam", "price": 40, "available": true, "image": "/images/rasam.jpg", "isRecommended": false, "isHotSeller": false, "isVeg": true },
+      { "id": 34, "name": "Bisi Bele Bath", "price": 85, "available": true, "image": "/images/bisi-bele-bath.jpg", "isRecommended": true, "isHotSeller": true, "isVeg": true },
+      { "id": 35, "name": "Lemon Rice", "price": 70, "available": true, "image": "/images/lemon-rice.jpg", "isRecommended": false, "isHotSeller": false, "isVeg": true },
+      { "id": 36, "name": "Tomato Rice", "price": 75, "available": true, "image": "/images/tomato-rice.jpg", "isRecommended": false, "isHotSeller": false, "isVeg": true },
+      { "id": 37, "name": "Plain Dosa", "price": 60, "available": true, "image": "/images/plain-dosa.jpg", "isRecommended": false, "isHotSeller": false, "isVeg": true },
+      { "id": 38, "name": "Set Dosa", "price": 65, "available": true, "image": "/images/set-dosa.jpg", "isRecommended": true, "isHotSeller": false, "isVeg": true },
+      { "id": 39, "name": "Appam", "price": 70, "available": true, "image": "/images/appam.jpg", "isRecommended": false, "isHotSeller": true, "isVeg": true },
+      { "id": 40, "name": "Paper Roast", "price": 50, "available": true, "image": "/images/paper-roast.jpg", "isRecommended": false, "isHotSeller": false, "isVeg": true }
     ]
   },
   {
     "shopId": 3,
     "shopName": "Beverage Corner",
     "items": [
-      {
-        "id": 5,
-        "name": "Cold Coffee",
-        "price": 40,
-        "available": true,
-        "image": "https://images.unsplash.com/photo-1517487881594-2787fef5ebf7?w=200&h=150&fit=crop",
-        "isRecommended": false,
-        "isHotSeller": true
+      { "id": 41, "name": "Cold Coffee", "price": 40, "available": true, "image": "/images/cold-coffee.jpg", "isRecommended": true, "isHotSeller": true, "isVeg": true },
+      { "id": 42, "name": "Mango Juice", "price": 30, "available": true, "image": "/images/mango-juice.jpg", "isRecommended": true, "isHotSeller": false, "isVeg": true },
+      { "id": 43, "name": "Green Tea", "price": 25, "available": true, "image": "/images/green-tea.jpg", "isRecommended": false, "isHotSeller": false, "isVeg": true },
+      { "id": 44, "name": "Smoothie", "price": 60, "available": true, "image": "/images/smoothie.jpg", "isRecommended": true, "isHotSeller": true, "isVeg": true },
+      { "id": 45, "name": "Lemonade", "price": 30, "available": true, "image": "/images/lemonade.jpg", "isRecommended": false, "isHotSeller": true, "isVeg": true },
+      { "id": 46, "name": "Hot Chocolate", "price": 50, "available": true, "image": "/images/hot-chocolate.jpg", "isRecommended": false, "isHotSeller": false, "isVeg": true },
+      { "id": 47, "name": "Iced Tea", "price": 35, "available": true, "image": "/images/iced-tea.jpg", "isRecommended": true, "isHotSeller": false, "isVeg": true },
+      { "id": 48, "name": "Masala Chai", "price": 20, "available": true, "image": "/images/masala-chai.jpg", "isRecommended": false, "isHotSeller": true, "isVeg": true },
+      { "id": 49, "name": "Orange Juice", "price": 35, "available": true, "image": "/images/orange-juice.jpg", "isRecommended": false, "isHotSeller": false, "isVeg": true },
+      { "id": 50, "name": "Cappuccino", "price": 45, "available": true, "image": "/images/cappuccino.jpg", "isRecommended": true, "isHotSeller": true, "isVeg": true },
+      { "id": 51, "name": "Espresso", "price": 40, "available": true, "image": "/images/espresso.jpg", "isRecommended": false, "isHotSeller": false, "isVeg": true },
+      { 
+        "id": 52, 
+        "name": "Milk Shake", 
+        "price": 55, 
+        "available": true, 
+        "image": "/images/milk-shake.jpg", 
+        "isRecommended": true, 
+        "isHotSeller": true, 
+        "isVeg": true,
+        "hasOptions": true,
+        "options": [
+          { "name": "Chocolate", "priceModifier": 0 },
+          { "name": "Vanilla", "priceModifier": 0 },
+          { "name": "Strawberry", "priceModifier": 5 }
+        ]
       },
-      {
-        "id": 6,
-        "name": "Mango Juice",
-        "price": 30,
-        "available": true,
-        "image": "https://images.unsplash.com/photo-1600271886742-f049cd451bba?w=200&h=150&fit=crop",
-        "isRecommended": true,
-        "isHotSeller": false
+      { "id": 53, "name": "Lassi", "price": 40, "available": true, "image": "/images/lassi.jpg", "isRecommended": false, "isHotSeller": true, "isVeg": true },
+      { "id": 54, "name": "Buttermilk", "price": 25, "available": true, "image": "/images/buttermilk.jpg", "isRecommended": false, "isHotSeller": false, "isVeg": true },
+      { 
+        "id": 55, 
+        "name": "Mojito", 
+        "price": 50, 
+        "available": true, 
+        "image": "/images/mojito.jpg", 
+        "isRecommended": true, 
+        "isHotSeller": false, 
+        "isVeg": true,
+        "hasOptions": true,
+        "options": [
+          { "name": "Blueberry", "priceModifier": 10 },
+          { "name": "Grape", "priceModifier": 10 },
+          { "name": "Classic Mint", "priceModifier": 0 }
+        ]
       },
-      {
-        "id": 15,
-        "name": "Green Tea",
-        "price": 25,
-        "available": true,
-        "image": "https://images.unsplash.com/photo-1564890369478-c89ca6d9cde9?w=200&h=150&fit=crop",
-        "isRecommended": false,
-        "isHotSeller": false
-      },
-      {
-        "id": 16,
-        "name": "Smoothie",
-        "price": 60,
-        "available": true,
-        "image": "https://images.unsplash.com/photo-1505252585461-04db1eb84625?w=200&h=150&fit=crop",
-        "isRecommended": true,
-        "isHotSeller": true
-      }
+      { "id": 56, "name": "Fresh Lime Soda", "price": 30, "available": true, "image": "/images/fresh-lime-soda.jpg", "isRecommended": false, "isHotSeller": false, "isVeg": true },
+      { "id": 57, "name": "Watermelon Juice", "price": 35, "available": true, "image": "/images/watermelon-juice.jpg", "isRecommended": false, "isHotSeller": false, "isVeg": true },
+      { "id": 58, "name": "Badam Milk", "price": 45, "available": true, "image": "/images/badam-milk.jpg", "isRecommended": true, "isHotSeller": true, "isVeg": true },
+      { "id": 59, "name": "Rose Milk", "price": 40, "available": true, "image": "/images/rose-milk.jpg", "isRecommended": false, "isHotSeller": false, "isVeg": true },
+      { "id": 60, "name": "Tender Coconut", "price": 30, "available": true, "image": "/images/tender-coconut.jpg", "isRecommended": false, "isHotSeller": true, "isVeg": true }
     ]
   }
 ]
