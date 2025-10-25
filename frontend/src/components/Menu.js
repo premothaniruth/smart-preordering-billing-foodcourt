@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { toggleFavorite } from "../api";
 import { toast } from "react-toastify";
 
-const Menu = ({ menu, addToCart, cart, incItemNoOption, decItemNoOption, selectedShop, setSelectedShop, favorites, onFavoriteToggle, userId, hideFavorites, hideShopSelector }) => {
+const Menu = ({ menu, addToCart, cart, incItemNoOption, decItemNoOption, incItemVariant = () => {}, decItemVariant = () => {}, selectedShop, setSelectedShop, favorites, onFavoriteToggle, userId, hideFavorites, hideShopSelector }) => {
   const [dietFilter, setDietFilter] = useState("all");
   const [showOptionsModal, setShowOptionsModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
