@@ -94,6 +94,19 @@ const MenuEditor = ({ token, menu, onUpdate }) => {
     }
   };
 
+  const displayItems = useMemo(() => {
+    const withIdx = items.map((it, idx) => ({ it, idx }));
+    return withIdx.sort((a, b) => {
+      const aInv = Number(a.it.inventory || 0);
+      const bInv = Number(b.it.inventory || 0);
+      const aLow = aInv <= Number(lowThreshold);
+      const bLow = bInv <= Number(lowThreshold);
+      if (aLow !== bLow) return aLow ? -1 : 1; // low first
+      if (aLow && bLow) return aInv - bInv; // both low: lower inv first
+      return 0; // otherwise keep relative order
+    });
+  }, [items, lowThreshold]);
+
   return (
     <div>
       <h2>Menu Editor</h2>
@@ -117,8 +130,14 @@ const MenuEditor = ({ token, menu, onUpdate }) => {
         </button>
       </div>
       
-      {items.map((it, idx) => (
-        <div key={it.id} className="menu-editor-item">
+      {displayItems.map(({ it, idx }) => (
+        <div
+          key={it.id}
+          className="menu-editor-item"
+          style={Number(it.inventory || 0) <= Number(lowThreshold)
+            ? { borderLeft: '4px solid #e67e22', background: 'rgba(230, 126, 34, 0.06)' }
+            : {}}
+        >
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
             <div>
               <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>Item Name</div>
@@ -154,6 +173,9 @@ const MenuEditor = ({ token, menu, onUpdate }) => {
                 value={it.inventory || 0}
                 onChange={(e) => handleChange(idx, "inventory", e.target.value)}
               />
+              {Number(it.inventory || 0) <= Number(lowThreshold) && (
+                <div style={{ marginTop: 4, fontSize: 11, color: '#e67e22', fontWeight: 700 }}>Low stock</div>
+              )}
             </div>
             <div>
               <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>Image URL</div>

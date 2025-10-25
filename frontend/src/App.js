@@ -77,6 +77,13 @@ function App() {
     loadMenu();
   }, []);
 
+  // Refresh menu when other parts of app (e.g., AdminDashboard) update inventory
+  useEffect(() => {
+    const handler = () => loadMenu();
+    window.addEventListener('menu:updated', handler);
+    return () => window.removeEventListener('menu:updated', handler);
+  }, []);
+
   // When vendor logs in, force selectedShop to their shop
   useEffect(() => {
     if (vendorShopId) setSelectedShop(vendorShopId);
@@ -298,6 +305,8 @@ function App() {
       setCart([]);
       setScheduledTime("");
       setOrderSummary(response.orderSummary);
+      // refresh menu to reflect decremented inventory
+      loadMenu();
 
       playSound(ORDER_PLACED_SOUND);
       toast.success(`Order placed! Billing ID: ${response.billingId}`);

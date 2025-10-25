@@ -14,7 +14,7 @@ const AdminDashboard = ({ token }) => {
   const [tab, setTab] = useState('current'); // 'current' | 'ready' | 'completed'
   const overdueNotifiedRef = useRef(new Set());
   const OVERDUE_SOUND = "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBDWM0/K/gC4EH29+3WgyBCk4XoCWJhcBTnLcWswB";
-  const [muted, setMuted] = useState(false);
+  const [muted, setMuted] = useState(() => (localStorage.getItem('vendorSoundFirstLoginDone') ? true : false));
   const [showLowStock, setShowLowStock] = useState(false);
   const [lowStockThreshold, setLowStockThreshold] = useState(10);
   const vendorShopId = (() => {
@@ -27,6 +27,9 @@ const AdminDashboard = ({ token }) => {
   useEffect(() => {
     loadOrders();
     fetchMenu().then(setMenu);
+    if (!localStorage.getItem('vendorSoundFirstLoginDone')) {
+      try { localStorage.setItem('vendorSoundFirstLoginDone', '1'); } catch {}
+    }
     const interval = setInterval(loadOrders, 5000);
     return () => clearInterval(interval);
   }, []);
@@ -56,6 +59,7 @@ const AdminDashboard = ({ token }) => {
       const fresh = await fetchMenu();
       setMenu(fresh);
       toast.success('Restocked to 100');
+      window.dispatchEvent(new CustomEvent('menu:updated'));
     } else {
       toast.error('Failed to restock');
     }
@@ -115,6 +119,7 @@ const AdminDashboard = ({ token }) => {
       const fresh = await fetchMenu();
       setMenu(fresh);
       toast.success('Restocked low-stock items to 100');
+      window.dispatchEvent(new CustomEvent('menu:updated'));
     } else {
       toast.error('Failed to restock');
     }
