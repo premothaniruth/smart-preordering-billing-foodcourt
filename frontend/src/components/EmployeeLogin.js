@@ -17,6 +17,7 @@ const EmployeeLogin = ({ onSuccess }) => {
   const [recent, setRecent] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const inputRef = useRef(null);
+  const [resendSeconds, setResendSeconds] = useState(0);
 
   useEffect(() => {
     try {
@@ -35,6 +36,14 @@ const EmployeeLogin = ({ onSuccess }) => {
       setRecent(next);
     } catch {}
   };
+
+  // countdown for resend
+  useEffect(() => {
+    if (step !== 'otp') return;
+    if (resendSeconds <= 0) return;
+    const id = setInterval(() => setResendSeconds((s) => s - 1), 1000);
+    return () => clearInterval(id);
+  }, [step, resendSeconds]);
 
   const maskMobile = (num) => {
     if (!num) return '';
@@ -59,6 +68,7 @@ const EmployeeLogin = ({ onSuccess }) => {
       if (res.status === "ok") {
         toast.info("OTP sent. Check server console.");
         setStep("otp");
+        setResendSeconds(45);
       } else {
         toast.error(res.message || "Failed to send OTP");
       }
@@ -143,8 +153,16 @@ const EmployeeLogin = ({ onSuccess }) => {
           <button type="submit" disabled={loading || otp.length !== 6} style={{ width:'100%', marginTop:12, padding:'10px 12px', background:'#111', color:'#fff', border:'1px solid #111', borderRadius:8, fontWeight:600 }}>
             {loading ? "Verifying..." : "Verify & Continue"}
           </button>
-          <div className="mt-10" style={{ marginTop:10 }}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:10 }}>
             <button type="button" onClick={() => setStep("mobile")} style={{ background:'#fff', color:'#111', border:'1px solid #111', padding:'8px 12px', borderRadius:8 }}>Back</button>
+            <button
+              type="button"
+              onClick={async () => { if (resendSeconds > 0) return; setLoading(true); try { const r = await employeeRequestOtp(mobile); if (r.status === 'ok') { toast.info('OTP sent. Check server console.'); setResendSeconds(45); } else { toast.error(r.message || 'Failed to resend OTP'); } } catch { toast.error('Error requesting OTP'); } finally { setLoading(false);} }}
+              disabled={resendSeconds > 0}
+              style={{ background:'#fff', color:'#111', border:'1px solid #111', padding:'8px 12px', borderRadius:8, opacity: resendSeconds>0 ? 0.6 : 1 }}
+            >
+              {resendSeconds > 0 ? `Resend OTP in ${resendSeconds}s` : 'Resend OTP'}
+            </button>
           </div>
         </form>
       )}

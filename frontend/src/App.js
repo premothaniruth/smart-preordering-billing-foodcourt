@@ -400,6 +400,12 @@ function App() {
     setView("dashboard");
     try { localStorage.removeItem('vendorSoundFirstLoginDone'); } catch {}
     playSound(READY_SOUND);
+    try {
+      if (!localStorage.getItem('vendorLoginToastShown')) {
+        toast.success('Vendor logged in successfully!');
+        localStorage.setItem('vendorLoginToastShown', '1');
+      }
+    } catch {}
   };
 
   const handleLogout = () => {
