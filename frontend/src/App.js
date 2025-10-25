@@ -353,7 +353,6 @@ function App() {
 
         {vendorToken ? (
           <>
-            <button onClick={handleLogout}>Logout</button>
             <div style={{ marginBottom: 15 }}>
               <button onClick={() => setView("dashboard")}>Dashboard</button>
               <button onClick={() => setView("menu-editor")}>Edit Menu</button>
@@ -390,6 +389,9 @@ function App() {
                 <div className="cart-section" style={{ display: 'none' }} />
               </div>
             )}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20 }}>
+              <button onClick={handleLogout} style={{ background: '#e74c3c', color: '#fff' }}>Logout</button>
+            </div>
           </>
         ) : (
           <>
@@ -401,7 +403,7 @@ function App() {
                       <button onClick={() => { fetchUserOrders(userId).then(setUserOrders); setView("orders"); }}>
                         My Orders
                       </button>
-                      <button onClick={handleEmployeeLogout}>Logout</button>
+                      <button onClick={handleEmployeeLogout} style={{ background: '#e74c3c', color: '#fff' }}>Logout</button>
                     </div>
                     <div className="layout-container">
                       <div className="menu-section">

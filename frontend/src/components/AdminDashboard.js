@@ -126,13 +126,13 @@ const AdminDashboard = ({ token }) => {
               <th>User</th>
               <th>Shop</th>
               <th>Items</th>
-              <th>Remarks</th>
-              <th>Scheduled For</th>
-              <th>Prep Time</th>
-              <th>Countdown</th>
-              <th>Extend</th>
+              {tab !== 'completed' && <th>Remarks</th>}
+              {tab !== 'completed' && <th>Scheduled For</th>}
+              {tab !== 'completed' && <th>Prep Time</th>}
+              {tab !== 'completed' && <th>Countdown</th>}
+              {tab !== 'completed' && <th>Extend</th>}
               <th>Status</th>
-              <th>Action</th>
+              {tab !== 'completed' && <th>Action</th>}
             </tr>
           </thead>
           <tbody>
@@ -144,7 +144,7 @@ const AdminDashboard = ({ token }) => {
               </tr>
             )}
             {visibleOrders.map((o) => (
-              <tr key={o.id} style={{ background: o.status === 'pending' ? '#fff3cd' : '#d4edda' }}>
+              <tr key={o.id} style={{ background: o.status === 'pending' ? '#fff3cd' : (o.status === 'ready' ? '#d4edda' : '#f8f9fa') }}>
                 <td><strong>{o.billingId}</strong></td>
                 <td>{o.user}</td>
                 <td>{getShopName(o.shopId)}</td>
@@ -155,37 +155,45 @@ const AdminDashboard = ({ token }) => {
                     </div>
                   ))}
                 </td>
-                <td style={{ fontSize: 11 }}>
-                  {o.items.map((it, idx) => (
-                    it.customization && it.customization.notes ? (
-                      <div key={idx} style={{ marginBottom: 8, padding: 4, background: "#f8f9fa", borderRadius: 4 }}>
-                        <strong>{it.name}:</strong>
-                        <div>📝 {it.customization.notes}</div>
-                      </div>
-                    ) : null
-                  ))}
-                </td>
-                <td style={{ fontSize: 12 }}>
-                  {o.scheduledTime ? new Date(o.scheduledTime).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : '-'}
-                </td>
-                <td>{o.prepTime} mins</td>
-                <td>
-                  {o.estimatedReadyTime ? (
-                    <span style={{
-                      fontWeight: 600,
-                      color: (remainingTime(o) !== null && remainingTime(o) < 0 && o.status === 'pending') ? '#e74c3c' : '#2c3e50'
-                    }}>
-                      {formatDuration(remainingTime(o))}
-                    </span>
-                  ) : (
-                    <span style={{ color: '#999' }}>—</span>
-                  )}
-                </td>
-                <td>
-                  {o.status === 'pending' && (
-                    <ExtendControl order={o} token={token} onExtended={loadOrders} />
-                  )}
-                </td>
+                {tab !== 'completed' && (
+                  <td style={{ fontSize: 11 }}>
+                    {o.items.map((it, idx) => (
+                      it.customization && it.customization.notes ? (
+                        <div key={idx} style={{ marginBottom: 8, padding: 4, background: "#f8f9fa", borderRadius: 4 }}>
+                          <strong>{it.name}:</strong>
+                          <div>📝 {it.customization.notes}</div>
+                        </div>
+                      ) : null
+                    ))}
+                  </td>
+                )}
+                {tab !== 'completed' && (
+                  <td style={{ fontSize: 12 }}>
+                    {o.scheduledTime ? new Date(o.scheduledTime).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : '-'}
+                  </td>
+                )}
+                {tab !== 'completed' && <td>{o.prepTime} mins</td>}
+                {tab !== 'completed' && (
+                  <td>
+                    {o.estimatedReadyTime ? (
+                      <span style={{
+                        fontWeight: 600,
+                        color: (remainingTime(o) !== null && remainingTime(o) < 0 && o.status === 'pending') ? '#e74c3c' : '#2c3e50'
+                      }}>
+                        {formatDuration(remainingTime(o))}
+                      </span>
+                    ) : (
+                      <span style={{ color: '#999' }}>—</span>
+                    )}
+                  </td>
+                )}
+                {tab !== 'completed' && (
+                  <td>
+                    {o.status === 'pending' && (
+                      <ExtendControl order={o} token={token} onExtended={loadOrders} />
+                    )}
+                  </td>
+                )}
                 <td>
                   <span className={`badge badge-${o.status === 'ready' ? 'success' : 'warning'}`}>
                     {o.status.toUpperCase()}
@@ -202,20 +210,21 @@ const AdminDashboard = ({ token }) => {
                     }}>OVERDUE</span>
                   )}
                 </td>
-                <td>
-                  {o.status === "pending" && tab !== 'completed' && (
-                    <button onClick={() => markReady(o.id)} style={{ background: "#27ae60" }}>
-                      Mark Ready
-                    </button>
-                  )}
-                  {o.status === "ready" && tab !== 'completed' && (
-                    <>
-                      <span style={{ color: "#27ae60", marginRight: 8 }}>✓ Ready</span>
-                      <button onClick={() => markOrderPicked(o.id)} style={{ background: "#2c3e50" }}>Mark Picked</button>
-                    </>
-                  )}
-                  {o.status === 'completed' && <span style={{ color: "#2c3e50" }}>✓ Picked Up</span>}
-                </td>
+                {tab !== 'completed' && (
+                  <td>
+                    {o.status === "pending" && (
+                      <button onClick={() => markReady(o.id)} style={{ background: "#27ae60" }}>
+                        Mark Ready
+                      </button>
+                    )}
+                    {o.status === "ready" && (
+                      <>
+                        <span style={{ color: "#27ae60", marginRight: 8 }}>✓ Ready</span>
+                        <button onClick={async () => { await markOrderPicked(o.id, token); loadOrders(); }} style={{ background: "#2c3e50" }}>Mark Picked</button>
+                      </>
+                    )}
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>

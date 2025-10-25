@@ -7,7 +7,7 @@ const Menu = ({ menu, addToCart, cart, incItemNoOption, decItemNoOption, incItem
   const [showOptionsModal, setShowOptionsModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [selectedOption, setSelectedOption] = useState(null);
-  const [variantSelection, setVariantSelection] = useState({}); // itemId -> option
+  const [multiOptionQuantities, setMultiOptionQuantities] = useState({}); // optionName -> qty
 
   if (!menu.length) return <p>Loading menu...</p>;
 
@@ -18,10 +18,11 @@ const Menu = ({ menu, addToCart, cart, incItemNoOption, decItemNoOption, incItem
     setSelectedItem(item);
     
     if (item.hasOptions && item.options) {
-      // Inline variant stepper: if variant chosen, increment that variant; else select first and increment
-      const opt = variantSelection[item.id] || item.options[0];
-      setVariantSelection(prev => ({ ...prev, [item.id]: opt }));
-      incItemVariant(item, selectedShop, opt);
+      // Open modal to select multiple variants and quantities
+      const init = {};
+      item.options.forEach(o => { init[o.name] = 0; });
+      setMultiOptionQuantities(init);
+      setShowOptionsModal(true);
     } else {
       // Add directly without customization modal
       addToCart(item, selectedShop, null, {});
@@ -75,11 +76,6 @@ const Menu = ({ menu, addToCart, cart, incItemNoOption, decItemNoOption, incItem
     return entry ? entry.quantity : 0;
   };
 
-  const getSelectedOption = (item) => {
-    if (!item.hasOptions) return null;
-    return variantSelection[item.id] || (item.options && item.options[0]);
-  };
-
   const renderItem = (item) => {
     const totalQty = qtyInCart(item);
     const thisQty = qtyNoOption(item);
@@ -118,24 +114,8 @@ const Menu = ({ menu, addToCart, cart, incItemNoOption, decItemNoOption, incItem
             ⏱️ {item.prepTime || 5} mins prep time
           </div>
           {item.hasOptions && (
-            <div style={{ marginBottom: 8 }}>
-              <div style={{ fontSize: "11px", color: "#666", marginBottom: 4 }}>
-                {item.options.length} options available
-              </div>
-              <select
-                value={getSelectedOption(item)?.name}
-                onChange={(e) => {
-                  const opt = item.options.find(o => o.name === e.target.value) || item.options[0];
-                  setVariantSelection(prev => ({ ...prev, [item.id]: opt }));
-                }}
-                style={{ width: '100%', marginBottom: 8 }}
-              >
-                {item.options.map((opt, idx) => (
-                  <option key={idx} value={opt.name}>
-                    {opt.name}{opt.priceModifier > 0 ? ` (+₹${opt.priceModifier})` : ''}
-                  </option>
-                ))}
-              </select>
+            <div style={{ fontSize: "11px", color: "#666", marginBottom: 4 }}>
+              {item.options.length} options available
             </div>
           )}
           <div className="menu-item-actions">
@@ -152,29 +132,6 @@ const Menu = ({ menu, addToCart, cart, incItemNoOption, decItemNoOption, incItem
                   onClick={() => incItemNoOption(item, selectedShop)}
                   style={{ width: 32, height: 32, background: '#fff', color: '#111', border: '1px solid #111', borderRadius: 6 }}
                 >+</button>
-              </div>
-            ) : item.hasOptions ? (
-              <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                {(() => {
-                  const opt = getSelectedOption(item);
-                  const entry = cart.find(c => c.shopId === selectedShop && c.item.id === item.id && c.item.selectedOption?.name === opt?.name);
-                  const qty = entry ? entry.quantity : 0;
-                  return (
-                    <>
-                      <button
-                        className="icon-btn"
-                        onClick={() => decItemVariant(item, selectedShop, opt)}
-                        style={{ width: 32, height: 32, background: '#fff', color: '#111', border: '1px solid #111', borderRadius: 6 }}
-                      >−</button>
-                      <span style={{ minWidth: 24, textAlign: 'center', fontWeight: 700 }}>{qty}</span>
-                      <button
-                        className="icon-btn"
-                        onClick={() => incItemVariant(item, selectedShop, opt)}
-                        style={{ width: 32, height: 32, background: '#fff', color: '#111', border: '1px solid #111', borderRadius: 6 }}
-                      >+</button>
-                    </>
-                  );
-                })()}
               </div>
             ) : (
               <button 
@@ -279,24 +236,59 @@ const Menu = ({ menu, addToCart, cart, incItemNoOption, decItemNoOption, incItem
       {showOptionsModal && selectedItem && (
         <div className="modal-overlay" onClick={() => setShowOptionsModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h3>Choose Option for {selectedItem.name}</h3>
-            <div style={{ marginTop: 15 }}>
-              {selectedItem.options.map((option, idx) => (
-                <label key={idx} style={{ display: "block", marginBottom: 10, cursor: "pointer" }}>
-                  <input 
-                    type="radio" 
-                    name="option" 
-                    checked={selectedOption?.name === option.name}
-                    onChange={() => setSelectedOption(option)}
-                  />
-                  &nbsp;{option.name} 
-                  {option.priceModifier > 0 && <span style={{ color: "#27ae60" }}> (+₹{option.priceModifier})</span>}
-                </label>
-              ))}
+            <h3>Select Variants for {selectedItem.name}</h3>
+            <div style={{ marginTop: 15, display: 'grid', gap: 10 }}>
+              {selectedItem.options.map((option, idx) => {
+                const qty = multiOptionQuantities[option.name] || 0;
+                const checked = qty > 0;
+                return (
+                  <div key={idx} className="card" style={{ padding: 10 }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={(e) => {
+                          setMultiOptionQuantities(prev => ({ ...prev, [option.name]: e.target.checked ? (qty || 1) : 0 }));
+                        }}
+                      />
+                      <span style={{ flex: 1 }}>
+                        {option.name}{option.priceModifier > 0 ? ` (+₹${option.priceModifier})` : ''}
+                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <button
+                          onClick={() => setMultiOptionQuantities(prev => ({ ...prev, [option.name]: Math.max(0, (prev[option.name] || 0) - 1) }))}
+                          disabled={!checked}
+                        >−</button>
+                        <span style={{ width: 24, textAlign: 'center' }}>{qty}</span>
+                        <button
+                          onClick={() => setMultiOptionQuantities(prev => ({ ...prev, [option.name]: (prev[option.name] || 0) + 1 }))}
+                          disabled={!checked}
+                        >+</button>
+                      </div>
+                    </label>
+                  </div>
+                );
+              })}
             </div>
             <div style={{ marginTop: 20, display: "flex", gap: 10 }}>
-              <button onClick={handleOptionConfirm} style={{ flex: 1, background: "#27ae60" }}>
-                Add to Cart - ₹{selectedItem.price + (selectedOption?.priceModifier || 0)}
+              <button
+                onClick={() => {
+                  try {
+                    const ops = selectedItem.options || [];
+                    ops.forEach((opt) => {
+                      const qty = multiOptionQuantities[opt.name] || 0;
+                      for (let i = 0; i < qty; i++) incItemVariant(selectedItem, selectedShop, opt);
+                    });
+                    toast.success("Added to cart");
+                  } finally {
+                    setShowOptionsModal(false);
+                    setSelectedItem(null);
+                    setMultiOptionQuantities({});
+                  }
+                }}
+                style={{ flex: 1, background: "#27ae60" }}
+              >
+                Add Selected Variants
               </button>
               <button onClick={() => setShowOptionsModal(false)} style={{ background: "#95a5a6" }}>
                 Cancel
