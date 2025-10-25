@@ -147,6 +147,19 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
               SOLD OUT
             </div>
           )}
+          {(() => {
+            if (!item.restockedAt) return null;
+            if (remaining === 0) return null;
+            const d = new Date(item.restockedAt);
+            const now = new Date();
+            const sameDay = d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
+            if (!sameDay) return null;
+            return (
+              <div style={{ position: 'absolute', top: 8, right: 8, background: '#2ecc71', color: '#fff', padding: '2px 8px', borderRadius: 4, fontSize: 12, fontWeight: 700 }}>
+                RESTOCKED
+              </div>
+            );
+          })()}
         </div>
         <div className="menu-item-content">
           <div className="menu-item-name">{item.name}</div>
@@ -157,15 +170,6 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
             ) : (
               <span className="menu-item-badge" style={{ color: "#e74c3c", border: "1px solid #e74c3c" }}>🔴 NON-VEG</span>
             )}
-            {(() => {
-              if (!item.restockedAt) return null;
-              const d = new Date(item.restockedAt);
-              const now = new Date();
-              const sameDay = d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
-              return sameDay ? (
-                <span className="menu-item-badge" style={{ color: "#2ecc71", border: "1px solid #2ecc71" }}>Restocked</span>
-              ) : null;
-            })()}
           </div>
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 8 }}>
             <span style={{ fontSize: "11px", color: "#666" }}>⏱️ {item.prepTime || 5} mins prep time</span>
