@@ -36,6 +36,7 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
 
   const shop = menu.find((s) => s.shopId === selectedShop);
   if (!shop) return <p>Shop not found.</p>;
+  const shopIcon = null;
 
   // Open modal for variant items; otherwise add immediately
   const handleAddClick = (item) => {
@@ -259,8 +260,7 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
       <div className="filter-section" style={{ display:'flex', gap:12, flexWrap:'wrap', alignItems:'center', marginBottom: 12 }}>
         {!hideShopSelector && (
           <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
-            <div style={{ position:'relative', display:'inline-flex', alignItems:'center', gap:8, background:'#fff', border:'1px solid #111', borderRadius:12, padding:'6px 12px' }}>
-              <span aria-hidden>🏬</span>
+            <div style={{ position:'relative', display:'inline-flex', alignItems:'center', gap:8, background:'#fff', border:'none', borderRadius:12, padding:'6px 12px' }}>
               <select
                 value={selectedShop}
                 onChange={(e) => setSelectedShop(Number(e.target.value))}
@@ -276,7 +276,7 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
             </div>
           </div>
         )}
-        <div style={{ display:'inline-flex', alignItems:'center', gap:10, background:'#fff', border:'1px solid #111', borderRadius:12, padding:'6px 12px' }}>
+        <div style={{ display:'inline-flex', alignItems:'center', gap:10, background:'#fff', border:'none', borderRadius:12, padding:'6px 12px' }}>
           <span aria-hidden title="Veg only" style={{ color:'#27ae60' }}>🌿</span>
           <label style={{ display:'inline-flex', alignItems:'center', gap:8, cursor:'pointer' }}>
             <span style={{ fontSize: 13 }}>Veg only</span>
