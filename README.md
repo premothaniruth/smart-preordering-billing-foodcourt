@@ -102,39 +102,49 @@ Note: See backend/index.js for exact shapes. Authentication is simplified (demo�
 ## License
 Demo code for educational purposes. Replace mocks and hardcoded values before production use.
 
-## Screenshots
-Place screenshots in `docs/media/` and update these paths as you add files.
+## File Structure
 
-Employee flow
-- ![Menu](docs/media/menu.png)
-- ![Cart](docs/media/cart.png)
-- ![Order Confirmation](docs/media/order_confirmation.png)
-
-Vendor flow
-- ![Dashboard - Current](docs/media/vendor_dashboard_current.png)
-- ![Menu Editor](docs/media/menu_editor.png)
-- ![Analytics](docs/media/analytics.png)
-
-Tips
-- Use 1366×768 or 1440×900 windows for consistent framing.
-- Hide irrelevant tabs/toolbars for clean captures.
-
-## Quickstart GIF
-Record a short end‑to‑end clip (open app → add item → place order → confirmation).
-
-Option A: Use a GIF tool (easiest)
-- macOS: Kap, Giphy Capture
-- Windows: ShareX (save as GIF)
-
-Option B: Use ffmpeg (best quality/size)
-1) Record a short MP4 (e.g., with ShareX/OBS)
-2) Convert to GIF and optimize:
-
-```bash
-ffmpeg -i input.mp4 -vf "fps=12,scale=900:-1:flags=lanczos" -t 15 output.gif
-gifsicle -O3 output.gif -o output-opt.gif
+```
+smart-preordering-billing-foodcourt/
+├─ backend/
+│  ├─ data/
+│  │  ├─ menu.json                # Mock menu and shops
+│  │  ├─ orders.json              # Mock orders store (if present)
+│  │  └─ ...
+│  ├─ index.js                    # Express API (auth, menu, orders, analytics)
+│  ├─ package.json
+│  └─ package-lock.json
+│
+├─ frontend/
+│  ├─ public/                     # Static assets (if any)
+│  ├─ package.json
+│  └─ src/
+│     ├─ api.js                   # Client API calls (fetchMenu, placeOrder, etc.)
+│     ├─ App.js                   # Root: routes/views, state, sounds, toasts
+│     ├─ components/
+│     │  ├─ AdminDashboard.js     # Vendor live orders (tabs, extend/revoke)
+│     │  ├─ Analytics.js          # KPI tiles, summary/breakdown, top items chart
+│     │  ├─ Cart.js               # Cart, schedule (today only, 08:00–22:00, 5‑min slots)
+│     │  ├─ EmployeeLogin.js      # OTP flow with suggestions and resend timer
+│     │  ├─ Login.js              # Vendor login (silent success; toast once in App)
+│     │  ├─ Menu.js               # Menu grid, inventory overlays, add controls
+│     │  ├─ MenuEditor.js         # Vendor menu editor
+│     │  ├─ OrderHistory.js       # User orders with actions
+│     │  ├─ RatingModal.js        # Ratings
+│     │  ├─ GrievanceModal.js     # Complaints
+│     │  └─ VendorFeedbacks.js    # Feedback list
+│     ├─ assets/                  # Images/SVG (if any)
+│     └─ styles/                  # CSS (if any)
+│
+├─ docs/
+│  └─ media/                      # Placeholder for images/GIFs (optional)
+│
+├─ README.md
+└─ .git/
 ```
 
-Embed in README
-- Add the file to `docs/media/quickstart.gif`
-- Reference: `![Quickstart](docs/media/quickstart.gif)`
+### Key notes
+- Scheduling window: configure in `Cart.js` (`MIN_HM`, `MAX_HM`, slots).
+- OTP resend delay: `EmployeeLogin.js` (`resendSeconds`).
+- Vendor login success toast (once): `App.js` (`vendorLoginToastShown` flag).
+- Analytics theming and trends: `Analytics.js` (palette and `prev` fields).
