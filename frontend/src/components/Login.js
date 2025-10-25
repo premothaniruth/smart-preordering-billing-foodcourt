@@ -26,7 +26,7 @@ const Login = ({ onLogin }) => {
       <h2>Vendor Login</h2>
       <form onSubmit={handleSubmit}>
         <input
-          placeholder="Username"
+          placeholder="Employee ID"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           required
@@ -34,7 +34,7 @@ const Login = ({ onLogin }) => {
         <br />
         <input
           type="password"
-          placeholder="Password"
+          placeholder="Password (demo: password123)"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required

@@ -15,7 +15,7 @@ const MenuEditor = ({ token, menu, onUpdate }) => {
 
   const handleChange = (index, field, value) => {
     const next = [...items];
-    if (field === "price" || field === "prepTime") value = Number(value) || 0;
+    if (field === "price" || field === "prepTime" || field === "inventory") value = Number(value) || 0;
     if (field === "available" || field === "isRecommended" || field === "isHotSeller" || field === "isVeg") value = Boolean(value);
     next[index] = { ...next[index], [field]: value };
     setItems(next);
@@ -31,7 +31,8 @@ const MenuEditor = ({ token, menu, onUpdate }) => {
       isRecommended: false, 
       isHotSeller: false,
       isVeg: true,
-      prepTime: 10
+      prepTime: 10,
+      inventory: 0
     }]);
   };
 
@@ -86,6 +87,12 @@ const MenuEditor = ({ token, menu, onUpdate }) => {
               type="number" 
               value={it.prepTime || 10} 
               onChange={(e) => handleChange(idx, "prepTime", e.target.value)} 
+            />
+            <input 
+              placeholder="Inventory Count"
+              type="number"
+              value={it.inventory || 0}
+              onChange={(e) => handleChange(idx, "inventory", e.target.value)}
             />
             <input 
               placeholder="Image URL" 
