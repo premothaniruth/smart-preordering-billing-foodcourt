@@ -169,7 +169,12 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
         </div>
         <div className="menu-item-content">
           <div className="menu-item-name">{item.name}</div>
-          <div className="menu-item-price">₹{item.price}+</div>
+          <div className="menu-item-price">
+            {(() => {
+              const hasMods = item.hasOptions && Array.isArray(item.options) && item.options.some(o => Number(o.priceModifier || 0) > 0);
+              return `₹${item.price}${hasMods ? '+' : ''}`;
+            })()}
+          </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 4 }}>
             {item.isVeg ? (
               <span className="menu-item-badge" style={{ color: "#27ae60", border: "1px solid #27ae60" }}>🟢 VEG</span>
@@ -242,7 +247,7 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
                 )}
               </button>
             )}
-            {cartRemaining <= 0 && (
+            {cartRemaining <= 0 && stockLeft > 0 && (
               <div style={{ marginTop: 6, fontSize: 12, color: '#e74c3c', textAlign: 'center', width: '100%' }}>
                 No more items available to order
               </div>
@@ -256,24 +261,43 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
   return (
     <div>
       <h2>Menu</h2>
-      <div className="filter-section">
+      <div className="filter-section" style={{ display:'flex', gap:12, flexWrap:'wrap', alignItems:'center', marginBottom: 12 }}>
         {!hideShopSelector && (
-          <>
-            <label>Shop:&nbsp;</label>
-            <select value={selectedShop} onChange={(e) => setSelectedShop(Number(e.target.value))}>
-              {menu.map(shop => (<option key={shop.shopId} value={shop.shopId}>{shop.shopName}</option>))}
-            </select>
-            <label style={{ marginLeft: "20px" }}>Filter:&nbsp;</label>
-          </>
+          <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
+            <div style={{ position:'relative', display:'inline-flex', alignItems:'center', gap:8, background:'#fff', border:'1px solid #111', borderRadius:12, padding:'6px 12px' }}>
+              <span aria-hidden>🏬</span>
+              <select
+                value={selectedShop}
+                onChange={(e) => setSelectedShop(Number(e.target.value))}
+                style={{
+                  appearance:'none', WebkitAppearance:'none', MozAppearance:'none',
+                  border:'none', outline:'none', background:'transparent',
+                  paddingRight:20, fontSize:14, cursor:'pointer'
+                }}
+              >
+                {menu.map(shop => (<option key={shop.shopId} value={shop.shopId}>{shop.shopName}</option>))}
+              </select>
+              <span aria-hidden style={{ position:'absolute', right:8, pointerEvents:'none', color:'#111' }}>▾</span>
+            </div>
+          </div>
         )}
-        {hideShopSelector && (
-          <label>Filter:&nbsp;</label>
-        )}
-        <select value={dietFilter} onChange={(e) => setDietFilter(e.target.value)}>
-          <option value="all">All Items</option>
-          <option value="veg">Veg Only</option>
-          <option value="non-veg">Non-Veg Only</option>
-        </select>
+        <div style={{ position:'relative', display:'inline-flex', alignItems:'center', gap:8, background:'#fff', border:'1px solid #111', borderRadius:12, padding:'6px 12px' }}>
+          <span aria-hidden>🍽️</span>
+          <select
+            value={dietFilter}
+            onChange={(e) => setDietFilter(e.target.value)}
+            style={{
+              appearance:'none', WebkitAppearance:'none', MozAppearance:'none',
+              border:'none', outline:'none', background:'transparent',
+              paddingRight:20, fontSize:14, cursor:'pointer'
+            }}
+          >
+            <option value="all">All Items</option>
+            <option value="veg">Veg Only</option>
+            <option value="non-veg">Non-Veg Only</option>
+          </select>
+          <span aria-hidden style={{ position:'absolute', right:8, pointerEvents:'none', color:'#111' }}>▾</span>
+        </div>
       </div>
 
       {favoriteItems.length > 0 && (

@@ -95,10 +95,6 @@ const Cart = ({ cart, removeFromCart, decrementFromCart, incrementFromCart, sche
               <span>Subtotal:</span>
               <span>₹{total}</span>
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, fontSize: 12, color: "#666" }}>
-              <span>Est. Prep Time:</span>
-              <span>{totalPrepTime} mins</span>
-            </div>
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: "18px", fontWeight: "bold", marginTop: 10, paddingTop: 10, borderTop: "1px solid #ddd" }}>
               <span>Total:</span>
               <span>₹{total}</span>

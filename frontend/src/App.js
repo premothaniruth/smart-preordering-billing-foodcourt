@@ -62,6 +62,7 @@ function App() {
   const etaNotifiedRef = useRef(new Map()); // orderId -> lastNotifiedETA ms
   const readySeededRef = useRef(false);
   const [targetItemId, setTargetItemId] = useState(null);
+  const [recentOrdersTodayCount, setRecentOrdersTodayCount] = useState(0);
 
   const userId = employeeMobile || null;
   const vendorShopId = (() => {
@@ -326,6 +327,21 @@ function App() {
       // refresh menu to reflect decremented inventory
       loadMenu();
 
+      // Compute how many orders placed today for this user (to show "View recent orders")
+      if (userId) {
+        fetchUserOrders(userId).then((orders) => {
+          try {
+            const today = new Date();
+            const isSameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+            const countToday = (orders || []).filter(o => {
+              const d = o.createdAt ? new Date(o.createdAt) : null;
+              return d ? isSameDay(d, today) : false;
+            }).length;
+            setRecentOrdersTodayCount(countToday);
+          } catch { setRecentOrdersTodayCount(0); }
+        });
+      }
+
       playSound(ORDER_PLACED_SOUND);
       toast.success(`Order placed! Billing ID: ${response.billingId}`);
 
@@ -538,6 +554,17 @@ function App() {
                               ))}
                             </ul>
                             <div><strong>Total:</strong> ₹{orderSummary.totalAmount}</div>
+                            {recentOrdersTodayCount > 1 && (
+                              <div style={{ marginTop: 10 }}>
+                                <span
+                                  role="button"
+                                  onClick={() => { fetchUserOrders(userId).then(setUserOrders); setView("orders"); }}
+                                  style={{ cursor: 'pointer', color: '#2c3e50', textDecoration: 'underline', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                                >
+                                  View recent orders <span aria-hidden>→</span>
+                                </span>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
