@@ -2,7 +2,7 @@
 
 A full‑stack demo for a cafeteria/food court experience with vendor and employee flows:
 
-- Employee: Browse menu, add to cart, schedule pickup for today within hours, place orders, view order history.
+- Employee: Browse menu, add to cart, schedule pickup for current day within hours, place orders, view order history.
 - Vendor: Live orders dashboard (current/ready/completed), low‑stock view, menu editor, analytics, grievances, feedbacks.
 
 ## Tech Stack
