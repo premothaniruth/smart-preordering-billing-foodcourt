@@ -3,7 +3,16 @@ import { updateMenu } from "../api";
 import { toast } from "react-toastify";
 
 const MenuEditor = ({ token, menu, onUpdate }) => {
-  const [selectedShop, setSelectedShop] = useState(1);
+  const decodeShopId = () => {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.shopId || 1;
+    } catch {
+      return 1;
+    }
+  };
+  const vendorShopId = decodeShopId();
+  const [selectedShop, setSelectedShop] = useState(vendorShopId);
   const [items, setItems] = useState([]);
 
   useEffect(() => {
@@ -63,10 +72,8 @@ const MenuEditor = ({ token, menu, onUpdate }) => {
     <div>
       <h2>Menu Editor</h2>
       <div style={{ marginBottom: 20 }}>
-        <label>Select Shop:&nbsp;</label>
-        <select value={selectedShop} onChange={(e) => setSelectedShop(Number(e.target.value))}>
-          {menu.map(shop => (<option key={shop.shopId} value={shop.shopId}>{shop.shopName}</option>))}
-        </select>
+        <label>Editing Shop:&nbsp;</label>
+        <strong>{menu.find(s=>s.shopId===vendorShopId)?.shopName || `Shop ${vendorShopId}`}</strong>
       </div>
 
       {isDirty && (

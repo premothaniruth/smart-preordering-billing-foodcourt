@@ -39,6 +39,7 @@ const AdminDashboard = ({ token }) => {
               <th>Shop</th>
               <th>Items</th>
               <th>Remarks</th>
+              <th>Scheduled For</th>
               <th>Prep Time</th>
               <th>Status</th>
               <th>Action</th>
@@ -73,6 +74,9 @@ const AdminDashboard = ({ token }) => {
                       </div>
                     ) : null
                   ))}
+                </td>
+                <td style={{ fontSize: 12 }}>
+                  {o.scheduledTime ? new Date(o.scheduledTime).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : '-'}
                 </td>
                 <td>{o.prepTime} mins</td>
                 <td>

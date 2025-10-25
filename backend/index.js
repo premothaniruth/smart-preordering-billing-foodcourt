@@ -107,7 +107,6 @@ const calculatePreparationTime = (items, shopId) => {
 const authenticateVendor = (req, res, next) => {
   const token = req.headers["authorization"];
   if (!token) return res.status(401).json({ message: "No token provided" });
-
   const tokenValue = token.replace("Bearer ", "");
   jwt.verify(tokenValue, JWT_SECRET, (err, decoded) => {
     if (err) return res.status(401).json({ message: "Failed to authenticate token" });
@@ -128,6 +127,31 @@ app.get("/menu", (req, res) => {
   }
 });
 
+// Get feedbacks/ratings for vendor's shop
+app.get("/vendor/feedbacks", authenticateVendor, (req, res) => {
+  try {
+    const orders = getOrders();
+    const ratings = getRatings();
+    const vendorShopId = req.vendor.shopId;
+    const orderIdsForShop = new Set(orders.filter(o => o.shopId === vendorShopId).map(o => o.id));
+    const feedbacks = ratings
+      .filter(r => r.orderId && orderIdsForShop.has(r.orderId))
+      .map(r => {
+        const order = orders.find(o => o.id === r.orderId);
+        return {
+          orderId: r.orderId,
+          billingId: order?.billingId,
+          rating: r.rating,
+          feedback: r.feedback,
+          timestamp: r.timestamp,
+          user: order?.user
+        };
+      });
+    res.json(feedbacks);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching feedbacks" });
+  }
+});
 // Request OTP for employee (mock: OTP logged to console)
 app.post("/employee/request-otp", (req, res) => {
   try {
