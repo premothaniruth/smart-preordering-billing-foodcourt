@@ -183,8 +183,14 @@ const Cart = ({ cart, removeFromCart, decrementFromCart, incrementFromCart, sche
             </label>
             <textarea 
               value={customNotes}
-              onChange={(e) => setCustomNotes(e.target.value)}
+              onChange={(e) => {
+                const input = e.target.value;
+                const words = input.trim().split(/\s+/).filter(Boolean);
+                const limited = words.length > 100 ? words.slice(0, 100).join(' ') : input;
+                setCustomNotes(limited);
+              }}
               placeholder="E.g., Less spicy, no onions, extra garnish, less oil..."
+              rows={4}
               style={{ 
                 width: "100%", 
                 padding: 8, 
@@ -192,7 +198,8 @@ const Cart = ({ cart, removeFromCart, decrementFromCart, incrementFromCart, sche
                 fontFamily: "inherit",
                 fontSize: 13,
                 borderRadius: 6,
-                border: "1px solid #ddd"
+                border: "1px solid #ddd",
+                resize: 'none'
               }}
             />
           </div>

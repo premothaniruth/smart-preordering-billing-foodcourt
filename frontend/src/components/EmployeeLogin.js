@@ -76,7 +76,6 @@ const EmployeeLogin = ({ onSuccess }) => {
     try {
       const res = await employeeVerifyOtp(mobile, otp);
       if (res.status === "ok" && res.token) {
-        toast.success("Logged in");
         rememberMobile(res.mobile || mobile);
         onSuccess({ token: res.token, mobile: res.mobile });
       } else {
@@ -90,11 +89,11 @@ const EmployeeLogin = ({ onSuccess }) => {
   };
 
   return (
-    <div>
+    <div style={{ display:'flex', justifyContent:'center', padding:'20px' }}>
       {step === "mobile" && (
-        <form onSubmit={requestOtp}>
-          <h2>Employee Login</h2>
-          <div style={{ position:'relative' }}>
+        <form onSubmit={requestOtp} style={{ width:'100%', maxWidth: 380, background:'#fff', border:'1px solid #eee', borderRadius:12, padding:18, boxShadow:'0 6px 24px rgba(0,0,0,0.06)' }}>
+          <h2 style={{ margin:0, fontSize:20 }}>Employee Login</h2>
+          <div style={{ position:'relative', marginTop:12 }}>
             <input
               ref={inputRef}
               placeholder="Mobile Number"
@@ -104,6 +103,7 @@ const EmployeeLogin = ({ onSuccess }) => {
               onBlur={() => setTimeout(()=>setShowSuggestions(false), 120)}
               maxLength={10}
               required
+              style={{ width:'100%', padding:'10px 12px', border:'1px solid #ddd', borderRadius:8, fontSize:14 }}
             />
             {showSuggestions && recent.length > 0 && (
               <div style={{ position:'absolute', top:'100%', left:0, right:0, background:'#fff', border:'1px solid #ddd', borderRadius:6, marginTop:4, zIndex:10, overflow:'hidden' }}>
@@ -123,27 +123,28 @@ const EmployeeLogin = ({ onSuccess }) => {
               </div>
             )}
           </div>
-          <button type="submit" disabled={loading || mobile.length !== 10}>
+          <button type="submit" disabled={loading || mobile.length !== 10} style={{ width:'100%', marginTop:12, padding:'10px 12px', background:'#111', color:'#fff', border:'1px solid #111', borderRadius:8, fontWeight:600 }}>
             {loading ? "Sending..." : "Send OTP"}
           </button>
         </form>
       )}
 
       {step === "otp" && (
-        <form onSubmit={verifyOtp}>
-          <h2>Enter OTP</h2>
+        <form onSubmit={verifyOtp} style={{ width:'100%', maxWidth: 380, background:'#fff', border:'1px solid #eee', borderRadius:12, padding:18, boxShadow:'0 6px 24px rgba(0,0,0,0.06)' }}>
+          <h2 style={{ margin:0, fontSize:20 }}>Enter OTP</h2>
           <input
             placeholder="6-digit OTP"
             value={otp}
             onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, ""))}
             maxLength={6}
             required
+            style={{ width:'100%', marginTop:12, padding:'10px 12px', border:'1px solid #ddd', borderRadius:8, fontSize:14, letterSpacing:2 }}
           />
-          <button type="submit" disabled={loading || otp.length !== 6}>
+          <button type="submit" disabled={loading || otp.length !== 6} style={{ width:'100%', marginTop:12, padding:'10px 12px', background:'#111', color:'#fff', border:'1px solid #111', borderRadius:8, fontWeight:600 }}>
             {loading ? "Verifying..." : "Verify & Continue"}
           </button>
-          <div className="mt-10">
-            <button type="button" onClick={() => setStep("mobile")}>Back</button>
+          <div className="mt-10" style={{ marginTop:10 }}>
+            <button type="button" onClick={() => setStep("mobile")} style={{ background:'#fff', color:'#111', border:'1px solid #111', padding:'8px 12px', borderRadius:8 }}>Back</button>
           </div>
         </form>
       )}

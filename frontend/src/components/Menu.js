@@ -234,10 +234,6 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
                       <circle cx="18" cy="20" r="1"/>
                       <path d="M2 2h2l3.6 7.59a2 2 0 0 0 1.8 1.17H17a2 2 0 0 0 2-1.5l1.38-5.5H6"/>
                     </svg>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                      <line x1="12" y1="5" x2="12" y2="19"/>
-                      <line x1="5" y1="12" x2="19" y2="12"/>
-                    </svg>
                     Add to Cart
                   </>
                 )}
