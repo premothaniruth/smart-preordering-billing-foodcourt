@@ -1,4 +1,3 @@
-  const [targetItemId, setTargetItemId] = useState(null);
 import React, { useEffect, useState, useRef } from "react";
 import { fetchMenu, placeOrder, fetchUserOrders, fetchFavorites, vendorLogin, updateMenu, markOrderReady, fetchAnalytics, submitRating } from "./api";
 import Menu from "./components/Menu";
@@ -62,6 +61,7 @@ function App() {
   const [selectedOrderForGrievance, setSelectedOrderForGrievance] = useState(null);
   const etaNotifiedRef = useRef(new Map()); // orderId -> lastNotifiedETA ms
   const readySeededRef = useRef(false);
+  const [targetItemId, setTargetItemId] = useState(null);
 
   const userId = employeeMobile || null;
   const vendorShopId = (() => {
