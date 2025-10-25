@@ -249,6 +249,22 @@ app.post("/order/picked/:id", authenticateVendor, (req, res) => {
 app.get("/menu", (req, res) => {
   try {
     const menu = getMenu();
+    // Ensure default inventory of 100 for items missing inventory
+    let changed = false;
+    for (const shop of menu) {
+      if (!Array.isArray(shop.items)) continue;
+      for (const item of shop.items) {
+        if (item.inventory == null || isNaN(Number(item.inventory))) {
+          item.inventory = 100;
+          changed = true;
+        }
+        if (item.inventory < 0) {
+          item.inventory = 0;
+          changed = true;
+        }
+      }
+    }
+    if (changed) saveMenu(menu);
     res.json(menu);
   } catch (error) {
     res.status(500).json({ message: "Error fetching menu" });
@@ -388,6 +404,43 @@ app.post("/employee/verify-otp", (req, res) => {
 app.post("/order", (req, res) => {
   try {
     const { items, user, scheduledTime, shopId } = req.body;
+    // Validate inventory and decrement
+    const menu = getMenu();
+    const shop = menu.find((s) => String(s.shopId) === String(shopId));
+    if (!shop) {
+      return res.status(400).json({ message: "Invalid shopId" });
+    }
+    shop.items = Array.isArray(shop.items) ? shop.items : [];
+
+    // Aggregate required quantities per item.id
+    const required = new Map();
+    for (const it of items || []) {
+      const qty = Number(it.quantity || 1);
+      const key = it.id;
+      required.set(key, (required.get(key) || 0) + qty);
+    }
+
+    // Check availability
+    for (const [itemId, qtyNeeded] of required.entries()) {
+      const menuItem = shop.items.find((i) => i.id === itemId);
+      const available = menuItem ? (Number(menuItem.inventory ?? 100)) : 0;
+      if (!menuItem || available < qtyNeeded) {
+        return res.status(400).json({
+          message: "Insufficient inventory",
+          itemId,
+          available,
+          needed: qtyNeeded,
+        });
+      }
+    }
+
+    // Decrement inventory
+    for (const [itemId, qtyNeeded] of required.entries()) {
+      const menuItem = shop.items.find((i) => i.id === itemId);
+      menuItem.inventory = Math.max(0, Number(menuItem.inventory ?? 100) - qtyNeeded);
+    }
+    saveMenu(menu);
+
     const orders = getOrders();
 
     const billingId = generateBillingId();

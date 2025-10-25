@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { fetchOrders, markOrderReady, fetchMenu, extendOrderPrep, markOrderPicked, revokeOrderExtension } from "../api";
+import { fetchOrders, markOrderReady, fetchMenu, extendOrderPrep, markOrderPicked, revokeOrderExtension, updateMenu } from "../api";
+import { toast } from "react-toastify";
 
 /**
  * AdminDashboard
@@ -14,6 +15,8 @@ const AdminDashboard = ({ token }) => {
   const overdueNotifiedRef = useRef(new Set());
   const OVERDUE_SOUND = "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBDWM0/K/gC4EH29+3WgyBCk4XoCWJhcBTnLcWswB";
   const [muted, setMuted] = useState(false);
+  const [showLowStock, setShowLowStock] = useState(false);
+  const [lowStockThreshold, setLowStockThreshold] = useState(10);
   const vendorShopId = (() => {
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
@@ -42,6 +45,20 @@ const AdminDashboard = ({ token }) => {
     const eta = new Date(o.estimatedReadyTime).getTime();
     const diff = eta - now; // ms
     return diff;
+  };
+
+  const handleRestockOne = async (itemId) => {
+    const shop = menu.find(s => s.shopId === vendorShopId);
+    if (!shop || !Array.isArray(shop.items)) return;
+    const updated = shop.items.map(it => (it.id === itemId ? { ...it, inventory: 100 } : it));
+    const res = await updateMenu(updated, token);
+    if (res && res.status === 'success') {
+      const fresh = await fetchMenu();
+      setMenu(fresh);
+      toast.success('Restocked to 100');
+    } else {
+      toast.error('Failed to restock');
+    }
   };
 
   const formatDuration = (ms) => {
@@ -81,6 +98,27 @@ const AdminDashboard = ({ token }) => {
   const getShopName = (shopId) =>
     menu.find((s) => s.shopId === shopId)?.shopName || shopId;
   const vendorShopName = getShopName(vendorShopId);
+  const lowStockItems = useMemo(() => {
+    const shop = menu.find(s => s.shopId === vendorShopId);
+    if (!shop || !Array.isArray(shop.items)) return [];
+    return shop.items.filter(it => Number(it.inventory ?? 100) <= Number(lowStockThreshold));
+  }, [menu, vendorShopId, lowStockThreshold]);
+
+  const handleRestockLow = async () => {
+    const shop = menu.find(s => s.shopId === vendorShopId);
+    if (!shop || !Array.isArray(shop.items)) return;
+    const ok = window.confirm(`Restock ${lowStockItems.length} low-stock items to 100?`);
+    if (!ok) return;
+    const updated = shop.items.map(it => (Number(it.inventory ?? 100) <= Number(lowStockThreshold) ? { ...it, inventory: 100 } : it));
+    const res = await updateMenu(updated, token);
+    if (res && res.status === 'success') {
+      const fresh = await fetchMenu();
+      setMenu(fresh);
+      toast.success('Restocked low-stock items to 100');
+    } else {
+      toast.error('Failed to restock');
+    }
+  };
 
   const markReady = (id) => {
     markOrderReady(id, token).then(() => loadOrders());
@@ -120,7 +158,47 @@ const AdminDashboard = ({ token }) => {
       <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 10, flexWrap: 'wrap' }}>
         <button onClick={() => setMuted(m => !m)}>{muted ? 'Unmute Alerts' : 'Mute Alerts'}</button>
         <span style={{ fontSize: 12, color: '#777' }}>(Overdue sound alerts)</span>
+        <span style={{ marginLeft: 12, fontSize: 12 }}>
+          Low Stock: <strong>{lowStockItems.length}</strong>
+        </span>
+        <button onClick={()=>setShowLowStock(v=>!v)}>{showLowStock ? 'Hide Low Stock' : 'Show Low Stock'}</button>
+        <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontSize: 12, color: '#777' }}>Threshold</span>
+          <input type="number" min="0" value={lowStockThreshold} onChange={(e)=>setLowStockThreshold(Number(e.target.value)||0)} style={{ width: 70 }} />
+        </label>
+        <button onClick={handleRestockLow} disabled={lowStockItems.length===0}>Restock low to 100</button>
       </div>
+      {showLowStock && (
+        <div className="card" style={{ marginBottom: 12 }}>
+          <div className="card-header">Low Stock Items (≤ {lowStockThreshold})</div>
+          {lowStockItems.length === 0 ? (
+            <div style={{ padding: 10, fontSize: 13, color: '#666' }}>No low stock items.</div>
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table border="1" cellPadding="8" width="100%">
+                <thead>
+                  <tr>
+                    <th>Item</th>
+                    <th>Inventory</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {lowStockItems.map((it, idx) => (
+                    <tr key={idx}>
+                      <td>{it.name}</td>
+                      <td style={{ color: '#e67e22', fontWeight: 700 }}>{Number(it.inventory ?? 0)}</td>
+                      <td>
+                        <button onClick={()=>handleRestockOne(it.id)}>Restock to 100</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
       <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
         <button onClick={() => setTab('current')} className={tab==='current' ? 'active' : ''}>Current</button>
         <button onClick={() => setTab('ready')} className={tab==='ready' ? 'active' : ''}>Ready</button>

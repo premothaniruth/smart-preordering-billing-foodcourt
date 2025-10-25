@@ -20,6 +20,7 @@ const MenuEditor = ({ token, menu, onUpdate }) => {
   const vendorShopId = decodeShopId();
   const [selectedShop, setSelectedShop] = useState(vendorShopId);
   const [items, setItems] = useState([]);
+  const [lowThreshold, setLowThreshold] = useState(10);
 
   // Sync local items when selected shop or menu changes
   useEffect(() => {
@@ -63,6 +64,21 @@ const MenuEditor = ({ token, menu, onUpdate }) => {
     setItems(next);
   };
 
+  const handleRestockAll = () => {
+    const ok = window.confirm("Restock all items to 100? This will overwrite current inventory counts.");
+    if (!ok) return;
+    setItems(prev => prev.map(it => ({ ...it, inventory: 100 })));
+  };
+
+  const handleRestockLow = () => {
+    const lowCount = items.filter(it => Number(it.inventory ?? 0) <= Number(lowThreshold)).length;
+    if (lowCount === 0) { toast.info('No low-stock items to restock'); return; }
+    const ok = window.confirm(`Restock ${lowCount} low-stock items (≤ ${lowThreshold}) to 100?`);
+    if (!ok) return;
+    setItems(prev => prev.map(it => (Number(it.inventory ?? 0) <= Number(lowThreshold) ? { ...it, inventory: 100 } : it)));
+    toast.success('Updated low-stock items to 100. Click Save Changes to persist.');
+  };
+
   // Persist changes to backend
   const handleSave = async () => {
     try {
@@ -91,7 +107,15 @@ const MenuEditor = ({ token, menu, onUpdate }) => {
           Save Changes
         </button>
       )}
-      <button onClick={handleAdd} style={{ marginBottom: 15 }}>+ Add New Item</button>
+      <div style={{ display: 'flex', gap: 10, marginBottom: 15, flexWrap: 'wrap', alignItems: 'center' }}>
+        <button onClick={handleAdd}>+ Add New Item</button>
+        <button onClick={handleRestockAll} style={{ background: '#2c3e50', color: '#fff' }}>Restock all to 100</button>
+        <span style={{ fontSize: 12, color: '#777' }}>Low threshold</span>
+        <input type="number" min="0" value={lowThreshold} onChange={(e)=>setLowThreshold(Number(e.target.value)||0)} style={{ width: 80 }} />
+        <button onClick={handleRestockLow}>
+          Restock low to 100
+        </button>
+      </div>
       
       {items.map((it, idx) => (
         <div key={it.id} className="menu-editor-item">

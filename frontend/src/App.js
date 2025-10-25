@@ -290,14 +290,17 @@ function App() {
       user: userId,
       shopId: selectedShop,
     }).then((response) => {
+      if (!response || response.status !== 'success') {
+        const msg = response?.message || 'Order failed. Please try again';
+        toast.error(msg);
+        return;
+      }
       setCart([]);
       setScheduledTime("");
       setOrderSummary(response.orderSummary);
 
       playSound(ORDER_PLACED_SOUND);
       toast.success(`Order placed! Billing ID: ${response.billingId}`);
-
-      // Rating modal disabled; inline feedback is available at bottom of menu
 
       // Set timer for ready sound
       const prepTime = response.orderSummary.prepTime || 5;
@@ -307,6 +310,8 @@ function App() {
           autoClose: 10000,
         });
       }, prepTime * 60000);
+    }).catch(() => {
+      toast.error('Order failed. Please try again');
     });
   };
 
