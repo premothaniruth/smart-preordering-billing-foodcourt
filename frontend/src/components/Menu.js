@@ -7,7 +7,8 @@ const Menu = ({ menu, addToCart, cart, incItemNoOption, decItemNoOption, incItem
   const [showOptionsModal, setShowOptionsModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [selectedOption, setSelectedOption] = useState(null);
-  const [multiOptionQuantities, setMultiOptionQuantities] = useState({}); // optionName -> qty
+  const [multiOptionQuantities, setMultiOptionQuantities] = useState({}); // optionName -> qty (working state)
+  const [variantDrafts, setVariantDrafts] = useState({}); // itemId -> { optionName -> qty }
 
   if (!menu.length) return <p>Loading menu...</p>;
 
@@ -18,10 +19,16 @@ const Menu = ({ menu, addToCart, cart, incItemNoOption, decItemNoOption, incItem
     setSelectedItem(item);
     
     if (item.hasOptions && item.options) {
-      // Open modal to select multiple variants and quantities
-      const init = {};
-      item.options.forEach(o => { init[o.name] = 0; });
-      setMultiOptionQuantities(init);
+      // Open modal to select multiple variants and quantities, persist per-item until checkout
+      const existing = variantDrafts[item.id];
+      if (existing) {
+        setMultiOptionQuantities(existing);
+      } else {
+        const init = {};
+        item.options.forEach(o => { init[o.name] = 0; });
+        setVariantDrafts(prev => ({ ...prev, [item.id]: init }));
+        setMultiOptionQuantities(init);
+      }
       setShowOptionsModal(true);
     } else {
       // Add directly without customization modal
@@ -148,7 +155,8 @@ const Menu = ({ menu, addToCart, cart, incItemNoOption, decItemNoOption, incItem
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: 8
+                  gap: 6,
+                  whiteSpace: 'nowrap'
                 }}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -248,7 +256,11 @@ const Menu = ({ menu, addToCart, cart, incItemNoOption, decItemNoOption, incItem
                         type="checkbox"
                         checked={checked}
                         onChange={(e) => {
-                          setMultiOptionQuantities(prev => ({ ...prev, [option.name]: e.target.checked ? (qty || 1) : 0 }));
+                          setMultiOptionQuantities(prev => {
+                            const next = { ...prev, [option.name]: e.target.checked ? (qty || 1) : 0 };
+                            setVariantDrafts(d => ({ ...d, [selectedItem.id]: next }));
+                            return next;
+                          });
                         }}
                       />
                       <span style={{ flex: 1 }}>
@@ -256,12 +268,20 @@ const Menu = ({ menu, addToCart, cart, incItemNoOption, decItemNoOption, incItem
                       </span>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                         <button
-                          onClick={() => setMultiOptionQuantities(prev => ({ ...prev, [option.name]: Math.max(0, (prev[option.name] || 0) - 1) }))}
+                          onClick={() => setMultiOptionQuantities(prev => {
+                            const next = { ...prev, [option.name]: Math.max(0, (prev[option.name] || 0) - 1) };
+                            setVariantDrafts(d => ({ ...d, [selectedItem.id]: next }));
+                            return next;
+                          })}
                           disabled={!checked}
                         >−</button>
                         <span style={{ width: 24, textAlign: 'center' }}>{qty}</span>
                         <button
-                          onClick={() => setMultiOptionQuantities(prev => ({ ...prev, [option.name]: (prev[option.name] || 0) + 1 }))}
+                          onClick={() => setMultiOptionQuantities(prev => {
+                            const next = { ...prev, [option.name]: (prev[option.name] || 0) + 1 };
+                            setVariantDrafts(d => ({ ...d, [selectedItem.id]: next }));
+                            return next;
+                          })}
                           disabled={!checked}
                         >+</button>
                       </div>
@@ -283,7 +303,7 @@ const Menu = ({ menu, addToCart, cart, incItemNoOption, decItemNoOption, incItem
                   } finally {
                     setShowOptionsModal(false);
                     setSelectedItem(null);
-                    setMultiOptionQuantities({});
+                    // DO NOT clear draft; persist until checkout
                   }
                 }}
                 style={{ flex: 1, background: "#27ae60" }}
