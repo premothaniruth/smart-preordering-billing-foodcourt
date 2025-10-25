@@ -472,6 +472,36 @@ app.post("/order/ready/:id", authenticateVendor, (req, res) => {
   }
 });
 
+// Extend preparation time for an order (in minutes)
+app.post("/order/extend/:id", authenticateVendor, (req, res) => {
+  try {
+    const addMinutes = Number(req.body.addMinutes || 0);
+    if (!addMinutes || addMinutes <= 0) {
+      return res.status(400).json({ message: "addMinutes must be > 0" });
+    }
+    const orders = getOrders();
+    const orderId = parseInt(req.params.id);
+    const vendorShopId = req.vendor.shopId;
+
+    const order = orders.find((o) => o.id === orderId && o.shopId === vendorShopId);
+    if (!order) {
+      return res.status(404).json({ message: "Order not found for your shop" });
+    }
+
+    order.prepTime = (order.prepTime || 0) + addMinutes;
+    const prevEta = order.estimatedReadyTime ? new Date(order.estimatedReadyTime).getTime() : Date.now();
+    const baseTime = Math.max(prevEta, Date.now());
+    order.estimatedReadyTime = new Date(baseTime + addMinutes * 60000).toISOString();
+    order.etaExtendedAt = new Date().toISOString();
+    order.etaExtensionMinutes = (order.etaExtensionMinutes || 0) + addMinutes;
+
+    saveOrders(orders);
+    res.json({ status: "success", message: "Preparation time extended", order });
+  } catch (error) {
+    res.status(500).json({ message: "Error extending preparation time" });
+  }
+});
+
 // Get analytics
 app.get("/analytics", authenticateVendor, (req, res) => {
   try {

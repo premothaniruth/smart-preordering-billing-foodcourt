@@ -65,6 +65,15 @@ export const markOrderReady = async (orderId, token) => {
   return res.json();
 };
 
+export const extendOrderPrep = async (orderId, addMinutes, token) => {
+  const res = await fetch(`${API_URL}/order/extend/${orderId}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ addMinutes })
+  });
+  return res.json();
+};
+
 export const fetchAnalytics = async (token, period) => {
   const qs = period ? `?period=${encodeURIComponent(period)}` : "";
   const res = await fetch(`${API_URL}/analytics${qs}`, {

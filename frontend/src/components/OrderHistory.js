@@ -70,6 +70,16 @@ const OrderHistory = ({ orders, onReorder, onBack, onClearHistory, onReportIssue
                 <div style={{ fontSize: 11, color: "#666", marginTop: 4 }}>
                   Prep Time: {order.prepTime} mins
                 </div>
+                {order.estimatedReadyTime && (
+                  <div style={{ fontSize: 11, color: "#666", marginTop: 2 }}>
+                    ETA: {new Date(order.estimatedReadyTime).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+                  </div>
+                )}
+                {order.etaExtensionMinutes > 0 && (
+                  <div style={{ fontSize: 11, color: "#c0392b", marginTop: 2 }}>
+                    Vendor extended by {order.etaExtensionMinutes} min{order.etaExtensionMinutes>1?'s':''} {order.etaExtendedAt ? `on ${new Date(order.etaExtendedAt).toLocaleString('en-IN', { dateStyle:'medium', timeStyle:'short' })}` : ''}
+                  </div>
+                )}
               </div>
               <div style={{ display: "flex", gap: 10 }}>
                 <button 

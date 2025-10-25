@@ -39,6 +39,7 @@ function App() {
   const [inlineHoverRating, setInlineHoverRating] = useState(0);
   const [showGrievanceModal, setShowGrievanceModal] = useState(false);
   const [selectedOrderForGrievance, setSelectedOrderForGrievance] = useState(null);
+  const etaNotifiedRef = useRef(new Map()); // orderId -> lastNotifiedETA ms
 
   const userId = employeeMobile || null;
   const vendorShopId = (() => {
@@ -83,6 +84,27 @@ function App() {
               toast.info(`🔔 Order ${o.billingId} is ready for pickup!`, { autoClose: 10000 });
             }
           });
+
+        // Detect ETA changes (delay or earlier)
+        orders.forEach(o => {
+          if (!o.estimatedReadyTime) return;
+          const etaMs = new Date(o.estimatedReadyTime).getTime();
+          const key = o.id || o.billingId;
+          const last = etaNotifiedRef.current.get(key);
+          if (last == null) {
+            etaNotifiedRef.current.set(key, etaMs);
+            return;
+          }
+          if (etaMs !== last) {
+            const diffMin = Math.round(Math.abs(etaMs - last) / 60000);
+            if (etaMs > last) {
+              toast.warn(`⚠️ Order ${o.billingId}: ETA extended by ~${diffMin} min`, { autoClose: 6000 });
+            } else {
+              toast.success(`✅ Order ${o.billingId}: ETA improved by ~${diffMin} min`, { autoClose: 6000 });
+            }
+            etaNotifiedRef.current.set(key, etaMs);
+          }
+        });
       } catch {}
     };
     const id = setInterval(poll, 5000);
