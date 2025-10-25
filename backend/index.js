@@ -127,6 +127,39 @@ app.get("/menu", (req, res) => {
   }
 });
 
+// Public: Get global feedbacks with optional filters
+// Query params: ratingMin (number), days (number)
+app.get("/feedbacks", (req, res) => {
+  try {
+    const ratingMin = req.query.ratingMin ? Number(req.query.ratingMin) : 0;
+    const days = req.query.days ? Number(req.query.days) : null;
+    const cutoff = days ? new Date(Date.now() - days * 24 * 60 * 60 * 1000) : null;
+
+    const ratings = getRatings();
+    const orders = getOrders();
+    const orderIndex = new Map(orders.map(o => [o.id, o]));
+
+    const result = ratings
+      .filter(r => (r.rating || 0) >= ratingMin)
+      .filter(r => !cutoff || new Date(r.timestamp) >= cutoff)
+      .map(r => {
+        const order = r.orderId ? orderIndex.get(r.orderId) : null;
+        return {
+          orderId: r.orderId || null,
+          rating: r.rating,
+          feedback: r.feedback,
+          timestamp: r.timestamp,
+          billingId: order?.billingId || null,
+          shopId: order?.shopId || null,
+          user: order?.user || null
+        };
+      });
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching feedbacks" });
+  }
+});
+
 // Get feedbacks/ratings for vendor's shop
 app.get("/vendor/feedbacks", authenticateVendor, (req, res) => {
   try {

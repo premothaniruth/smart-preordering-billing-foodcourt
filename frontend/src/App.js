@@ -7,6 +7,7 @@ import Login from "./components/Login";
 import EmployeeLogin from "./components/EmployeeLogin";
 import MenuEditor from "./components/MenuEditor";
 import AdminDashboard from "./components/AdminDashboard";
+import VendorFeedbacks from "./components/VendorFeedbacks";
 import Analytics from "./components/Analytics";
 import OrderHistory from "./components/OrderHistory";
 import RatingModal from "./components/RatingModal";
@@ -35,14 +36,29 @@ function App() {
   const [currentOrderForRating, setCurrentOrderForRating] = useState(null);
   const [inlineRating, setInlineRating] = useState(0);
   const [inlineFeedback, setInlineFeedback] = useState("");
+  const [inlineHoverRating, setInlineHoverRating] = useState(0);
   const [showGrievanceModal, setShowGrievanceModal] = useState(false);
   const [selectedOrderForGrievance, setSelectedOrderForGrievance] = useState(null);
 
   const userId = employeeMobile || null;
+  const vendorShopId = (() => {
+    try {
+      if (!vendorToken) return null;
+      const payload = JSON.parse(atob(vendorToken.split('.')[1]));
+      return payload.shopId || null;
+    } catch {
+      return null;
+    }
+  })();
 
   useEffect(() => {
     loadMenu();
   }, []);
+
+  // When vendor logs in, force selectedShop to their shop
+  useEffect(() => {
+    if (vendorShopId) setSelectedShop(vendorShopId);
+  }, [vendorShopId]);
 
   useEffect(() => {
     if (userId) {
@@ -257,6 +273,7 @@ function App() {
               <button onClick={() => setView("dashboard")}>Dashboard</button>
               <button onClick={() => setView("menu-editor")}>Edit Menu</button>
               <button onClick={() => setView("analytics")}>Analytics</button>
+              <button onClick={() => setView("feedbacks")}>Feedbacks</button>
               <button onClick={() => setView("grievances")}>Complaints</button>
               <button onClick={() => setView("user")}>Switch to User View</button>
             </div>
@@ -267,6 +284,7 @@ function App() {
             {view === "dashboard" && <AdminDashboard token={vendorToken} />}
             {view === "analytics" && <Analytics token={vendorToken} />}
             {view === "grievances" && <VendorGrievances token={vendorToken} />}
+            {view === "feedbacks" && <VendorFeedbacks token={vendorToken} />}
             {view === "user" && (
               <div className="layout-container">
                 <div className="menu-section">
@@ -274,12 +292,13 @@ function App() {
                     menu={menu}
                     addToCart={() => {}}
                     cart={[]}
-                    selectedShop={selectedShop}
+                    selectedShop={vendorShopId || selectedShop}
                     setSelectedShop={setSelectedShop}
                     favorites={[]}
                     onFavoriteToggle={() => {}}
                     userId={"Vendor Preview"}
                     hideFavorites={true}
+                    hideShopSelector={true}
                   />
                 </div>
                 {/* Read-only user view for vendor: no cart, no order summary */}
@@ -317,7 +336,14 @@ function App() {
                             <div className="card-header">Rate your experience</div>
                             <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}>
                               {[1,2,3,4,5].map(n => (
-                                <span key={n} className="rating-star" onClick={() => setInlineRating(n)} style={{ color: n <= inlineRating ? '#f1c40f' : '#ccc', fontSize: 22 }}>★</span>
+                                <span
+                                  key={n}
+                                  className="rating-star"
+                                  onMouseEnter={() => setInlineHoverRating(n)}
+                                  onMouseLeave={() => setInlineHoverRating(0)}
+                                  onClick={() => setInlineRating(n)}
+                                  style={{ color: n <= (inlineHoverRating || inlineRating) ? '#f1c40f' : '#ccc', fontSize: 22, cursor: 'pointer' }}
+                                >★</span>
                               ))}
                             </div>
                             <textarea placeholder="Share your feedback on food quality and service" value={inlineFeedback} onChange={(e)=>setInlineFeedback(e.target.value)} />

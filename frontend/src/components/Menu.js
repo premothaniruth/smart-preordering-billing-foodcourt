@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { toggleFavorite } from "../api";
 import { toast } from "react-toastify";
 
-const Menu = ({ menu, addToCart, cart, selectedShop, setSelectedShop, favorites, onFavoriteToggle, userId, hideFavorites }) => {
+const Menu = ({ menu, addToCart, cart, selectedShop, setSelectedShop, favorites, onFavoriteToggle, userId, hideFavorites, hideShopSelector }) => {
   const [dietFilter, setDietFilter] = useState("all");
   const [showOptionsModal, setShowOptionsModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
@@ -106,9 +106,29 @@ const Menu = ({ menu, addToCart, cart, selectedShop, setSelectedShop, favorites,
               className="icon-btn" 
               onClick={() => handleAddClick(item)}
               disabled={!item.available}
-              style={{ background: "#27ae60", width: "100%", padding: '10px 12px', boxShadow: '0 2px 6px rgba(0,0,0,0.15)' }}
+              style={{
+                width: "100%",
+                padding: '10px 12px',
+                background: '#fff',
+                color: '#111',
+                border: '1px solid #111',
+                borderRadius: 6,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8
+              }}
             >
-              ➕ Add to Cart
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <circle cx="10" cy="20" r="1"/>
+                <circle cx="18" cy="20" r="1"/>
+                <path d="M2 2h2l3.6 7.59a2 2 0 0 0 1.8 1.17H17a2 2 0 0 0 2-1.5l1.38-5.5H6"/>
+              </svg>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              Add to Cart
             </button>
           </div>
         </div>
@@ -120,12 +140,18 @@ const Menu = ({ menu, addToCart, cart, selectedShop, setSelectedShop, favorites,
     <div>
       <h2>Menu</h2>
       <div className="filter-section">
-        <label>Shop:&nbsp;</label>
-        <select value={selectedShop} onChange={(e) => setSelectedShop(Number(e.target.value))}>
-          {menu.map(shop => (<option key={shop.shopId} value={shop.shopId}>{shop.shopName}</option>))}
-        </select>
-
-        <label style={{ marginLeft: "20px" }}>Filter:&nbsp;</label>
+        {!hideShopSelector && (
+          <>
+            <label>Shop:&nbsp;</label>
+            <select value={selectedShop} onChange={(e) => setSelectedShop(Number(e.target.value))}>
+              {menu.map(shop => (<option key={shop.shopId} value={shop.shopId}>{shop.shopName}</option>))}
+            </select>
+            <label style={{ marginLeft: "20px" }}>Filter:&nbsp;</label>
+          </>
+        )}
+        {hideShopSelector && (
+          <label>Filter:&nbsp;</label>
+        )}
         <select value={dietFilter} onChange={(e) => setDietFilter(e.target.value)}>
           <option value="all">All Items</option>
           <option value="veg">Veg Only</option>

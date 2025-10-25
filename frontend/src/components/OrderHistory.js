@@ -1,10 +1,16 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
+import { submitRating } from "../api";
 
 const OrderHistory = ({ orders, onReorder, onBack, onClearHistory, onReportIssue }) => {
-  // Sort orders in reverse chronological order (latest first)
-  const sortedOrders = [...orders].sort((a, b) => 
-    new Date(b.createdAt) - new Date(a.createdAt)
-  );
+  const cutoff = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 2);
+    return d;
+  }, []);
+
+  const filtered = useMemo(() => orders.filter(o => new Date(o.createdAt) >= cutoff), [orders, cutoff]);
+  const sortedOrders = useMemo(() => [...filtered].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)), [filtered]);
+  const [ratingState, setRatingState] = useState({});
 
   return (
     <div>
@@ -92,6 +98,43 @@ const OrderHistory = ({ orders, onReorder, onBack, onClearHistory, onReportIssue
                     "{order.feedback}"
                   </div>
                 )}
+              </div>
+            )}
+
+            {!order.rating && (
+              <div style={{ marginTop: 15, paddingTop: 15, borderTop: "1px solid #ecf0f1" }}>
+                <div style={{ fontSize: 12, fontWeight: "bold", marginBottom: 8 }}>Rate this order:</div>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}>
+                  {[1,2,3,4,5].map(n => (
+                    <span
+                      key={n}
+                      onMouseEnter={() => setRatingState(prev => ({ ...prev, [order.id]: { ...(prev[order.id]||{}), hover: n } }))}
+                      onMouseLeave={() => setRatingState(prev => ({ ...prev, [order.id]: { ...(prev[order.id]||{}), hover: 0 } }))}
+                      onClick={() => setRatingState(prev => ({ ...prev, [order.id]: { ...(prev[order.id]||{}), selected: n } }))}
+                      style={{ color: n <= ((ratingState[order.id]?.hover) || (ratingState[order.id]?.selected) || 0) ? '#f1c40f' : '#ccc', fontSize: 20, cursor: 'pointer' }}
+                    >★</span>
+                  ))}
+                </div>
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+                  <input
+                    type="text"
+                    placeholder="Optional feedback"
+                    value={ratingState[order.id]?.text || ''}
+                    onChange={(e) => setRatingState(prev => ({ ...prev, [order.id]: { ...(prev[order.id]||{}), text: e.target.value } }))}
+                    style={{ flex: '1 1 240px' }}
+                  />
+                  <button
+                    onClick={async () => {
+                      const sel = ratingState[order.id]?.selected || 0;
+                      if (!sel) return;
+                      await submitRating(order.id, sel, ratingState[order.id]?.text || '');
+                      order.rating = sel;
+                      order.feedback = ratingState[order.id]?.text || '';
+                      setRatingState(prev => ({ ...prev, [order.id]: { hover: 0, selected: sel, text: prev[order.id]?.text || '' } }));
+                    }}
+                    disabled={!ratingState[order.id]?.selected}
+                  >Submit Rating</button>
+                </div>
               </div>
             )}
           </div>

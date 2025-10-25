@@ -40,7 +40,7 @@ const Cart = ({ cart, removeFromCart, decrementFromCart, incrementFromCart, sche
               <button 
                 className="icon-btn" 
                 onClick={() => decrementFromCart(i)}
-                style={{ width: 28, height: 28, fontSize: 16, background: "#e74c3c" }}
+                style={{ width: 28, height: 28, fontSize: 16, background: '#fff', color: '#111', border: '1px solid #111', borderRadius: 6 }}
               >
                 −
               </button>
@@ -48,15 +48,15 @@ const Cart = ({ cart, removeFromCart, decrementFromCart, incrementFromCart, sche
               <button 
                 className="icon-btn" 
                 onClick={() => incrementFromCart(i)}
-                style={{ width: 28, height: 28, fontSize: 16, background: "#27ae60" }}
+                style={{ width: 28, height: 28, fontSize: 16, background: '#fff', color: '#111', border: '1px solid #111', borderRadius: 6 }}
               >
                 +
               </button>
               <button 
                 onClick={() => removeFromCart(i)} 
-                style={{ background: "#e74c3c", padding: "6px 10px", fontSize: "14px", marginLeft: 6 }}
+                style={{ background: '#fff', color: '#111', border: '1px solid #111', padding: "6px 10px", fontSize: "14px", marginLeft: 6, borderRadius: 6 }}
               >
-                ×
+                Remove
               </button>
             </div>
           </div>

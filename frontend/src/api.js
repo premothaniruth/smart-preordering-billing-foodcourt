@@ -78,6 +78,22 @@ export const fetchUserOrders = async (userId) => {
   return res.json();
 };
 
+export const fetchVendorFeedbacks = async (token) => {
+  const res = await fetch(`${API_URL}/vendor/feedbacks`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.json();
+};
+
+export const fetchPublicFeedbacks = async ({ ratingMin, days } = {}) => {
+  const params = new URLSearchParams();
+  if (ratingMin) params.set('ratingMin', String(ratingMin));
+  if (days) params.set('days', String(days));
+  const qs = params.toString() ? `?${params.toString()}` : '';
+  const res = await fetch(`${API_URL}/feedbacks${qs}`);
+  return res.json();
+};
+
 export const toggleFavorite = async (userId, itemId) => {
   const res = await fetch(`${API_URL}/favorites`, {
     method: "POST",
