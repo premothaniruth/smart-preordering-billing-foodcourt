@@ -400,7 +400,6 @@ function App() {
     setView("dashboard");
     try { localStorage.removeItem('vendorSoundFirstLoginDone'); } catch {}
     playSound(READY_SOUND);
-    toast.success("Vendor logged in successfully!");
   };
 
   const handleLogout = () => {

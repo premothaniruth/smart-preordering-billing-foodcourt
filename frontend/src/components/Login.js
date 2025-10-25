@@ -19,7 +19,6 @@ const Login = ({ onLogin }) => {
     try {
       const data = await vendorLogin(username, password);
       if (data.token) {
-        toast.success("Login successful");
         onLogin(data.token);
       } else {
         toast.error(data.message || "Login failed");

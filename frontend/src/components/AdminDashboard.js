@@ -272,7 +272,7 @@ const AdminDashboard = ({ token }) => {
                     {o.status === 'pending' && (
                       <ExtendControl order={o} token={token} onExtended={loadOrders} />
                     )}
-                    {o.status === 'pending' && (o.etaExtensionMinutes || 0) > 0 && (
+                    {o.status === 'pending' && (o.etaExtensionMinutes || 0) > 0 && (remainingTime(o) === null || remainingTime(o) >= 0) && (
                       <div style={{ marginTop: 6 }}>
                         <button
                           style={{ background: '#e74c3c' }}
