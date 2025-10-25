@@ -20,7 +20,7 @@ const MenuEditor = ({ token, menu, onUpdate }) => {
   };
 
   const handleAdd = () => {
-    setItems([...items, { 
+    setItems([{ 
       id: Date.now(), 
       name: "", 
       price: 0, 
@@ -30,8 +30,10 @@ const MenuEditor = ({ token, menu, onUpdate }) => {
       isHotSeller: false,
       isVeg: true,
       prepTime: 10,
-      inventory: 0
-    }]);
+      inventory: 0,
+      hasOptions: false,
+      options: []
+    }, ...items]);
   };
 
   const handleRemove = (index) => {
@@ -77,6 +79,13 @@ const MenuEditor = ({ token, menu, onUpdate }) => {
       
       {items.map((it, idx) => (
         <div key={it.id} className="menu-editor-item">
+          <div style={{ fontSize: 12, color: '#666', marginBottom: 8, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div>Item Name</div>
+            <div>Price</div>
+            <div>Preparation Time (mins)</div>
+            <div>Inventory Count</div>
+            <div>Image URL</div>
+          </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
             <input 
               placeholder="Item Name" 
@@ -106,6 +115,73 @@ const MenuEditor = ({ token, menu, onUpdate }) => {
               value={it.image} 
               onChange={(e) => handleChange(idx, "image", e.target.value)} 
             />
+          </div>
+
+          {/* Variants Editor */}
+          <div style={{ marginTop: 12 }}>
+            <label style={{ fontSize: 13 }}>
+              <input
+                type="checkbox"
+                checked={!!it.hasOptions}
+                onChange={(e) => handleChange(idx, "hasOptions", e.target.checked)}
+              /> Has Variants
+            </label>
+            {it.hasOptions && (
+              <div style={{ marginTop: 10, padding: 10, background: '#f8f9fa', borderRadius: 6 }}>
+                <div style={{ fontSize: 12, color: '#666', marginBottom: 8, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                  <div>Variant Name</div>
+                  <div>Price Modifier</div>
+                </div>
+                {(it.options || []).map((opt, oidx) => (
+                  <div key={oidx} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 10, marginBottom: 8 }}>
+                    <input
+                      placeholder="Variant name"
+                      value={opt.name || ''}
+                      onChange={(e) => {
+                        const next = [...items];
+                        const opts = [...(next[idx].options || [])];
+                        opts[oidx] = { ...opts[oidx], name: e.target.value };
+                        next[idx] = { ...next[idx], options: opts };
+                        setItems(next);
+                      }}
+                    />
+                    <input
+                      type="number"
+                      placeholder="Price +"
+                      value={opt.priceModifier || 0}
+                      onChange={(e) => {
+                        const next = [...items];
+                        const opts = [...(next[idx].options || [])];
+                        opts[oidx] = { ...opts[oidx], priceModifier: Number(e.target.value) || 0 };
+                        next[idx] = { ...next[idx], options: opts };
+                        setItems(next);
+                      }}
+                    />
+                    <button
+                      type="button"
+                      style={{ background: '#e74c3c' }}
+                      onClick={() => {
+                        const next = [...items];
+                        const opts = [...(next[idx].options || [])];
+                        opts.splice(oidx, 1);
+                        next[idx] = { ...next[idx], options: opts };
+                        setItems(next);
+                      }}
+                    >Remove</button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = [...items];
+                    const opts = [...(next[idx].options || [])];
+                    opts.push({ name: '', priceModifier: 0 });
+                    next[idx] = { ...next[idx], options: opts };
+                    setItems(next);
+                  }}
+                >+ Add Variant</button>
+              </div>
+            )}
           </div>
           
           <div style={{ marginTop: 10, display: "flex", gap: 15, flexWrap: "wrap" }}>

@@ -38,7 +38,7 @@ const AdminDashboard = ({ token }) => {
               <th>User</th>
               <th>Shop</th>
               <th>Items</th>
-              <th>Customization</th>
+              <th>Remarks</th>
               <th>Prep Time</th>
               <th>Status</th>
               <th>Action</th>
@@ -66,20 +66,12 @@ const AdminDashboard = ({ token }) => {
                 </td>
                 <td style={{ fontSize: 11 }}>
                   {o.items.map((it, idx) => (
-                    it.customization && (
+                    it.customization && it.customization.notes ? (
                       <div key={idx} style={{ marginBottom: 8, padding: 4, background: "#f8f9fa", borderRadius: 4 }}>
                         <strong>{it.name}:</strong>
-                        {it.customization.spiceLevel !== "medium" && (
-                          <div>🌶️ {it.customization.spiceLevel}</div>
-                        )}
-                        {it.customization.oilLevel !== "medium" && (
-                          <div>🫒 {it.customization.oilLevel}</div>
-                        )}
-                        {it.customization.notes && (
-                          <div>📝 {it.customization.notes}</div>
-                        )}
+                        <div>📝 {it.customization.notes}</div>
                       </div>
-                    )
+                    ) : null
                   ))}
                 </td>
                 <td>{o.prepTime} mins</td>
