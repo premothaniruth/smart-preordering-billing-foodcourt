@@ -66,6 +66,54 @@ function App() {
     audio.play().catch(err => console.log("Audio play failed:", err));
   };
 
+  const addToCart = (item, shopId, selectedOption = null, customization = {}) => {
+    const cartItem = {
+      ...item,
+      selectedOption,
+      customization,
+      finalPrice: item.price + (selectedOption?.priceModifier || 0),
+      prepTime: item.prepTime || 5
+    };
+
+    setCart((prev) => {
+      const idx = prev.findIndex((c) => 
+        c.item.id === item.id && 
+        c.shopId === shopId && 
+        c.item.selectedOption?.name === selectedOption?.name
+      );
+      if (idx >= 0) {
+        const newCart = [...prev];
+        newCart[idx] = { ...newCart[idx], quantity: newCart[idx].quantity + 1 };
+        return newCart;
+      } else {
+        return [...prev, { item: cartItem, shopId, quantity: 1 }];
+      }
+    });
+  };
+
+  const decrementFromCart = (index) => {
+    setCart((prev) => {
+      const item = prev[index];
+      if (!item) return prev;
+      if (item.quantity <= 1) return prev.filter((_, i) => i !== index);
+      const newCart = [...prev];
+      newCart[index] = { ...item, quantity: item.quantity - 1 };
+      return newCart;
+    });
+  };
+
+  const removeFromCart = (index) => {
+    setCart((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const incrementFromCart = (index) => {
+    setCart((prev) => {
+      const newCart = [...prev];
+      newCart[index] = { ...newCart[index], quantity: newCart[index].quantity + 1 };
+      return newCart;
+    });
+  };
+
   const handlePaymentSuccess = () => {
     const orderItems = cart.map((c) => ({
       id: c.item.id,
