@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { fetchOrders, markOrderReady, fetchMenu, extendOrderPrep, markOrderPicked } from "../api";
+import { fetchOrders, markOrderReady, fetchMenu, extendOrderPrep, markOrderPicked, revokeOrderExtension } from "../api";
 
 const AdminDashboard = ({ token }) => {
   const [orders, setOrders] = useState([]);
@@ -198,6 +198,19 @@ const AdminDashboard = ({ token }) => {
                   <td>
                     {o.status === 'pending' && (
                       <ExtendControl order={o} token={token} onExtended={loadOrders} />
+                    )}
+                    {o.status === 'pending' && (o.etaExtensionMinutes || 0) > 0 && (
+                      <div style={{ marginTop: 6 }}>
+                        <button
+                          style={{ background: '#e74c3c' }}
+                          onClick={async () => {
+                            const ok = window.confirm('Revoke extended time and restore previous ETA?');
+                            if (!ok) return;
+                            await revokeOrderExtension(o.id, token);
+                            loadOrders();
+                          }}
+                        >Revoke Extension</button>
+                      </div>
                     )}
                   </td>
                 )}

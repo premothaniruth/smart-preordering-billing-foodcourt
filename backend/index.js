@@ -108,6 +108,39 @@ const authenticateVendor = (req, res, next) => {
   const token = req.headers["authorization"];
   if (!token) return res.status(401).json({ message: "No token provided" });
 
+// Revoke previously extended preparation time, restoring to base or subtracting accumulated extension
+app.post("/order/extend-reset/:id", authenticateVendor, (req, res) => {
+  try {
+    const orders = getOrders();
+    const orderId = parseInt(req.params.id);
+    const vendorShopId = req.vendor.shopId;
+
+    const order = orders.find((o) => o.id === orderId && o.shopId === vendorShopId);
+    if (!order) {
+      return res.status(404).json({ message: "Order not found for your shop" });
+    }
+
+    const ext = order.etaExtensionMinutes || 0;
+    if (order.baseEstimatedReadyTime) {
+      order.estimatedReadyTime = order.baseEstimatedReadyTime;
+    } else if (order.estimatedReadyTime && ext > 0) {
+      order.estimatedReadyTime = new Date(new Date(order.estimatedReadyTime).getTime() - ext * 60000).toISOString();
+    }
+    if (order.basePrepTime != null) {
+      order.prepTime = order.basePrepTime;
+    } else if (ext > 0) {
+      order.prepTime = Math.max(0, (order.prepTime || 0) - ext);
+    }
+    order.etaExtensionMinutes = 0;
+    order.etaExtendedAt = null;
+
+    saveOrders(orders);
+    res.json({ status: "success", message: "Extension revoked", order });
+  } catch (error) {
+    res.status(500).json({ message: "Error revoking extension" });
+  }
+});
+
 // Mark order as picked up/completed
 app.post("/order/picked/:id", authenticateVendor, (req, res) => {
   try {
@@ -273,6 +306,8 @@ app.post("/order", (req, res) => {
       billingId,
       estimatedReadyTime,
       prepTime,
+      baseEstimatedReadyTime: estimatedReadyTime,
+      basePrepTime: prepTime,
       rating: null,
       feedback: null
     };
