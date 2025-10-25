@@ -14,7 +14,8 @@ const AdminDashboard = ({ token }) => {
   const overdueNotifiedRef = useRef(new Set());
   const OVERDUE_SOUND = "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBDWM0/K/gC4EH29+3WgyBCk4XoCWJhcBTnLcWswB";
   const [muted, setMuted] = useState(() => (localStorage.getItem('vendorSoundFirstLoginDone') ? true : false));
-  // Low stock section is always visible
+  // Low stock toggle
+  const [showLowStock, setShowLowStock] = useState(false);
   const [lowStockThreshold, setLowStockThreshold] = useState(10);
   const vendorShopId = (() => {
     try {
@@ -156,8 +157,11 @@ const AdminDashboard = ({ token }) => {
           <span style={{ fontSize: 12, color: '#777' }}>Threshold</span>
           <input type="number" min="0" value={lowStockThreshold} onChange={(e)=>setLowStockThreshold(Number(e.target.value)||0)} style={{ width: 70 }} />
         </label>
+        <button onClick={() => setShowLowStock(v => !v)}>
+          {showLowStock ? 'Hide Low Stock' : `Low Stock Items (${lowStockItems.length})`}
+        </button>
       </div>
-      {
+      {showLowStock && (
         <div className="card" style={{ marginBottom: 12 }}>
           <div className="card-header">Low Stock Items (≤ {lowStockThreshold})</div>
           {lowStockItems.length === 0 ? (
@@ -178,7 +182,7 @@ const AdminDashboard = ({ token }) => {
                       <td>{it.name}</td>
                       <td style={{ color: '#e67e22', fontWeight: 700 }}>{Number(it.inventory ?? 0)}</td>
                       <td>
-                        <button onClick={()=>window.dispatchEvent(new CustomEvent('navigate:menu-editor', { detail: { to: 'menu-editor', itemId: it.id } }))}>Edit this item</button>
+                        <button onClick={()=>window.dispatchEvent(new CustomEvent('navigate:menu-editor', { detail: { to: 'menu-editor', itemId: it.id } }))}>Restock</button>
                       </td>
                     </tr>
                   ))}
@@ -187,7 +191,7 @@ const AdminDashboard = ({ token }) => {
             </div>
           )}
         </div>
-      }
+      )}
       <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
         <button onClick={() => setTab('current')} className={tab==='current' ? 'active' : ''}>Current</button>
         <button onClick={() => setTab('ready')} className={tab==='ready' ? 'active' : ''}>Ready</button>

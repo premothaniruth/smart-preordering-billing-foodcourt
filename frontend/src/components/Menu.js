@@ -161,7 +161,7 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption, decItemNoOption, in
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 8 }}>
             <span style={{ fontSize: "11px", color: "#666" }}>⏱️ {item.prepTime || 5} mins prep time</span>
             {showInventory && (
-              <span style={{ fontSize: 11, color: remaining === 0 ? '#e74c3c' : '#666' }}>Inv: {remaining}/{inventory}</span>
+              <span style={{ fontSize: 11, color: remaining === 0 ? '#e74c3c' : '#666' }}>Left: {remaining}</span>
             )}
           </div>
           {item.hasOptions && (

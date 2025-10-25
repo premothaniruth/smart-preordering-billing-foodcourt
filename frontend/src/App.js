@@ -378,6 +378,7 @@ function App() {
     setVendorToken(token);
     setView("dashboard");
     try { localStorage.removeItem('vendorSoundFirstLoginDone'); } catch {}
+    playSound(READY_SOUND);
     toast.success("Vendor logged in successfully!");
   };
 
@@ -391,6 +392,7 @@ function App() {
     setEmployeeToken(token);
     setEmployeeMobile(mobile);
     setView("user");
+    playSound(READY_SOUND);
     toast.success("Employee logged in");
   };
 
