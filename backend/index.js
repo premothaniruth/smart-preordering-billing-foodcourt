@@ -107,6 +107,27 @@ const calculatePreparationTime = (items, shopId) => {
 const authenticateVendor = (req, res, next) => {
   const token = req.headers["authorization"];
   if (!token) return res.status(401).json({ message: "No token provided" });
+
+// Mark order as picked up/completed
+app.post("/order/picked/:id", authenticateVendor, (req, res) => {
+  try {
+    const orders = getOrders();
+    const orderId = parseInt(req.params.id);
+    const vendorShopId = req.vendor.shopId;
+
+    const order = orders.find((o) => o.id === orderId && o.shopId === vendorShopId);
+    if (!order) {
+      return res.status(404).json({ message: "Order not found for your shop" });
+    }
+
+    order.status = "completed";
+    order.completedAt = new Date().toISOString();
+    saveOrders(orders);
+    res.json({ status: "success", message: `Order ${orderId} marked as completed` });
+  } catch (error) {
+    res.status(500).json({ message: "Error marking order completed" });
+  }
+});
   const tokenValue = token.replace("Bearer ", "");
   jwt.verify(tokenValue, JWT_SECRET, (err, decoded) => {
     if (err) return res.status(401).json({ message: "Failed to authenticate token" });

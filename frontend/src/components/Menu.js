@@ -2,11 +2,12 @@ import React, { useState } from "react";
 import { toggleFavorite } from "../api";
 import { toast } from "react-toastify";
 
-const Menu = ({ menu, addToCart, cart, selectedShop, setSelectedShop, favorites, onFavoriteToggle, userId, hideFavorites, hideShopSelector }) => {
+const Menu = ({ menu, addToCart, cart, incItemNoOption, decItemNoOption, selectedShop, setSelectedShop, favorites, onFavoriteToggle, userId, hideFavorites, hideShopSelector }) => {
   const [dietFilter, setDietFilter] = useState("all");
   const [showOptionsModal, setShowOptionsModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [selectedOption, setSelectedOption] = useState(null);
+  const [variantSelection, setVariantSelection] = useState({}); // itemId -> option
 
   if (!menu.length) return <p>Loading menu...</p>;
 
@@ -17,8 +18,10 @@ const Menu = ({ menu, addToCart, cart, selectedShop, setSelectedShop, favorites,
     setSelectedItem(item);
     
     if (item.hasOptions && item.options) {
-      setSelectedOption(item.options[0]);
-      setShowOptionsModal(true);
+      // Inline variant stepper: if variant chosen, increment that variant; else select first and increment
+      const opt = variantSelection[item.id] || item.options[0];
+      setVariantSelection(prev => ({ ...prev, [item.id]: opt }));
+      incItemVariant(item, selectedShop, opt);
     } else {
       // Add directly without customization modal
       addToCart(item, selectedShop, null, {});
@@ -61,9 +64,27 @@ const Menu = ({ menu, addToCart, cart, selectedShop, setSelectedShop, favorites,
   const hotSellers = filteredItems.filter(item => item.isHotSeller && !item.isRecommended && !isFavorite(item.id));
   const regularItems = filteredItems.filter(item => !item.isRecommended && !item.isHotSeller && !isFavorite(item.id));
 
+  const qtyInCart = (item) => {
+    return cart
+      .filter(c => c.shopId === selectedShop && c.item.id === item.id)
+      .reduce((sum, c) => sum + c.quantity, 0);
+  };
+
+  const qtyNoOption = (item) => {
+    const entry = cart.find(c => c.shopId === selectedShop && c.item.id === item.id && !c.item.selectedOption);
+    return entry ? entry.quantity : 0;
+  };
+
+  const getSelectedOption = (item) => {
+    if (!item.hasOptions) return null;
+    return variantSelection[item.id] || (item.options && item.options[0]);
+  };
+
   const renderItem = (item) => {
+    const totalQty = qtyInCart(item);
+    const thisQty = qtyNoOption(item);
     return (
-      <div key={item.id} className="menu-item-card">
+      <div key={item.id} className="menu-item-card" style={totalQty > 0 ? { border: '2px solid #111', boxShadow: '0 0 0 3px rgba(0,0,0,0.05)' } : {}}>
         <div style={{ position: "relative" }}>
           <img 
             src={item.image && item.image.startsWith('http') ? item.image : `http://localhost:3001${item.image}`}
@@ -97,39 +118,94 @@ const Menu = ({ menu, addToCart, cart, selectedShop, setSelectedShop, favorites,
             ⏱️ {item.prepTime || 5} mins prep time
           </div>
           {item.hasOptions && (
-            <div style={{ fontSize: "11px", color: "#666", marginBottom: 4 }}>
-              {item.options.length} options available
+            <div style={{ marginBottom: 8 }}>
+              <div style={{ fontSize: "11px", color: "#666", marginBottom: 4 }}>
+                {item.options.length} options available
+              </div>
+              <select
+                value={getSelectedOption(item)?.name}
+                onChange={(e) => {
+                  const opt = item.options.find(o => o.name === e.target.value) || item.options[0];
+                  setVariantSelection(prev => ({ ...prev, [item.id]: opt }));
+                }}
+                style={{ width: '100%', marginBottom: 8 }}
+              >
+                {item.options.map((opt, idx) => (
+                  <option key={idx} value={opt.name}>
+                    {opt.name}{opt.priceModifier > 0 ? ` (+₹${opt.priceModifier})` : ''}
+                  </option>
+                ))}
+              </select>
             </div>
           )}
           <div className="menu-item-actions">
-            <button 
-              className="icon-btn" 
-              onClick={() => handleAddClick(item)}
-              disabled={!item.available}
-              style={{
-                width: "100%",
-                padding: '10px 12px',
-                background: '#fff',
-                color: '#111',
-                border: '1px solid #111',
-                borderRadius: 6,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8
-              }}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <circle cx="10" cy="20" r="1"/>
-                <circle cx="18" cy="20" r="1"/>
-                <path d="M2 2h2l3.6 7.59a2 2 0 0 0 1.8 1.17H17a2 2 0 0 0 2-1.5l1.38-5.5H6"/>
-              </svg>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <line x1="12" y1="5" x2="12" y2="19"/>
-                <line x1="5" y1="12" x2="19" y2="12"/>
-              </svg>
-              Add to Cart
-            </button>
+            {(!item.hasOptions && thisQty > 0) ? (
+              <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                <button
+                  className="icon-btn"
+                  onClick={() => decItemNoOption(item, selectedShop)}
+                  style={{ width: 32, height: 32, background: '#fff', color: '#111', border: '1px solid #111', borderRadius: 6 }}
+                >−</button>
+                <span style={{ minWidth: 24, textAlign: 'center', fontWeight: 700 }}>{thisQty}</span>
+                <button
+                  className="icon-btn"
+                  onClick={() => incItemNoOption(item, selectedShop)}
+                  style={{ width: 32, height: 32, background: '#fff', color: '#111', border: '1px solid #111', borderRadius: 6 }}
+                >+</button>
+              </div>
+            ) : item.hasOptions ? (
+              <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                {(() => {
+                  const opt = getSelectedOption(item);
+                  const entry = cart.find(c => c.shopId === selectedShop && c.item.id === item.id && c.item.selectedOption?.name === opt?.name);
+                  const qty = entry ? entry.quantity : 0;
+                  return (
+                    <>
+                      <button
+                        className="icon-btn"
+                        onClick={() => decItemVariant(item, selectedShop, opt)}
+                        style={{ width: 32, height: 32, background: '#fff', color: '#111', border: '1px solid #111', borderRadius: 6 }}
+                      >−</button>
+                      <span style={{ minWidth: 24, textAlign: 'center', fontWeight: 700 }}>{qty}</span>
+                      <button
+                        className="icon-btn"
+                        onClick={() => incItemVariant(item, selectedShop, opt)}
+                        style={{ width: 32, height: 32, background: '#fff', color: '#111', border: '1px solid #111', borderRadius: 6 }}
+                      >+</button>
+                    </>
+                  );
+                })()}
+              </div>
+            ) : (
+              <button 
+                className="icon-btn" 
+                onClick={() => handleAddClick(item)}
+                disabled={!item.available}
+                style={{
+                  width: "100%",
+                  padding: '10px 12px',
+                  background: '#fff',
+                  color: '#111',
+                  border: '1px solid #111',
+                  borderRadius: 6,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <circle cx="10" cy="20" r="1"/>
+                  <circle cx="18" cy="20" r="1"/>
+                  <path d="M2 2h2l3.6 7.59a2 2 0 0 0 1.8 1.17H17a2 2 0 0 0 2-1.5l1.38-5.5H6"/>
+                </svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <line x1="12" y1="5" x2="12" y2="19"/>
+                  <line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+                Add to Cart
+              </button>
+            )}
           </div>
         </div>
       </div>

@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { fetchOrders, markOrderReady, fetchMenu, extendOrderPrep } from "../api";
+import { fetchOrders, markOrderReady, fetchMenu, extendOrderPrep, markOrderPicked } from "../api";
 
 const AdminDashboard = ({ token }) => {
   const [orders, setOrders] = useState([]);
   const [menu, setMenu] = useState([]);
+  const [tab, setTab] = useState('current'); // 'current' | 'ready' | 'completed'
   const overdueNotifiedRef = useRef(new Set());
   const OVERDUE_SOUND = "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBDWM0/K/gC4EH29+3WgyBCk4XoCWJhcBTnLcWswB";
   const [muted, setMuted] = useState(false);
@@ -71,6 +72,30 @@ const AdminDashboard = ({ token }) => {
     markOrderReady(id, token).then(() => loadOrders());
   };
 
+  const visibleOrders = useMemo(() => {
+    const list = orders.slice();
+    if (tab === 'current') {
+      // only pending
+      const pending = list.filter(o => o.status === 'pending');
+      // sort: overdue first, then by remaining time ascending
+      return pending.sort((a,b) => {
+        const ra = remainingTime(a);
+        const rb = remainingTime(b);
+        const oa = (ra !== null && ra < 0) ? 1 : 0;
+        const ob = (rb !== null && rb < 0) ? 1 : 0;
+        if (oa !== ob) return ob - oa; // overdue first
+        const va = ra == null ? Number.POSITIVE_INFINITY : ra;
+        const vb = rb == null ? Number.POSITIVE_INFINITY : rb;
+        return va - vb;
+      });
+    } else if (tab === 'ready') {
+      // ready tab
+      return list.filter(o => o.status === 'ready').sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+    } else {
+      return list.filter(o => o.status === 'completed').sort((a,b) => new Date(b.completedAt || b.createdAt) - new Date(a.completedAt || a.createdAt));
+    }
+  }, [orders, tab, tick]);
+
   return (
     <div>
       <h2>Vendor Dashboard - Live Orders</h2>
@@ -80,6 +105,11 @@ const AdminDashboard = ({ token }) => {
       <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 10, flexWrap: 'wrap' }}>
         <button onClick={() => setMuted(m => !m)}>{muted ? 'Unmute Alerts' : 'Mute Alerts'}</button>
         <span style={{ fontSize: 12, color: '#777' }}>(Overdue sound alerts)</span>
+      </div>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+        <button onClick={() => setTab('current')} className={tab==='current' ? 'active' : ''}>Current</button>
+        <button onClick={() => setTab('ready')} className={tab==='ready' ? 'active' : ''}>Ready</button>
+        <button onClick={() => setTab('completed')} className={tab==='completed' ? 'active' : ''}>Completed</button>
       </div>
       <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
         <span style={{ fontSize: 13, color: '#555' }}>Bulk extend pending:</span>
@@ -106,14 +136,14 @@ const AdminDashboard = ({ token }) => {
             </tr>
           </thead>
           <tbody>
-            {orders.length === 0 && (
+            {visibleOrders.length === 0 && (
               <tr>
                 <td colSpan="8" style={{ textAlign: "center", padding: 30, color: "#999" }}>
-                  No orders yet
+                  No orders to display
                 </td>
               </tr>
             )}
-            {orders.map((o) => (
+            {visibleOrders.map((o) => (
               <tr key={o.id} style={{ background: o.status === 'pending' ? '#fff3cd' : '#d4edda' }}>
                 <td><strong>{o.billingId}</strong></td>
                 <td>{o.user}</td>
@@ -173,12 +203,18 @@ const AdminDashboard = ({ token }) => {
                   )}
                 </td>
                 <td>
-                  {o.status === "pending" && (
+                  {o.status === "pending" && tab !== 'completed' && (
                     <button onClick={() => markReady(o.id)} style={{ background: "#27ae60" }}>
                       Mark Ready
                     </button>
                   )}
-                  {o.status === "ready" && <span style={{ color: "#27ae60" }}>✓ Ready</span>}
+                  {o.status === "ready" && tab !== 'completed' && (
+                    <>
+                      <span style={{ color: "#27ae60", marginRight: 8 }}>✓ Ready</span>
+                      <button onClick={() => markOrderPicked(o.id)} style={{ background: "#2c3e50" }}>Mark Picked</button>
+                    </>
+                  )}
+                  {o.status === 'completed' && <span style={{ color: "#2c3e50" }}>✓ Picked Up</span>}
                 </td>
               </tr>
             ))}

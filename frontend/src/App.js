@@ -40,6 +40,7 @@ function App() {
   const [showGrievanceModal, setShowGrievanceModal] = useState(false);
   const [selectedOrderForGrievance, setSelectedOrderForGrievance] = useState(null);
   const etaNotifiedRef = useRef(new Map()); // orderId -> lastNotifiedETA ms
+  const readySeededRef = useRef(false);
 
   const userId = employeeMobile || null;
   const vendorShopId = (() => {
@@ -75,6 +76,12 @@ function App() {
     const poll = async () => {
       try {
         const orders = await fetchUserOrders(userId);
+        // On first poll after login, seed the already-ready orders to suppress repeated alerts
+        if (!readySeededRef.current) {
+          orders.filter(o => o.status === 'ready').forEach(o => readyNotifiedRef.current.add(o.billingId));
+          readySeededRef.current = true;
+        }
+
         orders
           .filter(o => o.status === 'ready')
           .forEach(o => {
@@ -107,6 +114,34 @@ function App() {
         });
       } catch {}
     };
+
+  // Helpers for items with variants (options)
+  const incItemVariant = (item, shopId, option) => {
+    setCart((prev) => {
+      const idx = prev.findIndex((c) => c.item.id === item.id && c.shopId === shopId && c.item.selectedOption?.name === option?.name);
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx] = { ...next[idx], quantity: next[idx].quantity + 1 };
+        return next;
+      }
+      const cartItem = { ...item, selectedOption: option, customization: {}, finalPrice: item.price + (option?.priceModifier || 0), prepTime: item.prepTime || 5 };
+      return [...prev, { item: cartItem, shopId, quantity: 1 }];
+    });
+  };
+
+  const decItemVariant = (item, shopId, option) => {
+    setCart((prev) => {
+      const idx = prev.findIndex((c) => c.item.id === item.id && c.shopId === shopId && c.item.selectedOption?.name === option?.name);
+      if (idx < 0) return prev;
+      const entry = prev[idx];
+      if (entry.quantity <= 1) {
+        return prev.filter((_, i) => i !== idx);
+      }
+      const next = [...prev];
+      next[idx] = { ...entry, quantity: entry.quantity - 1 };
+      return next;
+    });
+  };
     const id = setInterval(poll, 5000);
     poll();
     return () => clearInterval(id);
@@ -174,6 +209,34 @@ function App() {
       const newCart = [...prev];
       newCart[index] = { ...newCart[index], quantity: newCart[index].quantity + 1 };
       return newCart;
+    });
+  };
+
+  // Helpers for items without options: adjust by item+shop
+  const incItemNoOption = (item, shopId) => {
+    setCart((prev) => {
+      const idx = prev.findIndex((c) => c.item.id === item.id && c.shopId === shopId && !c.item.selectedOption);
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx] = { ...next[idx], quantity: next[idx].quantity + 1 };
+        return next;
+      }
+      const cartItem = { ...item, selectedOption: null, customization: {}, finalPrice: item.price, prepTime: item.prepTime || 5 };
+      return [...prev, { item: cartItem, shopId, quantity: 1 }];
+    });
+  };
+
+  const decItemNoOption = (item, shopId) => {
+    setCart((prev) => {
+      const idx = prev.findIndex((c) => c.item.id === item.id && c.shopId === shopId && !c.item.selectedOption);
+      if (idx < 0) return prev;
+      const entry = prev[idx];
+      if (entry.quantity <= 1) {
+        return prev.filter((_, i) => i !== idx);
+      }
+      const next = [...prev];
+      next[idx] = { ...entry, quantity: entry.quantity - 1 };
+      return next;
     });
   };
 
@@ -346,6 +409,10 @@ function App() {
                           menu={menu}
                           addToCart={addToCart}
                           cart={cart}
+                          incItemNoOption={incItemNoOption}
+                          decItemNoOption={decItemNoOption}
+                          incItemVariant={incItemVariant}
+                          decItemVariant={decItemVariant}
                           selectedShop={selectedShop}
                           setSelectedShop={setSelectedShop}
                           favorites={favorites}
