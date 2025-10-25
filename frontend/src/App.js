@@ -69,18 +69,6 @@ function App() {
           });
       } catch {}
     };
-
-  const submitInlineFeedback = async () => {
-    try {
-      if (!inlineRating) return toast.error("Please select a rating");
-      await submitRating(null, inlineRating, inlineFeedback);
-      setInlineRating(0);
-      setInlineFeedback("");
-      toast.success("Thanks for your feedback!");
-    } catch {
-      toast.error("Failed to submit feedback");
-    }
-  };
     const id = setInterval(poll, 5000);
     poll();
     return () => clearInterval(id);
@@ -211,6 +199,18 @@ function App() {
   const handleReportIssue = (order) => {
     setSelectedOrderForGrievance(order);
     setShowGrievanceModal(true);
+  };
+
+  const submitInlineFeedback = async () => {
+    try {
+      if (!inlineRating) return toast.error("Please select a rating");
+      await submitRating(null, inlineRating, inlineFeedback);
+      setInlineRating(0);
+      setInlineFeedback("");
+      toast.success("Thanks for your feedback!");
+    } catch {
+      toast.error("Failed to submit feedback");
+    }
   };
 
   const handleLogin = (token) => {
