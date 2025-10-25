@@ -53,3 +53,31 @@ export const fetchAnalytics = async (token) => {
   });
   return res.json();
 };
+
+export const fetchUserOrders = async (userId) => {
+  const res = await fetch(`${API_URL}/orders/user/${userId}`);
+  return res.json();
+};
+
+export const toggleFavorite = async (userId, itemId) => {
+  const res = await fetch(`${API_URL}/favorites`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ userId, itemId }),
+  });
+  return res.json();
+};
+
+export const fetchFavorites = async (userId) => {
+  const res = await fetch(`${API_URL}/favorites/${userId}`);
+  return res.json();
+};
+
+export const submitRating = async (orderId, rating, feedback) => {
+  const res = await fetch(`${API_URL}/rating`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ orderId, rating, feedback }),
+  });
+  return res.json();
+};

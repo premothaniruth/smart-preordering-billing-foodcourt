@@ -21,6 +21,8 @@ const menuFile = __dirname + "/data/menu.json";
 const ordersFile = __dirname + "/data/orders.json";
 const vendorsFile = __dirname + "/data/vendors.json";
 const billingCounterFile = __dirname + "/data/billing_counter.json";
+const favoritesFile = __dirname + "/data/favorites.json";
+const ratingsFile = __dirname + "/data/ratings.json";
 
 // Helper functions
 const getMenu = () => JSON.parse(fs.readFileSync(menuFile, "utf8"));
@@ -28,6 +30,22 @@ const saveMenu = (menu) => fs.writeFileSync(menuFile, JSON.stringify(menu, null,
 const getOrders = () => JSON.parse(fs.readFileSync(ordersFile, "utf8"));
 const saveOrders = (orders) => fs.writeFileSync(ordersFile, JSON.stringify(orders, null, 2));
 const getVendors = () => JSON.parse(fs.readFileSync(vendorsFile, "utf8"));
+const getFavorites = () => {
+  try {
+    return JSON.parse(fs.readFileSync(favoritesFile, "utf8"));
+  } catch {
+    return [];
+  }
+};
+const saveFavorites = (favorites) => fs.writeFileSync(favoritesFile, JSON.stringify(favorites, null, 2));
+const getRatings = () => {
+  try {
+    return JSON.parse(fs.readFileSync(ratingsFile, "utf8"));
+  } catch {
+    return [];
+  }
+};
+const saveRatings = (ratings) => fs.writeFileSync(ratingsFile, JSON.stringify(ratings, null, 2));
 
 // Billing counter management
 const getBillingCounter = () => {
@@ -47,23 +65,33 @@ const generateBillingId = () => {
   const today = new Date().toDateString();
   let billingData = getBillingCounter();
 
-  // Reset counter if new day
   if (billingData.date !== today) {
     billingData = { date: today, counter: 0 };
   }
 
-  // Increment counter
   billingData.counter += 1;
 
-  // Wrap around at 99999
   if (billingData.counter > 99999) {
     billingData.counter = 1;
   }
 
   saveBillingCounter(billingData);
-
-  // Format as 5-digit string
   return billingData.counter.toString().padStart(5, '0');
+};
+
+// Calculate preparation time based on items and current orders
+const calculatePreparationTime = (items, shopId) => {
+  const orders = getOrders();
+  const pendingOrders = orders.filter(o => o.shopId === shopId && o.status === "pending").length;
+  
+  // Base time per item
+  const totalItemTime = items.reduce((sum, item) => sum + (item.prepTime || 5), 0);
+  
+  // Add queue time (2 minutes per pending order)
+  const queueTime = pendingOrders * 2;
+  
+  // Total time in minutes
+  return Math.max(totalItemTime + queueTime, 5); // Minimum 5 minutes
 };
 
 // Middleware: Authenticate vendor
@@ -91,7 +119,7 @@ app.get("/menu", (req, res) => {
   }
 });
 
-// Place order with 5-digit billing ID
+// Place order with billing ID and customization
 app.post("/order", (req, res) => {
   try {
     const { items, user, scheduledTime, shopId } = req.body;
@@ -99,6 +127,10 @@ app.post("/order", (req, res) => {
 
     const billingId = generateBillingId();
     const totalAmount = items.reduce((sum, it) => sum + it.price * (it.quantity || 1), 0);
+    
+    // Calculate preparation time
+    const prepTime = calculatePreparationTime(items, shopId);
+    const estimatedReadyTime = new Date(Date.now() + prepTime * 60000).toISOString();
 
     const newOrder = {
       id: orders.length + 1,
@@ -109,7 +141,10 @@ app.post("/order", (req, res) => {
       status: "pending",
       createdAt: new Date().toISOString(),
       billingId,
-      estimatedReadyTime: new Date(Date.now() + 60000).toISOString() // 1 minute from now
+      estimatedReadyTime,
+      prepTime,
+      rating: null,
+      feedback: null
     };
 
     orders.push(newOrder);
@@ -120,7 +155,8 @@ app.post("/order", (req, res) => {
       user: newOrder.user,
       totalAmount,
       items,
-      estimatedReadyTime: newOrder.estimatedReadyTime
+      estimatedReadyTime,
+      prepTime
     };
 
     res.json({ 
@@ -131,6 +167,78 @@ app.post("/order", (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: "Error placing order" });
+  }
+});
+
+// Get user's order history
+app.get("/orders/user/:userId", (req, res) => {
+  try {
+    const orders = getOrders();
+    const userOrders = orders.filter(o => o.user === req.params.userId);
+    res.json(userOrders);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching user orders" });
+  }
+});
+
+// Add/Remove favorite
+app.post("/favorites", (req, res) => {
+  try {
+    const { userId, itemId } = req.body;
+    let favorites = getFavorites();
+    
+    const existingIndex = favorites.findIndex(f => f.userId === userId && f.itemId === itemId);
+    
+    if (existingIndex >= 0) {
+      favorites.splice(existingIndex, 1);
+      saveFavorites(favorites);
+      res.json({ status: "removed", message: "Removed from favorites" });
+    } else {
+      favorites.push({ userId, itemId });
+      saveFavorites(favorites);
+      res.json({ status: "added", message: "Added to favorites" });
+    }
+  } catch (error) {
+    res.status(500).json({ message: "Error updating favorites" });
+  }
+});
+
+// Get user favorites
+app.get("/favorites/:userId", (req, res) => {
+  try {
+    const favorites = getFavorites();
+    const userFavorites = favorites.filter(f => f.userId === req.params.userId).map(f => f.itemId);
+    res.json(userFavorites);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching favorites" });
+  }
+});
+
+// Submit rating and feedback
+app.post("/rating", (req, res) => {
+  try {
+    const { orderId, rating, feedback } = req.body;
+    const orders = getOrders();
+    const ratings = getRatings();
+    
+    const order = orders.find(o => o.id === orderId);
+    if (!order) return res.status(404).json({ message: "Order not found" });
+    
+    order.rating = rating;
+    order.feedback = feedback;
+    saveOrders(orders);
+    
+    ratings.push({
+      orderId,
+      rating,
+      feedback,
+      timestamp: new Date().toISOString()
+    });
+    saveRatings(ratings);
+    
+    res.json({ status: "success", message: "Rating submitted" });
+  } catch (error) {
+    res.status(500).json({ message: "Error submitting rating" });
   }
 });
 
@@ -240,7 +348,15 @@ app.get("/analytics", authenticateVendor, (req, res) => {
       count
     }));
 
-    res.json({ totalOrders, popularItems });
+    // Calculate average rating
+    const ratingsData = getRatings();
+    const shopOrderIds = orders.map(o => o.id);
+    const shopRatings = ratingsData.filter(r => shopOrderIds.includes(r.orderId));
+    const avgRating = shopRatings.length > 0 
+      ? (shopRatings.reduce((sum, r) => sum + r.rating, 0) / shopRatings.length).toFixed(1)
+      : 0;
+
+    res.json({ totalOrders, popularItems, avgRating, totalRatings: shopRatings.length });
   } catch (error) {
     res.status(500).json({ message: "Error fetching analytics" });
   }

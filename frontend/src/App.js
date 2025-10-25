@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { fetchMenu, placeOrder, vendorLogin, updateMenu, fetchOrders, markOrderReady, fetchAnalytics } from "./api";
+import { fetchMenu, placeOrder, fetchUserOrders, fetchFavorites, vendorLogin, updateMenu, markOrderReady, fetchAnalytics } from "./api";
 import Menu from "./components/Menu";
 import Cart from "./components/Cart";
 import Payment from "./components/Payment";
@@ -7,11 +7,13 @@ import Login from "./components/Login";
 import MenuEditor from "./components/MenuEditor";
 import AdminDashboard from "./components/AdminDashboard";
 import Analytics from "./components/Analytics";
+import OrderHistory from "./components/OrderHistory";
+import RatingModal from "./components/RatingModal";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 const ORDER_PLACED_SOUND = "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBDWM0/K/gC4EH29+3WgyBCk4XoCWJhcBTnLcWswB";
-const READY_SOUND = "data:audio/wav;base64,UklGRmQFAABXQVZFZm10IBAAAAABAAEARKwAAESsAAABAAgAZGF0YUAFAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA";
+const READY_SOUND = "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBDWM0/K/gC4EH29+3WgyBCk4XoCWJhcBTnLcWswB";
 
 function App() {
   const [menu, setMenu] = useState([]);
@@ -21,31 +23,49 @@ function App() {
   const [vendorToken, setVendorToken] = useState(null);
   const [view, setView] = useState("user");
   const [orderSummary, setOrderSummary] = useState(null);
+  const [userOrders, setUserOrders] = useState([]);
+  const [favorites, setFavorites] = useState([]);
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [currentOrderForRating, setCurrentOrderForRating] = useState(null);
+  
+  const userId = "Employee XYZ"; // In production, this would come from login
 
   useEffect(() => {
+    loadMenu();
+    loadFavorites();
+  }, []);
+
+  const loadMenu = () => {
     fetchMenu().then((data) => {
       setMenu(data);
       if (data.length > 0 && !selectedShop) setSelectedShop(data[0].shopId);
     });
-  }, [selectedShop]);
+  };
+
+  const loadFavorites = () => {
+    fetchFavorites(userId).then(setFavorites);
+  };
 
   const playSound = (soundUrl) => {
     const audio = new Audio(soundUrl);
     audio.play().catch(err => console.log("Audio play failed:", err));
   };
 
-  const addToCart = (item, shopId, selectedOption = null) => {
+  const addToCart = (item, shopId, selectedOption = null, customization = {}) => {
     const cartItem = {
       ...item,
       selectedOption,
-      finalPrice: item.price + (selectedOption?.priceModifier || 0)
+      customization,
+      finalPrice: item.price + (selectedOption?.priceModifier || 0),
+      prepTime: item.prepTime || 5
     };
 
     setCart((prev) => {
       const idx = prev.findIndex((c) => 
         c.item.id === item.id && 
         c.shopId === shopId && 
-        c.item.selectedOption?.name === selectedOption?.name
+        c.item.selectedOption?.name === selectedOption?.name &&
+        JSON.stringify(c.item.customization) === JSON.stringify(customization)
       );
       if (idx >= 0) {
         const newCart = [...prev];
@@ -86,13 +106,15 @@ function App() {
       name: c.item.name,
       price: c.item.finalPrice,
       quantity: c.quantity,
-      option: c.item.selectedOption?.name || null
+      option: c.item.selectedOption?.name || null,
+      customization: c.item.customization,
+      prepTime: c.item.prepTime
     }));
 
     placeOrder({
       items: orderItems,
       scheduledTime,
-      user: "Employee XYZ",
+      user: userId,
       shopId: selectedShop,
     }).then((response) => {
       setCart([]);
@@ -102,13 +124,33 @@ function App() {
       playSound(ORDER_PLACED_SOUND);
       toast.success(`Order placed! Billing ID: ${response.billingId}`);
 
+      // Show rating modal after a delay
+      setTimeout(() => {
+        setCurrentOrderForRating(response.billingId);
+        setShowRatingModal(true);
+      }, 3000);
+
+      // Set timer for ready sound
+      const prepTime = response.orderSummary.prepTime || 5;
       setTimeout(() => {
         playSound(READY_SOUND);
         toast.info(`🔔 Order ${response.billingId} is ready for pickup!`, {
           autoClose: 10000,
         });
-      }, 60000);
+      }, prepTime * 60000);
     });
+  };
+
+  const handleReorder = (order) => {
+    setCart([]);
+    order.items.forEach(item => {
+      const menuItem = menu.flatMap(s => s.items).find(i => i.id === item.id);
+      if (menuItem) {
+        addToCart(menuItem, order.shopId, item.option ? { name: item.option, priceModifier: 0 } : null, item.customization || {});
+      }
+    });
+    setView("user");
+    toast.success("Previous order added to cart!");
   };
 
   const handleLogin = (token) => {
@@ -144,7 +186,7 @@ function App() {
             </div>
 
             {view === "menu-editor" && (
-              <MenuEditor token={vendorToken} shopItems={menu.find((s) => s.shopId === selectedShop)?.items} />
+              <MenuEditor token={vendorToken} menu={menu} onUpdate={loadMenu} />
             )}
             {view === "dashboard" && <AdminDashboard token={vendorToken} />}
             {view === "analytics" && <Analytics token={vendorToken} />}
@@ -157,6 +199,9 @@ function App() {
                     cart={cart}
                     selectedShop={selectedShop}
                     setSelectedShop={setSelectedShop}
+                    favorites={favorites}
+                    onFavoriteToggle={loadFavorites}
+                    userId={userId}
                   />
                 </div>
                 <div className="cart-section">
@@ -174,8 +219,17 @@ function App() {
                       <h3>Order Confirmation</h3>
                       <div><strong>Billing ID:</strong> {orderSummary.billingId}</div>
                       <div><strong>User:</strong> {orderSummary.user}</div>
+                      <div><strong>Prep Time:</strong> {orderSummary.prepTime} mins</div>
+                      <h4>Items:</h4>
+                      <ul style={{ listStyle: "none", paddingLeft: 0 }}>
+                        {orderSummary.items.map((item, idx) => (
+                          <li key={idx} style={{ fontSize: 13, marginBottom: 4 }}>
+                            {item.name} {item.option && `(${item.option})`} x{item.quantity} - ₹{item.price * item.quantity}
+                            {item.customization?.notes && <div style={{ fontSize: 11, color: "#666" }}>Note: {item.customization.notes}</div>}
+                          </li>
+                        ))}
+                      </ul>
                       <div><strong>Total:</strong> ₹{orderSummary.totalAmount}</div>
-                      <div><strong>Estimated Ready:</strong> 1 minute</div>
                     </div>
                   )}
                 </div>
@@ -186,7 +240,13 @@ function App() {
           <>
             {view === "user" && (
               <>
-                <button onClick={() => setView("login")}>Vendor Login</button>
+                <div style={{ marginBottom: 15 }}>
+                  <button onClick={() => setView("login")}>Vendor Login</button>
+                  <button onClick={() => {
+                    fetchUserOrders(userId).then(setUserOrders);
+                    setView("orders");
+                  }}>My Orders</button>
+                </div>
                 <div className="layout-container">
                   <div className="menu-section">
                     <Menu
@@ -195,6 +255,9 @@ function App() {
                       cart={cart}
                       selectedShop={selectedShop}
                       setSelectedShop={setSelectedShop}
+                      favorites={favorites}
+                      onFavoriteToggle={loadFavorites}
+                      userId={userId}
                     />
                   </div>
                   <div className="cart-section">
@@ -212,8 +275,17 @@ function App() {
                         <h3>Order Confirmation</h3>
                         <div><strong>Billing ID:</strong> {orderSummary.billingId}</div>
                         <div><strong>User:</strong> {orderSummary.user}</div>
+                        <div><strong>Prep Time:</strong> {orderSummary.prepTime} mins</div>
+                        <h4>Items:</h4>
+                        <ul style={{ listStyle: "none", paddingLeft: 0 }}>
+                          {orderSummary.items.map((item, idx) => (
+                            <li key={idx} style={{ fontSize: 13, marginBottom: 4 }}>
+                              {item.name} {item.option && `(${item.option})`} x{item.quantity} - ₹{item.price * item.quantity}
+                              {item.customization?.notes && <div style={{ fontSize: 11, color: "#666" }}>Note: {item.customization.notes}</div>}
+                            </li>
+                          ))}
+                        </ul>
                         <div><strong>Total:</strong> ₹{orderSummary.totalAmount}</div>
-                        <div><strong>Estimated Ready:</strong> 1 minute</div>
                       </div>
                     )}
                   </div>
@@ -221,7 +293,21 @@ function App() {
               </>
             )}
             {view === "login" && <Login onLogin={handleLogin} />}
+            {view === "orders" && (
+              <OrderHistory 
+                orders={userOrders} 
+                onReorder={handleReorder}
+                onBack={() => setView("user")}
+              />
+            )}
           </>
+        )}
+
+        {showRatingModal && currentOrderForRating && (
+          <RatingModal
+            orderId={currentOrderForRating}
+            onClose={() => setShowRatingModal(false)}
+          />
         )}
       </div>
     </>
