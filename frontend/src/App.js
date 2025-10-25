@@ -1,3 +1,4 @@
+  const [targetItemId, setTargetItemId] = useState(null);
 import React, { useEffect, useState, useRef } from "react";
 import { fetchMenu, placeOrder, fetchUserOrders, fetchFavorites, vendorLogin, updateMenu, markOrderReady, fetchAnalytics, submitRating } from "./api";
 import Menu from "./components/Menu";
@@ -82,6 +83,18 @@ function App() {
     const handler = () => loadMenu();
     window.addEventListener('menu:updated', handler);
     return () => window.removeEventListener('menu:updated', handler);
+  }, []);
+
+  // Global navigation events from child components (e.g., AdminDashboard)
+  useEffect(() => {
+    const navHandler = (e) => {
+      const target = e?.detail?.to || 'menu-editor';
+      const itemId = e?.detail?.itemId || null;
+      if (itemId) setTargetItemId(itemId);
+      setView(target);
+    };
+    window.addEventListener('navigate:menu-editor', navHandler);
+    return () => window.removeEventListener('navigate:menu-editor', navHandler);
   }, []);
 
   // When vendor logs in, force selectedShop to their shop
@@ -364,6 +377,7 @@ function App() {
   const handleLogin = (token) => {
     setVendorToken(token);
     setView("dashboard");
+    try { localStorage.removeItem('vendorSoundFirstLoginDone'); } catch {}
     toast.success("Vendor logged in successfully!");
   };
 
@@ -410,7 +424,7 @@ function App() {
             </div>
 
             {view === "menu-editor" && (
-              <MenuEditor token={vendorToken} menu={menu} onUpdate={loadMenu} />
+              <MenuEditor token={vendorToken} menu={menu} onUpdate={loadMenu} targetItemId={targetItemId} />
             )}
             {view === "dashboard" && <AdminDashboard token={vendorToken} />}
             {view === "analytics" && <Analytics token={vendorToken} />}
@@ -430,6 +444,7 @@ function App() {
                     userId={"Vendor Preview"}
                     hideFavorites={true}
                     hideShopSelector={true}
+                    showInventory={true}
                   />
                 </div>
                 {/* Read-only user view for vendor: no cart, no order summary */}

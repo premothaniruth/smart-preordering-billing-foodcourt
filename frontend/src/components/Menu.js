@@ -20,10 +20,11 @@ import { toast } from "react-toastify";
  *  onFavoriteToggle: ()=>void,
  *  userId: string,
  *  hideFavorites?: boolean,
- *  hideShopSelector?: boolean
+ *  hideShopSelector?: boolean,
+ *  showInventory?: boolean
  * }} props
  */
-const Menu = ({ menu, addToCart, cart, incItemNoOption, decItemNoOption, incItemVariant = () => {}, decItemVariant = () => {}, selectedShop, setSelectedShop, favorites, onFavoriteToggle, userId, hideFavorites, hideShopSelector }) => {
+const Menu = ({ menu, addToCart, cart = [], incItemNoOption, decItemNoOption, incItemVariant, decItemVariant, selectedShop, setSelectedShop, favorites = [], onFavoriteToggle, userId, hideFavorites = false, hideShopSelector = false, showInventory = false }) => {
   const [dietFilter, setDietFilter] = useState("all");
   const [showOptionsModal, setShowOptionsModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
@@ -159,7 +160,9 @@ const Menu = ({ menu, addToCart, cart, incItemNoOption, decItemNoOption, incItem
           </div>
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 8 }}>
             <span style={{ fontSize: "11px", color: "#666" }}>⏱️ {item.prepTime || 5} mins prep time</span>
-            <span style={{ fontSize: 11, color: remaining === 0 ? '#e74c3c' : '#666' }}>Inv: {remaining}/{inventory}</span>
+            {showInventory && (
+              <span style={{ fontSize: 11, color: remaining === 0 ? '#e74c3c' : '#666' }}>Inv: {remaining}/{inventory}</span>
+            )}
           </div>
           {item.hasOptions && (
             <div style={{ fontSize: "11px", color: "#666", marginBottom: 4 }}>

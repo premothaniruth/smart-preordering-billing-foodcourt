@@ -64,19 +64,22 @@ const MenuEditor = ({ token, menu, onUpdate }) => {
     setItems(next);
   };
 
-  const handleRestockAll = () => {
-    const ok = window.confirm("Restock all items to 100? This will overwrite current inventory counts.");
-    if (!ok) return;
-    setItems(prev => prev.map(it => ({ ...it, inventory: 100 })));
-  };
+  const [restockValue, setRestockValue] = useState(100);
 
-  const handleRestockLow = () => {
+  const applyRestockLow = () => {
     const lowCount = items.filter(it => Number(it.inventory ?? 0) <= Number(lowThreshold)).length;
     if (lowCount === 0) { toast.info('No low-stock items to restock'); return; }
-    const ok = window.confirm(`Restock ${lowCount} low-stock items (≤ ${lowThreshold}) to 100?`);
+    const ok = window.confirm(`Set inventory to ${restockValue} for ${lowCount} low-stock items (≤ ${lowThreshold})?`);
     if (!ok) return;
-    setItems(prev => prev.map(it => (Number(it.inventory ?? 0) <= Number(lowThreshold) ? { ...it, inventory: 100 } : it)));
-    toast.success('Updated low-stock items to 100. Click Save Changes to persist.');
+    setItems(prev => prev.map(it => (Number(it.inventory ?? 0) <= Number(lowThreshold) ? { ...it, inventory: Number(restockValue) || 0 } : it)));
+    toast.success('Updated low-stock items. Click Save Changes to persist.');
+  };
+
+  const applyRestockAll = () => {
+    const ok = window.confirm(`Set inventory to ${restockValue} for all items?`);
+    if (!ok) return;
+    setItems(prev => prev.map(it => ({ ...it, inventory: Number(restockValue) || 0 })));
+    toast.success('Updated all items. Click Save Changes to persist.');
   };
 
   // Persist changes to backend
@@ -122,12 +125,12 @@ const MenuEditor = ({ token, menu, onUpdate }) => {
       )}
       <div style={{ display: 'flex', gap: 10, marginBottom: 15, flexWrap: 'wrap', alignItems: 'center' }}>
         <button onClick={handleAdd}>+ Add New Item</button>
-        <button onClick={handleRestockAll} style={{ background: '#2c3e50', color: '#fff' }}>Restock all to 100</button>
+        <span style={{ fontSize: 12, color: '#777' }}>Restock to</span>
+        <input type="number" min="0" value={restockValue} onChange={(e)=>setRestockValue(Number(e.target.value)||0)} style={{ width: 100 }} />
         <span style={{ fontSize: 12, color: '#777' }}>Low threshold</span>
         <input type="number" min="0" value={lowThreshold} onChange={(e)=>setLowThreshold(Number(e.target.value)||0)} style={{ width: 80 }} />
-        <button onClick={handleRestockLow}>
-          Restock low to 100
-        </button>
+        <button onClick={applyRestockLow}>Restock low</button>
+        <button onClick={applyRestockAll}>Restock all</button>
       </div>
       
       {displayItems.map(({ it, idx }) => (
