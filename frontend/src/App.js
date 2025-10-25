@@ -64,8 +64,7 @@ function App() {
       const idx = prev.findIndex((c) => 
         c.item.id === item.id && 
         c.shopId === shopId && 
-        c.item.selectedOption?.name === selectedOption?.name &&
-        JSON.stringify(c.item.customization) === JSON.stringify(customization)
+        c.item.selectedOption?.name === selectedOption?.name
       );
       if (idx >= 0) {
         const newCart = [...prev];
@@ -144,9 +143,13 @@ function App() {
   const handleReorder = (order) => {
     setCart([]);
     order.items.forEach(item => {
+      // Find the menu item
       const menuItem = menu.flatMap(s => s.items).find(i => i.id === item.id);
       if (menuItem) {
-        addToCart(menuItem, order.shopId, item.option ? { name: item.option, priceModifier: 0 } : null, item.customization || {});
+        // Prepare option object if it exists
+        const option = item.option ? { name: item.option, priceModifier: 0 } : null;
+        // Use empty customization object
+        addToCart(menuItem, order.shopId, option, {});
       }
     });
     setView("user");
@@ -225,7 +228,6 @@ function App() {
                         {orderSummary.items.map((item, idx) => (
                           <li key={idx} style={{ fontSize: 13, marginBottom: 4 }}>
                             {item.name} {item.option && `(${item.option})`} x{item.quantity} - ₹{item.price * item.quantity}
-                            {item.customization?.notes && <div style={{ fontSize: 11, color: "#666" }}>Note: {item.customization.notes}</div>}
                           </li>
                         ))}
                       </ul>
@@ -281,7 +283,6 @@ function App() {
                           {orderSummary.items.map((item, idx) => (
                             <li key={idx} style={{ fontSize: 13, marginBottom: 4 }}>
                               {item.name} {item.option && `(${item.option})`} x{item.quantity} - ₹{item.price * item.quantity}
-                              {item.customization?.notes && <div style={{ fontSize: 11, color: "#666" }}>Note: {item.customization.notes}</div>}
                             </li>
                           ))}
                         </ul>
@@ -292,7 +293,14 @@ function App() {
                 </div>
               </>
             )}
-            {view === "login" && <Login onLogin={handleLogin} />}
+            {view === "login" && (
+              <>
+                <button onClick={() => setView("user")} style={{ marginBottom: 15 }}>
+                  ← Back to Menu
+                </button>
+                <Login onLogin={handleLogin} />
+              </>
+            )}
             {view === "orders" && (
               <OrderHistory 
                 orders={userOrders} 

@@ -720,18 +720,24 @@ form button {
   position: absolute;
   top: 8px;
   right: 8px;
-  background: rgba(255, 255, 255, 0.95);
+  background: transparent;  /* Changed from white background */
   border: none;
-  border-radius: 50%;
-  width: 32px;
-  height: 32px;
+  border-radius: 0;  /* Remove circular shape */
+  width: auto;
+  height: auto;
   cursor: pointer;
-  font-size: 18px;
+  font-size: 24px;  /* Larger heart icon */
   display: flex;
   align-items: center;
   justify-content: center;
   transition: transform 0.2s;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: none;  /* Remove shadow */
+  padding: 4px;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));  /* Add shadow to icon itself */
+}
+
+.favorite-btn:hover {
+  transform: scale(1.2);
 }
 
 .favorite-btn:hover {
@@ -812,7 +818,7 @@ textarea:focus-visible {
   }
 }
 
-/* Dark mode support (optional) */
+/* Dark mode support (optional -disabled)
 @media (prefers-color-scheme: dark) {
   body {
     background: #1a1a1a;
@@ -842,6 +848,7 @@ textarea:focus-visible {
     border-color: #444;
   }
 }
+ */
 
 /* ===== PRINT STYLES ===== */
 @media print {

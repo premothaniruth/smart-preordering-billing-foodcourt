@@ -178,5 +178,33 @@
     "createdAt": "2025-10-25T05:25:36.109Z",
     "billingId": "00003",
     "estimatedReadyTime": "2025-10-25T05:26:36.109Z"
+  },
+  {
+    "id": 11,
+    "items": [
+      {
+        "id": 3,
+        "name": "Butter Chicken",
+        "price": 150,
+        "quantity": 1,
+        "option": null,
+        "customization": {
+          "spiceLevel": "medium",
+          "oilLevel": "medium",
+          "notes": ""
+        },
+        "prepTime": 20
+      }
+    ],
+    "shopId": 1,
+    "user": "Employee XYZ",
+    "scheduledTime": null,
+    "status": "pending",
+    "createdAt": "2025-10-25T06:13:16.885Z",
+    "billingId": "00004",
+    "estimatedReadyTime": "2025-10-25T06:49:16.885Z",
+    "prepTime": 36,
+    "rating": null,
+    "feedback": null
   }
 ]

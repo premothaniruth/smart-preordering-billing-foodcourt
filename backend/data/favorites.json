@@ -1,1 +1,10 @@
-[]
+[
+  {
+    "userId": "Employee XYZ",
+    "itemId": 3
+  },
+  {
+    "userId": "Employee XYZ",
+    "itemId": 16
+  }
+]

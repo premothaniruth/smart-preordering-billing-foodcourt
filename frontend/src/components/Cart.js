@@ -1,8 +1,22 @@
-import React from "react";
+import React, { useState } from "react";
 
 const Cart = ({ cart, removeFromCart, decrementFromCart, incrementFromCart, scheduledTime, setScheduledTime, onPayment }) => {
+  const [customNotes, setCustomNotes] = useState("");
+  
   const total = cart.reduce((sum, c) => sum + c.item.finalPrice * c.quantity, 0);
   const totalPrepTime = cart.reduce((sum, c) => sum + (c.item.prepTime || 5) * c.quantity, 0);
+
+  const handlePayment = () => {
+    // Add custom notes to the first item or create a general note
+    if (cart.length > 0 && customNotes) {
+      cart[0].item.customization = {
+        ...cart[0].item.customization,
+        notes: customNotes
+      };
+    }
+    onPayment();
+    setCustomNotes("");
+  };
 
   return (
     <div>
@@ -16,19 +30,6 @@ const Cart = ({ cart, removeFromCart, decrementFromCart, incrementFromCart, sche
               {c.item.selectedOption && (
                 <div style={{ fontSize: 11, color: "#666" }}>
                   Variant: {c.item.selectedOption.name}
-                </div>
-              )}
-              {c.item.customization && (
-                <div style={{ fontSize: 10, color: "#666", marginTop: 2 }}>
-                  {c.item.customization.spiceLevel !== "medium" && (
-                    <div>🌶️ {c.item.customization.spiceLevel.replace("-", " ")}</div>
-                  )}
-                  {c.item.customization.oilLevel !== "medium" && (
-                    <div>🫒 {c.item.customization.oilLevel.replace("-", " ")}</div>
-                  )}
-                  {c.item.customization.notes && (
-                    <div>📝 {c.item.customization.notes.substring(0, 30)}{c.item.customization.notes.length > 30 ? "..." : ""}</div>
-                  )}
                 </div>
               )}
               <div style={{ fontSize: 12, color: "#666", marginTop: 4 }}>
@@ -78,6 +79,26 @@ const Cart = ({ cart, removeFromCart, decrementFromCart, incrementFromCart, sche
               <span>₹{total}</span>
             </div>
           </div>
+
+          <div style={{ marginTop: 15 }}>
+            <label style={{ fontSize: "12px", fontWeight: "bold", display: "block", marginBottom: 5 }}>
+              Special Instructions for All Items (Optional):
+            </label>
+            <textarea 
+              value={customNotes}
+              onChange={(e) => setCustomNotes(e.target.value)}
+              placeholder="E.g., Less spicy, no onions, extra garnish, less oil..."
+              style={{ 
+                width: "100%", 
+                padding: 8, 
+                minHeight: 70, 
+                fontFamily: "inherit",
+                fontSize: 13,
+                borderRadius: 6,
+                border: "1px solid #ddd"
+              }}
+            />
+          </div>
           
           <div style={{ marginTop: 15 }}>
             <label style={{ fontSize: "12px", fontWeight: "bold" }}>Schedule for Later (optional):</label>
@@ -90,7 +111,7 @@ const Cart = ({ cart, removeFromCart, decrementFromCart, incrementFromCart, sche
           </div>
           
           <button 
-            onClick={onPayment} 
+            onClick={handlePayment} 
             style={{ width: "100%", marginTop: 15, background: "#27ae60", padding: "14px", fontSize: "16px", fontWeight: "bold" }}
           >
             Place Order (₹{total})
