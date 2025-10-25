@@ -226,7 +226,7 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
                   whiteSpace: 'nowrap'
                 }}
               >
-                {remaining === 0 ? 'Sold Out' : (
+                {stockLeft === 0 ? 'Sold Out' : (
                   <>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                       <circle cx="10" cy="20" r="1"/>
