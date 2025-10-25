@@ -559,9 +559,9 @@ function App() {
                                 <span
                                   role="button"
                                   onClick={() => { fetchUserOrders(userId).then(setUserOrders); setView("orders"); }}
-                                  style={{ cursor: 'pointer', color: '#2c3e50', textDecoration: 'underline', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                                  style={{ cursor: 'pointer', color: '#2c3e50', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
                                 >
-                                  View recent orders <span aria-hidden>→</span>
+                                  View recent orders
                                 </span>
                               </div>
                             )}

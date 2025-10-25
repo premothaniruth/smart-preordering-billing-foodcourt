@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import PropTypes from "prop-types";
 import { employeeRequestOtp, employeeVerifyOtp } from "../api";
 import { toast } from "react-toastify";
@@ -14,6 +14,41 @@ const EmployeeLogin = ({ onSuccess }) => {
   const [mobile, setMobile] = useState("");
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
+  const [recent, setRecent] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('employeeRecentMobiles');
+      const arr = raw ? JSON.parse(raw) : [];
+      if (Array.isArray(arr)) setRecent(arr.filter(Boolean));
+    } catch {}
+  }, []);
+
+  const rememberMobile = (num) => {
+    try {
+      const raw = localStorage.getItem('employeeRecentMobiles');
+      const arr = raw ? JSON.parse(raw) : [];
+      const next = [num, ...arr.filter(x => x !== num)].slice(0, 5);
+      localStorage.setItem('employeeRecentMobiles', JSON.stringify(next));
+      setRecent(next);
+    } catch {}
+  };
+
+  const maskMobile = (num) => {
+    if (!num) return '';
+    const s = String(num).replace(/\D/g, '');
+    if (s.length <= 4) return s.padStart(s.length, '*');
+    const first = s.slice(0, 3);
+    const last = s.slice(-3);
+    return `${first}****${last}`; // e.g., 987****321
+  };
+
+  const clearSuggestions = () => {
+    try { localStorage.removeItem('employeeRecentMobiles'); } catch {}
+    setRecent([]);
+  };
 
   // Request OTP for entered mobile
   const requestOtp = async (e) => {
@@ -42,6 +77,7 @@ const EmployeeLogin = ({ onSuccess }) => {
       const res = await employeeVerifyOtp(mobile, otp);
       if (res.status === "ok" && res.token) {
         toast.success("Logged in");
+        rememberMobile(res.mobile || mobile);
         onSuccess({ token: res.token, mobile: res.mobile });
       } else {
         toast.error(res.message || "Invalid OTP");
@@ -58,13 +94,35 @@ const EmployeeLogin = ({ onSuccess }) => {
       {step === "mobile" && (
         <form onSubmit={requestOtp}>
           <h2>Employee Login</h2>
-          <input
-            placeholder="Mobile Number"
-            value={mobile}
-            onChange={(e) => setMobile(e.target.value.replace(/[^0-9]/g, ""))}
-            maxLength={10}
-            required
-          />
+          <div style={{ position:'relative' }}>
+            <input
+              ref={inputRef}
+              placeholder="Mobile Number"
+              value={mobile}
+              onChange={(e) => setMobile(e.target.value.replace(/[^0-9]/g, ""))}
+              onFocus={() => setShowSuggestions(true)}
+              onBlur={() => setTimeout(()=>setShowSuggestions(false), 120)}
+              maxLength={10}
+              required
+            />
+            {showSuggestions && recent.length > 0 && (
+              <div style={{ position:'absolute', top:'100%', left:0, right:0, background:'#fff', border:'1px solid #ddd', borderRadius:6, marginTop:4, zIndex:10, overflow:'hidden' }}>
+                {recent.map((num, idx) => (
+                  <div
+                    key={idx}
+                    onMouseDown={(e)=>{ e.preventDefault(); setMobile(num); setShowSuggestions(false); inputRef.current && inputRef.current.blur(); }}
+                    style={{ padding:'8px 10px', cursor:'pointer', fontSize:14, display:'flex', justifyContent:'space-between', alignItems:'center' }}
+                  >
+                    <span>📞 {maskMobile(num)}</span>
+                    <span style={{ fontSize:12, color:'#999' }}>Tap to use</span>
+                  </div>
+                ))}
+                <div style={{ borderTop:'1px solid #eee', padding:'6px 10px', textAlign:'right' }}>
+                  <button type="button" onMouseDown={(e)=>{ e.preventDefault(); clearSuggestions(); setShowSuggestions(false); }} style={{ background:'transparent', border:'none', color:'#e74c3c', cursor:'pointer', fontSize:12 }}>Clear suggestions</button>
+                </div>
+              </div>
+            )}
+          </div>
           <button type="submit" disabled={loading || mobile.length !== 10}>
             {loading ? "Sending..." : "Send OTP"}
           </button>

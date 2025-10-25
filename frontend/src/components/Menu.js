@@ -25,7 +25,7 @@ import { toast } from "react-toastify";
  * }} props
  */
 const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemNoOption = () => {}, incItemVariant = () => {}, decItemVariant = () => {}, selectedShop, setSelectedShop, favorites = [], onFavoriteToggle, userId, hideFavorites = false, hideShopSelector = false, showInventory = false }) => {
-  const [dietFilter, setDietFilter] = useState("all");
+  const [vegOnly, setVegOnly] = useState(false);
   const [showOptionsModal, setShowOptionsModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [selectedOption, setSelectedOption] = useState(null);
@@ -92,12 +92,7 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
 
   const isFavorite = (itemId) => favorites.includes(itemId);
 
-  let filteredItems = shop.items;
-  if (dietFilter === "veg") {
-    filteredItems = shop.items.filter(item => item.isVeg);
-  } else if (dietFilter === "non-veg") {
-    filteredItems = shop.items.filter(item => !item.isVeg);
-  }
+  let filteredItems = vegOnly ? shop.items.filter(item => item.isVeg) : shop.items;
 
   const favoriteItems = filteredItems.filter(item => isFavorite(item.id));
   const recommended = filteredItems.filter(item => item.isRecommended && !isFavorite(item.id));
@@ -281,22 +276,15 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
             </div>
           </div>
         )}
-        <div style={{ position:'relative', display:'inline-flex', alignItems:'center', gap:8, background:'#fff', border:'1px solid #111', borderRadius:12, padding:'6px 12px' }}>
-          <span aria-hidden>🍽️</span>
-          <select
-            value={dietFilter}
-            onChange={(e) => setDietFilter(e.target.value)}
-            style={{
-              appearance:'none', WebkitAppearance:'none', MozAppearance:'none',
-              border:'none', outline:'none', background:'transparent',
-              paddingRight:20, fontSize:14, cursor:'pointer'
-            }}
-          >
-            <option value="all">All Items</option>
-            <option value="veg">Veg Only</option>
-            <option value="non-veg">Non-Veg Only</option>
-          </select>
-          <span aria-hidden style={{ position:'absolute', right:8, pointerEvents:'none', color:'#111' }}>▾</span>
+        <div style={{ display:'inline-flex', alignItems:'center', gap:10, background:'#fff', border:'1px solid #111', borderRadius:12, padding:'6px 12px' }}>
+          <span aria-hidden title="Veg only" style={{ color:'#27ae60' }}>🌿</span>
+          <label style={{ display:'inline-flex', alignItems:'center', gap:8, cursor:'pointer' }}>
+            <span style={{ fontSize: 13 }}>Veg only</span>
+            <input type="checkbox" checked={vegOnly} onChange={(e)=>setVegOnly(e.target.checked)} style={{ display:'none' }} />
+            <span aria-hidden style={{ width:36, height:20, borderRadius:12, background: vegOnly ? '#27ae60' : '#ccc', position:'relative', transition:'all 0.2s' }}>
+              <span style={{ position:'absolute', top:2, left: vegOnly ? 18 : 2, width:16, height:16, background:'#fff', borderRadius:'50%', transition:'left 0.2s' }} />
+            </span>
+          </label>
         </div>
       </div>
 
