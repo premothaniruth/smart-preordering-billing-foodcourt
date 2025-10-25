@@ -1,11 +1,19 @@
 import React, { useState } from "react";
+import PropTypes from "prop-types";
 import { vendorLogin } from "../api";
 import { toast } from "react-toastify";
+
+/**
+ * Login
+ * Vendor login form (username/password). On success, returns JWT token via onLogin.
+ * @param {{ onLogin: (token:string)=>void }} props
+ */
 
 const Login = ({ onLogin }) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
+  // Attempt vendor login via API
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -44,6 +52,10 @@ const Login = ({ onLogin }) => {
       </form>
     </div>
   );
+};
+
+Login.propTypes = {
+  onLogin: PropTypes.func.isRequired,
 };
 
 export default Login;

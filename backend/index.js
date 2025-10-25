@@ -26,11 +26,37 @@ const ratingsFile = __dirname + "/data/ratings.json";
 const grievancesFile = __dirname + "/data/grievances.json";
 
 // Helper functions
+/**
+ * Read menu JSON from disk.
+ * @returns {Array<{shopId:string, shopName:string, items:Array}>}
+ */
 const getMenu = () => JSON.parse(fs.readFileSync(menuFile, "utf8"));
+/**
+ * Persist menu to disk.
+ * @param {any} menu - Full menu array
+ * @returns {void}
+ */
 const saveMenu = (menu) => fs.writeFileSync(menuFile, JSON.stringify(menu, null, 2));
+/**
+ * Read orders JSON from disk.
+ * @returns {Array}
+ */
 const getOrders = () => JSON.parse(fs.readFileSync(ordersFile, "utf8"));
+/**
+ * Persist orders to disk.
+ * @param {Array} orders
+ * @returns {void}
+ */
 const saveOrders = (orders) => fs.writeFileSync(ordersFile, JSON.stringify(orders, null, 2));
+/**
+ * Read vendor credentials/data.
+ * @returns {Array}
+ */
 const getVendors = () => JSON.parse(fs.readFileSync(vendorsFile, "utf8"));
+/**
+ * Read favorites from disk.
+ * @returns {Array<{userId:string,itemId:number}>}
+ */
 const getFavorites = () => {
   try {
     return JSON.parse(fs.readFileSync(favoritesFile, "utf8"));
@@ -38,7 +64,15 @@ const getFavorites = () => {
     return [];
   }
 };
+/**
+ * Persist favorites to disk.
+ * @param {Array} favorites
+ */
 const saveFavorites = (favorites) => fs.writeFileSync(favoritesFile, JSON.stringify(favorites, null, 2));
+/**
+ * Read ratings from disk.
+ * @returns {Array}
+ */
 const getRatings = () => {
   try {
     return JSON.parse(fs.readFileSync(ratingsFile, "utf8"));
@@ -46,7 +80,15 @@ const getRatings = () => {
     return [];
   }
 };
+/**
+ * Persist ratings to disk.
+ * @param {Array} ratings
+ */
 const saveRatings = (ratings) => fs.writeFileSync(ratingsFile, JSON.stringify(ratings, null, 2));
+/**
+ * Read grievances from disk.
+ * @returns {Array}
+ */
 const getGrievances = () => {
   try {
     return JSON.parse(fs.readFileSync(grievancesFile, "utf8"));
@@ -54,6 +96,10 @@ const getGrievances = () => {
     return [];
   }
 };
+/**
+ * Persist grievances to disk.
+ * @param {Array} grievances
+ */
 const saveGrievances = (grievances) => fs.writeFileSync(grievancesFile, JSON.stringify(grievances, null, 2));
 
 // In-memory stores (no database)
@@ -61,6 +107,10 @@ const employeeOtps = new Map(); // mobile -> { otp, expiresAt }
 const employeeSessions = new Map(); // token -> { mobile, createdAt }
 
 // Billing counter management
+/**
+ * Read daily billing counter (resets daily).
+ * @returns {{date:string,counter:number}}
+ */
 const getBillingCounter = () => {
   try {
     return JSON.parse(fs.readFileSync(billingCounterFile, "utf8"));
@@ -69,11 +119,19 @@ const getBillingCounter = () => {
   }
 };
 
+/**
+ * Persist billing counter to disk.
+ * @param {{date:string,counter:number}} data
+ */
 const saveBillingCounter = (data) => {
   fs.writeFileSync(billingCounterFile, JSON.stringify(data, null, 2));
 };
 
 // Generate 5-digit billing ID (resets daily)
+/**
+ * Generate a 5-digit billing ID that resets daily.
+ * @returns {string}
+ */
 const generateBillingId = () => {
   const today = new Date().toDateString();
   let billingData = getBillingCounter();
@@ -93,6 +151,12 @@ const generateBillingId = () => {
 };
 
 // Calculate preparation time based on items and current orders
+/**
+ * Calculate preparation time (mins) based on items and current queue load for a shop.
+ * @param {Array<{prepTime?:number}>} items
+ * @param {string} shopId
+ * @returns {number}
+ */
 const calculatePreparationTime = (items, shopId) => {
   const orders = getOrders();
   const pendingOrders = orders.filter(o => o.shopId === shopId && o.status === "pending").length;
@@ -104,6 +168,12 @@ const calculatePreparationTime = (items, shopId) => {
 };
 
 // Middleware: Authenticate vendor
+/**
+ * Middleware: Validates vendor JWT and enriches req.vendor.
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ * @param {Function} next
+ */
 const authenticateVendor = (req, res, next) => {
   const token = req.headers["authorization"];
   if (!token) return res.status(401).json({ message: "No token provided" });
@@ -172,6 +242,10 @@ app.post("/order/picked/:id", authenticateVendor, (req, res) => {
 // ========== PUBLIC ROUTES ==========
 
 // Get menu
+/**
+ * GET /menu
+ * Public: Returns the entire menu with shops and items.
+ */
 app.get("/menu", (req, res) => {
   try {
     const menu = getMenu();
@@ -183,6 +257,12 @@ app.get("/menu", (req, res) => {
 
 // Public: Get global feedbacks with optional filters
 // Query params: ratingMin (number), days (number)
+/**
+ * GET /feedbacks?ratingMin=&days=
+ * Public: Returns ratings with minimal order context.
+ * @query ratingMin number - minimum rating to include
+ * @query days number - only ratings within last N days
+ */
 app.get("/feedbacks", (req, res) => {
   try {
     const ratingMin = req.query.ratingMin ? Number(req.query.ratingMin) : 0;
@@ -215,6 +295,11 @@ app.get("/feedbacks", (req, res) => {
 });
 
 // Get feedbacks/ratings for vendor's shop
+/**
+ * GET /vendor/feedbacks
+ * Vendor: Returns feedbacks tied to orders from this vendor's shop.
+ * Auth: Bearer token
+ */
 app.get("/vendor/feedbacks", authenticateVendor, (req, res) => {
   try {
     const orders = getOrders();
@@ -240,6 +325,11 @@ app.get("/vendor/feedbacks", authenticateVendor, (req, res) => {
   }
 });
 // Request OTP for employee (mock: OTP logged to console)
+/**
+ * POST /employee/request-otp
+ * Public: Request OTP for employee login (demo: logs OTP to server console).
+ * @body {mobile:string}
+ */
 app.post("/employee/request-otp", (req, res) => {
   try {
     const { mobile } = req.body;
@@ -259,6 +349,11 @@ app.post("/employee/request-otp", (req, res) => {
 });
 
 // Verify OTP for employee and create in-memory session
+/**
+ * POST /employee/verify-otp
+ * Public: Verify OTP and return a session token (JWT).
+ * @body {mobile:string, otp:string}
+ */
 app.post("/employee/verify-otp", (req, res) => {
   try {
     const { mobile, otp } = req.body;
@@ -284,6 +379,12 @@ app.post("/employee/verify-otp", (req, res) => {
 });
 
 // Place order with billing ID and customization
+/**
+ * POST /order
+ * Public: Place an order.
+ * @body {items:Array,user?:string,scheduledTime?:string,shopId:string}
+ * @returns { billingId:string, orderSummary:object }
+ */
 app.post("/order", (req, res) => {
   try {
     const { items, user, scheduledTime, shopId } = req.body;
@@ -336,6 +437,10 @@ app.post("/order", (req, res) => {
 });
 
 // Get user's order history
+/**
+ * GET /orders/user/:userId
+ * Public: List orders for a user.
+ */
 app.get("/orders/user/:userId", (req, res) => {
   try {
     const orders = getOrders();
@@ -347,6 +452,11 @@ app.get("/orders/user/:userId", (req, res) => {
 });
 
 // Add/Remove favorite
+/**
+ * POST /favorites
+ * Public: Toggle favorite for a user and item.
+ * @body {userId:string,itemId:number}
+ */
 app.post("/favorites", (req, res) => {
   try {
     const { userId, itemId } = req.body;
@@ -369,6 +479,10 @@ app.post("/favorites", (req, res) => {
 });
 
 // Get user favorites
+/**
+ * GET /favorites/:userId
+ * Public: Get list of favorite itemIds for user.
+ */
 app.get("/favorites/:userId", (req, res) => {
   try {
     const favorites = getFavorites();
@@ -380,6 +494,11 @@ app.get("/favorites/:userId", (req, res) => {
 });
 
 // Submit rating and feedback
+/**
+ * POST /rating
+ * Public: Submit rating/feedback. If orderId present, stores on order too.
+ * @body {orderId?:number,rating:number,feedback?:string}
+ */
 app.post("/rating", (req, res) => {
   try {
     const { orderId, rating, feedback } = req.body;
@@ -410,6 +529,10 @@ app.post("/rating", (req, res) => {
 });
 
 // Submit grievance
+/**
+ * POST /grievance
+ * Public: Submit a complaint/grievance for follow-up.
+ */
 app.post("/grievance", (req, res) => {
   try {
     const { orderId, billingId, issueType, description, contactPreference, shopId } = req.body;
@@ -439,6 +562,11 @@ app.post("/grievance", (req, res) => {
 // ========== VENDOR ROUTES ==========
 
 // Vendor login
+/**
+ * POST /vendor/login
+ * Vendor: Authenticate vendor and return JWT.
+ * @body {username:string,password:string}
+ */
 app.post("/vendor/login", async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -477,6 +605,11 @@ app.post("/vendor/login", async (req, res) => {
 });
 
 // Update menu
+/**
+ * PUT /menu
+ * Vendor: Replace shop's menu items.
+ * Auth: Bearer token
+ */
 app.put("/menu", authenticateVendor, (req, res) => {
   try {
     const updatedItems = req.body.items;
@@ -497,6 +630,11 @@ app.put("/menu", authenticateVendor, (req, res) => {
 });
 
 // Get orders for vendor's shop
+/**
+ * GET /orders
+ * Vendor: List all orders for this vendor's shop.
+ * Auth: Bearer token
+ */
 app.get("/orders", authenticateVendor, (req, res) => {
   try {
     const orders = getOrders();
@@ -509,6 +647,10 @@ app.get("/orders", authenticateVendor, (req, res) => {
 });
 
 // Mark order as ready
+/**
+ * POST /order/ready/:id
+ * Vendor: Mark an order as ready; records readyAt timestamp.
+ */
 app.post("/order/ready/:id", authenticateVendor, (req, res) => {
   try {
     const orders = getOrders();
@@ -530,6 +672,11 @@ app.post("/order/ready/:id", authenticateVendor, (req, res) => {
 });
 
 // Extend preparation time for an order (in minutes)
+/**
+ * POST /order/extend/:id
+ * Vendor: Extend preparation time for an order in minutes; adjusts ETA.
+ * @body {addMinutes:number}
+ */
 app.post("/order/extend/:id", authenticateVendor, (req, res) => {
   try {
     const addMinutes = Number(req.body.addMinutes || 0);
@@ -560,6 +707,10 @@ app.post("/order/extend/:id", authenticateVendor, (req, res) => {
 });
 
 // Get analytics
+/**
+ * GET /analytics?period=
+ * Vendor: Returns basic KPIs and popularity for selected period.
+ */
 app.get("/analytics", authenticateVendor, (req, res) => {
   try {
     const period = (req.query.period || '').toLowerCase();
@@ -622,6 +773,10 @@ app.get("/analytics", authenticateVendor, (req, res) => {
 });
 
 // Get grievances for vendor's shop
+/**
+ * GET /grievances
+ * Vendor: List grievances for this shop.
+ */
 app.get("/grievances", authenticateVendor, (req, res) => {
   try {
     const grievances = getGrievances();
@@ -634,6 +789,10 @@ app.get("/grievances", authenticateVendor, (req, res) => {
 });
 
 // Mark grievance as resolved
+/**
+ * POST /grievance/resolve/:id
+ * Vendor: Mark a grievance as resolved.
+ */
 app.post("/grievance/resolve/:id", authenticateVendor, (req, res) => {
   try {
     const grievances = getGrievances();

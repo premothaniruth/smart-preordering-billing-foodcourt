@@ -2,6 +2,12 @@ import React, { useState, useEffect, useMemo } from "react";
 import { updateMenu } from "../api";
 import { toast } from "react-toastify";
 
+/**
+ * MenuEditor
+ * Vendor-facing editor for managing items and variants for the current shop.
+ * @param {{ token:string, menu:any[], onUpdate: ()=>void }} props
+ */
+
 const MenuEditor = ({ token, menu, onUpdate }) => {
   const decodeShopId = () => {
     try {
@@ -15,6 +21,7 @@ const MenuEditor = ({ token, menu, onUpdate }) => {
   const [selectedShop, setSelectedShop] = useState(vendorShopId);
   const [items, setItems] = useState([]);
 
+  // Sync local items when selected shop or menu changes
   useEffect(() => {
     const shop = menu.find(s => s.shopId === selectedShop);
     setItems(shop && Array.isArray(shop.items) ? shop.items : []);
@@ -23,6 +30,7 @@ const MenuEditor = ({ token, menu, onUpdate }) => {
   const original = useMemo(() => JSON.stringify(items), [selectedShop]);
   const isDirty = useMemo(() => JSON.stringify(items) !== original, [items, original]);
 
+  // Generic handler to update item fields (number/boolean coercion included)
   const handleChange = (index, field, value) => {
     const next = [...items];
     if (field === "price" || field === "prepTime" || field === "inventory") value = Number(value) || 0;
@@ -31,6 +39,7 @@ const MenuEditor = ({ token, menu, onUpdate }) => {
     setItems(next);
   };
 
+  // Add a new blank item to the top of the list
   const handleAdd = () => {
     setItems([{ 
       id: Date.now(), 
@@ -54,6 +63,7 @@ const MenuEditor = ({ token, menu, onUpdate }) => {
     setItems(next);
   };
 
+  // Persist changes to backend
   const handleSave = async () => {
     try {
       const data = await updateMenu(items, token);

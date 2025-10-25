@@ -1,5 +1,10 @@
 import React from "react";
 
+/**
+ * Payment
+ * Minimal payment stub showing schedule summary and calling onSuccess when done.
+ * @param {{ cart:any[], scheduledTime:string, onSuccess: ()=>void }} props
+ */
 const Payment = ({ cart, scheduledTime, onSuccess }) => {
   const handlePayment = () => {
     alert("Payment Successful! Order placed.");

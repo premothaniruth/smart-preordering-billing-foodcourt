@@ -1,5 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
+import PropTypes from "prop-types";
 import { fetchVendorFeedbacks, fetchPublicFeedbacks } from "../api";
+
+/**
+ * VendorFeedbacks
+ * Displays feedback list either scoped to vendor's shop or global, with paging and filters.
+ * @param {{ token:string }} props
+ */
 
 const VendorFeedbacks = ({ token }) => {
   const [feedbacks, setFeedbacks] = useState([]);
@@ -10,6 +17,7 @@ const VendorFeedbacks = ({ token }) => {
   const [page, setPage] = useState(1);
   const pageSize = 10;
 
+  // load list depending on view and filters
   useEffect(() => {
     setLoading(true);
     const load = async () => {
@@ -90,3 +98,6 @@ const VendorFeedbacks = ({ token }) => {
 };
 
 export default VendorFeedbacks;
+VendorFeedbacks.propTypes = {
+  token: PropTypes.string.isRequired,
+};

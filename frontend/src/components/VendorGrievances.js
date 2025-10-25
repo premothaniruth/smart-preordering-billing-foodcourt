@@ -1,9 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { fetchGrievances } from "../api";
 
+/**
+ * VendorGrievances
+ * Vendor view of customer grievances with auto-refresh and resolve action.
+ * @param {{ token:string }} props
+ */
 const VendorGrievances = ({ token }) => {
   const [grievances, setGrievances] = useState([]);
 
+  // auto-refresh grievances periodically
   useEffect(() => {
     loadGrievances();
     const interval = setInterval(loadGrievances, 10000);
@@ -14,6 +20,7 @@ const VendorGrievances = ({ token }) => {
     fetchGrievances(token).then(setGrievances);
   };
 
+  // resolve by calling endpoint and reloading
   const handleResolve = async (id) => {
     try {
       const res = await fetch(`http://localhost:3001/grievance/resolve/${id}`, {

@@ -1,11 +1,18 @@
 import React, { useEffect, useState } from "react";
+import PropTypes from "prop-types";
 import { fetchAnalytics } from "../api";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from "recharts";
 
+/**
+ * Analytics
+ * Vendor analytics dashboard: KPIs, breakdown, and top items chart.
+ * @param {{ token:string }} props
+ */
 const Analytics = ({ token }) => {
   const [data, setData] = useState({ totalOrders: 0, totalItems: 0, popularItems: [], breakdown: { daily: 0, monthly: 0, quarterly: 0, yearly: 0 }, avgRating: 0, totalRatings: 0 });
   const [period, setPeriod] = useState("daily");
 
+  // fetch analytics when token/period changes
   useEffect(() => {
     fetchAnalytics(token, period).then(setData);
   }, [token, period]);
@@ -55,6 +62,10 @@ const Analytics = ({ token }) => {
       </div>
     </div>
   );
+};
+
+Analytics.propTypes = {
+  token: PropTypes.string.isRequired,
 };
 
 export default Analytics;

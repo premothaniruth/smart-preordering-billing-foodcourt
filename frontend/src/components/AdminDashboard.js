@@ -1,6 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { fetchOrders, markOrderReady, fetchMenu, extendOrderPrep, markOrderPicked, revokeOrderExtension } from "../api";
 
+/**
+ * AdminDashboard
+ * Displays vendor's live orders with tabs (Current/Ready/Completed), sorting and actions.
+ * @param {{ token: string }} props
+ */
+
 const AdminDashboard = ({ token }) => {
   const [orders, setOrders] = useState([]);
   const [menu, setMenu] = useState([]);
@@ -29,6 +35,7 @@ const AdminDashboard = ({ token }) => {
     return () => clearInterval(t);
   }, []);
 
+  // compute remaining ms to ETA; negative means overdue
   const remainingTime = (o) => {
     if (!o.estimatedReadyTime) return null;
     const now = Date.now();
@@ -79,6 +86,7 @@ const AdminDashboard = ({ token }) => {
     markOrderReady(id, token).then(() => loadOrders());
   };
 
+  // derive visible orders based on current tab with sort priorities
   const visibleOrders = useMemo(() => {
     const list = orders.slice();
     if (tab === 'current') {
@@ -254,6 +262,11 @@ const AdminDashboard = ({ token }) => {
   );
 };
 
+/**
+ * ExtendControl
+ * Quick control to extend an order's prep time in minutes.
+ * @param {{ order: any, token: string, onExtended?: ()=>void }} props
+ */
 const ExtendControl = ({ order, token, onExtended }) => {
   const [mins, setMins] = useState(5);
   const [loading, setLoading] = useState(false);

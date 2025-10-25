@@ -1,6 +1,13 @@
 import React, { useState } from "react";
+import PropTypes from "prop-types";
 import { employeeRequestOtp, employeeVerifyOtp } from "../api";
 import { toast } from "react-toastify";
+
+/**
+ * EmployeeLogin
+ * Two-step OTP flow for employee authentication.
+ * @param {{ onSuccess: ({token:string, mobile:string})=>void }} props
+ */
 
 const EmployeeLogin = ({ onSuccess }) => {
   const [step, setStep] = useState("mobile");
@@ -8,6 +15,7 @@ const EmployeeLogin = ({ onSuccess }) => {
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Request OTP for entered mobile
   const requestOtp = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -26,6 +34,7 @@ const EmployeeLogin = ({ onSuccess }) => {
     }
   };
 
+  // Verify the OTP and return session to parent via onSuccess
   const verifyOtp = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -85,3 +94,6 @@ const EmployeeLogin = ({ onSuccess }) => {
 };
 
 export default EmployeeLogin;
+EmployeeLogin.propTypes = {
+  onSuccess: PropTypes.func.isRequired,
+};

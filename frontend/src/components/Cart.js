@@ -1,11 +1,26 @@
 import React, { useState } from "react";
 
+/**
+ * Cart
+ * Displays cart lines with quantity steppers, notes, schedule time, and place-order action.
+ * @param {{
+ *  cart: Array,
+ *  removeFromCart: (index:number)=>void,
+ *  decrementFromCart: (index:number)=>void,
+ *  incrementFromCart: (index:number)=>void,
+ *  scheduledTime: string,
+ *  setScheduledTime: (iso:string)=>void,
+ *  onPayment: ()=>void
+ * }} props
+ */
+
 const Cart = ({ cart, removeFromCart, decrementFromCart, incrementFromCart, scheduledTime, setScheduledTime, onPayment }) => {
   const [customNotes, setCustomNotes] = useState("");
   
   const total = cart.reduce((sum, c) => sum + c.item.finalPrice * c.quantity, 0);
   const totalPrepTime = cart.reduce((sum, c) => sum + (c.item.prepTime || 5) * c.quantity, 0);
 
+  // Attach custom notes to the first item (simple demo) and trigger payment
   const handlePayment = () => {
     // Add custom notes to the first item or create a general note
     if (cart.length > 0 && customNotes) {
@@ -100,6 +115,7 @@ const Cart = ({ cart, removeFromCart, decrementFromCart, incrementFromCart, sche
             />
           </div>
           
+          {/* Optional later schedule for pickup */}
           <div style={{ marginTop: 15 }}>
             <label style={{ fontSize: "12px", fontWeight: "bold" }}>Schedule for Later (optional):</label>
             <input 

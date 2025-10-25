@@ -2,11 +2,17 @@ import React, { useState } from "react";
 import { submitRating } from "../api";
 import { toast } from "react-toastify";
 
+/**
+ * RatingModal
+ * Standalone modal for rating a specific order.
+ * @param {{ orderId:number, onClose: ()=>void }} props
+ */
 const RatingModal = ({ orderId, onClose }) => {
   const [rating, setRating] = useState(0);
   const [feedback, setFeedback] = useState("");
   const [hoveredRating, setHoveredRating] = useState(0);
 
+  // submit to backend, then close
   const handleSubmit = async () => {
     if (rating === 0) {
       toast.error("Please select a rating");

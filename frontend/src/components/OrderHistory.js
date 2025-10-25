@@ -1,6 +1,20 @@
 import React, { useMemo, useState } from "react";
 import { submitRating } from "../api";
 
+/**
+ * OrderHistory
+ * Categorizes orders for the employee view and supports rating and reorders.
+ * Sections: Ready to Pick, Recent Orders, Completed Orders (with toggle for older).
+ * Shows delivery time and an early-delivery encouragement note.
+ * @param {{
+ *  orders: any[],
+ *  onReorder: (order:any)=>void,
+ *  onBack: ()=>void,
+ *  onClearHistory: ()=>void,
+ *  onReportIssue: (order:any)=>void,
+ * }} props
+ */
+
 const OrderHistory = ({ orders, onReorder, onBack, onClearHistory, onReportIssue }) => {
   const byCreatedDesc = (a, b) => new Date(b.createdAt) - new Date(a.createdAt);
   const readyOrders = useMemo(() => orders.filter(o => o.status === 'ready').sort(byCreatedDesc), [orders]);

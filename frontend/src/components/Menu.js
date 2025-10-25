@@ -2,6 +2,27 @@ import React, { useState } from "react";
 import { toggleFavorite } from "../api";
 import { toast } from "react-toastify";
 
+/**
+ * Menu
+ * Renders the user menu: sections, item cards, and variant selection modal.
+ * Keeps per-item variant selections in a draft until checkout.
+ * @param {{
+ *  menu: Array,
+ *  addToCart: (item:any, shopId:number, selectedOption?:any, customization?:any)=>void,
+ *  cart: Array,
+ *  incItemNoOption?: (item:any, shopId:number)=>void,
+ *  decItemNoOption?: (item:any, shopId:number)=>void,
+ *  incItemVariant?: (item:any, shopId:number, option:any)=>void,
+ *  decItemVariant?: (item:any, shopId:number, option:any)=>void,
+ *  selectedShop: number,
+ *  setSelectedShop: (shopId:number)=>void,
+ *  favorites: number[],
+ *  onFavoriteToggle: ()=>void,
+ *  userId: string,
+ *  hideFavorites?: boolean,
+ *  hideShopSelector?: boolean
+ * }} props
+ */
 const Menu = ({ menu, addToCart, cart, incItemNoOption, decItemNoOption, incItemVariant = () => {}, decItemVariant = () => {}, selectedShop, setSelectedShop, favorites, onFavoriteToggle, userId, hideFavorites, hideShopSelector }) => {
   const [dietFilter, setDietFilter] = useState("all");
   const [showOptionsModal, setShowOptionsModal] = useState(false);
@@ -15,6 +36,7 @@ const Menu = ({ menu, addToCart, cart, incItemNoOption, decItemNoOption, incItem
   const shop = menu.find((s) => s.shopId === selectedShop);
   if (!shop) return <p>Shop not found.</p>;
 
+  // Open modal for variant items; otherwise add immediately
   const handleAddClick = (item) => {
     setSelectedItem(item);
     
@@ -47,6 +69,7 @@ const Menu = ({ menu, addToCart, cart, incItemNoOption, decItemNoOption, incItem
     }
   };
 
+  // Toggle favorite state (uses backend), stops card click propagation
   const handleFavoriteClick = async (itemId, e) => {
     e.stopPropagation();
     try {
@@ -72,12 +95,14 @@ const Menu = ({ menu, addToCart, cart, incItemNoOption, decItemNoOption, incItem
   const hotSellers = filteredItems.filter(item => item.isHotSeller && !item.isRecommended && !isFavorite(item.id));
   const regularItems = filteredItems.filter(item => !item.isRecommended && !item.isHotSeller && !isFavorite(item.id));
 
+  // total qty of this item across all variants for selected shop
   const qtyInCart = (item) => {
     return cart
       .filter(c => c.shopId === selectedShop && c.item.id === item.id)
       .reduce((sum, c) => sum + c.quantity, 0);
   };
 
+  // qty for this item without any selected option
   const qtyNoOption = (item) => {
     const entry = cart.find(c => c.shopId === selectedShop && c.item.id === item.id && !c.item.selectedOption);
     return entry ? entry.quantity : 0;
@@ -240,7 +265,7 @@ const Menu = ({ menu, addToCart, cart, incItemNoOption, decItemNoOption, incItem
         <p className="empty-state">No items match the selected filter.</p>
       )}
 
-      {/* Options Modal Only */}
+      {/* Options Modal with multi-variant selection and per-variant steppers */}
       {showOptionsModal && selectedItem && (
         <div className="modal-overlay" onClick={() => setShowOptionsModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>

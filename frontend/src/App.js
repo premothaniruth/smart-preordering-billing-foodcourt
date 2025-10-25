@@ -19,6 +19,26 @@ import "react-toastify/dist/ReactToastify.css";
 const ORDER_PLACED_SOUND = "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBDWM0/K/gC4EH29+3WgyBCk4XoCWJhcBTnLcWswB";
 const READY_SOUND = "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBDWM0/K/gC4EH29+3WgyBCk4XoCWJhcBTnLcWswB";
 
+/**
+ * App
+ * Root component orchestrating vendor and employee views.
+ * Manages menu, cart, authentication, orders, notifications, and routing-like view state.
+ *
+ * Sections
+ * - State: menu, cart, auth tokens, selected shop, employee mobile, view, favorites, orders
+ * - Refs: readyNotifiedRef (suppress repeated ready alerts), etaNotifiedRef (eta change notices), readySeededRef
+ * - Effects:
+ *   - loadMenu on mount
+ *   - vendorShopId -> setSelectedShop
+ *   - userId -> loadFavorites
+ *   - employee polling -> ready alerts and ETA updates
+ * - Helpers:
+ *   - Cart helpers (add/remove/inc/dec per variant or no-option)
+ *   - Sound playback, favorites load
+ * - Views:
+ *   - Vendor: dashboard | menu-editor | analytics | feedbacks | grievances | user (preview)
+ *   - Employee: user (menu+cart), login, orders (history with actions)
+ */
 function App() {
   const [menu, setMenu] = useState([]);
   const [cart, setCart] = useState([]);
@@ -119,6 +139,7 @@ function App() {
     return () => clearInterval(id);
   }, [employeeToken, userId]);
 
+  /** Load all shops and their items */
   const loadMenu = () => {
     fetchMenu().then((data) => {
       setMenu(data);
@@ -126,6 +147,7 @@ function App() {
     });
   };
 
+  /** Load favorites for current user (employee) */
   const loadFavorites = () => {
     if (!userId) return;
     fetchFavorites(userId).then(setFavorites);
@@ -136,6 +158,10 @@ function App() {
     audio.play().catch(err => console.log("Audio play failed:", err));
   };
 
+  /**
+   * Add one unit of an item (optionally with variant) to the cart.
+   * Merges with existing line if same item+shop+variant exists.
+   */
   const addToCart = (item, shopId, selectedOption = null, customization = {}) => {
     const cartItem = {
       ...item,
@@ -161,6 +187,7 @@ function App() {
     });
   };
 
+  /** Decrement one unit from a cart line by index (remove when qty hits zero) */
   const decrementFromCart = (index) => {
     setCart((prev) => {
       const item = prev[index];
@@ -172,10 +199,12 @@ function App() {
     });
   };
 
+  /** Remove a cart line entirely */
   const removeFromCart = (index) => {
     setCart((prev) => prev.filter((_, i) => i !== index));
   };
 
+  /** Increment a cart line by index */
   const incrementFromCart = (index) => {
     setCart((prev) => {
       const newCart = [...prev];
@@ -185,6 +214,7 @@ function App() {
   };
 
   // Helpers for items without options: adjust by item+shop
+  /** Increase qty in cart for non-variant item (by item+shop) */
   const incItemNoOption = (item, shopId) => {
     setCart((prev) => {
       const idx = prev.findIndex((c) => c.item.id === item.id && c.shopId === shopId && !c.item.selectedOption);
@@ -198,6 +228,7 @@ function App() {
     });
   };
 
+  /** Decrease qty in cart for non-variant item (by item+shop) */
   const decItemNoOption = (item, shopId) => {
     setCart((prev) => {
       const idx = prev.findIndex((c) => c.item.id === item.id && c.shopId === shopId && !c.item.selectedOption);
@@ -213,6 +244,7 @@ function App() {
   };
 
   // Helpers for items with variants (options)
+  /** Increase qty for a specific item variant (by item+shop+option) */
   const incItemVariant = (item, shopId, option) => {
     setCart((prev) => {
       const idx = prev.findIndex((c) => c.item.id === item.id && c.shopId === shopId && c.item.selectedOption?.name === option?.name);
@@ -226,6 +258,7 @@ function App() {
     });
   };
 
+  /** Decrease qty for a specific item variant (by item+shop+option) */
   const decItemVariant = (item, shopId, option) => {
     setCart((prev) => {
       const idx = prev.findIndex((c) => c.item.id === item.id && c.shopId === shopId && c.item.selectedOption?.name === option?.name);
