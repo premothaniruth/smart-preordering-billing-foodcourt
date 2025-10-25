@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { clickSpark } from "../utils/clickSpark";
 import { toggleFavorite } from "../api";
 import { toast } from "react-toastify";
 
@@ -39,7 +38,7 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
   if (!shop) return <p>Shop not found.</p>;
 
   // Open modal for variant items; otherwise add immediately
-  const handleAddClick = (item, e) => {
+  const handleAddClick = (item) => {
     setSelectedItem(item);
     
     // Inventory guard
@@ -64,7 +63,6 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
       setShowOptionsModal(true);
     } else {
       // Add directly without customization modal
-      try { if (e) clickSpark(e); } catch {}
       addToCart(item, selectedShop, null, {});
       toast.success(`${item.name} added to cart!`);
     }
@@ -195,15 +193,14 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
               <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                 <button
                   className="icon-btn"
-                  onClick={(e) => { try { clickSpark(e); } catch {}; decItemNoOption(item, selectedShop); }}
+                  onClick={() => decItemNoOption(item, selectedShop)}
                   style={{ width: 32, height: 32, background: '#fff', color: '#111', border: '1px solid #111', borderRadius: 6 }}
                 >−</button>
                 <span style={{ minWidth: 24, textAlign: 'center', fontWeight: 700 }}>{thisQty}</span>
                 <button
                   className="icon-btn"
-                  onClick={(e) => {
+                  onClick={() => {
                     if (cartRemaining <= 0) { toast.error('No more items available to order'); return; }
-                    try { clickSpark(e); } catch {}
                     incItemNoOption(item, selectedShop);
                   }}
                   disabled={cartRemaining <= 0}
@@ -213,7 +210,7 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
             ) : (
               <button 
                 className="icon-btn" 
-                onClick={(e) => handleAddClick(item, e)}
+                onClick={() => handleAddClick(item)}
                 disabled={!item.available || cartRemaining <= 0}
                 style={{
                   width: "100%",
