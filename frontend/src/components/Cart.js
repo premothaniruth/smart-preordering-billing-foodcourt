@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 /**
  * Cart
@@ -16,6 +16,57 @@ import React, { useState } from "react";
 
 const Cart = ({ cart, removeFromCart, decrementFromCart, incrementFromCart, scheduledTime, setScheduledTime, onPayment }) => {
   const [customNotes, setCustomNotes] = useState("");
+  const getTodayStr = () => {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+  const todayStr = getTodayStr();
+  const todayDisplay = (() => {
+    const [y,m,d] = todayStr.split('-');
+    return `${d}-${m}-${y}`; // dd-mm-yyyy
+  })();
+  const [scheduledDate, setScheduledDate] = useState(() => todayStr); // YYYY-MM-DD, locked to today
+  const [scheduledHM, setScheduledHM] = useState(""); // HH:MM
+  const MIN_HM = "08:00";
+  const MAX_HM = "22:00";
+
+  useEffect(() => {
+    if (!scheduledTime) { setScheduledDate(todayStr); setScheduledHM(""); return; }
+    // Expecting ISO-like 'YYYY-MM-DDTHH:MM'
+    try {
+      const [d, t] = scheduledTime.split("T");
+      setScheduledDate(d || "");
+      setScheduledHM((t || "").slice(0,5));
+    } catch {
+      setScheduledDate(""); setScheduledHM("");
+    }
+  }, [scheduledTime]);
+
+  const clampHM = (hm) => {
+    if (!hm) return hm;
+    if (hm < MIN_HM) return MIN_HM;
+    if (hm > MAX_HM) return MAX_HM;
+    return hm;
+  };
+
+  const syncScheduled = (nextDate, nextHM) => {
+    // force date to today only
+    if (nextDate && nextDate !== todayStr) nextDate = todayStr;
+    // clamp time within operational window
+    nextHM = clampHM(nextHM);
+    setScheduledDate(nextDate);
+    setScheduledHM(nextHM);
+    if (nextDate && nextHM) {
+      setScheduledTime(`${nextDate}T${nextHM}`);
+    } else if (!nextDate && !nextHM) {
+      setScheduledTime("");
+    } else {
+      // partial entry; do not update parent until both present
+    }
+  };
   
   const total = cart.reduce((sum, c) => sum + c.item.finalPrice * c.quantity, 0);
   const totalPrepTime = cart.reduce((sum, c) => sum + (c.item.prepTime || 5) * c.quantity, 0);
@@ -123,13 +174,26 @@ const Cart = ({ cart, removeFromCart, decrementFromCart, incrementFromCart, sche
           
           {/* Optional later schedule for pickup */}
           <div style={{ marginTop: 15 }}>
-            <label style={{ fontSize: "12px", fontWeight: "bold" }}>Schedule for Later (optional):</label>
-            <input 
-              type="datetime-local" 
-              value={scheduledTime} 
-              onChange={(e) => setScheduledTime(e.target.value)}
-              style={{ width: "100%", marginTop: 5 }}
-            />
+            <label style={{ fontSize: "12px", fontWeight: "bold", display:'block' }}>Schedule for Later (optional):</label>
+            <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+              <input
+                type="text"
+                value={todayDisplay}
+                readOnly
+                aria-label="Scheduled date"
+                style={{ flex:1, background:'#f8f9fa', border:'1px solid #ddd', padding:'8px 10px', borderRadius:6 }}
+              />
+              <input
+                type="time"
+                value={scheduledHM}
+                onChange={(e) => syncScheduled(scheduledDate, e.target.value)}
+                placeholder="hr-mm"
+                min={MIN_HM}
+                max={MAX_HM}
+                style={{ width: 140 }}
+              />
+            </div>
+            <div style={{ fontSize: 11, color: '#777', marginTop: 4 }}>Format: dd-mm-yyyy and hr-mm</div>
           </div>
           
           <button 
