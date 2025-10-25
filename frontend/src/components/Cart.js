@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 /**
  * Cart
@@ -33,6 +33,23 @@ const Cart = ({ cart, removeFromCart, decrementFromCart, incrementFromCart, sche
   const MIN_HM = "08:00";
   const MAX_HM = "22:00";
 
+  const slots = useMemo(() => {
+    const toMinutes = (hm) => {
+      const [h,m] = hm.split(":").map(Number);
+      return h*60 + m;
+    };
+    const fromMinutes = (t) => {
+      const h = String(Math.floor(t/60)).padStart(2,'0');
+      const m = String(t%60).padStart(2,'0');
+      return `${h}:${m}`;
+    };
+    const start = toMinutes(MIN_HM);
+    const end = toMinutes(MAX_HM);
+    const arr = [];
+    for (let t = start; t <= end; t += 5) arr.push(fromMinutes(t));
+    return arr;
+  }, []);
+
   useEffect(() => {
     if (!scheduledTime) { setScheduledDate(todayStr); setScheduledHM(""); return; }
     // Expecting ISO-like 'YYYY-MM-DDTHH:MM'
@@ -47,9 +64,17 @@ const Cart = ({ cart, removeFromCart, decrementFromCart, incrementFromCart, sche
 
   const clampHM = (hm) => {
     if (!hm) return hm;
+    // snap to nearest allowed slot within window
+    const idx = slots.indexOf(hm);
+    if (idx >= 0) return hm;
+    // round to nearest 10 and clamp
+    const [h,m] = hm.split(":").map(Number);
+    const rounded = `${String(h).padStart(2,'0')}:${String(Math.round(m/5)*5).padStart(2,'0')}`;
+    if (slots.includes(rounded)) return rounded;
     if (hm < MIN_HM) return MIN_HM;
     if (hm > MAX_HM) return MAX_HM;
-    return hm;
+    // fallback to first slot
+    return slots[0] || MIN_HM;
   };
 
   const syncScheduled = (nextDate, nextHM) => {
@@ -183,17 +208,16 @@ const Cart = ({ cart, removeFromCart, decrementFromCart, incrementFromCart, sche
                 aria-label="Scheduled date"
                 style={{ flex:1, background:'#f8f9fa', border:'1px solid #ddd', padding:'8px 10px', borderRadius:6 }}
               />
-              <input
-                type="time"
-                value={scheduledHM}
+              <select
+                value={scheduledHM || MIN_HM}
                 onChange={(e) => syncScheduled(scheduledDate, e.target.value)}
-                placeholder="hr-mm"
-                min={MIN_HM}
-                max={MAX_HM}
-                style={{ width: 140 }}
-              />
+                style={{ width: 160 }}
+              >
+                {slots.map((t) => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
             </div>
-            <div style={{ fontSize: 11, color: '#777', marginTop: 4 }}>Format: dd-mm-yyyy and hr-mm</div>
           </div>
           
           <button 
