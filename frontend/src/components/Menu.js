@@ -120,7 +120,8 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
   const renderItem = (item) => {
     const totalQty = qtyInCart(item);
     const inventory = Number(item.inventory ?? 100);
-    const remaining = Math.max(0, inventory - totalQty);
+    const cartRemaining = Math.max(0, inventory - totalQty);
+    const stockLeft = Math.max(0, inventory);
     const thisQty = qtyNoOption(item);
     return (
       <div key={item.id} className="menu-item-card" style={totalQty > 0 ? { border: '2px solid #111', boxShadow: '0 0 0 3px rgba(0,0,0,0.05)' } : {}}>
@@ -142,14 +143,19 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
               {isFavorite(item.id) ? "❤️" : "🤍"}
             </button>
           )}
-          {remaining === 0 && (
+          {stockLeft === 0 && (
             <div style={{ position: 'absolute', top: 8, left: 8, background: '#e74c3c', color: '#fff', padding: '2px 8px', borderRadius: 4, fontSize: 12, fontWeight: 700 }}>
               SOLD OUT
             </div>
           )}
+          {stockLeft > 0 && stockLeft <= 10 && (
+            <div style={{ position: 'absolute', top: 8, left: 8, background: '#e67e22', color: '#fff', padding: '2px 8px', borderRadius: 4, fontSize: 12, fontWeight: 700 }}>
+              FEW LEFT
+            </div>
+          )}
           {(() => {
             if (!item.restockedAt) return null;
-            if (remaining === 0) return null;
+            if (stockLeft === 0) return null;
             const d = new Date(item.restockedAt);
             const now = new Date();
             const sameDay = d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
@@ -174,7 +180,7 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 8 }}>
             <span style={{ fontSize: "11px", color: "#666" }}>⏱️ {item.prepTime || 5} mins prep time</span>
             {showInventory && (
-              <span style={{ fontSize: 11, color: remaining === 0 ? '#e74c3c' : '#666' }}>Left: {remaining}</span>
+              <span style={{ fontSize: 11, color: stockLeft === 0 ? '#e74c3c' : '#666' }}>Left: {stockLeft}</span>
             )}
           </div>
           {item.hasOptions && (
@@ -194,10 +200,10 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
                 <button
                   className="icon-btn"
                   onClick={() => {
-                    if (remaining <= 0) { toast.error('No more inventory available'); return; }
+                    if (cartRemaining <= 0) { toast.error('No more items available to order'); return; }
                     incItemNoOption(item, selectedShop);
                   }}
-                  disabled={remaining <= 0}
+                  disabled={cartRemaining <= 0}
                   style={{ width: 32, height: 32, background: '#fff', color: '#111', border: '1px solid #111', borderRadius: 6 }}
                 >+</button>
               </div>
@@ -205,7 +211,7 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
               <button 
                 className="icon-btn" 
                 onClick={() => handleAddClick(item)}
-                disabled={!item.available || remaining <= 0}
+                disabled={!item.available || cartRemaining <= 0}
                 style={{
                   width: "100%",
                   padding: '10px 12px',
