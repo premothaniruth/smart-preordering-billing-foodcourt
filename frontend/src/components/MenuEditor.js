@@ -8,9 +8,7 @@ const MenuEditor = ({ token, menu, onUpdate }) => {
 
   useEffect(() => {
     const shop = menu.find(s => s.shopId === selectedShop);
-    if (shop) {
-      setItems(shop.items);
-    }
+    setItems(shop && Array.isArray(shop.items) ? shop.items : []);
   }, [selectedShop, menu]);
 
   const handleChange = (index, field, value) => {
@@ -67,6 +65,15 @@ const MenuEditor = ({ token, menu, onUpdate }) => {
       </div>
 
       <button onClick={handleAdd} style={{ marginBottom: 15 }}>+ Add New Item</button>
+      <div className="menu-editor-item" style={{ background: '#fff', border: '1px solid #eee' }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, fontWeight: 600, color: '#2c3e50' }}>
+          <div>Item Name</div>
+          <div>Price</div>
+          <div>Preparation Time (mins)</div>
+          <div>Inventory Count</div>
+          <div>Image URL</div>
+        </div>
+      </div>
       
       {items.map((it, idx) => (
         <div key={it.id} className="menu-editor-item">

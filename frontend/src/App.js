@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { fetchMenu, placeOrder, fetchUserOrders, fetchFavorites, vendorLogin, updateMenu, markOrderReady, fetchAnalytics } from "./api";
 import Menu from "./components/Menu";
 import Cart from "./components/Cart";
@@ -30,6 +30,7 @@ function App() {
   const [orderSummary, setOrderSummary] = useState(null);
   const [userOrders, setUserOrders] = useState([]);
   const [favorites, setFavorites] = useState([]);
+  const readyNotifiedRef = useRef(new Set());
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [currentOrderForRating, setCurrentOrderForRating] = useState(null);
   const [showGrievanceModal, setShowGrievanceModal] = useState(false);
@@ -48,6 +49,28 @@ function App() {
       setFavorites([]);
     }
   }, [userId]);
+
+  // Employee ready notification: poll orders and alert when status becomes ready
+  useEffect(() => {
+    if (!employeeToken || !userId) return;
+    const poll = async () => {
+      try {
+        const orders = await fetchUserOrders(userId);
+        orders
+          .filter(o => o.status === 'ready')
+          .forEach(o => {
+            if (!readyNotifiedRef.current.has(o.billingId)) {
+              readyNotifiedRef.current.add(o.billingId);
+              playSound(READY_SOUND);
+              toast.info(`🔔 Order ${o.billingId} is ready for pickup!`, { autoClose: 10000 });
+            }
+          });
+      } catch {}
+    };
+    const id = setInterval(poll, 5000);
+    poll();
+    return () => clearInterval(id);
+  }, [employeeToken, userId]);
 
   const loadMenu = () => {
     fetchMenu().then((data) => {
@@ -239,43 +262,17 @@ function App() {
                 <div className="menu-section">
                   <Menu
                     menu={menu}
-                    addToCart={addToCart}
-                    cart={cart}
+                    addToCart={() => {}}
+                    cart={[]}
                     selectedShop={selectedShop}
                     setSelectedShop={setSelectedShop}
-                    favorites={favorites}
-                    onFavoriteToggle={loadFavorites}
-                    userId={userId}
+                    favorites={[]}
+                    onFavoriteToggle={() => {}}
+                    userId={"Vendor Preview"}
                   />
                 </div>
-                <div className="cart-section">
-                  <Cart
-                    cart={cart}
-                    removeFromCart={removeFromCart}
-                    decrementFromCart={decrementFromCart}
-                    incrementFromCart={incrementFromCart}
-                    scheduledTime={scheduledTime}
-                    setScheduledTime={setScheduledTime}
-                    onPayment={handlePaymentSuccess}
-                  />
-                  {orderSummary && (
-                    <div className="order-summary" style={{ marginTop: 20 }}>
-                      <h3>Order Confirmation</h3>
-                      <div><strong>Billing ID:</strong> {orderSummary.billingId}</div>
-                      <div><strong>User:</strong> {orderSummary.user}</div>
-                      <div><strong>Prep Time:</strong> {orderSummary.prepTime} mins</div>
-                      <h4>Items:</h4>
-                      <ul style={{ listStyle: "none", paddingLeft: 0 }}>
-                        {orderSummary.items.map((item, idx) => (
-                          <li key={idx} style={{ fontSize: 13, marginBottom: 4 }}>
-                            {item.name} {item.option && `(${item.option})`} x{item.quantity} - ₹{item.price * item.quantity}
-                          </li>
-                        ))}
-                      </ul>
-                      <div><strong>Total:</strong> ₹{orderSummary.totalAmount}</div>
-                    </div>
-                  )}
-                </div>
+                {/* Read-only user view for vendor: no cart, no order summary */}
+                <div className="cart-section" style={{ display: 'none' }} />
               </div>
             )}
           </>
@@ -290,7 +287,6 @@ function App() {
                         My Orders
                       </button>
                       <button onClick={handleEmployeeLogout}>Logout</button>
-                      <button onClick={() => setView("login")}>Vendor Login</button>
                     </div>
                     <div className="layout-container">
                       <div className="menu-section">
