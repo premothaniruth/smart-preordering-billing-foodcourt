@@ -8,6 +8,12 @@ const AdminDashboard = ({ token }) => {
   const overdueNotifiedRef = useRef(new Set());
   const OVERDUE_SOUND = "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBDWM0/K/gC4EH29+3WgyBCk4XoCWJhcBTnLcWswB";
   const [muted, setMuted] = useState(false);
+  const vendorShopId = (() => {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.shopId || null;
+    } catch { return null; }
+  })();
 
   useEffect(() => {
     loadOrders();
@@ -67,6 +73,7 @@ const AdminDashboard = ({ token }) => {
 
   const getShopName = (shopId) =>
     menu.find((s) => s.shopId === shopId)?.shopName || shopId;
+  const vendorShopName = getShopName(vendorShopId);
 
   const markReady = (id) => {
     markOrderReady(id, token).then(() => loadOrders());
@@ -98,7 +105,7 @@ const AdminDashboard = ({ token }) => {
 
   return (
     <div>
-      <h2>Vendor Dashboard - Live Orders</h2>
+      <h2>{vendorShopName || 'Vendor'} Dashboard</h2>
       <p style={{ fontSize: 14, color: "#666", marginBottom: 20 }}>
         Total Orders: {orders.length} | Pending: {orders.filter(o => o.status === 'pending').length}
       </p>
@@ -111,12 +118,14 @@ const AdminDashboard = ({ token }) => {
         <button onClick={() => setTab('ready')} className={tab==='ready' ? 'active' : ''}>Ready</button>
         <button onClick={() => setTab('completed')} className={tab==='completed' ? 'active' : ''}>Completed</button>
       </div>
-      <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
-        <span style={{ fontSize: 13, color: '#555' }}>Bulk extend pending:</span>
-        <button onClick={() => handleBulkExtend(5)}>+5 min</button>
-        <button onClick={() => handleBulkExtend(10)}>+10 min</button>
-        <button onClick={() => handleBulkExtend(20)}>+20 min</button>
-      </div>
+      {tab === 'current' && (
+        <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 13, color: '#555' }}>Bulk extend pending:</span>
+          <button onClick={() => handleBulkExtend(5)}>+5 min</button>
+          <button onClick={() => handleBulkExtend(10)}>+10 min</button>
+          <button onClick={() => handleBulkExtend(20)}>+20 min</button>
+        </div>
+      )}
       
       <div style={{ overflowX: "auto" }}>
         <table border="1" cellPadding="10" width="100%">
@@ -124,13 +133,12 @@ const AdminDashboard = ({ token }) => {
             <tr>
               <th>Billing ID</th>
               <th>User</th>
-              <th>Shop</th>
               <th>Items</th>
               {tab !== 'completed' && <th>Remarks</th>}
               {tab !== 'completed' && <th>Scheduled For</th>}
-              {tab !== 'completed' && <th>Prep Time</th>}
-              {tab !== 'completed' && <th>Countdown</th>}
-              {tab !== 'completed' && <th>Extend</th>}
+              {tab === 'current' && <th>Prep Time</th>}
+              {tab === 'current' && <th>Countdown</th>}
+              {tab === 'current' && <th>Extend</th>}
               <th>Status</th>
               {tab !== 'completed' && <th>Action</th>}
             </tr>
@@ -147,7 +155,6 @@ const AdminDashboard = ({ token }) => {
               <tr key={o.id} style={{ background: o.status === 'pending' ? '#fff3cd' : (o.status === 'ready' ? '#d4edda' : '#f8f9fa') }}>
                 <td><strong>{o.billingId}</strong></td>
                 <td>{o.user}</td>
-                <td>{getShopName(o.shopId)}</td>
                 <td>
                   {o.items.map((it, idx) => (
                     <div key={idx} style={{ fontSize: 12, marginBottom: 4 }}>
@@ -172,8 +179,8 @@ const AdminDashboard = ({ token }) => {
                     {o.scheduledTime ? new Date(o.scheduledTime).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : '-'}
                   </td>
                 )}
-                {tab !== 'completed' && <td>{o.prepTime} mins</td>}
-                {tab !== 'completed' && (
+                {tab === 'current' && <td>{o.prepTime} mins</td>}
+                {tab === 'current' && (
                   <td>
                     {o.estimatedReadyTime ? (
                       <span style={{
@@ -187,7 +194,7 @@ const AdminDashboard = ({ token }) => {
                     )}
                   </td>
                 )}
-                {tab !== 'completed' && (
+                {tab === 'current' && (
                   <td>
                     {o.status === 'pending' && (
                       <ExtendControl order={o} token={token} onExtended={loadOrders} />

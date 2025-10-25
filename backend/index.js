@@ -486,6 +486,7 @@ app.post("/order/ready/:id", authenticateVendor, (req, res) => {
     }
 
     order.status = "ready";
+    order.readyAt = new Date().toISOString();
     saveOrders(orders);
     res.json({ status: "success", message: `Order ${orderId} marked ready` });
   } catch (error) {

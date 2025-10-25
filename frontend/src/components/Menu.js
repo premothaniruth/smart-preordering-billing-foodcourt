@@ -118,7 +118,7 @@ const Menu = ({ menu, addToCart, cart, incItemNoOption, decItemNoOption, incItem
               {item.options.length} options available
             </div>
           )}
-          <div className="menu-item-actions">
+          <div className="menu-item-actions" style={{ minHeight: 48, display: 'flex', alignItems: 'center' }}>
             {(!item.hasOptions && thisQty > 0) ? (
               <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                 <button
