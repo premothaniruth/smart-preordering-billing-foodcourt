@@ -24,7 +24,7 @@ import { toast } from "react-toastify";
  *  showInventory?: boolean
  * }} props
  */
-const Menu = ({ menu, addToCart, cart = [], incItemNoOption, decItemNoOption, incItemVariant, decItemVariant, selectedShop, setSelectedShop, favorites = [], onFavoriteToggle, userId, hideFavorites = false, hideShopSelector = false, showInventory = false }) => {
+const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemNoOption = () => {}, incItemVariant = () => {}, decItemVariant = () => {}, selectedShop, setSelectedShop, favorites = [], onFavoriteToggle, userId, hideFavorites = false, hideShopSelector = false, showInventory = false }) => {
   const [dietFilter, setDietFilter] = useState("all");
   const [showOptionsModal, setShowOptionsModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
@@ -157,6 +157,15 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption, decItemNoOption, in
             ) : (
               <span className="menu-item-badge" style={{ color: "#e74c3c", border: "1px solid #e74c3c" }}>🔴 NON-VEG</span>
             )}
+            {(() => {
+              if (!item.restockedAt) return null;
+              const d = new Date(item.restockedAt);
+              const now = new Date();
+              const sameDay = d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
+              return sameDay ? (
+                <span className="menu-item-badge" style={{ color: "#2ecc71", border: "1px solid #2ecc71" }}>Restocked</span>
+              ) : null;
+            })()}
           </div>
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 8 }}>
             <span style={{ fontSize: "11px", color: "#666" }}>⏱️ {item.prepTime || 5} mins prep time</span>

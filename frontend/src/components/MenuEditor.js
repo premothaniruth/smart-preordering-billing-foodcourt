@@ -5,10 +5,10 @@ import { toast } from "react-toastify";
 /**
  * MenuEditor
  * Vendor-facing editor for managing items and variants for the current shop.
- * @param {{ token:string, menu:any[], onUpdate: ()=>void }} props
+ * @param {{ token:string, menu:any[], onUpdate: ()=>void, targetItemId?: number|string }} props
  */
 
-const MenuEditor = ({ token, menu, onUpdate }) => {
+const MenuEditor = ({ token, menu, onUpdate, targetItemId }) => {
   const decodeShopId = () => {
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
@@ -21,12 +21,25 @@ const MenuEditor = ({ token, menu, onUpdate }) => {
   const [selectedShop, setSelectedShop] = useState(vendorShopId);
   const [items, setItems] = useState([]);
   const [lowThreshold, setLowThreshold] = useState(10);
+  const [highlightId, setHighlightId] = useState(null);
 
   // Sync local items when selected shop or menu changes
   useEffect(() => {
     const shop = menu.find(s => s.shopId === selectedShop);
     setItems(shop && Array.isArray(shop.items) ? shop.items : []);
   }, [selectedShop, menu]);
+
+  // Auto-scroll to deep-linked item from dashboard and briefly highlight
+  useEffect(() => {
+    if (!targetItemId) return;
+    const el = document.getElementById(`menu-item-${targetItemId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setHighlightId(Number(targetItemId));
+      const t = setTimeout(() => setHighlightId(null), 2500);
+      return () => clearTimeout(t);
+    }
+  }, [targetItemId, items]);
 
   const original = useMemo(() => JSON.stringify(items), [selectedShop]);
   const isDirty = useMemo(() => JSON.stringify(items) !== original, [items, original]);
@@ -36,7 +49,17 @@ const MenuEditor = ({ token, menu, onUpdate }) => {
     const next = [...items];
     if (field === "price" || field === "prepTime" || field === "inventory") value = Number(value) || 0;
     if (field === "available" || field === "isRecommended" || field === "isHotSeller" || field === "isVeg") value = Boolean(value);
-    next[index] = { ...next[index], [field]: value };
+    if (field === "inventory") {
+      const prevInv = Number(items[index]?.inventory || 0);
+      const newInv = Number(value) || 0;
+      if (newInv > prevInv) {
+        next[index] = { ...next[index], [field]: newInv, restockedAt: new Date().toISOString() };
+      } else {
+        next[index] = { ...next[index], [field]: newInv };
+      }
+    } else {
+      next[index] = { ...next[index], [field]: value };
+    }
     setItems(next);
   };
 
@@ -71,14 +94,16 @@ const MenuEditor = ({ token, menu, onUpdate }) => {
     if (lowCount === 0) { toast.info('No low-stock items to restock'); return; }
     const ok = window.confirm(`Set inventory to ${restockValue} for ${lowCount} low-stock items (≤ ${lowThreshold})?`);
     if (!ok) return;
-    setItems(prev => prev.map(it => (Number(it.inventory ?? 0) <= Number(lowThreshold) ? { ...it, inventory: Number(restockValue) || 0 } : it)));
+    const now = new Date().toISOString();
+    setItems(prev => prev.map(it => (Number(it.inventory ?? 0) <= Number(lowThreshold) ? { ...it, inventory: Number(restockValue) || 0, restockedAt: now } : it)));
     toast.success('Updated low-stock items. Click Save Changes to persist.');
   };
 
   const applyRestockAll = () => {
     const ok = window.confirm(`Set inventory to ${restockValue} for all items?`);
     if (!ok) return;
-    setItems(prev => prev.map(it => ({ ...it, inventory: Number(restockValue) || 0 })));
+    const now = new Date().toISOString();
+    setItems(prev => prev.map(it => ({ ...it, inventory: Number(restockValue) || 0, restockedAt: now })));
     toast.success('Updated all items. Click Save Changes to persist.');
   };
 
@@ -137,9 +162,10 @@ const MenuEditor = ({ token, menu, onUpdate }) => {
         <div
           key={it.id}
           className="menu-editor-item"
+          id={`menu-item-${it.id}`}
           style={Number(it.inventory || 0) <= Number(lowThreshold)
             ? { borderLeft: '4px solid #e67e22', background: 'rgba(230, 126, 34, 0.06)' }
-            : {}}
+            : { ...((highlightId === it.id) ? { outline: '2px solid #3498db', boxShadow: '0 0 0 4px rgba(52,152,219,0.15)' } : {}) }}
         >
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
             <div>
