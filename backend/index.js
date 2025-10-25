@@ -270,24 +270,26 @@ app.get("/favorites/:userId", (req, res) => {
 app.post("/rating", (req, res) => {
   try {
     const { orderId, rating, feedback } = req.body;
-    const orders = getOrders();
     const ratings = getRatings();
-    
-    const order = orders.find(o => o.id === orderId);
-    if (!order) return res.status(404).json({ message: "Order not found" });
-    
-    order.rating = rating;
-    order.feedback = feedback;
-    saveOrders(orders);
-    
+
+    if (orderId) {
+      const orders = getOrders();
+      const order = orders.find(o => o.id === orderId);
+      if (order) {
+        order.rating = rating;
+        order.feedback = feedback;
+        saveOrders(orders);
+      }
+    }
+
     ratings.push({
-      orderId,
+      orderId: orderId || null,
       rating,
       feedback,
       timestamp: new Date().toISOString()
     });
     saveRatings(ratings);
-    
+
     res.json({ status: "success", message: "Rating submitted" });
   } catch (error) {
     res.status(500).json({ message: "Error submitting rating" });
@@ -416,15 +418,36 @@ app.post("/order/ready/:id", authenticateVendor, (req, res) => {
 // Get analytics
 app.get("/analytics", authenticateVendor, (req, res) => {
   try {
-    const orders = getOrders().filter((o) => o.shopId === req.vendor.shopId);
+    const period = (req.query.period || '').toLowerCase();
+    const allOrdersForShop = getOrders().filter((o) => o.shopId === req.vendor.shopId);
+
+    const now = new Date();
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfYear = new Date(now.getFullYear(), 0, 1);
+    const startOfQuarter = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
+
+    const inRange = (d, start) => new Date(d) >= start;
+    const filterByPeriod = (orders, p) => {
+      if (p === 'daily') return orders.filter(o => inRange(o.createdAt, startOfDay));
+      if (p === 'monthly') return orders.filter(o => inRange(o.createdAt, startOfMonth));
+      if (p === 'quarterly') return orders.filter(o => inRange(o.createdAt, startOfQuarter));
+      if (p === 'yearly') return orders.filter(o => inRange(o.createdAt, startOfYear));
+      return orders;
+    };
+
+    const orders = filterByPeriod(allOrdersForShop, period);
     const totalOrders = orders.length;
 
     const itemCounts = {};
+    let totalItems = 0;
     for (const order of orders) {
       for (const item of order.items) {
+        const qty = item.quantity || 1;
+        totalItems += qty;
         const itemName = item.name;
         if (!itemCounts[itemName]) itemCounts[itemName] = 0;
-        itemCounts[itemName] += item.quantity || 1;
+        itemCounts[itemName] += qty;
       }
     }
 
@@ -435,12 +458,20 @@ app.get("/analytics", authenticateVendor, (req, res) => {
 
     const ratingsData = getRatings();
     const shopOrderIds = orders.map(o => o.id);
-    const shopRatings = ratingsData.filter(r => shopOrderIds.includes(r.orderId));
+    const shopRatings = ratingsData.filter(r => r.orderId && shopOrderIds.includes(r.orderId));
     const avgRating = shopRatings.length > 0 
       ? (shopRatings.reduce((sum, r) => sum + r.rating, 0) / shopRatings.length).toFixed(1)
       : 0;
 
-    res.json({ totalOrders, popularItems, avgRating, totalRatings: shopRatings.length });
+    // breakdown counts irrespective of current period
+    const breakdown = {
+      daily: filterByPeriod(allOrdersForShop, 'daily').length,
+      monthly: filterByPeriod(allOrdersForShop, 'monthly').length,
+      quarterly: filterByPeriod(allOrdersForShop, 'quarterly').length,
+      yearly: filterByPeriod(allOrdersForShop, 'yearly').length
+    };
+
+    res.json({ totalOrders, totalItems, popularItems, avgRating, totalRatings: shopRatings.length, breakdown });
   } catch (error) {
     res.status(500).json({ message: "Error fetching analytics" });
   }

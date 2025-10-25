@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { updateMenu } from "../api";
 import { toast } from "react-toastify";
 
@@ -10,6 +10,9 @@ const MenuEditor = ({ token, menu, onUpdate }) => {
     const shop = menu.find(s => s.shopId === selectedShop);
     setItems(shop && Array.isArray(shop.items) ? shop.items : []);
   }, [selectedShop, menu]);
+
+  const original = useMemo(() => JSON.stringify(items), [selectedShop]);
+  const isDirty = useMemo(() => JSON.stringify(items) !== original, [items, original]);
 
   const handleChange = (index, field, value) => {
     const next = [...items];
@@ -66,55 +69,59 @@ const MenuEditor = ({ token, menu, onUpdate }) => {
         </select>
       </div>
 
+      {isDirty && (
+        <button onClick={handleSave} style={{ marginBottom: 15, background: "#27ae60", padding: "10px 16px" }}>
+          Save Changes
+        </button>
+      )}
       <button onClick={handleAdd} style={{ marginBottom: 15 }}>+ Add New Item</button>
-      <div className="menu-editor-item" style={{ background: '#fff', border: '1px solid #eee' }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, fontWeight: 600, color: '#2c3e50' }}>
-          <div>Item Name</div>
-          <div>Price</div>
-          <div>Preparation Time (mins)</div>
-          <div>Inventory Count</div>
-          <div>Image URL</div>
-        </div>
-      </div>
       
       {items.map((it, idx) => (
         <div key={it.id} className="menu-editor-item">
-          <div style={{ fontSize: 12, color: '#666', marginBottom: 8, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            <div>Item Name</div>
-            <div>Price</div>
-            <div>Preparation Time (mins)</div>
-            <div>Inventory Count</div>
-            <div>Image URL</div>
-          </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            <input 
-              placeholder="Item Name" 
-              value={it.name} 
-              onChange={(e) => handleChange(idx, "name", e.target.value)} 
-            />
-            <input 
-              placeholder="Price" 
-              type="number" 
-              value={it.price} 
-              onChange={(e) => handleChange(idx, "price", e.target.value)} 
-            />
-            <input 
-              placeholder="Prep Time (mins)" 
-              type="number" 
-              value={it.prepTime || 10} 
-              onChange={(e) => handleChange(idx, "prepTime", e.target.value)} 
-            />
-            <input 
-              placeholder="Inventory Count"
-              type="number"
-              value={it.inventory || 0}
-              onChange={(e) => handleChange(idx, "inventory", e.target.value)}
-            />
-            <input 
-              placeholder="Image URL" 
-              value={it.image} 
-              onChange={(e) => handleChange(idx, "image", e.target.value)} 
-            />
+            <div>
+              <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>Item Name</div>
+              <input 
+                placeholder="Item Name" 
+                value={it.name} 
+                onChange={(e) => handleChange(idx, "name", e.target.value)} 
+              />
+            </div>
+            <div>
+              <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>Price</div>
+              <input 
+                placeholder="Price" 
+                type="number" 
+                value={it.price} 
+                onChange={(e) => handleChange(idx, "price", e.target.value)} 
+              />
+            </div>
+            <div>
+              <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>Preparation Time (mins)</div>
+              <input 
+                placeholder="Prep Time (mins)" 
+                type="number" 
+                value={it.prepTime || 10} 
+                onChange={(e) => handleChange(idx, "prepTime", e.target.value)} 
+              />
+            </div>
+            <div>
+              <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>Inventory Count</div>
+              <input 
+                placeholder="Inventory Count"
+                type="number"
+                value={it.inventory || 0}
+                onChange={(e) => handleChange(idx, "inventory", e.target.value)}
+              />
+            </div>
+            <div>
+              <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>Image URL</div>
+              <input 
+                placeholder="Image URL" 
+                value={it.image} 
+                onChange={(e) => handleChange(idx, "image", e.target.value)} 
+              />
+            </div>
           </div>
 
           {/* Variants Editor */}
@@ -224,9 +231,7 @@ const MenuEditor = ({ token, menu, onUpdate }) => {
         </div>
       ))}
       
-      <button onClick={handleSave} style={{ marginTop: 20, background: "#27ae60", padding: "12px 24px" }}>
-        Save All Changes
-      </button>
+      {/* Save button moved to top and appears only when dirty */}
     </div>
   );
 };

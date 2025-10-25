@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { toggleFavorite } from "../api";
 import { toast } from "react-toastify";
 
-const Menu = ({ menu, addToCart, cart, selectedShop, setSelectedShop, favorites, onFavoriteToggle, userId }) => {
+const Menu = ({ menu, addToCart, cart, selectedShop, setSelectedShop, favorites, onFavoriteToggle, userId, hideFavorites }) => {
   const [dietFilter, setDietFilter] = useState("all");
   const [showOptionsModal, setShowOptionsModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
@@ -73,13 +73,15 @@ const Menu = ({ menu, addToCart, cart, selectedShop, setSelectedShop, favorites,
               e.target.src = "https://via.placeholder.com/200x150/95a5a6/ffffff?text=No+Image";
             }}
           />
-          <button
-            className="favorite-btn"
-            onClick={(e) => handleFavoriteClick(item.id, e)}
-            style={{ background: 'transparent', border: 'none', padding: 4 }}
-          >
-            {isFavorite(item.id) ? "❤️" : "🤍"}
-          </button>
+          {!hideFavorites && (
+            <button
+              className="favorite-btn"
+              onClick={(e) => handleFavoriteClick(item.id, e)}
+              style={{ background: 'transparent', border: 'none', padding: 4 }}
+            >
+              {isFavorite(item.id) ? "❤️" : "🤍"}
+            </button>
+          )}
         </div>
         <div className="menu-item-content">
           <div className="menu-item-name">{item.name}</div>
@@ -104,9 +106,9 @@ const Menu = ({ menu, addToCart, cart, selectedShop, setSelectedShop, favorites,
               className="icon-btn" 
               onClick={() => handleAddClick(item)}
               disabled={!item.available}
-              style={{ background: "#27ae60", width: "100%" }}
+              style={{ background: "#27ae60", width: "100%", padding: '10px 12px', boxShadow: '0 2px 6px rgba(0,0,0,0.15)' }}
             >
-              + Add
+              ➕ Add to Cart
             </button>
           </div>
         </div>

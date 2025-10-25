@@ -65,8 +65,9 @@ export const markOrderReady = async (orderId, token) => {
   return res.json();
 };
 
-export const fetchAnalytics = async (token) => {
-  const res = await fetch(`${API_URL}/analytics`, {
+export const fetchAnalytics = async (token, period) => {
+  const qs = period ? `?period=${encodeURIComponent(period)}` : "";
+  const res = await fetch(`${API_URL}/analytics${qs}`, {
     headers: { Authorization: `Bearer ${token}` }
   });
   return res.json();

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import { fetchMenu, placeOrder, fetchUserOrders, fetchFavorites, vendorLogin, updateMenu, markOrderReady, fetchAnalytics } from "./api";
+import { fetchMenu, placeOrder, fetchUserOrders, fetchFavorites, vendorLogin, updateMenu, markOrderReady, fetchAnalytics, submitRating } from "./api";
 import Menu from "./components/Menu";
 import Cart from "./components/Cart";
 import Payment from "./components/Payment";
@@ -33,6 +33,8 @@ function App() {
   const readyNotifiedRef = useRef(new Set());
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [currentOrderForRating, setCurrentOrderForRating] = useState(null);
+  const [inlineRating, setInlineRating] = useState(0);
+  const [inlineFeedback, setInlineFeedback] = useState("");
   const [showGrievanceModal, setShowGrievanceModal] = useState(false);
   const [selectedOrderForGrievance, setSelectedOrderForGrievance] = useState(null);
 
@@ -67,6 +69,18 @@ function App() {
           });
       } catch {}
     };
+
+  const submitInlineFeedback = async () => {
+    try {
+      if (!inlineRating) return toast.error("Please select a rating");
+      await submitRating(null, inlineRating, inlineFeedback);
+      setInlineRating(0);
+      setInlineFeedback("");
+      toast.success("Thanks for your feedback!");
+    } catch {
+      toast.error("Failed to submit feedback");
+    }
+  };
     const id = setInterval(poll, 5000);
     poll();
     return () => clearInterval(id);
@@ -161,11 +175,7 @@ function App() {
       playSound(ORDER_PLACED_SOUND);
       toast.success(`Order placed! Billing ID: ${response.billingId}`);
 
-      // Show rating modal after a delay
-      setTimeout(() => {
-        setCurrentOrderForRating(response.billingId);
-        setShowRatingModal(true);
-      }, 3000);
+      // Rating modal disabled; inline feedback is available at bottom of menu
 
       // Set timer for ready sound
       const prepTime = response.orderSummary.prepTime || 5;
@@ -269,6 +279,7 @@ function App() {
                     favorites={[]}
                     onFavoriteToggle={() => {}}
                     userId={"Vendor Preview"}
+                    hideFavorites={true}
                   />
                 </div>
                 {/* Read-only user view for vendor: no cart, no order summary */}
@@ -300,6 +311,21 @@ function App() {
                           onFavoriteToggle={loadFavorites}
                           userId={userId}
                         />
+                        {/* Inline feedback form for employees */}
+                        {employeeToken && (
+                          <div className="card" style={{ marginTop: 20 }}>
+                            <div className="card-header">Rate your experience</div>
+                            <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}>
+                              {[1,2,3,4,5].map(n => (
+                                <span key={n} className="rating-star" onClick={() => setInlineRating(n)} style={{ color: n <= inlineRating ? '#f1c40f' : '#ccc', fontSize: 22 }}>★</span>
+                              ))}
+                            </div>
+                            <textarea placeholder="Share your feedback on food quality and service" value={inlineFeedback} onChange={(e)=>setInlineFeedback(e.target.value)} />
+                            <div className="mt-10">
+                              <button onClick={submitInlineFeedback} disabled={!inlineRating}>Submit Feedback</button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                       <div className="cart-section">
                         <Cart
