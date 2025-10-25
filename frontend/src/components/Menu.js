@@ -242,6 +242,11 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
                 )}
               </button>
             )}
+            {cartRemaining <= 0 && (
+              <div style={{ marginTop: 6, fontSize: 12, color: '#e74c3c', textAlign: 'center', width: '100%' }}>
+                No more items available to order
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -38,7 +38,13 @@ const Cart = ({ cart, removeFromCart, decrementFromCart, incrementFromCart, sche
       <h2>Cart ({cart.length})</h2>
       {cart.length === 0 && <p className="empty-state">Your cart is empty</p>}
       <div>
-        {cart.map((c, i) => (
+        {cart.map((c, i) => {
+          const inventory = Number(c.item.inventory ?? 100);
+          const totalForThis = cart
+            .filter(d => d.shopId === c.shopId && d.item.id === c.item.id && (d.item.selectedOption?.name || null) === (c.item.selectedOption?.name || null))
+            .reduce((sum, d) => sum + d.quantity, 0);
+          const remaining = Math.max(0, inventory - totalForThis);
+          return (
           <div key={i} className="cart-item">
             <div style={{ flex: 1 }}>
               <div style={{ fontWeight: "bold", fontSize: 14 }}>{c.item.name}</div>
@@ -50,6 +56,9 @@ const Cart = ({ cart, removeFromCart, decrementFromCart, incrementFromCart, sche
               <div style={{ fontSize: 12, color: "#666", marginTop: 4 }}>
                 {c.quantity} x ₹{c.item.finalPrice} = ₹{c.item.finalPrice * c.quantity}
               </div>
+              {remaining <= 0 && (
+                <div style={{ marginTop: 4, fontSize: 12, color: '#e74c3c' }}>No more items available to order</div>
+              )}
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
               <button 
@@ -62,7 +71,8 @@ const Cart = ({ cart, removeFromCart, decrementFromCart, incrementFromCart, sche
               <span style={{ fontWeight: "bold", minWidth: 25, textAlign: "center", fontSize: 14 }}>{c.quantity}</span>
               <button 
                 className="icon-btn" 
-                onClick={() => incrementFromCart(i)}
+                onClick={() => { if (remaining <= 0) return; incrementFromCart(i); }}
+                disabled={remaining <= 0}
                 style={{ width: 28, height: 28, fontSize: 16, background: '#fff', color: '#111', border: '1px solid #111', borderRadius: 6 }}
               >
                 +
@@ -75,7 +85,7 @@ const Cart = ({ cart, removeFromCart, decrementFromCart, incrementFromCart, sche
               </button>
             </div>
           </div>
-        ))}
+        );})}
       </div>
       
       {cart.length > 0 && (
