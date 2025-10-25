@@ -1,4 +1,5 @@
 import React from "react";
+
 const Menu = ({ menu, addToCart, selectedShop, setSelectedShop }) => {
   return (
     <div>
@@ -16,14 +17,23 @@ const Menu = ({ menu, addToCart, selectedShop, setSelectedShop }) => {
       </select>
       <ul>
         {menu.find((s) => s.shopId === selectedShop)?.items.map((item) => (
-          <li key={item.id}>
-            {item.name} - ₹{item.price} {item.available ? "" : "(Sold Out)"}
+          <li key={item.id} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <span>{item.name}</span>
+            <span style={{ marginLeft: "auto" }}>₹{item.price}</span>
             <button
+              aria-label={`Add ${item.name}`}
               onClick={() => addToCart(item, selectedShop)}
               disabled={!item.available}
-              style={{ marginLeft: "10px" }}
+              style={{
+                padding: "6px 10px",
+                borderRadius: "6px",
+                border: "none",
+                background: "#28a745",
+                color: "white",
+                cursor: item.available ? "pointer" : "not-allowed",
+              }}
             >
-              Add
+              +
             </button>
           </li>
         ))}

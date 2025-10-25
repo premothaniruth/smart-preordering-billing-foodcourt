@@ -1,44 +1,69 @@
 import React, { useEffect, useState } from "react";
 import { fetchMenu, placeOrder, vendorLogin, updateMenu, fetchOrders, markOrderReady, fetchAnalytics } from "./api";
-import Menu from "./components/Menu";
-import Cart from "./components/Cart";
-import Payment from "./components/Payment";
-import Login from "./components/Login";
-import MenuEditor from "./components/MenuEditor";
-import AdminDashboard from "./components/AdminDashboard";
-import Analytics from "./components/Analytics";
+import Menu from "./Menu";
+import Cart from "./Cart";
+import Payment from "./Payment";
+import Login from "./Login";
+import MenuEditor from "./MenuEditor";
+import AdminDashboard from "./AdminDashboard";
+import Analytics from "./Analytics";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 function App() {
-  // States
   const [menu, setMenu] = useState([]);
   const [cart, setCart] = useState([]);
   const [scheduledTime, setScheduledTime] = useState("");
   const [selectedShop, setSelectedShop] = useState(1);
   const [vendorToken, setVendorToken] = useState(null);
-  const [view, setView] = useState("user"); // 'user', 'login', 'admin', 'menu-editor', 'analytics', 'dashboard'
+  const [view, setView] = useState("user"); // user login admin etc.
+  const [uiState, setUiState] = useState({}); // extension hook
 
-  // Fetch menu initially and when user changes shop
+  // Load menu on mount
   useEffect(() => {
     fetchMenu().then((data) => {
       setMenu(data);
-      if (!selectedShop && data.length > 0) setSelectedShop(data[0].shopId);
+      if (data.length > 0 && !selectedShop) setSelectedShop(data[0].shopId);
     });
   }, [selectedShop]);
 
-  // User cart management
+  // Cart helpers
   const addToCart = (item, shopId) => {
-    setCart([...cart, { ...item, shopId }]);
-  };
-  const removeFromCart = (index) => {
-    setCart(cart.filter((_, i) => i !== index));
+    setCart((prev) => {
+      const idx = prev.findIndex((c) => c.item.id === item.id && c.shopId === shopId);
+      if (idx >= 0) {
+        const newCart = [...prev];
+        newCart[idx] = { ...newCart[idx], quantity: newCart[idx].quantity + 1 };
+        return newCart;
+      } else {
+        return [...prev, { item, shopId, quantity: 1 }];
+      }
+    });
   };
 
-  // Handle order payment and placement
+  const decrementFromCart = (index) => {
+    setCart((prev) => {
+      const item = prev[index];
+      if (!item) return prev;
+      if (item.quantity <= 1) return prev.filter((_, i) => i !== index);
+      const newCart = [...prev];
+      newCart[index] = { ...item, quantity: item.quantity - 1 };
+      return newCart;
+    });
+  };
+
+  const removeFromCart = (index) => {
+    setCart((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const incrementFromCart = (item, shopId) => {
+    addToCart(item, shopId);
+  };
+
+  // Payment success
   const handlePaymentSuccess = () => {
     placeOrder({
-      items: cart,
+      items: cart.map((c) => ({ ...c.item, quantity: c.quantity })),
       scheduledTime,
       user: "Employee XYZ",
       shopId: selectedShop,
@@ -49,39 +74,37 @@ function App() {
     });
   };
 
-  // Vendor login handler
+  // Vendor login
   const handleLogin = (token) => {
     setVendorToken(token);
     setView("dashboard");
     toast.success("Vendor logged in successfully!");
   };
 
-  // Vendor logout
   const handleLogout = () => {
     setVendorToken(null);
     setView("user");
     toast.info("Logged out from vendor account");
   };
 
-  // Render UI based on current view
+  // UI
   return (
-    <div style={{ padding: "20px", maxWidth: "900px", margin: "auto" }}>
+    <div style={{ padding: "20px", maxWidth: "1100px", margin: "auto" }}>
       <ToastContainer position="top-right" autoClose={3000} />
       <h1>Smart Preordering & Billing - Food Court</h1>
 
       {vendorToken ? (
         <>
-          <button onClick={handleLogout} style={{ marginBottom: "15px" }}>
-            Logout
-          </button>
-          <div style={{ marginBottom: "15px" }}>
+          <button onClick={handleLogout} style={{ marginBottom: 12 }}>Logout</button>
+          <div style={{ marginBottom: 12 }}>
             <button onClick={() => setView("dashboard")}>Dashboard</button>{" "}
             <button onClick={() => setView("menu-editor")}>Edit Menu</button>{" "}
             <button onClick={() => setView("analytics")}>Analytics</button>{" "}
             <button onClick={() => setView("user")}>Switch to User View</button>
           </div>
+
           {view === "menu-editor" && (
-            <MenuEditor token={vendorToken} shopItems={menu.find(s => s.shopId === selectedShop)?.items} />
+            <MenuEditor token={vendorToken} shopItems={menu.find((s) => s.shopId === selectedShop)?.items} />
           )}
           {view === "dashboard" && <AdminDashboard token={vendorToken} />}
           {view === "analytics" && <Analytics token={vendorToken} />}
@@ -96,6 +119,8 @@ function App() {
               <Cart
                 cart={cart}
                 removeFromCart={removeFromCart}
+                decrementFromCart={decrementFromCart}
+                incrementFromCart={incrementFromCart}
                 scheduledTime={scheduledTime}
                 setScheduledTime={setScheduledTime}
               />
@@ -111,9 +136,7 @@ function App() {
         <>
           {view === "user" && (
             <>
-              <button onClick={() => setView("login")} style={{ marginBottom: "15px" }}>
-                Vendor Login
-              </button>
+              <button onClick={() => setView("login")} style={{ marginBottom: 12 }}>Vendor Login</button>
               <Menu
                 menu={menu}
                 addToCart={addToCart}
@@ -123,6 +146,8 @@ function App() {
               <Cart
                 cart={cart}
                 removeFromCart={removeFromCart}
+                decrementFromCart={decrementFromCart}
+                incrementFromCart={incrementFromCart}
                 scheduledTime={scheduledTime}
                 setScheduledTime={setScheduledTime}
               />

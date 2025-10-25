@@ -1,16 +1,35 @@
 import React from "react";
 
-const Cart = ({ cart, removeFromCart, scheduledTime, setScheduledTime }) => {
-  const total = cart.reduce((sum, item) => sum + item.price, 0);
+const Cart = ({ cart, removeFromCart, decrementFromCart, incrementFromCart, scheduledTime, setScheduledTime }) => {
+  const total = cart.reduce((sum, c) => sum + c.item.price * c.quantity, 0);
 
   return (
     <div>
       <h2>Cart</h2>
-      <ul>
-        {cart.map((item, i) => (
-          <li key={i}>
-            {item.name} - ₹{item.price}
-            <button onClick={() => removeFromCart(i)} style={{ marginLeft: "10px" }}>
+      {cart.length === 0 && <p>Your cart is empty</p>}
+      <ul style={{ listStyle: "none", padding: 0 }}>
+        {cart.map((c, i) => (
+          <li key={i} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "6px 0" }}>
+            <span style={{ minWidth: 180 }}>{c.item.name}</span>
+            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <button
+                aria-label="Decrease quantity"
+                onClick={() => decrementFromCart(i)}
+                style={iconButtonStyle}
+              >
+                −
+              </button>
+              <span>{c.quantity}</span>
+              <button
+                aria-label="Increase quantity"
+                onClick={() => incrementFromCart(c.item, c.shopId)}
+                style={iconButtonStyle}
+              >
+                +
+              </button>
+            </div>
+            <span style={{ marginLeft: "auto" }}>₹{c.item.price * c.quantity}</span>
+            <button onClick={() => removeFromCart(i)} style={{ marginLeft: "8px" }}>
               Remove
             </button>
           </li>
@@ -25,6 +44,22 @@ const Cart = ({ cart, removeFromCart, scheduledTime, setScheduledTime }) => {
       />
     </div>
   );
+};
+
+// inline style for icon buttons
+const iconButtonStyle = {
+  width: 30,
+  height: 30,
+  borderRadius: 6,
+  border: "1px solid #aaa",
+  background: "#f0f0f0",
+  cursor: "pointer",
+  fontSize: 18,
+  lineHeight: "28px",
+  textAlign: "center",
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center"
 };
 
 export default Cart;
