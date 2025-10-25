@@ -1,9 +1,25 @@
 import React from "react";
 
-const OrderHistory = ({ orders, onReorder, onBack }) => {
+const OrderHistory = ({ orders, onReorder, onBack, onClearHistory, onReportIssue }) => {
+  // Sort orders in reverse chronological order (latest first)
+  const sortedOrders = [...orders].sort((a, b) => 
+    new Date(b.createdAt) - new Date(a.createdAt)
+  );
+
   return (
     <div>
-      <button onClick={onBack} style={{ marginBottom: 20 }}>← Back to Menu</button>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+        <button onClick={onBack}>← Back to Menu</button>
+        {orders.length > 0 && (
+          <button 
+            onClick={onClearHistory}
+            style={{ background: "#e74c3c" }}
+          >
+            Clear History
+          </button>
+        )}
+      </div>
+      
       <h2>Order History</h2>
       
       {orders.length === 0 && (
@@ -11,13 +27,16 @@ const OrderHistory = ({ orders, onReorder, onBack }) => {
       )}
 
       <div style={{ display: "grid", gap: 20 }}>
-        {orders.map((order) => (
+        {sortedOrders.map((order) => (
           <div key={order.id} className="card">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: 15 }}>
               <div>
                 <h3 style={{ margin: 0, color: "#2c3e50" }}>Order #{order.billingId}</h3>
                 <div style={{ fontSize: 12, color: "#666", marginTop: 4 }}>
-                  {new Date(order.createdAt).toLocaleString()}
+                  {new Date(order.createdAt).toLocaleString('en-IN', {
+                    dateStyle: 'medium',
+                    timeStyle: 'short'
+                  })}
                 </div>
               </div>
               <span className={`badge badge-${order.status === 'ready' ? 'success' : 'warning'}`}>
@@ -28,32 +47,38 @@ const OrderHistory = ({ orders, onReorder, onBack }) => {
             <h4 style={{ fontSize: 14, marginTop: 15, marginBottom: 10 }}>Items:</h4>
             <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
               {order.items.map((item, idx) => (
-                <li key={idx} style={{ fontSize: 13, marginBottom: 6, paddingLeft: 0 }}>
+                <li key={idx} style={{ fontSize: 13, marginBottom: 8, paddingLeft: 0 }}>
                   • {item.name} {item.option && `(${item.option})`} x{item.quantity} - ₹{item.price * item.quantity}
-                  {item.customization && (
-                    <div style={{ fontSize: 11, color: "#666", marginLeft: 12, marginTop: 2 }}>
-                      {item.customization.spiceLevel !== "medium" && `🌶️ ${item.customization.spiceLevel} `}
-                      {item.customization.oilLevel !== "medium" && `🫒 ${item.customization.oilLevel} `}
-                      {item.customization.notes && `📝 ${item.customization.notes}`}
+                  {item.customization && item.customization.notes && (
+                    <div style={{ fontSize: 11, color: "#666", marginLeft: 12, marginTop: 2, fontStyle: "italic" }}>
+                      📝 {item.customization.notes}
                     </div>
                   )}
                 </li>
               ))}
             </ul>
 
-            <div style={{ marginTop: 15, paddingTop: 15, borderTop: "1px solid #ecf0f1", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ marginTop: 15, paddingTop: 15, borderTop: "1px solid #ecf0f1", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
               <div>
                 <strong>Total: ₹{order.items.reduce((sum, it) => sum + it.price * it.quantity, 0)}</strong>
                 <div style={{ fontSize: 11, color: "#666", marginTop: 4 }}>
                   Prep Time: {order.prepTime} mins
                 </div>
               </div>
-              <button 
-                onClick={() => onReorder(order)}
-                style={{ background: "#3498db", padding: "8px 16px" }}
-              >
-                🔄 Reorder
-              </button>
+              <div style={{ display: "flex", gap: 10 }}>
+                <button 
+                  onClick={() => onReorder(order)}
+                  style={{ background: "#3498db", padding: "8px 16px" }}
+                >
+                  🔄 Reorder
+                </button>
+                <button 
+                  onClick={() => onReportIssue(order)}
+                  style={{ background: "#e67e22", padding: "8px 16px" }}
+                >
+                  ⚠️ Report Issue
+                </button>
+              </div>
             </div>
 
             {order.rating && (

@@ -424,6 +424,27 @@ ul {
   margin-right: 0;
 }
 
+/* ===== GRIEVANCE MODAL SPECIFIC ===== */
+.grievance-contact-info {
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  border-left: 4px solid #3498db;
+}
+
+.grievance-contact-info h4 {
+  margin: 0 0 10px 0;
+  font-size: 14px;
+  color: #2c3e50;
+}
+
+.grievance-contact-info div {
+  font-size: 13px;
+  line-height: 1.8;
+  color: #555;
+}
+
 /* ===== TABLE STYLES (Admin Dashboard) ===== */
 table {
   width: 100%;
@@ -715,33 +736,29 @@ form button {
   transform: scale(1.2);
 }
 
-/* ===== FAVORITE BUTTON ===== */
+/* ===== FAVORITE BUTTON - UPDATED (No white circle) ===== */
 .favorite-btn {
   position: absolute;
   top: 8px;
   right: 8px;
-  background: transparent;  /* Changed from white background */
+  background: transparent;
   border: none;
-  border-radius: 0;  /* Remove circular shape */
+  border-radius: 0;
   width: auto;
   height: auto;
   cursor: pointer;
-  font-size: 24px;  /* Larger heart icon */
+  font-size: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: transform 0.2s;
-  box-shadow: none;  /* Remove shadow */
+  box-shadow: none;
   padding: 4px;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));  /* Add shadow to icon itself */
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
 }
 
 .favorite-btn:hover {
   transform: scale(1.2);
-}
-
-.favorite-btn:hover {
-  transform: scale(1.15);
 }
 
 /* ===== ORDER HISTORY STYLES ===== */
@@ -755,6 +772,72 @@ form button {
 
 .order-history-item:hover {
   box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+}
+
+/* ===== GRIEVANCE CARD STYLES ===== */
+.grievance-card {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transition: box-shadow 0.2s;
+}
+
+.grievance-card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.grievance-card.pending {
+  border-left: 4px solid #e74c3c;
+  background: #fff5f5;
+}
+
+.grievance-card.resolved {
+  border-left: 4px solid #27ae60;
+  opacity: 0.8;
+}
+
+.grievance-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #ecf0f1;
+}
+
+.grievance-content {
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.grievance-meta {
+  font-size: 11px;
+  color: #999;
+  margin-top: 10px;
+}
+
+/* ===== CONTACT INFO BOX ===== */
+.contact-info-box {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.contact-info-box h4 {
+  color: white;
+  margin-top: 0;
+}
+
+.contact-info-box div {
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 /* ===== ANIMATIONS ===== */
@@ -818,38 +901,6 @@ textarea:focus-visible {
   }
 }
 
-/* Dark mode support (optional -disabled)
-@media (prefers-color-scheme: dark) {
-  body {
-    background: #1a1a1a;
-    color: #f0f0f0;
-  }
-  
-  .app-container {
-    background: rgba(30, 30, 30, 0.95);
-  }
-  
-  .card,
-  .menu-item-card,
-  .cart-item {
-    background: #2a2a2a;
-    color: #f0f0f0;
-  }
-  
-  table th {
-    background: #1a1a1a;
-  }
-  
-  input,
-  select,
-  textarea {
-    background: #2a2a2a;
-    color: #f0f0f0;
-    border-color: #444;
-  }
-}
- */
-
 /* ===== PRINT STYLES ===== */
 @media print {
   header,
@@ -905,4 +956,33 @@ textarea:focus-visible {
   .modal-content {
     padding: 20px;
   }
+  
+  .grievance-card {
+    padding: 15px;
+  }
+}
+
+/* ===== FLEX HELPERS ===== */
+.flex-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.flex-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.flex-wrap {
+  flex-wrap: wrap;
+}
+
+.gap-10 {
+  gap: 10px;
+}
+
+.gap-15 {
+  gap: 15px;
 }

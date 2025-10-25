@@ -9,6 +9,8 @@ import AdminDashboard from "./components/AdminDashboard";
 import Analytics from "./components/Analytics";
 import OrderHistory from "./components/OrderHistory";
 import RatingModal from "./components/RatingModal";
+import GrievanceModal from "./components/GrievanceModal";
+import VendorGrievances from "./components/VendorGrievances";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -27,6 +29,8 @@ function App() {
   const [favorites, setFavorites] = useState([]);
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [currentOrderForRating, setCurrentOrderForRating] = useState(null);
+  const [showGrievanceModal, setShowGrievanceModal] = useState(false);
+  const [selectedOrderForGrievance, setSelectedOrderForGrievance] = useState(null);
   
   const userId = "Employee XYZ"; // In production, this would come from login
 
@@ -143,17 +147,26 @@ function App() {
   const handleReorder = (order) => {
     setCart([]);
     order.items.forEach(item => {
-      // Find the menu item
       const menuItem = menu.flatMap(s => s.items).find(i => i.id === item.id);
       if (menuItem) {
-        // Prepare option object if it exists
         const option = item.option ? { name: item.option, priceModifier: 0 } : null;
-        // Use empty customization object
         addToCart(menuItem, order.shopId, option, {});
       }
     });
     setView("user");
     toast.success("Previous order added to cart!");
+  };
+
+  const handleClearHistory = () => {
+    if (window.confirm("Are you sure you want to clear your order history? This cannot be undone.")) {
+      setUserOrders([]);
+      toast.success("Order history cleared");
+    }
+  };
+
+  const handleReportIssue = (order) => {
+    setSelectedOrderForGrievance(order);
+    setShowGrievanceModal(true);
   };
 
   const handleLogin = (token) => {
@@ -185,6 +198,7 @@ function App() {
               <button onClick={() => setView("dashboard")}>Dashboard</button>
               <button onClick={() => setView("menu-editor")}>Edit Menu</button>
               <button onClick={() => setView("analytics")}>Analytics</button>
+              <button onClick={() => setView("grievances")}>Complaints</button>
               <button onClick={() => setView("user")}>Switch to User View</button>
             </div>
 
@@ -193,6 +207,7 @@ function App() {
             )}
             {view === "dashboard" && <AdminDashboard token={vendorToken} />}
             {view === "analytics" && <Analytics token={vendorToken} />}
+            {view === "grievances" && <VendorGrievances token={vendorToken} />}
             {view === "user" && (
               <div className="layout-container">
                 <div className="menu-section">
@@ -306,6 +321,8 @@ function App() {
                 orders={userOrders} 
                 onReorder={handleReorder}
                 onBack={() => setView("user")}
+                onClearHistory={handleClearHistory}
+                onReportIssue={handleReportIssue}
               />
             )}
           </>
@@ -315,6 +332,13 @@ function App() {
           <RatingModal
             orderId={currentOrderForRating}
             onClose={() => setShowRatingModal(false)}
+          />
+        )}
+
+        {showGrievanceModal && selectedOrderForGrievance && (
+          <GrievanceModal
+            order={selectedOrderForGrievance}
+            onClose={() => setShowGrievanceModal(false)}
           />
         )}
       </div>

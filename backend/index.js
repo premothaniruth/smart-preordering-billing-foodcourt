@@ -23,6 +23,7 @@ const vendorsFile = __dirname + "/data/vendors.json";
 const billingCounterFile = __dirname + "/data/billing_counter.json";
 const favoritesFile = __dirname + "/data/favorites.json";
 const ratingsFile = __dirname + "/data/ratings.json";
+const grievancesFile = __dirname + "/data/grievances.json";
 
 // Helper functions
 const getMenu = () => JSON.parse(fs.readFileSync(menuFile, "utf8"));
@@ -46,6 +47,14 @@ const getRatings = () => {
   }
 };
 const saveRatings = (ratings) => fs.writeFileSync(ratingsFile, JSON.stringify(ratings, null, 2));
+const getGrievances = () => {
+  try {
+    return JSON.parse(fs.readFileSync(grievancesFile, "utf8"));
+  } catch {
+    return [];
+  }
+};
+const saveGrievances = (grievances) => fs.writeFileSync(grievancesFile, JSON.stringify(grievances, null, 2));
 
 // Billing counter management
 const getBillingCounter = () => {
@@ -84,14 +93,10 @@ const calculatePreparationTime = (items, shopId) => {
   const orders = getOrders();
   const pendingOrders = orders.filter(o => o.shopId === shopId && o.status === "pending").length;
   
-  // Base time per item
   const totalItemTime = items.reduce((sum, item) => sum + (item.prepTime || 5), 0);
-  
-  // Add queue time (2 minutes per pending order)
   const queueTime = pendingOrders * 2;
   
-  // Total time in minutes
-  return Math.max(totalItemTime + queueTime, 5); // Minimum 5 minutes
+  return Math.max(totalItemTime + queueTime, 5);
 };
 
 // Middleware: Authenticate vendor
@@ -128,7 +133,6 @@ app.post("/order", (req, res) => {
     const billingId = generateBillingId();
     const totalAmount = items.reduce((sum, it) => sum + it.price * (it.quantity || 1), 0);
     
-    // Calculate preparation time
     const prepTime = calculatePreparationTime(items, shopId);
     const estimatedReadyTime = new Date(Date.now() + prepTime * 60000).toISOString();
 
@@ -242,6 +246,33 @@ app.post("/rating", (req, res) => {
   }
 });
 
+// Submit grievance
+app.post("/grievance", (req, res) => {
+  try {
+    const { orderId, billingId, issueType, description, contactPreference, shopId } = req.body;
+    const grievances = getGrievances();
+
+    const newGrievance = {
+      id: grievances.length + 1,
+      orderId,
+      billingId,
+      issueType,
+      description,
+      contactPreference,
+      shopId,
+      status: "pending",
+      createdAt: new Date().toISOString()
+    };
+
+    grievances.push(newGrievance);
+    saveGrievances(grievances);
+
+    res.json({ status: "success", message: "Grievance submitted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Error submitting grievance" });
+  }
+});
+
 // ========== VENDOR ROUTES ==========
 
 // Vendor login
@@ -348,7 +379,6 @@ app.get("/analytics", authenticateVendor, (req, res) => {
       count
     }));
 
-    // Calculate average rating
     const ratingsData = getRatings();
     const shopOrderIds = orders.map(o => o.id);
     const shopRatings = ratingsData.filter(r => shopOrderIds.includes(r.orderId));
@@ -359,6 +389,40 @@ app.get("/analytics", authenticateVendor, (req, res) => {
     res.json({ totalOrders, popularItems, avgRating, totalRatings: shopRatings.length });
   } catch (error) {
     res.status(500).json({ message: "Error fetching analytics" });
+  }
+});
+
+// Get grievances for vendor's shop
+app.get("/grievances", authenticateVendor, (req, res) => {
+  try {
+    const grievances = getGrievances();
+    const vendorShopId = req.vendor.shopId;
+    const filteredGrievances = grievances.filter((g) => g.shopId === vendorShopId);
+    res.json(filteredGrievances);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching grievances" });
+  }
+});
+
+// Mark grievance as resolved
+app.post("/grievance/resolve/:id", authenticateVendor, (req, res) => {
+  try {
+    const grievances = getGrievances();
+    const grievanceId = parseInt(req.params.id);
+    const vendorShopId = req.vendor.shopId;
+
+    const grievance = grievances.find((g) => g.id === grievanceId && g.shopId === vendorShopId);
+    if (!grievance) {
+      return res.status(404).json({ message: "Grievance not found" });
+    }
+
+    grievance.status = "resolved";
+    grievance.resolvedAt = new Date().toISOString();
+    saveGrievances(grievances);
+    
+    res.json({ status: "success", message: "Grievance marked as resolved" });
+  } catch (error) {
+    res.status(500).json({ message: "Error resolving grievance" });
   }
 });
 

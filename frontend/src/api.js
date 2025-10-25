@@ -81,3 +81,19 @@ export const submitRating = async (orderId, rating, feedback) => {
   });
   return res.json();
 };
+
+export const submitGrievance = async (grievance) => {
+  const res = await fetch(`${API_URL}/grievance`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(grievance),
+  });
+  return res.json();
+};
+
+export const fetchGrievances = async (token) => {
+  const res = await fetch(`${API_URL}/grievances`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.json();
+};
