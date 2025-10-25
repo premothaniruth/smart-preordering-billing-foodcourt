@@ -12,17 +12,19 @@ const Analytics = ({ token }) => {
   return (
     <div>
       <h2>Analytics Dashboard</h2>
-      <p>Total Orders: {data.totalOrders}</p>
+      <p>Total Orders: <strong>{data.totalOrders}</strong></p>
       <h3>Popular Items</h3>
-      <ResponsiveContainer width="100%" height={300}>
-        <BarChart data={data.popularItems}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="name" />
-          <YAxis allowDecimals={false} />
-          <Tooltip />
-          <Bar dataKey="count" fill="#8884d8" />
-        </BarChart>
-      </ResponsiveContainer>
+      <div style={{ width: "100%", height: 300 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={data.popularItems}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="name" />
+            <YAxis />
+            <Tooltip />
+            <Bar dataKey="count" fill="#8884d8" />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 };

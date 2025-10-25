@@ -17,14 +17,21 @@ const menuFile = __dirname + "/data/menu.json";
 const ordersFile = __dirname + "/data/orders.json";
 const vendorsFile = __dirname + "/data/vendors.json";
 
-// Helper functions to read/write JSON files
+// Helper functions
 const getMenu = () => JSON.parse(fs.readFileSync(menuFile, "utf8"));
 const saveMenu = (menu) => fs.writeFileSync(menuFile, JSON.stringify(menu, null, 2));
 const getOrders = () => JSON.parse(fs.readFileSync(ordersFile, "utf8"));
 const saveOrders = (orders) => fs.writeFileSync(ordersFile, JSON.stringify(orders, null, 2));
 const getVendors = () => JSON.parse(fs.readFileSync(vendorsFile, "utf8"));
 
-// Middleware: Authenticate vendor JWT token
+// Generate unique billing ID
+const generateBillingId = () => {
+  const timestamp = Date.now().toString(36).toUpperCase();
+  const randomPart = Math.floor(Math.random() * 1000).toString().padStart(3, "0");
+  return `BILL-${timestamp}-${randomPart}`;
+};
+
+// Middleware: Authenticate vendor
 const authenticateVendor = (req, res, next) => {
   const token = req.headers["authorization"];
   if (!token) return res.status(401).json({ message: "No token provided" });
@@ -39,7 +46,7 @@ const authenticateVendor = (req, res, next) => {
 
 // ========== PUBLIC ROUTES ==========
 
-// Get menu (accessible to all users)
+// Get menu
 app.get("/menu", (req, res) => {
   try {
     const menu = getMenu();
@@ -49,11 +56,14 @@ app.get("/menu", (req, res) => {
   }
 });
 
-// Place order (accessible to all users)
+// Place order with billing ID
 app.post("/order", (req, res) => {
   try {
     const { items, user, scheduledTime, shopId } = req.body;
     const orders = getOrders();
+
+    const billingId = generateBillingId();
+    const totalAmount = items.reduce((sum, it) => sum + it.price * (it.quantity || 1), 0);
 
     const newOrder = {
       id: orders.length + 1,
@@ -62,12 +72,26 @@ app.post("/order", (req, res) => {
       user: user || "Anonymous",
       scheduledTime: scheduledTime || null,
       status: "pending",
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      billingId
     };
 
     orders.push(newOrder);
     saveOrders(orders);
-    res.json({ status: "success", orderId: newOrder.id, message: "Order placed!" });
+
+    const orderSummary = {
+      billingId,
+      user: newOrder.user,
+      totalAmount,
+      items
+    };
+
+    res.json({ 
+      status: "success", 
+      billingId, 
+      orderSummary, 
+      message: "Order placed!" 
+    });
   } catch (error) {
     res.status(500).json({ message: "Error placing order" });
   }
@@ -107,7 +131,7 @@ app.post("/vendor/login", async (req, res) => {
   }
 });
 
-// Update menu (vendor only - updates their shop's menu)
+// Update menu
 app.put("/menu", authenticateVendor, (req, res) => {
   try {
     const updatedItems = req.body.items;
@@ -127,7 +151,7 @@ app.put("/menu", authenticateVendor, (req, res) => {
   }
 });
 
-// Get orders for vendor's shop only
+// Get orders for vendor's shop
 app.get("/orders", authenticateVendor, (req, res) => {
   try {
     const orders = getOrders();
@@ -139,7 +163,7 @@ app.get("/orders", authenticateVendor, (req, res) => {
   }
 });
 
-// Mark order as ready (vendor only)
+// Mark order as ready
 app.post("/order/ready/:id", authenticateVendor, (req, res) => {
   try {
     const orders = getOrders();
@@ -159,13 +183,12 @@ app.post("/order/ready/:id", authenticateVendor, (req, res) => {
   }
 });
 
-// Get analytics for vendor's shop
+// Get analytics
 app.get("/analytics", authenticateVendor, (req, res) => {
   try {
     const orders = getOrders().filter((o) => o.shopId === req.vendor.shopId);
     const totalOrders = orders.length;
 
-    // Count item popularity
     const itemCounts = {};
     for (const order of orders) {
       for (const item of order.items) {
@@ -185,8 +208,6 @@ app.get("/analytics", authenticateVendor, (req, res) => {
     res.status(500).json({ message: "Error fetching analytics" });
   }
 });
-
-// ========== START SERVER ==========
 
 app.listen(PORT, () => {
   console.log(`Backend running on http://localhost:${PORT}`);

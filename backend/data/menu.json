@@ -3,30 +3,126 @@
     "shopId": 1,
     "shopName": "North Indian Meals",
     "items": [
-      { "id": 1, "name": "Paneer Butter Masala", "price": 120, "available": true },
-      { "id": 2, "name": "Dal Makhani", "price": 100, "available": true },
-      { "id": 11, "name": "Naan", "price": 20, "available": true },
-      { "id": 12, "name": "Biryani", "price": 150, "available": true }
+      {
+        "id": 1,
+        "name": "Paneer Butter Masala",
+        "price": 120,
+        "available": true,
+        "image": "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=200&h=150&fit=crop",
+        "isRecommended": true,
+        "isHotSeller": true
+      },
+      {
+        "id": 2,
+        "name": "Dal Makhani",
+        "price": 100,
+        "available": true,
+        "image": "https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=200&h=150&fit=crop",
+        "isRecommended": false,
+        "isHotSeller": true
+      },
+      {
+        "id": 11,
+        "name": "Naan",
+        "price": 20,
+        "available": true,
+        "image": "https://images.unsplash.com/photo-1619888309589-c0b25c9c4ecc?w=200&h=150&fit=crop",
+        "isRecommended": false,
+        "isHotSeller": false
+      },
+      {
+        "id": 12,
+        "name": "Biryani",
+        "price": 150,
+        "available": true,
+        "image": "https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=200&h=150&fit=crop",
+        "isRecommended": true,
+        "isHotSeller": false
+      }
     ]
   },
   {
     "shopId": 2,
     "shopName": "South Indian Delights",
     "items": [
-      { "id": 3, "name": "Masala Dosa", "price": 70, "available": true },
-      { "id": 4, "name": "Idli Vada", "price": 60, "available": true },
-      { "id": 13, "name": "Sambar Rice", "price": 80, "available": true },
-      { "id": 14, "name": "Filter Coffee", "price": 30, "available": true }
+      {
+        "id": 3,
+        "name": "Masala Dosa",
+        "price": 70,
+        "available": true,
+        "image": "https://images.unsplash.com/photo-1630383249896-424e482df921?w=200&h=150&fit=crop",
+        "isRecommended": true,
+        "isHotSeller": false
+      },
+      {
+        "id": 4,
+        "name": "Idli Vada",
+        "price": 60,
+        "available": true,
+        "image": "https://images.unsplash.com/photo-1589301773859-cb0700fe5cf4?w=200&h=150&fit=crop",
+        "isRecommended": false,
+        "isHotSeller": true
+      },
+      {
+        "id": 13,
+        "name": "Sambar Rice",
+        "price": 80,
+        "available": true,
+        "image": "https://images.unsplash.com/photo-1596797038530-2c107229654b?w=200&h=150&fit=crop",
+        "isRecommended": false,
+        "isHotSeller": false
+      },
+      {
+        "id": 14,
+        "name": "Filter Coffee",
+        "price": 30,
+        "available": true,
+        "image": "https://images.unsplash.com/photo-1517487881594-2787fef5ebf7?w=200&h=150&fit=crop",
+        "isRecommended": true,
+        "isHotSeller": true
+      }
     ]
   },
   {
     "shopId": 3,
     "shopName": "Beverage Corner",
     "items": [
-      { "id": 5, "name": "Cold Coffee", "price": 40, "available": true },
-      { "id": 6, "name": "Mango Juice", "price": 30, "available": true },
-      { "id": 15, "name": "Green Tea", "price": 25, "available": true },
-      { "id": 16, "name": "Smoothie", "price": 60, "available": true }
+      {
+        "id": 5,
+        "name": "Cold Coffee",
+        "price": 40,
+        "available": true,
+        "image": "https://images.unsplash.com/photo-1517487881594-2787fef5ebf7?w=200&h=150&fit=crop",
+        "isRecommended": false,
+        "isHotSeller": true
+      },
+      {
+        "id": 6,
+        "name": "Mango Juice",
+        "price": 30,
+        "available": true,
+        "image": "https://images.unsplash.com/photo-1600271886742-f049cd451bba?w=200&h=150&fit=crop",
+        "isRecommended": true,
+        "isHotSeller": false
+      },
+      {
+        "id": 15,
+        "name": "Green Tea",
+        "price": 25,
+        "available": true,
+        "image": "https://images.unsplash.com/photo-1564890369478-c89ca6d9cde9?w=200&h=150&fit=crop",
+        "isRecommended": false,
+        "isHotSeller": false
+      },
+      {
+        "id": 16,
+        "name": "Smoothie",
+        "price": 60,
+        "available": true,
+        "image": "https://images.unsplash.com/photo-1505252585461-04db1eb84625?w=200&h=150&fit=crop",
+        "isRecommended": true,
+        "isHotSeller": true
+      }
     ]
   }
 ]
