@@ -260,7 +260,7 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
       <div className="filter-section" style={{ display:'flex', gap:12, flexWrap:'wrap', alignItems:'center', marginBottom: 12 }}>
         {!hideShopSelector && (
           <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
-            <div style={{ position:'relative', display:'inline-flex', alignItems:'center', gap:8, background:'#fff', border:'none', borderRadius:12, padding:'6px 12px' }}>
+            <div style={{ position:'relative', display:'inline-flex', alignItems:'center', gap:8, background:'#fff', border:'none', borderRadius:12, padding:'6px 12px', boxShadow:'0 2px 8px rgba(0,0,0,0.08)' }}>
               <select
                 value={selectedShop}
                 onChange={(e) => setSelectedShop(Number(e.target.value))}
