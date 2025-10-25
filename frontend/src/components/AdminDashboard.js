@@ -89,6 +89,7 @@ const AdminDashboard = ({ token }) => {
   const getShopName = (shopId) =>
     menu.find((s) => s.shopId === shopId)?.shopName || shopId;
   const vendorShopName = getShopName(vendorShopId);
+  const [bulkMins, setBulkMins] = useState(5);
   const lowStockItems = useMemo(() => {
     const shop = menu.find(s => s.shopId === vendorShopId);
     if (!shop || !Array.isArray(shop.items)) return [];
@@ -150,13 +151,6 @@ const AdminDashboard = ({ token }) => {
       <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 10, flexWrap: 'wrap' }}>
         <button onClick={() => setMuted(m => !m)}>{muted ? 'Unmute Alerts' : 'Mute Alerts'}</button>
         <span style={{ fontSize: 12, color: '#777' }}>(Overdue sound alerts)</span>
-        <span style={{ marginLeft: 12, fontSize: 12 }}>
-          Low Stock: <strong>{lowStockItems.length}</strong>
-        </span>
-        <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ fontSize: 12, color: '#777' }}>Threshold</span>
-          <input type="number" min="0" value={lowStockThreshold} onChange={(e)=>setLowStockThreshold(Number(e.target.value)||0)} style={{ width: 70 }} />
-        </label>
         <button onClick={() => setShowLowStock(v => !v)}>
           {showLowStock ? 'Hide Low Stock' : `Low Stock Items (${lowStockItems.length})`}
         </button>
@@ -198,11 +192,11 @@ const AdminDashboard = ({ token }) => {
         <button onClick={() => setTab('completed')} className={tab==='completed' ? 'active' : ''}>Completed</button>
       </div>
       {tab === 'current' && (
-        <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 13, color: '#555' }}>Bulk extend pending:</span>
-          <button onClick={() => handleBulkExtend(5)}>+5 min</button>
-          <button onClick={() => handleBulkExtend(10)}>+10 min</button>
-          <button onClick={() => handleBulkExtend(20)}>+20 min</button>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+          <span style={{ fontSize: 13, color: '#555' }}>Bulk extend pending by</span>
+          <input type="number" min="1" value={bulkMins} onChange={(e)=>setBulkMins(Number(e.target.value)||0)} style={{ width: 80 }} />
+          <span>mins</span>
+          <button onClick={() => bulkMins>0 && handleBulkExtend(bulkMins)}>Extend All</button>
         </div>
       )}
       
@@ -339,26 +333,11 @@ const AdminDashboard = ({ token }) => {
  * @param {{ order: any, token: string, onExtended?: ()=>void }} props
  */
 const ExtendControl = ({ order, token, onExtended }) => {
-  const [mins, setMins] = useState(5);
   const [loading, setLoading] = useState(false);
-  const submit = async () => {
-    if (!mins || mins <= 0) return;
-    setLoading(true);
-    try {
-      await extendOrderPrep(order.id, mins, token);
-      onExtended && onExtended();
-    } finally {
-      setLoading(false);
-    }
-  };
   return (
     <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-      <input type="number" min="1" value={mins} onChange={(e)=>setMins(Number(e.target.value)||0)} style={{ width: 60 }} />
-      <button onClick={submit} disabled={loading || !mins}>+ Extend</button>
-      <span style={{ fontSize: 12, color: '#777', marginLeft: 6 }}>Quick:</span>
       <button disabled={loading} onClick={async ()=>{ setLoading(true); try { await extendOrderPrep(order.id, 5, token); onExtended && onExtended(); } finally { setLoading(false);} }}>+5</button>
       <button disabled={loading} onClick={async ()=>{ setLoading(true); try { await extendOrderPrep(order.id, 10, token); onExtended && onExtended(); } finally { setLoading(false);} }}>+10</button>
-      <button disabled={loading} onClick={async ()=>{ setLoading(true); try { await extendOrderPrep(order.id, 20, token); onExtended && onExtended(); } finally { setLoading(false);} }}>+20</button>
     </div>
   );
 };

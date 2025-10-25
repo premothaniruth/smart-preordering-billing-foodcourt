@@ -94,7 +94,12 @@ function App() {
       setView(target);
     };
     window.addEventListener('navigate:menu-editor', navHandler);
-    return () => window.removeEventListener('navigate:menu-editor', navHandler);
+    const clearHandler = () => setTargetItemId(null);
+    window.addEventListener('menu:clear-target', clearHandler);
+    return () => {
+      window.removeEventListener('navigate:menu-editor', navHandler);
+      window.removeEventListener('menu:clear-target', clearHandler);
+    };
   }, []);
 
   // When vendor logs in, force selectedShop to their shop

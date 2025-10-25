@@ -36,6 +36,7 @@ const MenuEditor = ({ token, menu, onUpdate, targetItemId }) => {
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       setHighlightId(Number(targetItemId));
+      try { window.dispatchEvent(new CustomEvent('menu:clear-target')); } catch {}
       const t = setTimeout(() => setHighlightId(null), 2500);
       return () => clearTimeout(t);
     }
