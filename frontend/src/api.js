@@ -228,6 +228,20 @@ export const fetchFavorites = async (userId) => {
 };
 
 /**
+ * Employee Google Login (demo)
+ * @param {string} email
+ * @returns {Promise<any>}
+ */
+export const employeeGoogleLogin = async (email) => {
+  const res = await fetch(`${API_URL}/employee/google-login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email })
+  });
+  return res.json();
+};
+
+/**
  * Submit rating/feedback
  * @param {number} orderId
  * @param {number} rating

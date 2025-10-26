@@ -394,6 +394,29 @@ app.post("/employee/verify-otp", (req, res) => {
   }
 });
 
+// Google login (demo): accept email and create an employee session
+/**
+ * POST /employee/google-login
+ * Public: Accepts { email } and returns a session token for demo purposes.
+ * In production, verify Google ID token on backend.
+ */
+app.post("/employee/google-login", (req, res) => {
+  try {
+    const { email } = req.body || {};
+    if (!email || typeof email !== 'string' || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+      return res.status(400).json({ message: "Valid email is required" });
+    }
+
+    const mobile = email; // use email as user identifier in demo
+    const token = jwt.sign({ role: "employee", mobile }, JWT_SECRET, { expiresIn: "8h" });
+    employeeSessions.set(token, { mobile, createdAt: Date.now() });
+
+    res.json({ status: "ok", token, mobile });
+  } catch (error) {
+    res.status(500).json({ message: "Error during Google login" });
+  }
+});
+
 // Place order with billing ID and customization
 /**
  * POST /order

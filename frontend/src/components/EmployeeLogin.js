@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import PropTypes from "prop-types";
-import { employeeRequestOtp, employeeVerifyOtp } from "../api";
+import { employeeRequestOtp, employeeVerifyOtp, employeeGoogleLogin } from "../api";
 import { toast } from "react-toastify";
 
 /**
@@ -66,7 +66,7 @@ const EmployeeLogin = ({ onSuccess }) => {
     try {
       const res = await employeeRequestOtp(mobile);
       if (res.status === "ok") {
-        toast.info("OTP sent. Check server console.");
+        toast.info("OTP sent. Check server console.", { autoClose: 2000 });
         setStep("otp");
         setResendSeconds(45);
       } else {
@@ -136,6 +136,32 @@ const EmployeeLogin = ({ onSuccess }) => {
           <button type="submit" disabled={loading || mobile.length !== 10} style={{ width:'100%', marginTop:12, padding:'10px 12px', background:'#111', color:'#fff', border:'1px solid #111', borderRadius:8, fontWeight:600 }}>
             {loading ? "Sending..." : "Send OTP"}
           </button>
+          <div style={{ display:'flex', alignItems:'center', margin:'12px 0' }}>
+            <div style={{ flex:1, height:1, background:'#eee' }} />
+            <span style={{ margin:'0 8px', fontSize:12, color:'#888' }}>or</span>
+            <div style={{ flex:1, height:1, background:'#eee' }} />
+          </div>
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                const email = window.prompt("Enter Google account email (demo)");
+                if (!email) return;
+                const res = await employeeGoogleLogin(email);
+                if (res && res.status === 'ok' && res.token) {
+                  onSuccess({ token: res.token, mobile: res.mobile });
+                  toast.success('Logged in with Google');
+                } else {
+                  toast.error(res?.message || 'Google login failed');
+                }
+              } catch {
+                toast.error('Error during Google login');
+              }
+            }}
+            style={{ width:'100%', marginTop:4, padding:'10px 12px', background:'#fff', color:'#111', border:'1px solid #111', borderRadius:8, fontWeight:600, display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}
+          >
+            <span>🔐</span> Continue with Google
+          </button>
         </form>
       )}
 
@@ -157,7 +183,7 @@ const EmployeeLogin = ({ onSuccess }) => {
             <button type="button" onClick={() => setStep("mobile")} style={{ background:'#fff', color:'#111', border:'1px solid #111', padding:'8px 12px', borderRadius:8 }}>Back</button>
             <button
               type="button"
-              onClick={async () => { if (resendSeconds > 0) return; setLoading(true); try { const r = await employeeRequestOtp(mobile); if (r.status === 'ok') { toast.info('OTP sent. Check server console.'); setResendSeconds(45); } else { toast.error(r.message || 'Failed to resend OTP'); } } catch { toast.error('Error requesting OTP'); } finally { setLoading(false);} }}
+              onClick={async () => { if (resendSeconds > 0) return; setLoading(true); try { const r = await employeeRequestOtp(mobile); if (r.status === 'ok') { toast.info('OTP sent. Check server console.', { autoClose: 2000 }); setResendSeconds(45); } else { toast.error(r.message || 'Failed to resend OTP'); } } catch { toast.error('Error requesting OTP'); } finally { setLoading(false);} }}
               disabled={resendSeconds > 0}
               style={{ background:'#fff', color:'#111', border:'1px solid #111', padding:'8px 12px', borderRadius:8, opacity: resendSeconds>0 ? 0.6 : 1 }}
             >
