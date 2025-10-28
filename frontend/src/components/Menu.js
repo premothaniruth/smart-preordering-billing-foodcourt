@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { toggleFavorite } from "../api";
+import React, { useEffect, useState } from "react";
+import { toggleFavorite, fetchActiveOffers, fetchCombos, fetchMenuSections } from "../api";
 import { toast } from "react-toastify";
 
 /**
@@ -31,6 +31,16 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
   const [selectedOption, setSelectedOption] = useState(null);
   const [multiOptionQuantities, setMultiOptionQuantities] = useState({}); // optionName -> qty (working state)
   const [variantDrafts, setVariantDrafts] = useState({}); // itemId -> { optionName -> qty }
+  const [offers, setOffers] = useState([]);
+  const [combos, setCombos] = useState([]);
+  const [sectioned, setSectioned] = useState(null); // { shopId, shopName, sections }
+
+  useEffect(() => {
+    if (!selectedShop) return;
+    fetchActiveOffers(selectedShop).then(setOffers).catch(()=>setOffers([]));
+    fetchCombos(selectedShop, true).then(setCombos).catch(()=>setCombos([]));
+    fetchMenuSections(selectedShop).then(setSectioned).catch(()=>setSectioned(null));
+  }, [selectedShop]);
 
   if (!menu.length) return <p>Loading menu...</p>;
 
@@ -67,6 +77,37 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
       addToCart(item, selectedShop, null, {});
       toast.success(`${item.name} added to cart!`);
     }
+  };
+
+  const renderComboCard = (combo) => {
+    const handleAddCombo = () => {
+      const synthetic = {
+        id: 1000000 + Number(combo.id || 0),
+        comboId: combo.id,
+        name: combo.name || 'Combo',
+        price: Number(combo.price || 0),
+        available: true,
+        image: '',
+        prepTime: 10,
+        inventory: 100
+      };
+      addToCart(synthetic, selectedShop, null, {});
+      toast.success(`${combo.name} combo added to cart!`);
+    };
+    return (
+      <div key={combo.id} className="menu-item-card">
+        <div className="menu-item-content">
+          <div className="menu-item-name">{combo.name}</div>
+          <div className="menu-item-price">₹{combo.price}</div>
+          <div style={{ fontSize: 12, color: '#666', margin: '6px 0' }}>Combo Offer</div>
+          <button
+            className="icon-btn"
+            onClick={handleAddCombo}
+            style={{ width: '100%', padding: '10px 12px', background: '#fff', color: '#111', border: '1px solid #111', borderRadius: 6 }}
+          >Add Combo</button>
+        </div>
+      </div>
+    );
   };
 
   const handleOptionConfirm = () => {
@@ -253,6 +294,16 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
   return (
     <div>
       <h2>Menu</h2>
+      {offers && offers.length > 0 && (
+        <div className="card" style={{ marginBottom: 12, background: '#fff8e6', border: '1px solid #f1c40f' }}>
+          <div style={{ fontWeight: 700, marginBottom: 4 }}>Special Offers</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {offers.map((o)=> (
+              <span key={o.id} className="menu-item-badge" style={{ borderColor: '#f1c40f', color: '#8a6d3b' }}>{o.bannerText || o.title}</span>
+            ))}
+          </div>
+        </div>
+      )}
       <div className="filter-section" style={{ display:'flex', gap:12, flexWrap:'wrap', alignItems:'center', marginBottom: 12 }}>
         {!hideShopSelector && (
           <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
@@ -283,6 +334,27 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
           </label>
         </div>
       </div>
+      {combos && combos.length > 0 && (
+        <>
+          <h3>🎁 Combo Offers</h3>
+          <div className="menu-grid">
+            {combos.map(renderComboCard)}
+          </div>
+        </>
+      )}
+
+      {sectioned && Array.isArray(sectioned.sections) && sectioned.sections.length > 0 && (
+        <>
+          {sectioned.sections.map((sec) => (
+            <div key={sec.name}>
+              <h3>{sec.name}</h3>
+              <div className="menu-grid">
+                {(vegOnly ? sec.items.filter(it=>it.isVeg) : sec.items).map(renderItem)}
+              </div>
+            </div>
+          ))}
+        </>
+      )}
 
       {favoriteItems.length > 0 && (
         <>

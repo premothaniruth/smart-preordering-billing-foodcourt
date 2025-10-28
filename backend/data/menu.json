@@ -76,7 +76,9 @@
             "priceModifier": 30
           }
         ],
-        "inventory": 100
+        "inventory": 100,
+        "section": "Main Course",
+        "sectionOrder": 0
       },
       {
         "id": 6,
@@ -274,7 +276,9 @@
         "isHotSeller": true,
         "isVeg": true,
         "prepTime": 12,
-        "inventory": 100
+        "inventory": 100,
+        "section": "Breakfast",
+        "sectionOrder": 0
       },
       {
         "id": 22,
@@ -286,7 +290,9 @@
         "isHotSeller": true,
         "isVeg": true,
         "prepTime": 8,
-        "inventory": 100
+        "inventory": 100,
+        "section": "Breakfast",
+        "sectionOrder": 1
       },
       {
         "id": 23,
@@ -361,7 +367,9 @@
         "isHotSeller": false,
         "isVeg": true,
         "prepTime": 12,
-        "inventory": 100
+        "inventory": 100,
+        "section": "Breakfast",
+        "sectionOrder": 2
       },
       {
         "id": 28,
@@ -373,7 +381,9 @@
         "isHotSeller": false,
         "isVeg": true,
         "prepTime": 8,
-        "inventory": 100
+        "inventory": 100,
+        "section": "Breakfast",
+        "sectionOrder": 3
       },
       {
         "id": 29,
@@ -481,7 +491,9 @@
         "isHotSeller": false,
         "isVeg": true,
         "prepTime": 10,
-        "inventory": 100
+        "inventory": 100,
+        "section": "Breakfast",
+        "sectionOrder": 4
       },
       {
         "id": 38,
@@ -535,7 +547,9 @@
         "isHotSeller": true,
         "isVeg": true,
         "prepTime": 5,
-        "inventory": 100
+        "inventory": 100,
+        "section": "Beverages",
+        "sectionOrder": 0
       },
       {
         "id": 42,
@@ -619,7 +633,9 @@
         "isHotSeller": true,
         "isVeg": true,
         "prepTime": 5,
-        "inventory": 100
+        "inventory": 100,
+        "section": "Beverages",
+        "sectionOrder": 1
       },
       {
         "id": 49,
@@ -643,7 +659,9 @@
         "isHotSeller": true,
         "isVeg": true,
         "prepTime": 6,
-        "inventory": 100
+        "inventory": 100,
+        "section": "Beverages",
+        "sectionOrder": 2
       },
       {
         "id": 51,

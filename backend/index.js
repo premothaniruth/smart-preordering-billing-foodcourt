@@ -24,6 +24,9 @@ const billingCounterFile = __dirname + "/data/billing_counter.json";
 const favoritesFile = __dirname + "/data/favorites.json";
 const ratingsFile = __dirname + "/data/ratings.json";
 const grievancesFile = __dirname + "/data/grievances.json";
+const combosFile = __dirname + "/data/combos.json";
+const offersFile = __dirname + "/data/offers.json";
+const sectionWindowsFile = __dirname + "/data/section_windows.json";
 
 // Helper functions
 /**
@@ -101,6 +104,40 @@ const getGrievances = () => {
  * @param {Array} grievances
  */
 const saveGrievances = (grievances) => fs.writeFileSync(grievancesFile, JSON.stringify(grievances, null, 2));
+
+// Combos
+/** @returns {Array} */
+const getCombos = () => {
+  try {
+    return JSON.parse(fs.readFileSync(combosFile, "utf8"));
+  } catch {
+    return [];
+  }
+};
+/** @param {Array} combos */
+const saveCombos = (combos) => fs.writeFileSync(combosFile, JSON.stringify(combos, null, 2));
+
+// Offers
+/** @returns {Array} */
+const getOffers = () => {
+  try {
+    return JSON.parse(fs.readFileSync(offersFile, "utf8"));
+  } catch {
+    return [];
+  }
+};
+/** @param {Array} offers */
+const saveOffers = (offers) => fs.writeFileSync(offersFile, JSON.stringify(offers, null, 2));
+
+// Section time windows
+/** @returns {Record<string,{start:string,end:string}>} */
+const getSectionWindows = () => {
+  try {
+    return JSON.parse(fs.readFileSync(sectionWindowsFile, "utf8"));
+  } catch {
+    return {};
+  }
+};
 
 // In-memory stores (no database)
 const employeeOtps = new Map(); // mobile -> { otp, expiresAt }
@@ -265,9 +302,54 @@ app.get("/menu", (req, res) => {
       }
     }
     if (changed) saveMenu(menu);
-    res.json(menu);
+    // Support optional filtering by shop and section windows time
+    const shopId = req.query.shopId ? String(req.query.shopId) : null;
+    const includeSections = String(req.query.includeSections || "").toLowerCase() === '1' || String(req.query.includeSections || "").toLowerCase() === 'true';
+    const at = req.query.at ? new Date(req.query.at) : new Date();
+    const toHM = (d) => `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    const hm = toHM(at);
+    const windows = getSectionWindows();
+    const inWindow = (sec) => {
+      const w = windows[sec];
+      if (!w || !w.start || !w.end) return true;
+      return hm >= w.start && hm <= w.end;
+    };
+    if (!includeSections || !shopId) {
+      return res.json(menu);
+    }
+    const shop = menu.find(s => String(s.shopId) === shopId);
+    if (!shop) return res.json([]);
+    const bySection = {};
+    for (const it of (shop.items || [])) {
+      const sec = (it.section && typeof it.section === 'string') ? it.section : 'All Items';
+      if (!bySection[sec]) bySection[sec] = [];
+      bySection[sec].push(it);
+    }
+    const sections = Object.entries(bySection)
+      .filter(([sec]) => inWindow(sec))
+      .map(([name, items]) => {
+        const filtered = items.filter(it => it.hidden !== true);
+        filtered.sort((a,b)=>Number(a.sectionOrder||0)-Number(b.sectionOrder||0));
+        return { name, items: filtered.slice(0, 30) };
+      });
+    return res.json({ shopId: shop.shopId, shopName: shop.shopName, sections, time: hm });
   } catch (error) {
     res.status(500).json({ message: "Error fetching menu" });
+  }
+});
+
+// Section windows listing
+/**
+ * GET /sections
+ * Public: Returns configured section time windows and allowed section names.
+ */
+app.get('/sections', (req, res) => {
+  try {
+    const windows = getSectionWindows();
+    const names = Object.keys(windows);
+    res.json({ windows, names });
+  } catch (e) {
+    res.status(500).json({ message: 'Error fetching sections' });
   }
 });
 
@@ -427,7 +509,7 @@ app.post("/employee/google-login", (req, res) => {
 app.post("/order", (req, res) => {
   try {
     const { items, user, scheduledTime, shopId } = req.body;
-    // Validate inventory and decrement
+    // Validate inventory and decrement (supports combo expansion)
     const menu = getMenu();
     const shop = menu.find((s) => String(s.shopId) === String(shopId));
     if (!shop) {
@@ -435,12 +517,30 @@ app.post("/order", (req, res) => {
     }
     shop.items = Array.isArray(shop.items) ? shop.items : [];
 
-    // Aggregate required quantities per item.id
-    const required = new Map();
+    // Expand combos into required item quantities
+    const combos = getCombos();
+    const isComboLine = (x) => x && (x.comboId != null);
+    const required = new Map(); // itemId -> qty
+    const flatItems = [];
     for (const it of items || []) {
       const qty = Number(it.quantity || 1);
-      const key = it.id;
-      required.set(key, (required.get(key) || 0) + qty);
+      if (isComboLine(it)) {
+        const combo = combos.find(c => String(c.id) === String(it.comboId) && String(c.shopId) === String(shopId) && (c.active !== false));
+        if (!combo) {
+          return res.status(400).json({ message: "Invalid combo", comboId: it.comboId });
+        }
+        const comp = Array.isArray(combo.components) ? combo.components : [];
+        for (const compIt of comp) {
+          const id = compIt.itemId;
+          const inc = Number(compIt.quantity || 1) * qty;
+          required.set(id, (required.get(id) || 0) + inc);
+          flatItems.push({ id, name: compIt.name || (shop.items.find(i=>i.id===id)?.name) || `Item ${id}` , price: Number(compIt.overridePrice ?? (shop.items.find(i=>i.id===id)?.price || 0)), quantity: inc, option: compIt.option || null, prepTime: compIt.prepTime || (shop.items.find(i=>i.id===id)?.prepTime || 5) });
+        }
+      } else {
+        const key = it.id;
+        required.set(key, (required.get(key) || 0) + qty);
+        flatItems.push({ id: it.id, name: it.name, price: it.price, quantity: qty, option: it.option || null, prepTime: it.prepTime });
+      }
     }
 
     // Check availability
@@ -467,14 +567,71 @@ app.post("/order", (req, res) => {
     const orders = getOrders();
 
     const billingId = generateBillingId();
-    const totalAmount = items.reduce((sum, it) => sum + it.price * (it.quantity || 1), 0);
+    let totalAmount = flatItems.reduce((sum, it) => sum + it.price * (it.quantity || 1), 0);
+    // Apply active offers/discounts
+    try {
+      const now = new Date();
+      const offers = getOffers().filter(o => {
+        if (String(o.shopId) !== String(shopId)) return false;
+        const start = o.start ? new Date(o.start) : null;
+        const end = o.end ? new Date(o.end) : null;
+        if (start && now < start) return false;
+        if (end && now > end) return false;
+        return o.active !== false;
+      });
+      if (offers.length > 0) {
+        const idToSection = new Map((shop.items || []).map(i => [i.id, i.section || null]));
+        const comboIdsInOrder = new Set((items || []).filter(x => x && x.comboId != null).map(x => String(x.comboId)));
+        let discountTotal = 0;
+        const OFFERS_MAX_DISCOUNT = Number(process.env.OFFERS_MAX_DISCOUNT || 0); // 0 = no global cap
+        for (const off of offers) {
+          const percent = off.discountPercent ? Number(off.discountPercent) : null;
+          const amount = off.discountAmount ? Number(off.discountAmount) : null;
+          const hasScopeSections = Array.isArray(off.applicableSections) && off.applicableSections.length > 0;
+          const hasScopeCombos = Array.isArray(off.applicableComboIds) && off.applicableComboIds.length > 0;
+          let base = 0;
+          if (!hasScopeSections && !hasScopeCombos) {
+            base = totalAmount; // global order-level offer
+          } else {
+            if (hasScopeSections) {
+              for (const fi of flatItems) {
+                const sec = idToSection.get(fi.id);
+                if (sec && off.applicableSections.includes(sec)) {
+                  base += (fi.price * (fi.quantity || 1));
+                }
+              }
+            }
+            if (hasScopeCombos && comboIdsInOrder.size > 0) {
+              // If any targeted combos were ordered, apply over entire order or same base (choose conservative: apply on totalAmount)
+              const any = off.applicableComboIds.some(cid => comboIdsInOrder.has(String(cid)));
+              if (any && base === 0) base = totalAmount; // if no sections base, apply to total
+            }
+          }
+          if (base <= 0) continue;
+          // Non-stackable: if any discount already applied, skip
+          if (off.stackable === false && discountTotal > 0) continue;
+          let thisDiscount = 0;
+          if (percent != null && percent > 0) thisDiscount += (base * (percent / 100));
+          if (amount != null && amount > 0) thisDiscount += amount;
+          if (off.maxDiscountAmount != null && off.maxDiscountAmount > 0) {
+            thisDiscount = Math.min(thisDiscount, Number(off.maxDiscountAmount));
+          }
+          if (OFFERS_MAX_DISCOUNT > 0 && (discountTotal + thisDiscount) > OFFERS_MAX_DISCOUNT) {
+            const remaining = Math.max(0, OFFERS_MAX_DISCOUNT - discountTotal);
+            thisDiscount = Math.min(thisDiscount, remaining);
+          }
+          discountTotal += thisDiscount;
+        }
+        if (discountTotal > 0) totalAmount = Math.max(0, totalAmount - discountTotal);
+      }
+    } catch {}
     
     const prepTime = calculatePreparationTime(items, shopId);
     const estimatedReadyTime = new Date(Date.now() + prepTime * 60000).toISOString();
 
     const newOrder = {
       id: orders.length + 1,
-      items,
+      items: flatItems,
       shopId,
       user: user || "Anonymous",
       scheduledTime: scheduledTime || null,
@@ -496,7 +653,7 @@ app.post("/order", (req, res) => {
       billingId,
       user: newOrder.user,
       totalAmount,
-      items,
+      items: flatItems,
       estimatedReadyTime,
       prepTime
     };
@@ -719,6 +876,116 @@ app.get("/orders", authenticateVendor, (req, res) => {
     res.json(filteredOrders);
   } catch (error) {
     res.status(500).json({ message: "Error fetching orders" });
+  }
+});
+
+// ===== Combos & Offers =====
+/**
+ * GET /combos?shopId=&activeOnly=
+ * Public: List combos for a shop.
+ */
+app.get('/combos', (req, res) => {
+  try {
+    const shopId = req.query.shopId ? String(req.query.shopId) : null;
+    const activeOnly = String(req.query.activeOnly || '').toLowerCase() === '1' || String(req.query.activeOnly || '').toLowerCase() === 'true';
+    let combos = getCombos();
+    if (shopId) combos = combos.filter(c => String(c.shopId) === shopId);
+    if (activeOnly) combos = combos.filter(c => c.active !== false);
+    res.json(combos);
+  } catch (e) {
+    res.status(500).json({ message: 'Error fetching combos' });
+  }
+});
+
+/**
+ * PUT /combos
+ * Vendor: Replace combos for this vendor's shop.
+ */
+app.put('/combos', authenticateVendor, (req, res) => {
+  try {
+    const incoming = Array.isArray(req.body.combos) ? req.body.combos : [];
+    const all = getCombos();
+    const rest = all.filter(c => String(c.shopId) !== String(req.vendor.shopId));
+    const normalized = incoming.map(c => ({
+      id: c.id || Date.now() + Math.random(),
+      shopId: req.vendor.shopId,
+      name: c.name || 'Combo',
+      price: Number(c.price || 0),
+      active: c.active !== false,
+      components: Array.isArray(c.components) ? c.components : []
+    }));
+    saveCombos([...rest, ...normalized]);
+    res.json({ status: 'success', message: 'Combos updated' });
+  } catch (e) {
+    res.status(500).json({ message: 'Error updating combos' });
+  }
+});
+
+/**
+ * GET /offers/active?shopId=
+ * Public: Active offers for a shop based on date range.
+ */
+app.get('/offers/active', (req, res) => {
+  try {
+    const now = new Date();
+    const shopId = req.query.shopId ? String(req.query.shopId) : null;
+    const offers = getOffers().filter(o => {
+      if (shopId && String(o.shopId) !== shopId) return false;
+      const start = o.start ? new Date(o.start) : null;
+      const end = o.end ? new Date(o.end) : null;
+      if (start && now < start) return false;
+      if (end && now > end) return false;
+      return o.active !== false;
+    });
+    res.json(offers);
+  } catch (e) {
+    res.status(500).json({ message: 'Error fetching offers' });
+  }
+});
+
+/**
+ * PUT /offers
+ * Vendor: Replace offers for this vendor's shop.
+ */
+app.put('/offers', authenticateVendor, (req, res) => {
+  try {
+    const incoming = Array.isArray(req.body.offers) ? req.body.offers : [];
+    const all = getOffers();
+    const rest = all.filter(o => String(o.shopId) !== String(req.vendor.shopId));
+    const normalized = incoming.map(o => ({
+      id: o.id || Date.now() + Math.random(),
+      shopId: req.vendor.shopId,
+      title: o.title || 'Special Offer',
+      bannerText: o.bannerText || o.title || 'Offer',
+      discountPercent: o.discountPercent ? Number(o.discountPercent) : null,
+      discountAmount: o.discountAmount ? Number(o.discountAmount) : null,
+      applicableSections: Array.isArray(o.applicableSections) ? o.applicableSections : [],
+      applicableComboIds: Array.isArray(o.applicableComboIds) ? o.applicableComboIds : [],
+      start: o.start || null,
+      end: o.end || null,
+      active: o.active !== false,
+      stackable: o.stackable !== false,
+      maxDiscountAmount: o.maxDiscountAmount ? Number(o.maxDiscountAmount) : null
+    }));
+    saveOffers([...rest, ...normalized]);
+    res.json({ status: 'success', message: 'Offers updated' });
+  } catch (e) {
+    res.status(500).json({ message: 'Error updating offers' });
+  }
+});
+
+/**
+ * GET /offers?shopId=
+ * Public: List all offers for a shop (management UI read).
+ */
+app.get('/offers', (req, res) => {
+  try {
+    const shopId = req.query.shopId ? String(req.query.shopId) : null;
+    let offers = getOffers();
+    if (shopId) offers = offers.filter(o => String(o.shopId) === shopId);
+    res.json(offers);
+  } catch (e) {
+    res.status(500).json({ message: 'Error fetching offers' });
   }
 });
 

@@ -10,6 +10,41 @@ export const fetchMenu = async () => {
 };
 
 /**
+ * Fetch all offers for a shop (management UI)
+ * @param {string|number} shopId
+ */
+export const fetchOffers = async (shopId) => {
+  const params = new URLSearchParams();
+  if (shopId != null) params.set('shopId', String(shopId));
+  const res = await fetch(`${API_URL}/offers?${params.toString()}`);
+  return res.json();
+};
+
+/**
+ * Fetch menu grouped by sections for a shop, respecting time windows
+ * @param {string|number} shopId
+ * @param {Date=} at
+ * @returns {Promise<{shopId:number,shopName:string,sections:Array<{name:string,items:any[]}>}>}
+ */
+export const fetchMenuSections = async (shopId, at) => {
+  const params = new URLSearchParams();
+  params.set('includeSections', '1');
+  if (shopId != null) params.set('shopId', String(shopId));
+  if (at) params.set('at', at.toISOString());
+  const res = await fetch(`${API_URL}/menu?${params.toString()}`);
+  return res.json();
+};
+
+/**
+ * Fetch section windows and names
+ * @returns {Promise<{windows:Record<string,{start:string,end:string}>, names:string[]}>}
+ */
+export const fetchSectionsMeta = async () => {
+  const res = await fetch(`${API_URL}/sections`);
+  return res.json();
+};
+
+/**
  * Vendor login
  * @param {string} username
  * @param {string} password
@@ -78,6 +113,58 @@ export const placeOrder = async (order) => {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(order),
+  });
+  return res.json();
+};
+
+/**
+ * Fetch combos for a shop
+ * @param {string|number} shopId
+ * @param {boolean=} activeOnly
+ */
+export const fetchCombos = async (shopId, activeOnly = true) => {
+  const params = new URLSearchParams();
+  if (shopId != null) params.set('shopId', String(shopId));
+  if (activeOnly) params.set('activeOnly', '1');
+  const res = await fetch(`${API_URL}/combos?${params.toString()}`);
+  return res.json();
+};
+
+/**
+ * Update combos for vendor shop
+ * @param {any[]} combos
+ * @param {string} token
+ */
+export const updateCombos = async (combos, token) => {
+  const res = await fetch(`${API_URL}/combos`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ combos })
+  });
+  return res.json();
+};
+
+/**
+ * Fetch active offers for a shop
+ * @param {string|number} shopId
+ */
+export const fetchActiveOffers = async (shopId) => {
+  const params = new URLSearchParams();
+  if (shopId != null) params.set('shopId', String(shopId));
+  const res = await fetch(`${API_URL}/offers/active?${params.toString()}`);
+  return res.json();
+};
+
+/**
+ * Update offers for vendor shop
+ * @param {any[]} offers
+ * @param {string} token
+ */
+export const updateOffers = async (offers, token) => {
+  const res = await fetch(`${API_URL}/offers`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ offers })
   });
   return res.json();
 };

@@ -7,6 +7,8 @@ import Login from "./components/Login";
 import EmployeeLogin from "./components/EmployeeLogin";
 import MenuEditor from "./components/MenuEditor";
 import AdminDashboard from "./components/AdminDashboard";
+import VendorCombos from "./components/VendorCombos";
+import VendorOffers from "./components/VendorOffers";
 import VendorFeedbacks from "./components/VendorFeedbacks";
 import Analytics from "./components/Analytics";
 import OrderHistory from "./components/OrderHistory";
@@ -305,6 +307,7 @@ function App() {
       name: c.item.name,
       price: c.item.finalPrice,
       quantity: c.quantity,
+      comboId: c.item.comboId || null,
       option: c.item.selectedOption?.name || null,
       customization: c.item.customization,
       prepTime: c.item.prepTime
@@ -446,6 +449,8 @@ function App() {
               <button onClick={() => setView("dashboard")}>Dashboard</button>
               <button onClick={() => setView("menu-editor")}>Edit Menu</button>
               <button onClick={() => setView("analytics")}>Analytics</button>
+              <button onClick={() => setView("vendor-combos")}>Combos</button>
+              <button onClick={() => setView("vendor-offers")}>Offers</button>
               <button onClick={() => setView("feedbacks")}>Feedbacks</button>
               <button onClick={() => setView("grievances")}>Complaints</button>
               <button onClick={() => setView("user")}>Switch to User View</button>
@@ -456,6 +461,8 @@ function App() {
             )}
             {view === "dashboard" && <AdminDashboard token={vendorToken} />}
             {view === "analytics" && <Analytics token={vendorToken} />}
+            {view === "vendor-combos" && <VendorCombos token={vendorToken} />}
+            {view === "vendor-offers" && <VendorOffers token={vendorToken} />}
             {view === "grievances" && <VendorGrievances token={vendorToken} />}
             {view === "feedbacks" && <VendorFeedbacks token={vendorToken} />}
             {view === "user" && (

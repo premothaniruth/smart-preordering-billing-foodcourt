@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { updateMenu } from "../api";
+import { updateMenu, fetchSectionsMeta } from "../api";
 import { toast } from "react-toastify";
 
 /**
@@ -22,12 +22,22 @@ const MenuEditor = ({ token, menu, onUpdate, targetItemId }) => {
   const [items, setItems] = useState([]);
   const [lowThreshold, setLowThreshold] = useState(10);
   const [highlightId, setHighlightId] = useState(null);
+  const [sectionNames, setSectionNames] = useState([]);
+  const [dragItemId, setDragItemId] = useState(null);
+  const [sectionFilter, setSectionFilter] = useState('');
 
   // Sync local items when selected shop or menu changes
   useEffect(() => {
     const shop = menu.find(s => s.shopId === selectedShop);
     setItems(shop && Array.isArray(shop.items) ? shop.items : []);
   }, [selectedShop, menu]);
+
+  // Load section names
+  useEffect(() => {
+    fetchSectionsMeta().then((d)=>{
+      setSectionNames(Array.isArray(d?.names) ? d.names : []);
+    }).catch(()=>setSectionNames([]));
+  }, []);
 
   // Auto-scroll to deep-linked item from dashboard and briefly highlight
   useEffect(() => {
@@ -78,7 +88,8 @@ const MenuEditor = ({ token, menu, onUpdate, targetItemId }) => {
       prepTime: 10,
       inventory: 0,
       hasOptions: false,
-      options: []
+      options: [],
+      section: sectionNames[0] || "Breakfast"
     }, ...items]);
   };
 
@@ -136,6 +147,32 @@ const MenuEditor = ({ token, menu, onUpdate, targetItemId }) => {
     });
   }, [items, lowThreshold]);
 
+  const handleDragStart = (id) => setDragItemId(id);
+  const handleDragOver = (e) => { e.preventDefault(); };
+  const handleDropOn = (targetId) => {
+    if (!dragItemId || dragItemId === targetId) return;
+    const dragItem = items.find(it => it.id === dragItemId);
+    const targetItem = items.find(it => it.id === targetId);
+    if (!dragItem || !targetItem) return;
+    // Reorder only within same section
+    const sec = dragItem.section || '';
+    if ((targetItem.section || '') !== sec) return;
+    const sectionItems = items.filter(it => (it.section || '') === sec);
+    const others = items.filter(it => (it.section || '') !== sec);
+    const order = sectionItems.slice().sort((a,b)=>Number(a.sectionOrder||0)-Number(b.sectionOrder||0));
+    const fromIdx = order.findIndex(x=>x.id===dragItemId);
+    const toIdx = order.findIndex(x=>x.id===targetId);
+    if (fromIdx < 0 || toIdx < 0) return;
+    const moved = order.splice(fromIdx,1)[0];
+    order.splice(toIdx,0,moved);
+    // Re-assign sectionOrder
+    const reassigned = order.map((it, i) => ({ ...it, sectionOrder: i }));
+    // Merge back
+    const next = [...others, ...reassigned];
+    setItems(next);
+    setDragItemId(null);
+  };
+
   return (
     <div>
       <h2>Menu Editor</h2>
@@ -157,18 +194,32 @@ const MenuEditor = ({ token, menu, onUpdate, targetItemId }) => {
         <input type="number" min="0" value={lowThreshold} onChange={(e)=>setLowThreshold(Number(e.target.value)||0)} style={{ width: 80 }} />
         <button onClick={applyRestockLow}>Restock low</button>
         <button onClick={applyRestockAll}>Restock all</button>
+        <span style={{ fontSize: 12, color: '#777' }}>Filter section</span>
+        <select value={sectionFilter} onChange={(e)=>setSectionFilter(e.target.value)}>
+          <option value="">All</option>
+          {sectionNames.map(s => (<option key={s} value={s}>{s}</option>))}
+        </select>
       </div>
       
-      {displayItems.map(({ it, idx }) => (
+      {displayItems
+        .filter(({ it }) => !sectionFilter || (it.section || '') === sectionFilter)
+        .map(({ it, idx }) => (
         <div
           key={it.id}
           className="menu-editor-item"
           id={`menu-item-${it.id}`}
+          draggable
+          onDragStart={() => handleDragStart(it.id)}
+          onDragOver={handleDragOver}
+          onDrop={() => handleDropOn(it.id)}
           style={Number(it.inventory || 0) <= Number(lowThreshold)
             ? { borderLeft: '4px solid #e67e22', background: 'rgba(230, 126, 34, 0.06)' }
             : { ...((highlightId === it.id) ? { outline: '2px solid #3498db', boxShadow: '0 0 0 4px rgba(52,152,219,0.15)' } : {}) }}
         >
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "auto 1fr 1fr", gap: 10, alignItems: 'start' }}>
+            <div title="Drag to reorder within section" style={{ cursor: 'grab', userSelect: 'none', paddingTop: 22 }} aria-hidden>
+              ☰
+            </div>
             <div>
               <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>Item Name</div>
               <input 
@@ -184,6 +235,27 @@ const MenuEditor = ({ token, menu, onUpdate, targetItemId }) => {
                 type="number" 
                 value={it.price} 
                 onChange={(e) => handleChange(idx, "price", e.target.value)} 
+              />
+            </div>
+            <div>
+              <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>Section</div>
+              <select
+                value={it.section || ''}
+                onChange={(e)=>handleChange(idx, 'section', e.target.value)}
+              >
+                <option value="">Select section</option>
+                {sectionNames.map((s)=> (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>Section Order</div>
+              <input
+                type="number"
+                placeholder="Order"
+                value={Number(it.sectionOrder || 0)}
+                onChange={(e)=>handleChange(idx, 'sectionOrder', Number(e.target.value)||0)}
               />
             </div>
             <div>
@@ -226,6 +298,24 @@ const MenuEditor = ({ token, menu, onUpdate, targetItemId }) => {
                 onChange={(e) => handleChange(idx, "hasOptions", e.target.checked)}
               /> Has Variants
             </label>
+            {it.hasOptions && (
+              <div style={{ marginTop: 8 }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = [...items];
+                    const opts = [...(next[idx].options || [])];
+                    const hasVeg = opts.some(o=>String(o.name).toLowerCase()==='veg');
+                    const hasNonVeg = opts.some(o=>String(o.name).toLowerCase()==='non-veg' || String(o.name).toLowerCase()==='non veg');
+                    if (!hasVeg) opts.push({ name: 'Veg', priceModifier: 0 });
+                    if (!hasNonVeg) opts.push({ name: 'Non-Veg', priceModifier: 20 });
+                    next[idx] = { ...next[idx], options: opts };
+                    setItems(next);
+                    toast.success('Added Veg/Non-Veg variants');
+                  }}
+                >Quick add Veg/Non-Veg</button>
+              </div>
+            )}
             {it.hasOptions && (
               <div style={{ marginTop: 10, padding: 10, background: '#f8f9fa', borderRadius: 6 }}>
                 <div style={{ fontSize: 12, color: '#666', marginBottom: 8, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
@@ -312,6 +402,13 @@ const MenuEditor = ({ token, menu, onUpdate, targetItemId }) => {
                 checked={it.isHotSeller} 
                 onChange={(e) => handleChange(idx, "isHotSeller", e.target.checked)} 
               /> Hot Seller
+            </label>
+            <label>
+              <input
+                type="checkbox"
+                checked={!!it.hidden}
+                onChange={(e)=>handleChange(idx, 'hidden', e.target.checked)}
+              /> Hidden
             </label>
           </div>
           
