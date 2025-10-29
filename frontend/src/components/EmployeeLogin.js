@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import PropTypes from "prop-types";
-import { employeeRequestOtp, employeeVerifyOtp, employeeGoogleLogin, employeeAppleLogin, employeePasswordLogin, employeePinLogin, employeeResetPin, employeeResetPassword, employeeCheckUsername, employeeRegister } from "../api";
+import { employeeRequestOtp, employeeVerifyOtp, employeeGoogleLogin, employeeAppleLogin, employeePasswordLogin, employeePinLogin, employeeCheckUsername, employeeRegister } from "../api";
 import { toast } from "react-toastify";
 
 /**
@@ -11,6 +11,7 @@ import { toast } from "react-toastify";
 
 const EmployeeLogin = ({ onSuccess }) => {
   const [step, setStep] = useState("mobile");
+  const [mode, setMode] = useState('mobile'); // 'mobile' | 'pin' | 'password'
   const [mobile, setMobile] = useState("");
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
@@ -23,12 +24,6 @@ const EmployeeLogin = ({ onSuccess }) => {
   const [pinUname, setPinUname] = useState("");
   const [pin, setPin] = useState("");
   const [pinContact, setPinContact] = useState("");
-  const [resetPinUname, setResetPinUname] = useState("");
-  const [resetPinContact, setResetPinContact] = useState("");
-  const [resetPinValue, setResetPinValue] = useState("");
-  const [resetPwdUname, setResetPwdUname] = useState("");
-  const [resetPwdContact, setResetPwdContact] = useState("");
-  const [resetPwdValue, setResetPwdValue] = useState("");
   const [showRegister, setShowRegister] = useState(false);
   const [regUsername, setRegUsername] = useState("");
   const [regEmail, setRegEmail] = useState("");
@@ -121,8 +116,27 @@ const EmployeeLogin = ({ onSuccess }) => {
 
   return (
     <div style={{ display:'flex', justifyContent:'center', padding:'20px' }}>
-      {step === "mobile" && (
-        <form onSubmit={requestOtp} style={{ width:'100%', maxWidth: 380, background:'#fff', border:'1px solid #eee', borderRadius:12, padding:18, boxShadow:'0 6px 24px rgba(0,0,0,0.06)' }}>
+      <div style={{ width:'100%', maxWidth: 420 }}>
+        <div className="card" style={{ marginBottom: 12, padding: 12 }}>
+          <div style={{ fontWeight:700, marginBottom:8, fontSize:14 }}>Choose Login Method</div>
+          <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
+            <label style={{ display:'flex', alignItems:'center', gap:6 }}>
+              <input type="radio" name="emp-login-mode" checked={mode==='mobile'} onChange={()=>{ setMode('mobile'); setStep('mobile'); }} />
+              <span>Login by Mobile (OTP)</span>
+            </label>
+            <label style={{ display:'flex', alignItems:'center', gap:6 }}>
+              <input type="radio" name="emp-login-mode" checked={mode==='pin'} onChange={()=> setMode('pin')} />
+              <span>Login by PIN</span>
+            </label>
+            <label style={{ display:'flex', alignItems:'center', gap:6 }}>
+              <input type="radio" name="emp-login-mode" checked={mode==='password'} onChange={()=> setMode('password')} />
+              <span>Login by Username & Password</span>
+            </label>
+          </div>
+        </div>
+
+        {mode === 'mobile' && step === "mobile" && (
+        <form onSubmit={requestOtp} style={{ width:'100%', background:'#fff', border:'1px solid #eee', borderRadius:12, padding:18, boxShadow:'0 6px 24px rgba(0,0,0,0.06)' }}>
           <h2 style={{ margin:0, fontSize:20 }}>Employee Login</h2>
           <div style={{ position:'relative', marginTop:12 }}>
             <input
@@ -312,102 +326,10 @@ const EmployeeLogin = ({ onSuccess }) => {
               </svg>
             </button>
           </div>
-          <div style={{ display:'grid', gap:10, marginTop:12 }}>
-            <div className="card" style={{ padding:12 }}>
-              <div style={{ fontWeight:700, marginBottom:8, fontSize:14 }}>Login with Username & Password</div>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr auto', gap:8 }}>
-                <input placeholder="Username or Email" value={uname} onChange={(e)=>setUname(e.target.value)} />
-                <input type="password" placeholder="Password" value={pwd} onChange={(e)=>setPwd(e.target.value)} />
-                <button
-                  type="button"
-                  onClick={async () => {
-                    try {
-                      if (!uname || !pwd) { toast.error('Enter username and password'); return; }
-                      setLoading(true);
-                      const res = await employeePasswordLogin(uname, pwd);
-                      if (res && res.status === 'ok' && res.token) {
-                        onSuccess({ token: res.token, mobile: res.mobile });
-                        toast.success('Logged in');
-                      } else {
-                        toast.error(res?.message || 'Login failed');
-                      }
-                    } catch { toast.error('Error during login'); } finally { setLoading(false); }
-                  }}
-                >Login</button>
-              </div>
-            </div>
-            <div className="card" style={{ padding:12 }}>
-              <div style={{ fontWeight:700, marginBottom:8, fontSize:14 }}>Login with 4-digit PIN</div>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 120px 1fr auto', gap:8 }}>
-                <input placeholder="Username or Email" value={pinUname} onChange={(e)=>setPinUname(e.target.value)} />
-                <input placeholder="PIN" maxLength={4} value={pin} onChange={(e)=>setPin(e.target.value.replace(/[^0-9]/g,'').slice(0,4))} />
-                <input placeholder="Mobile or Email (pairing)" value={pinContact} onChange={(e)=>setPinContact(e.target.value)} />
-                <button
-                  type="button"
-                  onClick={async () => {
-                    try {
-                      if (!pinUname || !/^\d{4}$/.test(pin)) { toast.error('Enter username and 4-digit PIN'); return; }
-                      setLoading(true);
-                      const res = await employeePinLogin(pinUname, pin, pinContact || undefined);
-                      if (res && res.status === 'ok' && res.token) {
-                        onSuccess({ token: res.token, mobile: res.mobile });
-                        toast.success('Logged in');
-                      } else {
-                        toast.error(res?.message || 'PIN login failed');
-                      }
-                    } catch { toast.error('Error during PIN login'); } finally { setLoading(false); }
-                  }}
-                >Enter</button>
-              </div>
-              <div style={{ fontSize:12, color:'#666', marginTop:6 }}>
-                PIN must be exactly 4 digits. If this is your first PIN login, provide your registered mobile or email to pair your PIN.
-              </div>
-            </div>
-
-            <div className="card" style={{ padding:12 }}>
-              <div style={{ fontWeight:700, marginBottom:8, fontSize:14 }}>Reset PIN</div>
-              <div style={{ fontSize:12, color:'#666', marginBottom:6 }}>Rules: PIN must be exactly 4 digits (0-9). Provide your registered mobile or email for verification.</div>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 120px auto', gap:8 }}>
-                <input placeholder="Username or Email" value={resetPinUname} onChange={(e)=>setResetPinUname(e.target.value)} />
-                <input placeholder="Mobile or Email" value={resetPinContact} onChange={(e)=>setResetPinContact(e.target.value)} />
-                <input placeholder="New PIN" maxLength={4} value={resetPinValue} onChange={(e)=>setResetPinValue(e.target.value.replace(/[^0-9]/g,'').slice(0,4))} />
-                <button type="button" onClick={async ()=>{
-                  try {
-                    if (!resetPinUname || !resetPinContact || !/^\d{4}$/.test(resetPinValue)) { toast.error('Enter username, contact and 4-digit PIN'); return; }
-                    setLoading(true);
-                    const res = await employeeResetPin(resetPinUname, resetPinContact, resetPinValue);
-                    if (res && res.status==='ok') { toast.success('PIN reset successfully'); setResetPinUname(''); setResetPinContact(''); setResetPinValue(''); }
-                    else { toast.error(res?.message || 'Failed to reset PIN'); }
-                  } catch { toast.error('Error resetting PIN'); } finally { setLoading(false); }
-                }}>Reset PIN</button>
-              </div>
-            </div>
-
-            <div className="card" style={{ padding:12 }}>
-              <div style={{ fontWeight:700, marginBottom:8, fontSize:14 }}>Reset Password</div>
-              <div style={{ fontSize:12, color:'#666', marginBottom:6 }}>Rules: 8-20 chars with lowercase, UPPERCASE, number, and one symbol from .,&%#@!</div>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr auto', gap:8 }}>
-                <input placeholder="Username or Email" value={resetPwdUname} onChange={(e)=>setResetPwdUname(e.target.value)} />
-                <input placeholder="Mobile or Email" value={resetPwdContact} onChange={(e)=>setResetPwdContact(e.target.value)} />
-                <input type="password" placeholder="New Password" value={resetPwdValue} onChange={(e)=>setResetPwdValue(e.target.value)} />
-                <button type="button" onClick={async ()=>{
-                  try {
-                    const val = String(resetPwdValue || '');
-                    const strong = val.length>=8 && val.length<=20 && /[a-z]/.test(val) && /[A-Z]/.test(val) && /\d/.test(val) && /[\.,&%#@!]/.test(val);
-                    if (!resetPwdUname || !resetPwdContact || !strong) { toast.error('Enter username, contact and a strong password'); return; }
-                    setLoading(true);
-                    const res = await employeeResetPassword(resetPwdUname, resetPwdContact, resetPwdValue);
-                    if (res && res.status==='ok') { toast.success('Password reset successfully'); setResetPwdUname(''); setResetPwdContact(''); setResetPwdValue(''); }
-                    else { toast.error(res?.message || 'Failed to reset password'); }
-                  } catch { toast.error('Error resetting password'); } finally { setLoading(false); }
-                }}>Reset Password</button>
-              </div>
-            </div>
-          </div>
         </form>
-      )}
+        )}
 
-      {step === "otp" && (
+        {mode === 'mobile' && step === "otp" && (
         <form onSubmit={verifyOtp} style={{ width:'100%', maxWidth: 380, background:'#fff', border:'1px solid #eee', borderRadius:12, padding:18, boxShadow:'0 6px 24px rgba(0,0,0,0.06)' }}>
           <h2 style={{ margin:0, fontSize:20 }}>Enter OTP</h2>
           <input
@@ -433,7 +355,64 @@ const EmployeeLogin = ({ onSuccess }) => {
             </button>
           </div>
         </form>
-      )}
+        )}
+
+        {mode === 'password' && (
+          <div className="card" style={{ padding:18, background:'#fff', border:'1px solid #eee', borderRadius:12, boxShadow:'0 6px 24px rgba(0,0,0,0.06)' }}>
+            <h2 style={{ margin:0, fontSize:20 }}>Login with Username & Password</h2>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr auto', gap:8, marginTop:12 }}>
+              <input placeholder="Username or Email" value={uname} onChange={(e)=>setUname(e.target.value)} />
+              <input type="password" placeholder="Password" value={pwd} onChange={(e)=>setPwd(e.target.value)} />
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    if (!uname || !pwd) { toast.error('Enter username and password'); return; }
+                    setLoading(true);
+                    const res = await employeePasswordLogin(uname, pwd);
+                    if (res && res.status === 'ok' && res.token) {
+                      onSuccess({ token: res.token, mobile: res.mobile });
+                      toast.success('Logged in');
+                    } else {
+                      toast.error(res?.message || 'Login failed');
+                    }
+                  } catch { toast.error('Error during login'); } finally { setLoading(false); }
+                }}
+              >Login</button>
+            </div>
+          </div>
+        )}
+
+        {mode === 'pin' && (
+          <div className="card" style={{ padding:18, background:'#fff', border:'1px solid #eee', borderRadius:12, boxShadow:'0 6px 24px rgba(0,0,0,0.06)' }}>
+            <h2 style={{ margin:0, fontSize:20 }}>Login with 4-digit PIN</h2>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 120px 1fr auto', gap:8, marginTop:12 }}>
+              <input placeholder="Username or Email" value={pinUname} onChange={(e)=>setPinUname(e.target.value)} />
+              <input placeholder="PIN" maxLength={4} value={pin} onChange={(e)=>setPin(e.target.value.replace(/[^0-9]/g,'').slice(0,4))} />
+              <input placeholder="Mobile or Email (pairing)" value={pinContact} onChange={(e)=>setPinContact(e.target.value)} />
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    if (!pinUname || !/^\d{4}$/.test(pin)) { toast.error('Enter username and 4-digit PIN'); return; }
+                    setLoading(true);
+                    const res = await employeePinLogin(pinUname, pin, pinContact || undefined);
+                    if (res && res.status === 'ok' && res.token) {
+                      onSuccess({ token: res.token, mobile: res.mobile });
+                      toast.success('Logged in');
+                    } else {
+                      toast.error(res?.message || 'PIN login failed');
+                    }
+                  } catch { toast.error('Error during PIN login'); } finally { setLoading(false); }
+                }}
+              >Enter</button>
+            </div>
+            <div style={{ fontSize:12, color:'#666', marginTop:6 }}>
+              PIN must be exactly 4 digits. If this is your first PIN login, provide your registered mobile or email to pair your PIN.
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
