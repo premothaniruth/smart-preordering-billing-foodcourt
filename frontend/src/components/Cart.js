@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { fetchSectionsMeta } from "../api";
 
 /**
  * Cart
@@ -93,6 +94,24 @@ const Cart = ({ cart, removeFromCart, decrementFromCart, incrementFromCart, sche
     }
   };
   
+  const [sectionWindows, setSectionWindows] = useState({}); // name -> { start, end }
+  useEffect(() => {
+    fetchSectionsMeta().then((d)=> setSectionWindows(d?.windows || {})).catch(()=>setSectionWindows({}));
+  }, []);
+
+  const toHM = (d) => `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  const [currentHM, setCurrentHM] = useState(() => toHM(new Date()));
+  useEffect(() => {
+    const id = setInterval(() => setCurrentHM(toHM(new Date())), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const effectiveHM = scheduledHM || currentHM; // if scheduled, validate against selected slot; else now
+  const inWindow = (secName, hm) => {
+    const w = sectionWindows[secName];
+    if (!w || !w.start || !w.end) return true;
+    return hm >= w.start && hm <= w.end;
+  };
+
   const total = cart.reduce((sum, c) => sum + c.item.finalPrice * c.quantity, 0);
   const totalPrepTime = cart.reduce((sum, c) => sum + (c.item.prepTime || 5) * c.quantity, 0);
 
@@ -120,10 +139,21 @@ const Cart = ({ cart, removeFromCart, decrementFromCart, incrementFromCart, sche
             .filter(d => d.shopId === c.shopId && d.item.id === c.item.id && (d.item.selectedOption?.name || null) === (c.item.selectedOption?.name || null))
             .reduce((sum, d) => sum + d.quantity, 0);
           const remaining = Math.max(0, inventory - totalForThis);
+          const secName = c.item.section || 'All Items';
+          const w = sectionWindows[secName];
+          const availableNow = inWindow(secName, effectiveHM);
           return (
           <div key={i} className="cart-item">
             <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: "bold", fontSize: 14 }}>{c.item.name}</div>
+              <div style={{ fontWeight: "bold", fontSize: 14, display:'flex', alignItems:'center', gap:6 }}>
+                {c.item.name}
+                {!availableNow && (
+                  <span title={w ? `Available ${w.start}-${w.end}` : 'Available in configured window'} style={{ fontSize: 12, color: '#e67e22', display:'inline-flex', alignItems:'center', gap:4 }}>
+                    <span role="img" aria-label="time">⏰</span>
+                    <span style={{ fontSize: 11 }}>{w ? `${w.start}-${w.end}` : ''}</span>
+                  </span>
+                )}
+              </div>
               {c.item.selectedOption && (
                 <div style={{ fontSize: 11, color: "#666" }}>
                   Variant: {c.item.selectedOption.name}
@@ -132,6 +162,13 @@ const Cart = ({ cart, removeFromCart, decrementFromCart, incrementFromCart, sche
               <div style={{ fontSize: 12, color: "#666", marginTop: 4 }}>
                 {c.quantity} x ₹{c.item.finalPrice} = ₹{c.item.finalPrice * c.quantity}
               </div>
+              {!availableNow && (
+                <div style={{ marginTop: 4, fontSize: 12, color: '#e67e22' }}>
+                  {scheduledHM
+                    ? `Not available at ${scheduledHM}. Choose a time within ${w?.start || '--:--'}-${w?.end || '--:--'}`
+                    : `Currently unavailable. Available ${w?.start || '--:--'}-${w?.end || '--:--'}`}
+                </div>
+              )}
               {remaining <= 0 && (
                 <div style={{ marginTop: 4, fontSize: 12, color: '#e74c3c' }}>No more items available to order</div>
               )}

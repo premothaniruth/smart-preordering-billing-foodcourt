@@ -321,6 +321,15 @@ function App() {
     }).then((response) => {
       if (!response || response.status !== 'success') {
         const msg = response?.message || 'Order failed. Please try again';
+        // If backend sent notAvailable details for scheduled orders, show them
+        if (Array.isArray(response?.notAvailable) && response.notAvailable.length > 0) {
+          toast.error(msg);
+          response.notAvailable.slice(0,5).forEach((na) => {
+            const win = na.window ? ` (${na.window})` : '';
+            toast.info(`${na.name} is available only during ${na.section}${win}`);
+          });
+          return;
+        }
         toast.error(msg);
         return;
       }
@@ -329,6 +338,15 @@ function App() {
       setOrderSummary(response.orderSummary);
       // refresh menu to reflect decremented inventory
       loadMenu();
+
+      // If some items were excluded for immediate orders, inform the user
+      if (Array.isArray(response.excludedItems) && response.excludedItems.length > 0) {
+        toast.warn('Some items were excluded as they are not available at this time.');
+        response.excludedItems.slice(0,5).forEach(ex => {
+          const win = ex.window ? ` (${ex.window})` : '';
+          toast.info(`${ex.name} is available only during ${ex.section}${win}`);
+        });
+      }
 
       // Compute how many orders placed today for this user (to show "View recent orders")
       if (userId) {

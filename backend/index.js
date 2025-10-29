@@ -370,7 +370,6 @@ app.get("/menu", (req, res) => {
       sections = Object.entries(bySection).map(([name, items]) => ({ name, items }));
     }
     sections = sections
-      .filter((sec) => inWindow(sec.name))
       .map((sec) => {
         const filtered = (sec.items || []).filter((it) => it.hidden !== true);
         filtered.sort((a,b)=>Number(a.sectionOrder||0)-Number(b.sectionOrder||0));
@@ -588,6 +587,67 @@ app.post("/order", (req, res) => {
       }
     }
 
+    // Section window enforcement
+    const windows = getSectionWindows();
+    const toHM = (d) => `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    const inWindowHM = (sec, hm) => {
+      const w = windows[sec];
+      if (!w || !w.start || !w.end) return true;
+      return hm >= w.start && hm <= w.end;
+    };
+    const idToSection = new Map((shopNorm.items || []).map(i => [i.id, i.section || 'All Items']));
+    const whenHM = scheduledTime ? toHM(new Date(scheduledTime)) : toHM(new Date());
+
+    if (scheduledTime) {
+      // Reject order if any item outside its window at scheduled time
+      const notAvailable = [];
+      for (const [itemId, qtyNeeded] of required.entries()) {
+        const sec = idToSection.get(itemId) || 'All Items';
+        if (!inWindowHM(sec, whenHM)) {
+          const it = shopNorm.items.find(i=>i.id===itemId);
+          const w = windows[sec];
+          notAvailable.push({ id: itemId, name: it?.name || `Item ${itemId}`, section: sec, window: w ? `${w.start}-${w.end}` : null, quantity: qtyNeeded });
+        }
+      }
+      if (notAvailable.length > 0) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Some items are not available at the selected time window. Please adjust scheduled time.',
+          notAvailable
+        });
+      }
+    } else {
+      // Immediate order: exclude items not in current window and proceed with the rest
+      const excluded = [];
+      for (const [itemId, qtyNeeded] of Array.from(required.entries())) {
+        const sec = idToSection.get(itemId) || 'All Items';
+        if (!inWindowHM(sec, whenHM)) {
+          const it = shopNorm.items.find(i=>i.id===itemId);
+          const w = windows[sec];
+          excluded.push({ id: itemId, name: it?.name || `Item ${itemId}`, section: sec, window: w ? `${w.start}-${w.end}` : null, quantity: qtyNeeded });
+          required.delete(itemId);
+          // Also remove from flatItems
+        }
+      }
+      if (excluded.length > 0) {
+        // remove excluded from flatItems array
+        for (const ex of excluded) {
+          for (let i = flatItems.length - 1; i >= 0; i--) {
+            if (flatItems[i].id === ex.id) flatItems.splice(i, 1);
+          }
+        }
+      }
+      if (required.size === 0) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Selected items are not available at this time. Please order during their time window.',
+          excludedItems: excluded
+        });
+      }
+      // Attach excluded info to response later
+      req._excludedItems = excluded;
+    }
+
     // Check availability
     for (const [itemId, qtyNeeded] of required.entries()) {
       const menuItem = shopNorm.items.find((i) => i.id === itemId);
@@ -727,11 +787,17 @@ app.post("/order", (req, res) => {
       prepTime
     };
 
+    const extra = {};
+    if (Array.isArray(req._excludedItems) && req._excludedItems.length > 0) {
+      extra.excludedItems = req._excludedItems;
+      extra.message = 'Some items were excluded as they are not available at this time.';
+    }
     res.json({ 
       status: "success", 
       billingId, 
       orderSummary, 
-      message: "Order placed!" 
+      message: "Order placed!",
+      ...extra
     });
   } catch (error) {
     res.status(500).json({ message: "Error placing order" });
@@ -914,17 +980,44 @@ app.post("/vendor/login", async (req, res) => {
  */
 app.put("/menu", authenticateVendor, (req, res) => {
   try {
-    const updatedItems = req.body.items;
-    const menu = getMenu();
+    const updatedItems = Array.isArray(req.body.items) ? req.body.items : [];
+    const raw = getMenu();
     const vendorShopId = req.vendor.shopId;
 
-    const shopIndex = menu.findIndex((shop) => shop.shopId === vendorShopId);
-    if (shopIndex === -1) {
+    // Legacy structure: array of shops with items[]
+    if (Array.isArray(raw)) {
+      const shopIndex = raw.findIndex((shop) => String(shop.shopId) === String(vendorShopId));
+      if (shopIndex === -1) {
+        return res.status(404).json({ message: "Vendor shop menu not found" });
+      }
+      raw[shopIndex].items = updatedItems;
+      saveMenu(raw);
+      return res.json({ status: "success", message: "Menu updated successfully" });
+    }
+
+    // New structure: { shops: [ { categories: [...] } ] }
+    const shops = Array.isArray(raw?.shops) ? raw.shops : [];
+    const shop = shops.find((s) => String(s.shopId) === String(vendorShopId));
+    if (!shop) {
       return res.status(404).json({ message: "Vendor shop menu not found" });
     }
 
-    menu[shopIndex].items = updatedItems;
-    saveMenu(menu);
+    // Group updated items by their section (categoryName)
+    const bySection = new Map();
+    for (const it of updatedItems) {
+      const sec = (it.section && typeof it.section === 'string') ? it.section : 'All Items';
+      if (!bySection.has(sec)) bySection.set(sec, []);
+      // Persist options under hasOptions for raw schema compatibility
+      const record = { ...it };
+      if (Array.isArray(it.options)) {
+        record.hasOptions = it.options;
+      }
+      bySection.get(sec).push(record);
+    }
+
+    // Replace categories with grouped items
+    shop.categories = Array.from(bySection.entries()).map(([categoryName, items]) => ({ categoryName, items }));
+    saveMenu(raw);
     res.json({ status: "success", message: "Menu updated successfully" });
   } catch (error) {
     res.status(500).json({ message: "Error updating menu" });

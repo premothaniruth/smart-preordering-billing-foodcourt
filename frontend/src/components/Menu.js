@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { toggleFavorite, fetchActiveOffers, fetchCombos, fetchMenuSections } from "../api";
+import { toggleFavorite, fetchActiveOffers, fetchCombos, fetchMenuSections, fetchSectionsMeta } from "../api";
 import { toast } from "react-toastify";
 
 /**
@@ -34,12 +34,14 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
   const [offers, setOffers] = useState([]);
   const [combos, setCombos] = useState([]);
   const [sectioned, setSectioned] = useState(null); // { shopId, shopName, sections }
+  const [sectionWindows, setSectionWindows] = useState({}); // name -> { start, end }
 
   useEffect(() => {
     if (!selectedShop) return;
     fetchActiveOffers(selectedShop).then(setOffers).catch(()=>setOffers([]));
     fetchCombos(selectedShop, true).then(setCombos).catch(()=>setCombos([]));
     fetchMenuSections(selectedShop).then(setSectioned).catch(()=>setSectioned(null));
+    fetchSectionsMeta().then((d)=> setSectionWindows(d?.windows || {})).catch(()=>setSectionWindows({}));
   }, [selectedShop]);
 
   if (!menu.length) return <p>Loading menu...</p>;
@@ -367,7 +369,16 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
         <>
           {sectioned.sections.map((sec) => (
             <div key={sec.name}>
-              <h3>{sec.name}</h3>
+              <h3>
+                {sec.name}
+                {(() => {
+                  const w = sectionWindows[sec.name];
+                  if (!w || !w.start || !w.end) return null;
+                  return (
+                    <span style={{ fontSize: 12, color: '#666', marginLeft: 8 }}>({w.start}-{w.end})</span>
+                  );
+                })()}
+              </h3>
               <div className="menu-grid">
                 {(vegOnly ? sec.items.filter(it=>it.isVeg) : sec.items).map(renderItem)}
               </div>
