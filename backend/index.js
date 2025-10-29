@@ -1932,6 +1932,8 @@ app.put('/combos', authenticateVendor, (req, res) => {
       name: c.name || 'Combo',
       price: Number(c.price || 0),
       active: c.active !== false,
+      availableStart: c.availableStart || null,
+      availableEnd: c.availableEnd || null,
       components: Array.isArray(c.components) ? c.components : []
     }));
     saveCombos([...rest, ...normalized]);
