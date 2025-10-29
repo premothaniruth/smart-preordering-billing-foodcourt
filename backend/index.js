@@ -30,10 +30,58 @@ const sectionWindowsFile = __dirname + "/data/section_windows.json";
 
 // Helper functions
 /**
- * Read menu JSON from disk.
- * @returns {Array<{shopId:string, shopName:string, items:Array}>}
+ * Read raw menu JSON from disk.
+ * Supports both legacy (array of shops with items) and new format ({ shops: [ { categories: [...] } ] }).
+ * @returns {any}
  */
 const getMenu = () => JSON.parse(fs.readFileSync(menuFile, "utf8"));
+
+/**
+ * Normalize the menu into an array of shops with flattened items[] for UI/back-compat.
+ * Each item gets an `options` array if `hasOptions` is present in data, and a `section` equal to its category name when applicable.
+ * @param {any} raw
+ * @returns {Array<{shopId:number|string, shopName:string, items:Array}>}
+ */
+const normalizeMenuShops = (raw) => {
+  // Legacy shape already array of shops with items[]
+  if (Array.isArray(raw)) {
+    return raw.map((shop) => ({
+      shopId: shop.shopId,
+      shopName: shop.shopName,
+      items: Array.isArray(shop.items) ? shop.items.map((it) => normalizeItem(it)) : []
+    }));
+  }
+  // New shape: { shops: [ { categories: [ {categoryName, items:[] } ] } ] }
+  const shops = Array.isArray(raw?.shops) ? raw.shops : [];
+  return shops.map((shop) => {
+    const categories = Array.isArray(shop.categories) ? shop.categories : [];
+    const items = [];
+    for (const cat of categories) {
+      const catName = cat?.categoryName || 'All Items';
+      const catItems = Array.isArray(cat?.items) ? cat.items : [];
+      for (const it of catItems) {
+        items.push(normalizeItem({ ...it, section: it.section || catName }));
+      }
+    }
+    return { shopId: shop.shopId, shopName: shop.shopName, items };
+  });
+};
+
+/**
+ * Normalize a single item: map hasOptions (array) -> options, ensure flags and defaults.
+ * @param {any} it
+ * @returns {any}
+ */
+const normalizeItem = (it) => {
+  const options = Array.isArray(it.hasOptions) ? it.hasOptions : (Array.isArray(it.options) ? it.options : []);
+  const hasOptionsFlag = Array.isArray(options) && options.length > 0;
+  return {
+    ...it,
+    options,
+    hasOptions: hasOptionsFlag,
+    inventory: (it.inventory == null || isNaN(Number(it.inventory))) ? 100 : Number(it.inventory)
+  };
+};
 /**
  * Persist menu to disk.
  * @param {any} menu - Full menu array
@@ -285,23 +333,8 @@ app.post("/order/picked/:id", authenticateVendor, (req, res) => {
  */
 app.get("/menu", (req, res) => {
   try {
-    const menu = getMenu();
-    // Ensure default inventory of 100 for items missing inventory
-    let changed = false;
-    for (const shop of menu) {
-      if (!Array.isArray(shop.items)) continue;
-      for (const item of shop.items) {
-        if (item.inventory == null || isNaN(Number(item.inventory))) {
-          item.inventory = 100;
-          changed = true;
-        }
-        if (item.inventory < 0) {
-          item.inventory = 0;
-          changed = true;
-        }
-      }
-    }
-    if (changed) saveMenu(menu);
+    const raw = getMenu();
+    const normalized = normalizeMenuShops(raw);
     // Support optional filtering by shop and section windows time
     const shopId = req.query.shopId ? String(req.query.shopId) : null;
     const includeSections = String(req.query.includeSections || "").toLowerCase() === '1' || String(req.query.includeSections || "").toLowerCase() === 'true';
@@ -314,25 +347,36 @@ app.get("/menu", (req, res) => {
       if (!w || !w.start || !w.end) return true;
       return hm >= w.start && hm <= w.end;
     };
-    if (!includeSections || !shopId) {
-      return res.json(menu);
+    if (!includeSections) {
+      return res.json(normalized);
     }
-    const shop = menu.find(s => String(s.shopId) === shopId);
-    if (!shop) return res.json([]);
-    const bySection = {};
-    for (const it of (shop.items || [])) {
-      const sec = (it.section && typeof it.section === 'string') ? it.section : 'All Items';
-      if (!bySection[sec]) bySection[sec] = [];
-      bySection[sec].push(it);
+    // Sections mode: derive sections from categories in raw when available
+    const shopRaw = (Array.isArray(raw?.shops) ? raw.shops : normalized).find((s) => String(s.shopId) === shopId);
+    if (!shopRaw) return res.json([]);
+    let sections = [];
+    if (Array.isArray(shopRaw?.categories)) {
+      sections = shopRaw.categories.map((cat) => ({
+        name: cat.categoryName || 'All Items',
+        items: (Array.isArray(cat.items) ? cat.items : []).map((it) => normalizeItem({ ...it, section: cat.categoryName || 'All Items' }))
+      }));
+    } else {
+      const shop = normalized.find((s) => String(s.shopId) === shopId) || { items: [] };
+      const bySection = {};
+      for (const it of (shop.items || [])) {
+        const sec = (it.section && typeof it.section === 'string') ? it.section : 'All Items';
+        if (!bySection[sec]) bySection[sec] = [];
+        bySection[sec].push(it);
+      }
+      sections = Object.entries(bySection).map(([name, items]) => ({ name, items }));
     }
-    const sections = Object.entries(bySection)
-      .filter(([sec]) => inWindow(sec))
-      .map(([name, items]) => {
-        const filtered = items.filter(it => it.hidden !== true);
+    sections = sections
+      .filter((sec) => inWindow(sec.name))
+      .map((sec) => {
+        const filtered = (sec.items || []).filter((it) => it.hidden !== true);
         filtered.sort((a,b)=>Number(a.sectionOrder||0)-Number(b.sectionOrder||0));
-        return { name, items: filtered.slice(0, 30) };
+        return { name: sec.name, items: filtered.slice(0, 30) };
       });
-    return res.json({ shopId: shop.shopId, shopName: shop.shopName, sections, time: hm });
+    return res.json({ shopId: shopRaw.shopId, shopName: shopRaw.shopName, sections, time: hm });
   } catch (error) {
     res.status(500).json({ message: "Error fetching menu" });
   }
@@ -510,12 +554,13 @@ app.post("/order", (req, res) => {
   try {
     const { items, user, scheduledTime, shopId } = req.body;
     // Validate inventory and decrement (supports combo expansion)
-    const menu = getMenu();
-    const shop = menu.find((s) => String(s.shopId) === String(shopId));
-    if (!shop) {
+    const raw = getMenu();
+    const normalizedShops = normalizeMenuShops(raw);
+    const shopNorm = normalizedShops.find((s) => String(s.shopId) === String(shopId));
+    if (!shopNorm) {
       return res.status(400).json({ message: "Invalid shopId" });
     }
-    shop.items = Array.isArray(shop.items) ? shop.items : [];
+    shopNorm.items = Array.isArray(shopNorm.items) ? shopNorm.items : [];
 
     // Expand combos into required item quantities
     const combos = getCombos();
@@ -534,7 +579,7 @@ app.post("/order", (req, res) => {
           const id = compIt.itemId;
           const inc = Number(compIt.quantity || 1) * qty;
           required.set(id, (required.get(id) || 0) + inc);
-          flatItems.push({ id, name: compIt.name || (shop.items.find(i=>i.id===id)?.name) || `Item ${id}` , price: Number(compIt.overridePrice ?? (shop.items.find(i=>i.id===id)?.price || 0)), quantity: inc, option: compIt.option || null, prepTime: compIt.prepTime || (shop.items.find(i=>i.id===id)?.prepTime || 5) });
+          flatItems.push({ id, name: compIt.name || (shopNorm.items.find(i=>i.id===id)?.name) || `Item ${id}` , price: Number(compIt.overridePrice ?? (shopNorm.items.find(i=>i.id===id)?.price || 0)), quantity: inc, option: compIt.option || null, prepTime: compIt.prepTime || (shopNorm.items.find(i=>i.id===id)?.prepTime || 5) });
         }
       } else {
         const key = it.id;
@@ -545,7 +590,7 @@ app.post("/order", (req, res) => {
 
     // Check availability
     for (const [itemId, qtyNeeded] of required.entries()) {
-      const menuItem = shop.items.find((i) => i.id === itemId);
+      const menuItem = shopNorm.items.find((i) => i.id === itemId);
       const available = menuItem ? (Number(menuItem.inventory ?? 100)) : 0;
       if (!menuItem || available < qtyNeeded) {
         return res.status(400).json({
@@ -557,12 +602,36 @@ app.post("/order", (req, res) => {
       }
     }
 
-    // Decrement inventory
+    // Decrement inventory in RAW structure and persist
+    const persistDecrement = (rawMenu, targetShopId, itemId, qty) => {
+      if (Array.isArray(rawMenu)) {
+        const s = rawMenu.find((x) => String(x.shopId) === String(targetShopId));
+        if (!s || !Array.isArray(s.items)) return;
+        const it = s.items.find((i) => i.id === itemId);
+        if (it) {
+          const inv = Number(it.inventory ?? 100);
+          it.inventory = Math.max(0, inv - qty);
+        }
+        return;
+      }
+      const shops = Array.isArray(rawMenu?.shops) ? rawMenu.shops : [];
+      const s = shops.find((x) => String(x.shopId) === String(targetShopId));
+      if (!s || !Array.isArray(s.categories)) return;
+      for (const cat of s.categories) {
+        if (!Array.isArray(cat.items)) continue;
+        const idx = cat.items.findIndex((i) => i.id === itemId);
+        if (idx >= 0) {
+          const it = cat.items[idx];
+          const inv = Number(it.inventory ?? 100);
+          it.inventory = Math.max(0, inv - qty);
+          return; // decremented; done
+        }
+      }
+    };
     for (const [itemId, qtyNeeded] of required.entries()) {
-      const menuItem = shop.items.find((i) => i.id === itemId);
-      menuItem.inventory = Math.max(0, Number(menuItem.inventory ?? 100) - qtyNeeded);
+      persistDecrement(raw, shopId, itemId, qtyNeeded);
     }
-    saveMenu(menu);
+    saveMenu(raw);
 
     const orders = getOrders();
 

@@ -80,6 +80,18 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
   };
 
   const renderComboCard = (combo) => {
+    const components = Array.isArray(combo.components) ? combo.components : [];
+    const compLines = components.map((c, idx) => {
+      const base = c && (c.name || ((shop && Array.isArray(shop.items)) ? (shop.items.find(i => Number(i.id) === Number(c.itemId))?.name) : null) || `Item ${c.itemId}`);
+      const qty = Number(c?.quantity || 1);
+      const opt = c?.option ? ` (${c.option})` : '';
+      return (
+        <div key={idx} style={{ display:'flex', justifyContent:'space-between', gap:8, fontSize:12, color:'#555' }}>
+          <span style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{base}{opt}</span>
+          <span style={{ color:'#333' }}>×{qty}</span>
+        </div>
+      );
+    });
     const handleAddCombo = () => {
       const synthetic = {
         id: 1000000 + Number(combo.id || 0),
@@ -100,6 +112,14 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
           <div className="menu-item-name">{combo.name}</div>
           <div className="menu-item-price">₹{combo.price}</div>
           <div style={{ fontSize: 12, color: '#666', margin: '6px 0' }}>Combo Offer</div>
+          {components.length > 0 && (
+            <div className="card" style={{ background:'#fafafa', border:'1px solid #eee', padding:8, margin:'6px 0' }}>
+              <div style={{ fontWeight:600, fontSize:12, color:'#333', marginBottom:6 }}>Includes</div>
+              <div style={{ display:'grid', gap:4 }}>
+                {compLines}
+              </div>
+            </div>
+          )}
           <button
             className="icon-btn"
             onClick={handleAddCombo}
