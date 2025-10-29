@@ -5,7 +5,7 @@
     "email": "prem@gmail.com",
     "mobile": "9952911560",
     "passwordHash": "$2b$10$u97ZqkZsVn5cRkC1V5LxJey8tM1oKkJ7b3SAb9cCwJ0F1e9f2mJMi",
-    "pinHash": "$2b$10$C8uN1pVv6sXw6v8N4xkD3u7xwqQyU0mX0h8v2m9Z1pQyT3a7bC9De"
+    "pinHash": "$2b$10$7grbDLf9NeqQK5aujXDybOa5EC2QKAshQMfVX.BcRFuFrvdo6BYNq"
   },
   {
     "id": 2,
@@ -13,6 +13,6 @@
     "email": "anir@gmail.com",
     "mobile": "8489196891",
     "passwordHash": "$2b$10$u97ZqkZsVn5cRkC1V5LxJey8tM1oKkJ7b3SAb9cCwJ0F1e9f2mJMi",
-    "pinHash": "$2b$10$C8uN1pVv6sXw6v8N4xkD3u7xwqQyU0mX0h8v2m9Z1pQyT3a7bC9De"
+    "pinHash": "$2b$10$C1xcpDYAIaiCqcWMoKFaRuGSc81EWnbOJWNkNp1E15JTPn4gDMDl."
   }
 ]
