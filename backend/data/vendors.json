@@ -16,5 +16,11 @@
     "shopId": 3,
     "username": "beveragevendor",
     "passwordHash": "$2b$10$F0nI0d2lw3ViqR/69TROqOpxh6cksLbN7UnXOzdKhXTX94QSHTdQm"
+  },
+  {
+    "vendorId": 4,
+    "shopId": 4,
+    "username": "fastfoodvendor",
+    "passwordHash": "$2b$10$F0nI0d2lw3ViqR/69TROqOpxh6cksLbN7UnXOzdKhXTX94QSHTdQm"
   }
 ]

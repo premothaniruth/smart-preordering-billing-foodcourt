@@ -2,7 +2,7 @@
   "shops": [
     {
       "shopId": 1,
-      "shopName": "North Indian Meals",
+      "shopName": "North Indian Dhamaka",
       "categories": [
         {
           "categoryName": "Breakfast",
@@ -105,7 +105,7 @@
           ]
         },
         {
-          "categoryName": "North Indian Chat Items",
+          "categoryName": "Chat Specials",
           "items": [
             {"id":81,"name":"Pani Puri","price":35,"isVeg":true,"image":"/images/pani-puri.jpg","prepTime":5,"inventory":100},
             {"id":82,"name":"Dahi Puri","price":45,"isVeg":true,"image":"/images/dahi-puri.jpg","prepTime":6,"inventory":100},
@@ -463,7 +463,7 @@
     },
     {
       "shopId": 4,
-      "shopName": "Fast Food & Italian Delights",
+      "shopName": "Fast Food & Desserts",
       "categories": [
         {
           "categoryName": "Fast Food",
@@ -491,7 +491,7 @@
           ]
         },
         {
-          "categoryName": "Italian Delights",
+          "categoryName": "Desserts",
           "items": [
             {"id":501,"name":"Chocolate Brownie","price":60,"isVeg":true,"image":"/images/chocolate-brownie.jpg","prepTime":10,"inventory":100},
             {"id":502,"name":"New York Cheesecake","price":70,"isVeg":true,"image":"/images/ny-cheesecake.jpg","prepTime":10,"inventory":100},

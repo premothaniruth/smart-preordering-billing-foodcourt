@@ -1,3 +1,50 @@
+/**
+ * One-time migration: ensure every item has isHotSeller/isRecommended in menu.json.
+ * If a category has no items with these flags, pick 5 random items in that category
+ * for each flag and persist back to disk.
+ */
+const ensureHotRecFlags = () => {
+  try {
+    const raw = getMenu();
+    if (!raw || !Array.isArray(raw.shops)) return; // only handle new shape
+    let changed = false;
+    for (const shop of raw.shops) {
+      const categories = Array.isArray(shop.categories) ? shop.categories : [];
+      for (const cat of categories) {
+        const items = Array.isArray(cat.items) ? cat.items : [];
+        if (items.length === 0) continue;
+        let anyHot = items.some(it => it.isHotSeller === true);
+        let anyRec = items.some(it => it.isRecommended === true);
+        // Ensure flags exist
+        for (const it of items) {
+          if (it.isHotSeller == null) { it.isHotSeller = false; changed = true; }
+          if (it.isRecommended == null) { it.isRecommended = false; changed = true; }
+        }
+        // If none set yet, pick 5 random for each
+        const pickRandom = (n) => {
+          const idxs = items.map((_, i) => i);
+          for (let i = idxs.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [idxs[i], idxs[j]] = [idxs[j], idxs[i]];
+          }
+          return idxs.slice(0, Math.min(n, idxs.length));
+        };
+        if (!anyHot) {
+          pickRandom(5).forEach(i => { if (!items[i].isHotSeller) { items[i].isHotSeller = true; changed = true; } });
+        }
+        if (!anyRec) {
+          pickRandom(5).forEach(i => { if (!items[i].isRecommended) { items[i].isRecommended = true; changed = true; } });
+        }
+      }
+    }
+    if (changed) {
+      fs.writeFileSync(menuFile, JSON.stringify(raw, null, 2));
+    }
+  } catch {}
+};
+
+// Run migration at startup
+ensureHotRecFlags();
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
@@ -42,6 +89,10 @@ const getMenu = () => JSON.parse(fs.readFileSync(menuFile, "utf8"));
  * @param {any} raw
  * @returns {Array<{shopId:number|string, shopName:string, items:Array}>}
  */
+// Stable per-process random picks for category highlights
+const categoryHotPicks = new Map(); // categoryName -> Set<itemId>
+const categoryRecPicks = new Map(); // categoryName -> Set<itemId>
+
 const normalizeMenuShops = (raw) => {
   // Legacy shape already array of shops with items[]
   if (Array.isArray(raw)) {
@@ -59,8 +110,34 @@ const normalizeMenuShops = (raw) => {
     for (const cat of categories) {
       const catName = cat?.categoryName || 'All Items';
       const catItems = Array.isArray(cat?.items) ? cat.items : [];
+      // Pick 5 random items per category for hot sellers and recommended (stable while server runs)
+      const ensurePicks = () => {
+        if (!categoryHotPicks.has(catName)) {
+          const ids = catItems.map(i => i.id);
+          const hot = new Set();
+          const rec = new Set();
+          const pickN = (n, target) => {
+            const pool = ids.slice();
+            for (let i = pool.length - 1; i > 0; i--) { // shuffle
+              const j = Math.floor(Math.random() * (i + 1));
+              [pool[i], pool[j]] = [pool[j], pool[i]];
+            }
+            for (let i = 0; i < Math.min(n, pool.length); i++) target.add(pool[i]);
+          };
+          pickN(5, hot);
+          pickN(5, rec);
+          categoryHotPicks.set(catName, hot);
+          categoryRecPicks.set(catName, rec);
+        }
+      };
+      ensurePicks();
+      const hotSet = categoryHotPicks.get(catName) || new Set();
+      const recSet = categoryRecPicks.get(catName) || new Set();
       for (const it of catItems) {
-        items.push(normalizeItem({ ...it, section: it.section || catName }));
+        const base = { ...it, section: it.section || catName };
+        if (base.isHotSeller == null) base.isHotSeller = hotSet.has(base.id);
+        if (base.isRecommended == null) base.isRecommended = recSet.has(base.id);
+        items.push(normalizeItem(base));
       }
     }
     return { shopId: shop.shopId, shopName: shop.shopName, items };

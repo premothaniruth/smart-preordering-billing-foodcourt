@@ -135,7 +135,21 @@ const EmployeeLogin = ({ onSuccess }) => {
               </div>
             )}
           </div>
-          <button type="submit" disabled={loading || mobile.length !== 10} style={{ width:'100%', marginTop:12, padding:'10px 12px', background:'#111', color:'#fff', border:'1px solid #111', borderRadius:8, fontWeight:600 }}>
+          <button
+            type="submit"
+            disabled={loading || mobile.length !== 10}
+            style={{
+              width:'100%', marginTop:12, padding:'12px 14px',
+              background: loading ? '#444' : 'linear-gradient(90deg, #111, #2c3e50)',
+              color:'#fff', border:'1px solid #111', borderRadius:10, fontWeight:700,
+              display:'inline-flex', alignItems:'center', justifyContent:'center', gap:8,
+              boxShadow:'0 6px 18px rgba(0,0,0,0.18)'
+            }}
+          >
+            <svg aria-hidden width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 2L11 13"/>
+              <path d="M22 2l-7 20-4-9-9-4 20-7z"/>
+            </svg>
             {loading ? "Sending..." : "Send OTP"}
           </button>
           <div style={{ display:'flex', alignItems:'center', margin:'12px 0' }}>
@@ -161,9 +175,18 @@ const EmployeeLogin = ({ onSuccess }) => {
                   toast.error('Error during Google login');
                 }
               }}
-              style={{ padding:'8px 12px', borderRadius:8, border:'1px solid #111', background:'#fff', color:'#111', fontWeight:600 }}
+              style={{
+                padding:10, width:44, height:44, borderRadius:9999, border:'1px solid #ddd', background:'#fff', color:'#111', fontWeight:700,
+                display:'inline-flex', alignItems:'center', justifyContent:'center', boxShadow:'0 4px 12px rgba(0,0,0,0.06)'
+              }}
+              title="Continue with Google (demo)"
             >
-              Continue with Google (demo)
+              <svg aria-hidden xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 48 48">
+                <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303C33.602 31.91 29.162 35 24 35c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.158 7.961 3.039l5.657-5.657C33.64 5.053 28.968 3 24 3 12.955 3 4 11.955 4 23s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/>
+                <path fill="#FF3D00" d="M6.306 14.691l6.571 4.817C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.158 7.961 3.039l5.657-5.657C33.64 5.053 28.968 3 24 3 16.318 3 9.656 7.337 6.306 14.691z"/>
+                <path fill="#4CAF50" d="M24 43c5.11 0 9.727-1.957 13.221-5.146l-6.106-5.159C29.066 34.836 26.671 36 24 36c-5.132 0-9.556-3.07-11.287-7.438l-6.55 5.047C9.478 39.556 16.227 43 24 43z"/>
+                <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-1.037 3.01-3.166 5.466-5.888 7.012l-.001.001 6.106 5.159C39.353 36.521 44 30.732 44 23c0-1.341-.138-2.65-.389-3.917z"/>
+              </svg>
             </button>
             <button
               type="button"
@@ -182,9 +205,15 @@ const EmployeeLogin = ({ onSuccess }) => {
                   toast.error('Error during Apple login');
                 }
               }}
-              style={{ padding:'8px 12px', borderRadius:8, border:'1px solid #111', background:'#000', color:'#fff', fontWeight:600 }}
+              style={{
+                padding:10, width:44, height:44, borderRadius:9999, border:'1px solid #000', background:'#000', color:'#fff', fontWeight:700,
+                display:'inline-flex', alignItems:'center', justifyContent:'center', boxShadow:'0 4px 12px rgba(0,0,0,0.16)'
+              }}
+              title="Sign in with Apple (demo)"
             >
-               Sign in with Apple (demo)
+              <svg aria-hidden xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M16.365 1.43c0 1.14-.47 2.217-1.225 3.019-.78.83-2.05 1.474-3.128 1.37-.136-1.093.396-2.254 1.15-3.06.785-.84 2.173-1.465 3.203-1.329zM20.7 17.284c-.6 1.384-.886 1.987-1.656 3.21-1.073 1.68-2.58 3.778-4.449 3.796-1.661.016-2.096-1.118-4.364-1.106-2.269.012-2.735 1.124-4.397 1.11-1.869-.016-3.299-1.905-4.372-3.583C-.163 17.7-.78 13.91.885 11.284c1.28-2.015 3.317-3.195 5.223-3.195 1.936 0 3.154 1.107 4.758 1.107 1.57 0 2.526-1.11 4.75-1.11 1.623 0 3.347.885 4.62 2.41-4.052 2.208-3.398 7.98-.536 9.798z"/>
+              </svg>
             </button>
           </div>
         </form>
