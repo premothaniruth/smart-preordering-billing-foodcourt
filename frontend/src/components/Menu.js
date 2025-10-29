@@ -26,6 +26,7 @@ import { toast } from "react-toastify";
  */
 const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemNoOption = () => {}, incItemVariant = () => {}, decItemVariant = () => {}, selectedShop, setSelectedShop, favorites = [], onFavoriteToggle, userId, hideFavorites = false, hideShopSelector = false, showInventory = false }) => {
   const [vegOnly, setVegOnly] = useState(false);
+  const [nonVegOnly, setNonVegOnly] = useState(false);
   const [showOptionsModal, setShowOptionsModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [selectedOption, setSelectedOption] = useState(null);
@@ -156,7 +157,9 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
 
   const isFavorite = (itemId) => favorites.includes(itemId);
 
-  let filteredItems = vegOnly ? shop.items.filter(item => item.isVeg) : shop.items;
+  let filteredItems = shop.items;
+  if (vegOnly) filteredItems = filteredItems.filter(item => item.isVeg);
+  else if (nonVegOnly) filteredItems = filteredItems.filter(item => !item.isVeg);
 
   const favoriteItems = filteredItems.filter(item => isFavorite(item.id));
   const recommended = filteredItems.filter(item => item.isRecommended && !isFavorite(item.id));
@@ -349,9 +352,29 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
           <span aria-hidden title="Veg only" style={{ color:'#27ae60' }}>🌿</span>
           <label style={{ display:'inline-flex', alignItems:'center', gap:8, cursor:'pointer' }}>
             <span style={{ fontSize: 13 }}>Veg only</span>
-            <input type="checkbox" checked={vegOnly} onChange={(e)=>setVegOnly(e.target.checked)} style={{ display:'none' }} />
+            <input
+              type="checkbox"
+              checked={vegOnly}
+              onChange={(e)=>{ const v = e.target.checked; setVegOnly(v); if (v) setNonVegOnly(false); }}
+              style={{ display:'none' }}
+            />
             <span aria-hidden style={{ width:36, height:20, borderRadius:12, background: vegOnly ? '#27ae60' : '#ccc', position:'relative', transition:'all 0.2s' }}>
               <span style={{ position:'absolute', top:2, left: vegOnly ? 18 : 2, width:16, height:16, background:'#fff', borderRadius:'50%', transition:'left 0.2s' }} />
+            </span>
+          </label>
+        </div>
+        <div style={{ display:'inline-flex', alignItems:'center', gap:10, background:'#fff', border:'none', borderRadius:12, padding:'6px 12px' }}>
+          <span aria-hidden title="Non-veg only" style={{ color:'#e74c3c' }}>🍗</span>
+          <label style={{ display:'inline-flex', alignItems:'center', gap:8, cursor:'pointer' }}>
+            <span style={{ fontSize: 13 }}>Non-veg only</span>
+            <input
+              type="checkbox"
+              checked={nonVegOnly}
+              onChange={(e)=>{ const v = e.target.checked; setNonVegOnly(v); if (v) setVegOnly(false); }}
+              style={{ display:'none' }}
+            />
+            <span aria-hidden style={{ width:36, height:20, borderRadius:12, background: nonVegOnly ? '#e74c3c' : '#ccc', position:'relative', transition:'all 0.2s' }}>
+              <span style={{ position:'absolute', top:2, left: nonVegOnly ? 18 : 2, width:16, height:16, background:'#fff', borderRadius:'50%', transition:'left 0.2s' }} />
             </span>
           </label>
         </div>
@@ -367,59 +390,57 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
 
       {sectioned && Array.isArray(sectioned.sections) && sectioned.sections.length > 0 && (
         <>
-          {sectioned.sections.map((sec) => (
-            <div key={sec.name}>
-              <h3>
-                {sec.name}
-                {(() => {
-                  const w = sectionWindows[sec.name];
-                  if (!w || !w.start || !w.end) return null;
-                  return (
-                    <span style={{ fontSize: 12, color: '#666', marginLeft: 8 }}>({w.start}-{w.end})</span>
-                  );
-                })()}
-              </h3>
-              <div className="menu-grid">
-                {(vegOnly ? sec.items.filter(it=>it.isVeg) : sec.items).map(renderItem)}
-              </div>
-            </div>
-          ))}
-        </>
-      )}
-
-      {favoriteItems.length > 0 && (
-        <>
-          <h3>❤️ Your Favorite Picks</h3>
-          <div className="menu-grid">
-            {favoriteItems.map(renderItem)}
-          </div>
-        </>
-      )}
-
-      {recommended.length > 0 && (
-        <>
-          <h3>🌟 Recommended</h3>
-          <div className="menu-grid">
-            {recommended.map(renderItem)}
-          </div>
-        </>
-      )}
-
-      {hotSellers.length > 0 && (
-        <>
-          <h3>🔥 Hot Sellers</h3>
-          <div className="menu-grid">
-            {hotSellers.map(renderItem)}
-          </div>
-        </>
-      )}
-
-      {regularItems.length > 0 && (
-        <>
-          <h3>All Items</h3>
-          <div className="menu-grid">
-            {regularItems.map(renderItem)}
-          </div>
+          {(() => {
+            const order = { 'Breakfast': 1, 'Lunch': 2, 'Dinner': 3 };
+            const sectionsSorted = sectioned.sections.slice().sort((a,b)=> (order[a.name]||10) - (order[b.name]||10));
+            return sectionsSorted.map((sec) => {
+              let secItems = (sec.items || []);
+              if (vegOnly) secItems = secItems.filter(it => it.isVeg);
+              else if (nonVegOnly) secItems = secItems.filter(it => !it.isVeg);
+              const fav = secItems.filter(it => isFavorite(it.id));
+              const hot = secItems.filter(it => it.isHotSeller && !isFavorite(it.id) && !it.isRecommended);
+              const rec = secItems.filter(it => it.isRecommended && !isFavorite(it.id));
+              const rest = secItems.filter(it => !isFavorite(it.id) && !it.isHotSeller && !it.isRecommended);
+              return (
+                <div key={sec.name}>
+                  <h3>
+                    {sec.name}
+                    {(() => {
+                      const w = sectionWindows[sec.name];
+                      if (!w || !w.start || !w.end) return null;
+                      return (
+                        <span style={{ fontSize: 12, color: '#666', marginLeft: 8 }}>({w.start}-{w.end})</span>
+                      );
+                    })()}
+                  </h3>
+                  {fav.length > 0 && (
+                    <>
+                      <h4 style={{ marginTop: 8 }}>❤️ Favorite Picks</h4>
+                      <div className="menu-grid">{fav.map(renderItem)}</div>
+                    </>
+                  )}
+                  {hot.length > 0 && (
+                    <>
+                      <h4 style={{ marginTop: 8 }}>🔥 Hot Sellers</h4>
+                      <div className="menu-grid">{hot.map(renderItem)}</div>
+                    </>
+                  )}
+                  {rec.length > 0 && (
+                    <>
+                      <h4 style={{ marginTop: 8 }}>🌟 Recommended</h4>
+                      <div className="menu-grid">{rec.map(renderItem)}</div>
+                    </>
+                  )}
+                  {rest.length > 0 && (
+                    <>
+                      <h4 style={{ marginTop: 8 }}>All Items</h4>
+                      <div className="menu-grid">{rest.map(renderItem)}</div>
+                    </>
+                  )}
+                </div>
+              );
+            });
+          })()}
         </>
       )}
 

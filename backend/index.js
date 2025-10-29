@@ -11,7 +11,7 @@ const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET || "MySuperSecretKeyForJWT";
 
 app.use(cors());
-app.use(bodyParser.json());
+app.use(bodyParser.json({ limit: '6mb' }));
 
 // Serve static images
 app.use('/images', express.static(path.join(__dirname, 'data', 'images')));
@@ -65,6 +65,105 @@ const normalizeMenuShops = (raw) => {
     }
     return { shopId: shop.shopId, shopName: shop.shopName, items };
   });
+
+// Apple login: verify Apple ID token via Apple JWKS and issue employee session
+/**
+ * POST /employee/apple-login
+ * Body: { idToken }
+ * Verifies signature using Apple's JWKS and validates iss/aud/exp
+ */
+app.post('/employee/apple-login', async (req, res) => {
+  try {
+    const { idToken } = req.body || {};
+    if (!idToken || typeof idToken !== 'string') {
+      return res.status(400).json({ message: 'idToken is required' });
+    }
+    const clientId = process.env.APPLE_CLIENT_ID || '';
+    const parts = idToken.split('.');
+    if (parts.length !== 3) return res.status(400).json({ message: 'Invalid token format' });
+    const [encodedHeader, encodedPayload, encodedSig] = parts;
+    const b64uToBuf = (s) => Buffer.from(s.replace(/-/g, '+').replace(/_/g, '/'), 'base64');
+    const header = JSON.parse(Buffer.from(encodedHeader.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8'));
+    const payload = JSON.parse(Buffer.from(encodedPayload.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8'));
+    // Validate claims (issuer, audience, expiration) after signature check
+    // Fetch Apple JWKS
+    const https = require('https');
+    const jwks = await new Promise((resolve, reject) => {
+      https.get('https://appleid.apple.com/auth/keys', (resp) => {
+        let data = '';
+        resp.on('data', (c) => data += c);
+        resp.on('end', () => { try { resolve(JSON.parse(data)); } catch (e) { reject(e); } });
+      }).on('error', reject);
+    });
+    const keys = Array.isArray(jwks?.keys) ? jwks.keys : [];
+    const key = keys.find(k => k.kid === header.kid && k.alg === header.alg);
+    if (!key) return res.status(401).json({ message: 'Apple key not found' });
+
+    // Build PEM from JWK (RSA)
+    const kty = key.kty;
+    if (kty !== 'RSA') return res.status(401).json({ message: 'Unsupported key type' });
+    const n = key.n; // base64url modulus
+    const e = key.e; // base64url exponent
+    const base64UrlToBase64 = (s) => s.replace(/-/g, '+').replace(/_/g, '/');
+    function rsaPublicKeyPem(modulusB64Url, exponentB64Url) {
+      const modulus = Buffer.from(base64UrlToBase64(modulusB64Url), 'base64');
+      const exponent = Buffer.from(base64UrlToBase64(exponentB64Url), 'base64');
+      // ASN.1 DER sequence for RSA public key
+      function derEncodeLength(len) {
+        if (len < 128) return Buffer.from([len]);
+        const bytes = [];
+        let v = len;
+        while (v > 0) { bytes.unshift(v & 0xff); v >>= 8; }
+        return Buffer.from([0x80 | bytes.length, ...bytes]);
+      }
+      function derEncodeInteger(buf) {
+        // Ensure positive integer (prepend 0x00 if high bit set)
+        if (buf[0] & 0x80) buf = Buffer.concat([Buffer.from([0x00]), buf]);
+        return Buffer.concat([Buffer.from([0x02]), derEncodeLength(buf.length), buf]);
+      }
+      const seqBody = Buffer.concat([
+        derEncodeInteger(modulus),
+        derEncodeInteger(exponent)
+      ]);
+      const seq = Buffer.concat([Buffer.from([0x30]), derEncodeLength(seqBody.length), seqBody]);
+      // Wrap in SubjectPublicKeyInfo with RSA OID 1.2.840.113549.1.1.1
+      const rsaOid = Buffer.from([0x30,0x0D,0x06,0x09,0x2A,0x86,0x48,0x86,0xF7,0x0D,0x01,0x01,0x01,0x05,0x00]);
+      const bitString = Buffer.concat([Buffer.from([0x03]), derEncodeLength(seq.length + 1), Buffer.from([0x00]), seq]);
+      const spkiBody = Buffer.concat([rsaOid, bitString]);
+      const spki = Buffer.concat([Buffer.from([0x30]), derEncodeLength(spkiBody.length), spkiBody]);
+      const pem = `-----BEGIN PUBLIC KEY-----\n${spki.toString('base64').match(/.{1,64}/g).join('\n')}\n-----END PUBLIC KEY-----\n`;
+      return pem;
+    }
+    const publicKeyPem = rsaPublicKeyPem(n, e);
+    const crypto = require('crypto');
+    const verify = crypto.createVerify('RSA-SHA256');
+    verify.update(Buffer.from(`${encodedHeader}.${encodedPayload}`));
+    verify.end();
+    const signature = b64uToBuf(encodedSig);
+    const valid = verify.verify(publicKeyPem, signature);
+    if (!valid) return res.status(401).json({ message: 'Invalid Apple token signature' });
+
+    // Validate issuer, audience, expiry
+    if (payload.iss !== 'https://appleid.apple.com') {
+      return res.status(401).json({ message: 'Invalid issuer' });
+    }
+    if (clientId && payload.aud !== clientId) {
+      return res.status(401).json({ message: 'Audience mismatch' });
+    }
+    const nowSec = Math.floor(Date.now() / 1000);
+    if (payload.exp && nowSec > Number(payload.exp)) {
+      return res.status(401).json({ message: 'Token expired' });
+    }
+
+    const email = payload.email || payload.sub;
+    const mobile = email; // reusing email/sub as identifier
+    const token = jwt.sign({ role: 'employee', mobile }, JWT_SECRET, { expiresIn: '8h' });
+    employeeSessions.set(token, { mobile, createdAt: Date.now() });
+    res.json({ status: 'ok', token, mobile });
+  } catch (e) {
+    res.status(500).json({ message: 'Error during Apple login' });
+  }
+});
 };
 
 /**
@@ -296,6 +395,44 @@ app.post("/order/extend-reset/:id", authenticateVendor, (req, res) => {
   }
 });
 
+// Vendor: Upload item image (base64 data)
+/**
+ * POST /vendor/upload-image
+ * Auth: Bearer token (vendor)
+ * Body: { name?:string, mime?:string, data?:string } where data is base64 without data URI prefix
+ * Constraints: max 5MB; mime must be image/jpeg or image/png
+ * Returns: { status:"ok", path:"/images/<file>" }
+ */
+app.post('/vendor/upload-image', authenticateVendor, (req, res) => {
+  try {
+    const { name, mime, data } = req.body || {};
+    if (!data || typeof data !== 'string') {
+      return res.status(400).json({ message: 'Missing image data' });
+    }
+    const allowed = new Set(['image/jpeg','image/png','image/jpg']);
+    const m = (mime || '').toLowerCase();
+    if (!allowed.has(m)) {
+      return res.status(400).json({ message: 'Only JPEG and PNG images are allowed' });
+    }
+    const buf = Buffer.from(data, 'base64');
+    const MAX = 5 * 1024 * 1024;
+    if (buf.length > MAX) {
+      return res.status(400).json({ message: 'Image exceeds 5MB limit' });
+    }
+    const ext = m === 'image/png' ? '.png' : '.jpg';
+    const safeBase = String(name || 'upload').replace(/[^a-zA-Z0-9_-]/g, '').slice(0,32) || 'upload';
+    const fname = `${Date.now()}_${safeBase}${ext}`;
+    const outDir = path.join(__dirname, 'data', 'images');
+    try { fs.mkdirSync(outDir, { recursive: true }); } catch {}
+    const outPath = path.join(outDir, fname);
+    fs.writeFileSync(outPath, buf);
+    const servedPath = `/images/${fname}`;
+    res.json({ status: 'ok', path: servedPath });
+  } catch (e) {
+    res.status(500).json({ message: 'Error uploading image' });
+  }
+});
+
 // Mark order as picked up/completed
 app.post("/order/picked/:id", authenticateVendor, (req, res) => {
   try {
@@ -519,23 +656,51 @@ app.post("/employee/verify-otp", (req, res) => {
   }
 });
 
-// Google login (demo): accept email and create an employee session
+// Google login (real): verify Google ID token via tokeninfo endpoint
 /**
  * POST /employee/google-login
- * Public: Accepts { email } and returns a session token for demo purposes.
- * In production, verify Google ID token on backend.
+ * Public: Accepts { idToken } and returns a session token after verification.
+ * Requires env GOOGLE_CLIENT_ID to match token audience.
  */
-app.post("/employee/google-login", (req, res) => {
+app.post("/employee/google-login", async (req, res) => {
   try {
-    const { email } = req.body || {};
-    if (!email || typeof email !== 'string' || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
-      return res.status(400).json({ message: "Valid email is required" });
+    const { idToken } = req.body || {};
+    if (!idToken || typeof idToken !== 'string') {
+      return res.status(400).json({ message: "idToken is required" });
     }
-
-    const mobile = email; // use email as user identifier in demo
+    const clientId = process.env.GOOGLE_CLIENT_ID || '';
+    // Verify with Google tokeninfo endpoint
+    const https = require('https');
+    const tokeninfoUrl = `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`;
+    const tokeninfo = await new Promise((resolve, reject) => {
+      https.get(tokeninfoUrl, (resp) => {
+        let data = '';
+        resp.on('data', chunk => data += chunk);
+        resp.on('end', () => {
+          try {
+            const json = JSON.parse(data);
+            resolve(json);
+          } catch (e) { reject(e); }
+        });
+      }).on('error', reject);
+    });
+    if (!tokeninfo || tokeninfo.error_description) {
+      return res.status(401).json({ message: "Invalid Google token" });
+    }
+    if (clientId && tokeninfo.aud !== clientId) {
+      return res.status(401).json({ message: "Google token audience mismatch" });
+    }
+    if (tokeninfo.email_verified !== 'true' && tokeninfo.email_verified !== true) {
+      return res.status(401).json({ message: "Google email not verified" });
+    }
+    const email = tokeninfo.email;
+    if (!email) {
+      return res.status(401).json({ message: "Email not present in Google token" });
+    }
+    // Issue our session
+    const mobile = email; // Using email as user identifier for employee
     const token = jwt.sign({ role: "employee", mobile }, JWT_SECRET, { expiresIn: "8h" });
     employeeSessions.set(token, { mobile, createdAt: Date.now() });
-
     res.json({ status: "ok", token, mobile });
   } catch (error) {
     res.status(500).json({ message: "Error during Google login" });

@@ -10,6 +10,150 @@ export const fetchMenu = async () => {
 };
 
 /**
+ * Employee Apple Login: send Apple ID token to backend for verification
+ * @param {string} idToken
+ */
+export const employeeAppleLogin = async (idToken) => {
+  const res = await fetch(`${API_URL}/employee/apple-login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ idToken })
+  });
+  return res.json();
+};
+
+/**
+ * Upload vendor item image
+ * @param {File} file
+ * @param {string} token vendor JWT
+ * @returns {Promise<{status:string,path:string}>}
+ */
+export const preprocessVendorImage = async (file, options = {}) => {
+  if (!file) throw new Error('No file');
+  const allowed = ['image/jpeg','image/png','image/jpg'];
+  let type = (file.type || '').toLowerCase();
+
+  const readAsDataURL = (blob) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+
+  const dataUrlToBase64 = (dataUrl) => {
+    const comma = String(dataUrl).indexOf(',');
+    return comma >= 0 ? String(dataUrl).slice(comma + 1) : String(dataUrl);
+  };
+
+  const hasTransparency = async (img, canvas) => {
+    const ctx = canvas.getContext('2d');
+    canvas.width = img.width; canvas.height = img.height;
+    ctx.drawImage(img, 0, 0);
+    const step = Math.max(1, Math.floor(Math.max(img.width, img.height) / 400));
+    const { data, width, height } = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    for (let y = 0; y < height; y += step) {
+      for (let x = 0; x < width; x += step) {
+        const i = (y * width + x) * 4 + 3;
+        if (data[i] < 255) return true;
+      }
+    }
+    return false;
+  };
+
+  const ensureUnderLimit = async (blob) => {
+    // Try to compress/resize to be <= 5MB and JPEG format
+    const MAX_BYTES = 5 * 1024 * 1024;
+    // If already allowed type and under size, return as-is
+    if (allowed.includes((blob.type || '').toLowerCase()) && blob.size <= MAX_BYTES) {
+      return { blob, mime: (blob.type || 'image/jpeg').toLowerCase() };
+    }
+    // Load image into canvas
+    const dataUrl = await readAsDataURL(blob);
+    const img = await new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = reject;
+      image.src = dataUrl;
+    });
+    // Resize to max dimension
+    const MAX_DIM = Number(options.maxDim || 1600);
+    let { width, height } = img;
+    const scale = Math.min(1, MAX_DIM / Math.max(width, height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(width * scale));
+    canvas.height = Math.max(1, Math.round(height * scale));
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    // If original was PNG and has transparency and the resized PNG is <= 5MB, keep PNG
+    if ((file.type || '').toLowerCase() === 'image/png') {
+      try {
+        const transparent = await hasTransparency(img, document.createElement('canvas'));
+        if (transparent) {
+          const pngBlob = await new Promise((resolve) => canvas.toBlob((b)=>resolve(b), 'image/png'));
+          if (pngBlob && pngBlob.size <= MAX_BYTES) {
+            return { blob: pngBlob, mime: 'image/png' };
+          }
+        }
+      } catch {}
+    }
+    // Try multiple qualities
+    const qualities = Array.isArray(options.qualities) && options.qualities.length > 0 ? options.qualities : [0.9, 0.8, 0.7, 0.6, 0.5];
+    for (const q of qualities) {
+      const out = await new Promise((resolve) => canvas.toBlob((b)=>resolve(b), 'image/jpeg', q));
+      if (out && out.size <= MAX_BYTES) {
+        return { blob: out, mime: 'image/jpeg' };
+      }
+    }
+    // If still too large, final attempt with smaller max dims
+    const MAX_DIM2 = Number(options.fallbackDim || 1200);
+    const scale2 = Math.min(1, MAX_DIM2 / Math.max(width, height));
+    canvas.width = Math.max(1, Math.round(width * scale2));
+    canvas.height = Math.max(1, Math.round(height * scale2));
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    const out2 = await new Promise((resolve) => canvas.toBlob((b)=>resolve(b), 'image/jpeg', 0.6));
+    if (out2 && out2.size <= MAX_BYTES) return { blob: out2, mime: 'image/jpeg' };
+    throw new Error('Unable to compress image under 5MB');
+  };
+
+  // If type not allowed or size too big, compress/convert
+  let workingBlob = file;
+  if (!allowed.includes(type) || file.size > 5 * 1024 * 1024) {
+    const result = await ensureUnderLimit(file);
+    workingBlob = result.blob;
+    type = result.mime;
+  }
+
+  const finalDataUrl = await readAsDataURL(workingBlob);
+  const base64 = dataUrlToBase64(finalDataUrl);
+  return { name: file.name || 'image', mime: type, base64, dataUrl: finalDataUrl, size: workingBlob.size };
+};
+
+export const uploadVendorImagePrepared = async ({ name, mime, base64 }, token) => {
+  const res = await fetch(`${API_URL}/vendor/upload-image`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': token
+    },
+    body: JSON.stringify({ name, mime, data: base64 })
+  });
+  return res.json();
+};
+
+export const uploadVendorImage = async (file, token, options = {}) => {
+  const prepared = await preprocessVendorImage(file, options);
+  const res = await fetch(`${API_URL}/vendor/upload-image`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': token
+    },
+    body: JSON.stringify({ name: prepared.name, mime: prepared.mime, data: prepared.base64 })
+  });
+  return res.json();
+};
+
+/**
  * Fetch all offers for a shop (management UI)
  * @param {string|number} shopId
  */
@@ -315,15 +459,15 @@ export const fetchFavorites = async (userId) => {
 };
 
 /**
- * Employee Google Login (demo)
- * @param {string} email
+ * Employee Google Login (real): send Google ID token to backend for verification
+ * @param {string} idToken
  * @returns {Promise<any>}
  */
-export const employeeGoogleLogin = async (email) => {
+export const employeeGoogleLogin = async (idToken) => {
   const res = await fetch(`${API_URL}/employee/google-login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email })
+    body: JSON.stringify({ idToken })
   });
   return res.json();
 };

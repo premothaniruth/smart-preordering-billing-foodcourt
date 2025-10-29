@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { updateMenu, fetchSectionsMeta } from "../api";
+import { updateMenu, fetchSectionsMeta, uploadVendorImage, preprocessVendorImage, uploadVendorImagePrepared } from "../api";
 import { toast } from "react-toastify";
 
 /**
@@ -25,6 +25,7 @@ const MenuEditor = ({ token, menu, onUpdate, targetItemId }) => {
   const [sectionNames, setSectionNames] = useState([]);
   const [dragItemId, setDragItemId] = useState(null);
   const [sectionFilter, setSectionFilter] = useState('');
+  const [pendingUploads, setPendingUploads] = useState({}); // itemId -> { dataUrl, size, name, mime, base64 }
 
   // Sync local items when selected shop or menu changes
   useEffect(() => {
@@ -281,11 +282,73 @@ const MenuEditor = ({ token, menu, onUpdate, targetItemId }) => {
             </div>
             <div>
               <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>Image URL</div>
-              <input 
-                placeholder="Image URL" 
-                value={it.image} 
-                onChange={(e) => handleChange(idx, "image", e.target.value)} 
-              />
+              <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+                <input 
+                  placeholder="Image URL" 
+                  value={it.image} 
+                  onChange={(e) => handleChange(idx, "image", e.target.value)} 
+                  style={{ flex:1 }}
+                />
+                <button
+                  type="button"
+                  onClick={() => { handleChange(idx, 'image', ''); toast.info('Image removed'); }}
+                  style={{ background:'#fff', color:'#c0392b', border:'1px solid #c0392b', borderRadius:6, padding:'6px 10px', fontSize:12, whiteSpace:'nowrap' }}
+                  title="Remove current image"
+                >Remove</button>
+              </div>
+              <div style={{ marginTop: 6, display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/jpg"
+                  onChange={async (e) => {
+                    const file = e.target.files && e.target.files[0];
+                    if (!file) return;
+                    try {
+                      const prepared = await preprocessVendorImage(file);
+                      setPendingUploads(prev => ({ ...prev, [it.id]: prepared }));
+                      toast.info(`Ready to upload (${Math.round(prepared.size/1024)} KB)`);
+                    } catch (err) {
+                      toast.error(String(err?.message || 'Unable to process image'));
+                    } finally {
+                      e.target.value = '';
+                    }
+                  }}
+                />
+                <span style={{ fontSize: 11, color: '#666' }}>Max 5MB. JPEG/PNG only.</span>
+              </div>
+              {pendingUploads[it.id] && (
+                <div className="card" style={{ marginTop: 8, padding: 8, display:'flex', alignItems:'center', gap:10 }}>
+                  <img src={pendingUploads[it.id].dataUrl} alt="preview" style={{ width: 80, height: 60, objectFit:'cover', borderRadius: 6, border:'1px solid #eee' }} />
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:12, color:'#333' }}>Prepared: {(pendingUploads[it.id].mime || '').replace('image/','').toUpperCase()} · {Math.round(pendingUploads[it.id].size/1024)} KB</div>
+                    <div style={{ fontSize:11, color:'#666' }}>Click Upload to attach this image to the item.</div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={async ()=>{
+                      const prepared = pendingUploads[it.id];
+                      if (!prepared) return;
+                      try {
+                        const res = await uploadVendorImagePrepared({ name: prepared.name, mime: prepared.mime, base64: prepared.base64 }, `Bearer ${token}`);
+                        if (res && res.status === 'ok' && res.path) {
+                          handleChange(idx, 'image', res.path);
+                          setPendingUploads(prev => { const n = { ...prev }; delete n[it.id]; return n; });
+                          toast.success('Image uploaded');
+                        } else {
+                          toast.error(res?.message || 'Upload failed');
+                        }
+                      } catch (err) {
+                        toast.error(String(err?.message || 'Upload error'));
+                      }
+                    }}
+                  >Upload</button>
+                  <button
+                    type="button"
+                    onClick={()=> setPendingUploads(prev => { const n = { ...prev }; delete n[it.id]; return n; })}
+                    style={{ background:'#fff', color:'#111', border:'1px solid #111' }}
+                  >Discard</button>
+                </div>
+              )}
             </div>
           </div>
 
