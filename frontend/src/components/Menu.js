@@ -82,7 +82,7 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
   const renderComboCard = (combo) => {
     const components = Array.isArray(combo.components) ? combo.components : [];
     const compLines = components.map((c, idx) => {
-      const base = c && (c.name || ((shop && Array.isArray(shop.items)) ? (shop.items.find(i => Number(i.id) === Number(c.itemId))?.name) : null) || `Item ${c.itemId}`);
+      const base = c && (c.name || ((shop && Array.isArray(shop.items)) ? (shop.items.find(i => Number(i.id) === Number(c.itemId))?.name) : null) || 'Item');
       const qty = Number(c?.quantity || 1);
       const opt = c?.option ? ` (${c.option})` : '';
       return (
