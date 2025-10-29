@@ -13,11 +13,11 @@ export const fetchMenu = async () => {
  * Employee Apple Login: send Apple ID token to backend for verification
  * @param {string} idToken
  */
-export const employeeAppleLogin = async (idToken) => {
+export const employeeAppleLogin = async (email) => {
   const res = await fetch(`${API_URL}/employee/apple-login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ idToken })
+    body: JSON.stringify({ email })
   });
   return res.json();
 };
@@ -459,15 +459,15 @@ export const fetchFavorites = async (userId) => {
 };
 
 /**
- * Employee Google Login (real): send Google ID token to backend for verification
- * @param {string} idToken
+ * Employee Google Login (demo): send email to backend
+ * @param {string} email
  * @returns {Promise<any>}
  */
-export const employeeGoogleLogin = async (idToken) => {
+export const employeeGoogleLogin = async (email) => {
   const res = await fetch(`${API_URL}/employee/google-login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ idToken })
+    body: JSON.stringify({ email })
   });
   return res.json();
 };

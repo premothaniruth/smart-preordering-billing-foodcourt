@@ -74,7 +74,17 @@ const normalizeMenuShops = (raw) => {
  */
 app.post('/employee/apple-login', async (req, res) => {
   try {
-    const { idToken } = req.body || {};
+    const { idToken, email } = req.body || {};
+    // Demo fallback: accept email directly
+    if (email) {
+      if (typeof email !== 'string' || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+        return res.status(400).json({ message: 'Valid email is required' });
+      }
+      const mobile = email;
+      const token = jwt.sign({ role: 'employee', mobile }, JWT_SECRET, { expiresIn: '8h' });
+      employeeSessions.set(token, { mobile, createdAt: Date.now() });
+      return res.json({ status: 'ok', token, mobile });
+    }
     if (!idToken || typeof idToken !== 'string') {
       return res.status(400).json({ message: 'idToken is required' });
     }
@@ -664,7 +674,17 @@ app.post("/employee/verify-otp", (req, res) => {
  */
 app.post("/employee/google-login", async (req, res) => {
   try {
-    const { idToken } = req.body || {};
+    const { idToken, email } = req.body || {};
+    // Demo fallback: accept email directly
+    if (email) {
+      if (typeof email !== 'string' || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+        return res.status(400).json({ message: "Valid email is required" });
+      }
+      const mobile = email;
+      const token = jwt.sign({ role: "employee", mobile }, JWT_SECRET, { expiresIn: "8h" });
+      employeeSessions.set(token, { mobile, createdAt: Date.now() });
+      return res.json({ status: "ok", token, mobile });
+    }
     if (!idToken || typeof idToken !== 'string') {
       return res.status(400).json({ message: "idToken is required" });
     }
@@ -693,12 +713,11 @@ app.post("/employee/google-login", async (req, res) => {
     if (tokeninfo.email_verified !== 'true' && tokeninfo.email_verified !== true) {
       return res.status(401).json({ message: "Google email not verified" });
     }
-    const email = tokeninfo.email;
-    if (!email) {
+    const emailFromToken = tokeninfo.email;
+    if (!emailFromToken) {
       return res.status(401).json({ message: "Email not present in Google token" });
     }
-    // Issue our session
-    const mobile = email; // Using email as user identifier for employee
+    const mobile = emailFromToken;
     const token = jwt.sign({ role: "employee", mobile }, JWT_SECRET, { expiresIn: "8h" });
     employeeSessions.set(token, { mobile, createdAt: Date.now() });
     res.json({ status: "ok", token, mobile });

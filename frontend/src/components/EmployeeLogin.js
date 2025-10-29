@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import PropTypes from "prop-types";
 import { employeeRequestOtp, employeeVerifyOtp, employeeGoogleLogin, employeeAppleLogin } from "../api";
-import { GOOGLE_CLIENT_ID, APPLE_CLIENT_ID } from "../config";
 import { toast } from "react-toastify";
 
 /**
@@ -19,8 +18,6 @@ const EmployeeLogin = ({ onSuccess }) => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const inputRef = useRef(null);
   const [resendSeconds, setResendSeconds] = useState(0);
-  const googleBtnRef = useRef(null);
-  const [appleReady, setAppleReady] = useState(false);
 
   useEffect(() => {
     try {
@@ -30,84 +27,7 @@ const EmployeeLogin = ({ onSuccess }) => {
     } catch {}
   }, []);
 
-  // Load Google Identity Services and render button
-  useEffect(() => {
-    if (step !== 'mobile') return;
-    if (!GOOGLE_CLIENT_ID) return;
-    const ensureScript = () => new Promise((resolve) => {
-      if (window.google && window.google.accounts && window.google.accounts.id) return resolve();
-      const s = document.createElement('script');
-      s.src = 'https://accounts.google.com/gsi/client';
-      s.async = true;
-      s.defer = true;
-      s.onload = () => resolve();
-      document.head.appendChild(s);
-    });
-    let cancelled = false;
-    ensureScript().then(() => {
-      if (cancelled) return;
-      try {
-        window.google.accounts.id.initialize({
-          client_id: GOOGLE_CLIENT_ID,
-          callback: async (response) => {
-            try {
-              const idToken = response?.credential;
-              if (!idToken) return toast.error('Google sign-in failed');
-              const res = await employeeGoogleLogin(idToken);
-              if (res && res.status === 'ok' && res.token) {
-                onSuccess({ token: res.token, mobile: res.mobile });
-                toast.success('Logged in with Google');
-              } else {
-                toast.error(res?.message || 'Google login failed');
-              }
-            } catch {
-              toast.error('Error during Google login');
-            }
-          },
-          auto_select: false,
-          cancel_on_tap_outside: true
-        });
-        if (googleBtnRef.current) {
-          window.google.accounts.id.renderButton(googleBtnRef.current, {
-            theme: 'outline',
-            size: 'large',
-            type: 'standard',
-            shape: 'pill',
-            logo_alignment: 'left',
-          });
-        }
-      } catch {}
-    });
-    return () => { cancelled = true; };
-  }, [step]);
-
-  // Load Apple JS SDK
-  useEffect(() => {
-    if (step !== 'mobile') return;
-    if (!APPLE_CLIENT_ID) return;
-    const ensureScript = () => new Promise((resolve) => {
-      if (window.AppleID && window.AppleID.auth) return resolve();
-      const s = document.createElement('script');
-      s.src = 'https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js';
-      s.async = true;
-      s.onload = () => resolve();
-      document.head.appendChild(s);
-    });
-    let cancelled = false;
-    ensureScript().then(() => {
-      if (cancelled) return;
-      try {
-        window.AppleID.auth.init({
-          clientId: APPLE_CLIENT_ID,
-          scope: 'name email',
-          redirectURI: window.location.origin, // not used for popup but required
-          usePopup: true,
-        });
-        setAppleReady(true);
-      } catch {}
-    });
-    return () => { cancelled = true; };
-  }, [step]);
+  // No third-party SDKs in demo mode
 
   const rememberMobile = (num) => {
     try {
@@ -224,31 +144,47 @@ const EmployeeLogin = ({ onSuccess }) => {
             <div style={{ flex:1, height:1, background:'#eee' }} />
           </div>
           <div style={{ width:'100%', marginTop:4, display:'flex', justifyContent:'center', gap:12, flexWrap:'wrap' }}>
-            <div ref={googleBtnRef} />
             <button
               type="button"
-              disabled={!appleReady}
               onClick={async () => {
                 try {
-                  const resp = await window.AppleID.auth.signIn();
-                  const idToken = resp?.authorization?.id_token;
-                  if (!idToken) return toast.error('Apple sign-in failed');
-                  const res = await employeeAppleLogin(idToken);
+                  const email = window.prompt("Enter Google account email (demo)");
+                  if (!email) return;
+                  const res = await employeeGoogleLogin(email);
+                  if (res && res.status === 'ok' && res.token) {
+                    onSuccess({ token: res.token, mobile: res.mobile });
+                    toast.success('Logged in with Google');
+                  } else {
+                    toast.error(res?.message || 'Google login failed');
+                  }
+                } catch {
+                  toast.error('Error during Google login');
+                }
+              }}
+              style={{ padding:'8px 12px', borderRadius:8, border:'1px solid #111', background:'#fff', color:'#111', fontWeight:600 }}
+            >
+              Continue with Google (demo)
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  const email = window.prompt("Enter Apple account email (demo)");
+                  if (!email) return;
+                  const res = await employeeAppleLogin(email);
                   if (res && res.status === 'ok' && res.token) {
                     onSuccess({ token: res.token, mobile: res.mobile });
                     toast.success('Logged in with Apple');
                   } else {
                     toast.error(res?.message || 'Apple login failed');
                   }
-                } catch (e) {
-                  // User may cancel popup; only toast on actual errors
-                  if (String(e?.error) !== 'popup_closed_by_user') toast.error('Error during Apple login');
+                } catch {
+                  toast.error('Error during Apple login');
                 }
               }}
               style={{ padding:'8px 12px', borderRadius:8, border:'1px solid #111', background:'#000', color:'#fff', fontWeight:600 }}
-              title={appleReady ? 'Continue with Apple' : 'Apple not initialized'}
             >
-               Sign in with Apple
+               Sign in with Apple (demo)
             </button>
           </div>
         </form>
