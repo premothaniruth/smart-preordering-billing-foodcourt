@@ -155,6 +155,20 @@ const VendorCombos = ({ token }) => {
             </div>
           </div>
 
+          <div style={{ marginTop: 10, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+            <div>
+              <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>Available Start (HH:MM)</div>
+              <input type="time" value={c.availableStart || ''} onChange={(e)=>updateField(idx,'availableStart', e.target.value)} />
+            </div>
+            <div>
+              <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>Available End (HH:MM)</div>
+              <input type="time" value={c.availableEnd || ''} onChange={(e)=>updateField(idx,'availableEnd', e.target.value)} />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <span className="menu-item-badge" style={{ fontSize: 12 }}>Overrides section windows for this combo</span>
+            </div>
+          </div>
+
           <div style={{ marginTop: 10 }}>
             <div style={{ fontWeight: 600, marginBottom: 6 }}>Components</div>
             {(c.components || []).map((comp, cidx) => (

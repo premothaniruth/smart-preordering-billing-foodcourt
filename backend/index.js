@@ -1,3 +1,69 @@
+// Employees
+/** @returns {Array<{id:number,username?:string,email?:string,mobile?:string,passwordHash?:string,pinHash?:string}>} */
+const getEmployees = () => {
+  try {
+    return JSON.parse(fs.readFileSync(employeesFile, "utf8"));
+  } catch {
+    return [];
+  }
+};
+
+// Named groups persistence
+const readChatGroups = () => {
+  try { return JSON.parse(fs.readFileSync(chatGroupsFile, 'utf8')); } catch { return []; }
+};
+const saveChatGroups = (groups) => {
+  fs.writeFileSync(chatGroupsFile, JSON.stringify(groups, null, 2));
+};
+const listAccessibleGroups = (requester) => {
+  const groups = readChatGroups();
+  const me = String(requester.username || requester.email || requester.id).toLowerCase();
+  return groups.filter(g => String(g.owner).toLowerCase() === me || (Array.isArray(g.members) && g.members.map(x=>String(x).toLowerCase()).includes(me)));
+};
+const canAccessNamed = (requester, owner, name) => {
+  const groups = readChatGroups();
+  const g = groups.find(gg => String(gg.owner).toLowerCase() === String(owner).toLowerCase() && String(gg.name).toLowerCase() === String(name).toLowerCase());
+  if (!g) return false;
+  const me = String(requester.username || requester.email || requester.id).toLowerCase();
+  if (String(g.owner).toLowerCase() === me) return true;
+  const members = Array.isArray(g.members) ? g.members.map(x => String(x).toLowerCase()) : [];
+  return members.includes(me);
+};
+const saveEmployees = (list) => {
+  fs.writeFileSync(employeesFile, JSON.stringify(list, null, 2));
+};
+
+const validatePin = (pin) => /^\d{4}$/.test(String(pin || ''));
+const validatePassword = (pwd) => {
+  const s = String(pwd || '');
+  if (s.length < 8 || s.length > 20) return false;
+  const hasLower = /[a-z]/.test(s);
+  const hasUpper = /[A-Z]/.test(s);
+  const hasDigit = /\d/.test(s);
+  const hasSymbol = /[\.,&%#@!]/.test(s);
+  return hasLower && hasUpper && hasDigit && hasSymbol;
+};
+
+// Startup: hash any pinPlain, and set initial pins for demo users 1 and 2 if missing
+const ensureEmployeePins = async () => {
+  try {
+    const list = getEmployees();
+    let changed = false;
+    for (const e of list) {
+      if (e.pinPlain && validatePin(e.pinPlain)) {
+        e.pinHash = await bcrypt.hash(String(e.pinPlain), 10);
+        delete e.pinPlain;
+        changed = true;
+      }
+    }
+    const u1 = list.find(x => Number(x.id) === 1);
+    const u2 = list.find(x => Number(x.id) === 2);
+    if (u1) { u1.pinHash = await bcrypt.hash('1234', 10); changed = true; }
+    if (u2) { u2.pinHash = await bcrypt.hash('4321', 10); changed = true; }
+    if (changed) saveEmployees(list);
+  } catch {}
+};
+
 /**
  * One-time migration: ensure every item has isHotSeller/isRecommended in menu.json.
  * If a category has no items with these flags, pick 5 random items in that category
@@ -31,6 +97,362 @@ const ensureHotRecFlags = () => {
         };
         if (!anyHot) {
           pickRandom(5).forEach(i => { if (!items[i].isHotSeller) { items[i].isHotSeller = true; changed = true; } });
+
+// ===== Friend Circle Chat (SSE) =====
+// In-memory stores (demo)
+const chatClients = new Map(); // groupKey -> Set<res>
+const chatMessages = new Map(); // groupKey -> Array<{id, sender, text, ts}>
+const chatTyping = new Map(); // groupKey -> Map<username, number(lastTs)>
+const chatFile = __dirname + "/data/chat.json";
+const getGroupKey = (ownerUsername) => String(ownerUsername).toLowerCase();
+const getNamedGroupKey = (ownerUsername, groupName) => `named:${String(ownerUsername).toLowerCase()}:${String(groupName).toLowerCase()}`;
+
+// Load chat from disk
+try {
+  const raw = fs.existsSync(chatFile) ? JSON.parse(fs.readFileSync(chatFile, 'utf8')) : {};
+  if (raw && typeof raw === 'object') {
+    for (const [k, v] of Object.entries(raw)) {
+      if (Array.isArray(v)) chatMessages.set(String(k), v);
+    }
+  }
+} catch {}
+
+const persistChat = () => {
+  try {
+    const obj = {};
+    for (const [k, v] of chatMessages.entries()) obj[k] = v;
+    fs.writeFileSync(chatFile, JSON.stringify(obj, null, 2));
+  } catch {}
+};
+
+const resolveUser = (payload) => {
+  const employees = getEmployees();
+  return employees.find(e => e.email === payload.mobile || e.username === payload.mobile || String(e.id) === String(payload.mobile));
+};
+
+const authorizeInGroup = (requester, ownerUsername) => {
+  if (!requester || !ownerUsername) return false;
+  const ownerName = String(ownerUsername).toLowerCase();
+  const employees = getEmployees();
+  const owner = employees.find(e => String(e.username).toLowerCase() === ownerName);
+  if (!owner) return false;
+  const reqName = String(requester.username || requester.email || requester.id).toLowerCase();
+  if (reqName === ownerName) return true;
+  const friends = Array.isArray(owner.friends) ? owner.friends.map(x => String(x).toLowerCase()) : [];
+  return friends.includes(reqName);
+};
+
+// Fetch chat history for the employee's own group
+app.post('/employee/chat/history', (req, res) => {
+  try {
+    const { token, limit = 100, groupOwner, groupName } = req.body || {};
+    if (!token) return res.status(401).json({ message: 'Unauthorized' });
+    let payload = null; try { payload = jwt.verify(token, JWT_SECRET); } catch {}
+    if (!payload) return res.status(401).json({ message: 'Invalid token' });
+    const requester = resolveUser(payload);
+    if (!requester) return res.status(404).json({ message: 'User not found' });
+    let key;
+    if (groupName) {
+      const owner = groupOwner ? String(groupOwner) : String(requester.username || requester.email || requester.id);
+      if (!canAccessNamed(requester, owner, groupName)) return res.status(403).json({ message: 'Forbidden' });
+      key = getNamedGroupKey(owner, groupName);
+    } else {
+      const owner = groupOwner ? String(groupOwner) : String(requester.username || requester.email || requester.id);
+      if (!authorizeInGroup(requester, owner)) return res.status(403).json({ message: 'Forbidden' });
+      key = getGroupKey(owner);
+    }
+    const msgs = chatMessages.get(key) || [];
+    res.json({ status:'ok', messages: msgs.slice(-Number(limit || 100)) });
+  } catch { res.status(500).json({ message: 'Error fetching history' }); }
+});
+
+// SSE stream for realtime updates to the employee's own group
+app.get('/employee/chat/stream', (req, res) => {
+  try {
+    const token = req.query.token;
+    const groupOwner = req.query.groupOwner;
+    const groupName = req.query.groupName;
+    if (!token) return res.status(401).end();
+    let payload = null; try { payload = jwt.verify(token, JWT_SECRET); } catch {}
+    if (!payload) return res.status(401).end();
+    const requester = resolveUser(payload);
+    if (!requester) return res.status(404).end();
+    let key;
+    if (groupName) {
+      const owner = groupOwner ? String(groupOwner) : String(requester.username || requester.email || requester.id);
+      if (!canAccessNamed(requester, owner, groupName)) return res.status(403).end();
+      key = getNamedGroupKey(owner, groupName);
+    } else {
+      const owner = groupOwner ? String(groupOwner) : String(requester.username || requester.email || requester.id);
+      if (!authorizeInGroup(requester, owner)) return res.status(403).end();
+      key = getGroupKey(owner);
+    }
+
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders && res.flushHeaders();
+
+    const clients = chatClients.get(key) || new Set();
+    clients.add(res);
+    chatClients.set(key, clients);
+
+    // Heartbeat
+    const heart = setInterval(() => {
+      try { res.write(`event: ping\ndata: {}\n\n`); } catch {}
+    }, 25000);
+
+    req.on('close', () => {
+      clearInterval(heart);
+      const set = chatClients.get(key);
+      if (set) { set.delete(res); if (set.size === 0) chatClients.delete(key); }
+    });
+  } catch {
+    try { res.status(500).end(); } catch {}
+  }
+});
+
+// Send message to a group (owner = self by default)
+app.post('/employee/chat/send', (req, res) => {
+  try {
+    const { token, text, groupOwner, groupName } = req.body || {};
+    if (!token || !text) return res.status(400).json({ message: 'token and text required' });
+    let payload = null; try { payload = jwt.verify(token, JWT_SECRET); } catch {}
+    if (!payload) return res.status(401).json({ message: 'Invalid token' });
+    const requester = resolveUser(payload);
+    if (!requester) return res.status(404).json({ message: 'User not found' });
+    let key;
+    if (groupName) {
+      const owner = groupOwner ? String(groupOwner) : String(requester.username || requester.email || requester.id);
+      if (!canAccessNamed(requester, owner, groupName)) return res.status(403).json({ message: 'Forbidden' });
+      key = getNamedGroupKey(owner, groupName);
+    } else {
+      const owner = groupOwner ? String(groupOwner) : String(requester.username || requester.email || requester.id);
+      if (!authorizeInGroup(requester, owner)) return res.status(403).json({ message: 'Forbidden' });
+      key = getGroupKey(owner);
+    }
+    const msg = { id: Date.now() + '-' + Math.random().toString(36).slice(2), sender: requester.username || requester.email || String(requester.id), text: String(text).slice(0, 2000), ts: Date.now() };
+    const arr = chatMessages.get(key) || [];
+    arr.push(msg);
+    if (arr.length > 500) arr.splice(0, arr.length - 500);
+    chatMessages.set(key, arr);
+    persistChat();
+    const clients = chatClients.get(key) || new Set();
+    for (const c of clients) {
+      try { c.write(`data: ${JSON.stringify(msg)}\n\n`); } catch {}
+    }
+    res.json({ status:'ok' });
+  } catch {
+    res.status(500).json({ message: 'Error sending message' });
+  }
+});
+
+// Typing indicator
+app.post('/employee/chat/typing', (req, res) => {
+  try {
+    const { token, isTyping, groupOwner, groupName } = req.body || {};
+    if (!token) return res.status(400).json({ message: 'token required' });
+    let payload = null; try { payload = jwt.verify(token, JWT_SECRET); } catch {}
+    if (!payload) return res.status(401).json({ message: 'Invalid token' });
+    const requester = resolveUser(payload);
+    if (!requester) return res.status(404).json({ message: 'User not found' });
+    let key;
+    if (groupName) {
+      const owner = groupOwner ? String(groupOwner) : String(requester.username || requester.email || requester.id);
+      if (!canAccessNamed(requester, owner, groupName)) return res.status(403).json({ message: 'Forbidden' });
+      key = getNamedGroupKey(owner, groupName);
+    } else {
+      const owner = groupOwner ? String(groupOwner) : String(requester.username || requester.email || requester.id);
+      if (!authorizeInGroup(requester, owner)) return res.status(403).json({ message: 'Forbidden' });
+      key = getGroupKey(owner);
+    }
+    const map = chatTyping.get(key) || new Map();
+    if (isTyping) map.set(String(requester.username || requester.email || requester.id), Date.now()); else map.delete(String(requester.username || requester.email || requester.id));
+    chatTyping.set(key, map);
+    const clients = chatClients.get(key) || new Set();
+    const payloadEvt = { type: 'typing', sender: requester.username || requester.email || String(requester.id), isTyping: !!isTyping, ts: Date.now() };
+    for (const c of clients) {
+      try { c.write(`event: typing\ndata: ${JSON.stringify(payloadEvt)}\n\n`); } catch {}
+    }
+    res.json({ status: 'ok' });
+  } catch { res.status(500).json({ message: 'Error' }); }
+});
+
+// Groups: list/create/update
+app.get('/employee/chat/groups', (req, res) => {
+  try {
+    const token = req.query.token;
+    if (!token) return res.status(401).json({ message: 'Unauthorized' });
+    let payload = null; try { payload = jwt.verify(token, JWT_SECRET); } catch {}
+    if (!payload) return res.status(401).json({ message: 'Invalid token' });
+    const requester = resolveUser(payload);
+    if (!requester) return res.status(404).json({ message: 'User not found' });
+    res.json({ status:'ok', groups: listAccessibleGroups(requester) });
+  } catch { res.status(500).json({ message: 'Error listing groups' }); }
+});
+
+app.post('/employee/chat/groups/create', (req, res) => {
+  try {
+    const { token, name, members = [] } = req.body || {};
+    if (!token || !name) return res.status(400).json({ message: 'token and name required' });
+    let payload = null; try { payload = jwt.verify(token, JWT_SECRET); } catch {}
+    if (!payload) return res.status(401).json({ message: 'Invalid token' });
+    const requester = resolveUser(payload);
+    if (!requester) return res.status(404).json({ message: 'User not found' });
+    const groups = readChatGroups();
+    const owner = String(requester.username || requester.email || requester.id);
+    const exists = groups.some(g => String(g.owner).toLowerCase() === owner.toLowerCase() && String(g.name).toLowerCase() === String(name).toLowerCase());
+    if (exists) return res.status(409).json({ message: 'Group name already exists' });
+    const g = { owner, name, members: members.filter(Boolean) };
+    groups.push(g);
+    saveChatGroups(groups);
+    res.json({ status:'ok' });
+  } catch { res.status(500).json({ message: 'Error creating group' }); }
+});
+
+app.post('/employee/chat/groups/update', (req, res) => {
+  try {
+    const { token, name, addMembers = [], removeMembers = [], newName } = req.body || {};
+    if (!token || !name) return res.status(400).json({ message: 'token and name required' });
+    let payload = null; try { payload = jwt.verify(token, JWT_SECRET); } catch {}
+    if (!payload) return res.status(401).json({ message: 'Invalid token' });
+    const requester = resolveUser(payload);
+    if (!requester) return res.status(404).json({ message: 'User not found' });
+    const groups = readChatGroups();
+    const owner = String(requester.username || requester.email || requester.id);
+    const idx = groups.findIndex(g => String(g.owner).toLowerCase() === owner.toLowerCase() && String(g.name).toLowerCase() === String(name).toLowerCase());
+    if (idx < 0) return res.status(404).json({ message: 'Group not found' });
+    const g = groups[idx];
+    const set = new Set((g.members || []).map(x => String(x)));
+    addMembers.forEach(m => { if (m) set.add(String(m)); });
+    removeMembers.forEach(m => { set.delete(String(m)); });
+    g.members = Array.from(set);
+    if (newName) {
+      const exists = groups.some(gg => String(gg.owner).toLowerCase() === owner.toLowerCase() && String(gg.name).toLowerCase() === String(newName).toLowerCase());
+      if (exists) return res.status(409).json({ message: 'New group name already exists' });
+      g.name = String(newName);
+    }
+    groups[idx] = g;
+    saveChatGroups(groups);
+    res.json({ status:'ok' });
+  } catch { res.status(500).json({ message: 'Error updating group' }); }
+});
+
+// In-memory OTP store for profile actions: key -> { code, expiresAt }
+const profileOtps = new Map();
+const genOtp = () => String(Math.floor(100000 + Math.random()*900000));
+const otpKey = (username, action) => `${String(username).toLowerCase()}::${action}`;
+
+// Fetch profile (basic info plus friends/birthday)
+app.post('/employee/profile', (req, res) => {
+  try {
+    const { token } = req.body || {};
+    if (!token) return res.status(401).json({ message: 'Unauthorized' });
+    let payload = null; try { payload = jwt.verify(token, JWT_SECRET); } catch {}
+    if (!payload) return res.status(401).json({ message: 'Invalid token' });
+    const employees = getEmployees();
+    const u = employees.find(e => e.email === payload.mobile || e.username === payload.mobile || String(e.id) === String(payload.mobile));
+    if (!u) return res.status(404).json({ message: 'User not found' });
+    res.json({
+      status: 'ok',
+      profile: {
+        id: u.id,
+        username: u.username,
+        email: u.email,
+        mobile: u.mobile,
+        friends: Array.isArray(u.friends) ? u.friends : [],
+        birthday: u.birthday || ''
+      }
+    });
+  } catch (e) {
+    res.status(500).json({ message: 'Error fetching profile' });
+  }
+});
+
+// Request OTP for profile update (cross-channel):
+// action: 'verify-email' (send to mobile) or 'verify-mobile' (send to email) or 'change-password'/'change-pin' (send to email)
+app.post('/employee/profile/request-otp', (req, res) => {
+  try {
+    const { token, action } = req.body || {};
+    if (!token || !action) return res.status(400).json({ message: 'token and action required' });
+    let payload = null; try { payload = jwt.verify(token, JWT_SECRET); } catch {}
+    if (!payload) return res.status(401).json({ message: 'Invalid token' });
+    const employees = getEmployees();
+    const u = employees.find(e => e.email === payload.mobile || e.username === payload.mobile || String(e.id) === String(payload.mobile));
+    if (!u) return res.status(404).json({ message: 'User not found' });
+    const code = genOtp();
+    const key = otpKey(u.username || u.email || u.id, action);
+    profileOtps.set(key, { code, expiresAt: Date.now() + 5 * 60 * 1000 });
+    // Demo: log to console where we "send" it
+    if (action === 'verify-email' || action === 'change-password' || action === 'change-pin') {
+      console.log(`[PROFILE OTP to EMAIL ${u.email}] code=${code}`);
+    } else if (action === 'verify-mobile') {
+      console.log(`[PROFILE OTP to MOBILE ${u.mobile}] code=${code}`);
+    }
+    res.json({ status: 'ok' });
+  } catch (e) {
+    res.status(500).json({ message: 'Error generating OTP' });
+  }
+});
+
+// Update profile fields with OTP verification as required.
+// Body: { token, updates: { email?, mobile?, password?, pin?, friends?, birthday? }, otp?, action? }
+app.post('/employee/profile/update', async (req, res) => {
+  try {
+    const { token, updates = {}, otp, action } = req.body || {};
+    if (!token) return res.status(401).json({ message: 'Unauthorized' });
+    let payload = null; try { payload = jwt.verify(token, JWT_SECRET); } catch {}
+    if (!payload) return res.status(401).json({ message: 'Invalid token' });
+    const employees = getEmployees();
+    const u = employees.find(e => e.email === payload.mobile || e.username === payload.mobile || String(e.id) === String(payload.mobile));
+    if (!u) return res.status(404).json({ message: 'User not found' });
+
+    // For email/mobile/password/pin changes, require OTP
+    const sensitive = updates.email || updates.mobile || updates.password || updates.pin;
+    if (sensitive) {
+      const key = otpKey(u.username || u.email || u.id, action || '');
+      const rec = profileOtps.get(key);
+      if (!rec || !otp || rec.code !== String(otp) || Date.now() > rec.expiresAt) {
+        return res.status(400).json({ message: 'Invalid or expired OTP' });
+      }
+      profileOtps.delete(key);
+    }
+
+    // Apply updates with validation
+    if (updates.email != null) {
+      const emailStr = String(updates.email || '').trim();
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(emailStr)) return res.status(400).json({ message: 'Invalid email' });
+      u.email = emailStr;
+    }
+    if (updates.mobile != null) {
+      const digits = String(updates.mobile || '').replace(/[^0-9]/g,'');
+      if (digits.length !== 10) return res.status(400).json({ message: 'Mobile must be 10 digits (India)' });
+      u.mobile = `+91${digits}`;
+    }
+    if (updates.password != null) {
+      if (!validatePassword(updates.password)) return res.status(400).json({ message: 'Weak password' });
+      u.passwordHash = await bcrypt.hash(String(updates.password), 10);
+    }
+    if (updates.pin != null) {
+      if (!validatePin(updates.pin)) return res.status(400).json({ message: 'PIN must be 4 digits' });
+      u.pinHash = await bcrypt.hash(String(updates.pin), 10);
+    }
+    if (updates.friends) {
+      const arr = Array.isArray(updates.friends) ? updates.friends.map(x => String(x).trim()).filter(Boolean) : [];
+      u.friends = arr;
+    }
+    if (updates.birthday != null) {
+      const s = String(updates.birthday || '').trim();
+      // allow empty or YYYY-MM-DD
+      if (s && !/^\d{4}-\d{2}-\d{2}$/.test(s)) return res.status(400).json({ message: 'Invalid birthday format' });
+      u.birthday = s;
+    }
+    saveEmployees(employees);
+    res.json({ status: 'ok' });
+  } catch (e) {
+    res.status(500).json({ message: 'Error updating profile' });
+  }
+});
         }
         if (!anyRec) {
           pickRandom(5).forEach(i => { if (!items[i].isRecommended) { items[i].isRecommended = true; changed = true; } });
@@ -43,8 +465,6 @@ const ensureHotRecFlags = () => {
   } catch {}
 };
 
-// Run migration at startup
-ensureHotRecFlags();
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
@@ -59,8 +479,6 @@ const JWT_SECRET = process.env.JWT_SECRET || "MySuperSecretKeyForJWT";
 
 app.use(cors());
 app.use(bodyParser.json({ limit: '6mb' }));
-
-// Serve static images
 app.use('/images', express.static(path.join(__dirname, 'data', 'images')));
 
 // File paths
@@ -71,9 +489,15 @@ const billingCounterFile = __dirname + "/data/billing_counter.json";
 const favoritesFile = __dirname + "/data/favorites.json";
 const ratingsFile = __dirname + "/data/ratings.json";
 const grievancesFile = __dirname + "/data/grievances.json";
+const employeesFile = __dirname + "/data/employees.json";
 const combosFile = __dirname + "/data/combos.json";
 const offersFile = __dirname + "/data/offers.json";
 const sectionWindowsFile = __dirname + "/data/section_windows.json";
+const chatGroupsFile = __dirname + "/data/groups.json";
+
+// Run migrations at startup (after modules and paths are defined)
+ensureHotRecFlags();
+ensureEmployeePins();
 
 // Helper functions
 /**
@@ -142,6 +566,136 @@ const normalizeMenuShops = (raw) => {
     }
     return { shopId: shop.shopId, shopName: shop.shopName, items };
   });
+
+// Username availability
+app.get('/employee/check-username', (req, res) => {
+  try {
+    const { username } = req.query || {};
+    if (!username) return res.status(400).json({ available: false, message: 'username required' });
+    const employees = getEmployees();
+    const exists = employees.some(e => String(e.username).toLowerCase() === String(username).toLowerCase());
+    res.json({ available: !exists });
+  } catch {
+    res.status(500).json({ available: false });
+  }
+});
+
+// Registration
+app.post('/employee/register', async (req, res) => {
+  try {
+    let { username, password, pin, mobile, email } = req.body || {};
+    username = String(username || '').trim();
+    if (!username) return res.status(400).json({ message: 'Username is required' });
+    if (!validatePin(pin)) return res.status(400).json({ message: 'PIN must be 4 digits' });
+    if (!validatePassword(password)) return res.status(400).json({ message: 'Password must be 8-20 chars with lower, upper, number, and one of .,&%#@!' });
+    // Normalize mobile to +91XXXXXXXXXX
+    const digits = String(mobile || '').replace(/[^0-9]/g,'');
+    if (digits.length !== 10) return res.status(400).json({ message: 'Mobile must be 10 digits (India)' });
+    const mobileNorm = `+91${digits}`;
+    const emailStr = String(email || '').trim();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(emailStr)) return res.status(400).json({ message: 'Invalid email' });
+    const employees = getEmployees();
+    const exists = employees.some(e => String(e.username).toLowerCase() === username.toLowerCase());
+    if (exists) return res.status(409).json({ message: 'Username not available' });
+    const id = (employees.reduce((m, e) => Math.max(m, Number(e.id)||0), 0) + 1) || 1;
+    const passwordHash = await bcrypt.hash(String(password), 10);
+    const pinHash = await bcrypt.hash(String(pin), 10);
+    const newEmp = { id, username, email: emailStr, mobile: mobileNorm, passwordHash, pinHash };
+    employees.push(newEmp);
+    saveEmployees(employees);
+    res.json({ status: 'ok', id, username });
+  } catch (e) {
+    res.status(500).json({ message: 'Error registering user' });
+  }
+});
+// Employee username/password login
+app.post('/employee/login-password', async (req, res) => {
+  try {
+    const { username, password } = req.body || {};
+    if (!username || !password) return res.status(400).json({ message: 'Username and password are required' });
+    const employees = getEmployees();
+    const u = employees.find(e => String(e.username).toLowerCase() === String(username).toLowerCase() || String(e.email || '').toLowerCase() === String(username).toLowerCase());
+    if (!u || !u.passwordHash) return res.status(401).json({ message: 'Invalid credentials' });
+    const ok = await bcrypt.compare(String(password), String(u.passwordHash));
+    if (!ok) return res.status(401).json({ message: 'Invalid credentials' });
+    const mobile = u.email || u.username || String(u.id);
+    const token = jwt.sign({ role: 'employee', mobile }, JWT_SECRET, { expiresIn: '8h' });
+    employeeSessions.set(token, { mobile, createdAt: Date.now() });
+    res.json({ status: 'ok', token, mobile });
+  } catch (e) {
+    res.status(500).json({ message: 'Error during password login' });
+  }
+});
+
+// Employee 4-digit PIN login
+app.post('/employee/login-pin', async (req, res) => {
+  try {
+    const { username, pin, mobileOrEmail } = req.body || {};
+    if (!username || !pin) return res.status(400).json({ message: 'Username and PIN are required' });
+    if (!validatePin(pin)) return res.status(400).json({ message: 'PIN must be 4 digits' });
+    const employees = getEmployees();
+    const u = employees.find(e => String(e.username).toLowerCase() === String(username).toLowerCase() || String(e.email || '').toLowerCase() === String(username).toLowerCase());
+    if (!u) return res.status(401).json({ message: 'Invalid credentials' });
+    if (!u.pinHash) {
+      // First-time pairing: require contact match and set PIN
+      const contact = String(mobileOrEmail || '').toLowerCase();
+      const okContact = contact && (String(u.email || '').toLowerCase() === contact || String(u.mobile || '').toLowerCase() === contact);
+      if (!okContact) return res.status(400).json({ message: 'Pairing required: provide your registered mobile or email' });
+      // Set PIN now
+      u.pinHash = await bcrypt.hash(String(pin), 10);
+      saveEmployees(employees);
+    } else {
+      const ok = await bcrypt.compare(String(pin), String(u.pinHash));
+      if (!ok) return res.status(401).json({ message: 'Invalid credentials' });
+    }
+    const mobile = u.email || u.username || String(u.id);
+    const token = jwt.sign({ role: 'employee', mobile }, JWT_SECRET, { expiresIn: '8h' });
+    employeeSessions.set(token, { mobile, createdAt: Date.now() });
+    res.json({ status: 'ok', token, mobile });
+  } catch (e) {
+    res.status(500).json({ message: 'Error during PIN login' });
+  }
+});
+
+// Reset PIN (requires username, contact verification, and new 4-digit PIN)
+app.post('/employee/reset-pin', async (req, res) => {
+  try {
+    const { username, mobileOrEmail, newPin } = req.body || {};
+    if (!username || !mobileOrEmail || !newPin) return res.status(400).json({ message: 'Username, contact, and new PIN are required' });
+    if (!validatePin(newPin)) return res.status(400).json({ message: 'PIN must be 4 digits' });
+    const employees = getEmployees();
+    const u = employees.find(e => String(e.username).toLowerCase() === String(username).toLowerCase() || String(e.email || '').toLowerCase() === String(username).toLowerCase());
+    if (!u) return res.status(404).json({ message: 'User not found' });
+    const contact = String(mobileOrEmail || '').toLowerCase();
+    const okContact = contact && (String(u.email || '').toLowerCase() === contact || String(u.mobile || '').toLowerCase() === contact);
+    if (!okContact) return res.status(401).json({ message: 'Contact does not match' });
+    u.pinHash = await bcrypt.hash(String(newPin), 10);
+    saveEmployees(employees);
+    res.json({ status: 'ok', message: 'PIN updated' });
+  } catch (e) {
+    res.status(500).json({ message: 'Error resetting PIN' });
+  }
+});
+
+// Reset password (requires username, contact verification, and strong password)
+app.post('/employee/reset-password', async (req, res) => {
+  try {
+    const { username, mobileOrEmail, newPassword } = req.body || {};
+    if (!username || !mobileOrEmail || !newPassword) return res.status(400).json({ message: 'Username, contact, and new password are required' });
+    if (!validatePassword(newPassword)) return res.status(400).json({ message: 'Password must be 8-20 chars with lower, upper, number, and one of .,&%#@!' });
+    const employees = getEmployees();
+    const u = employees.find(e => String(e.username).toLowerCase() === String(username).toLowerCase() || String(e.email || '').toLowerCase() === String(username).toLowerCase());
+    if (!u) return res.status(404).json({ message: 'User not found' });
+    const contact = String(mobileOrEmail || '').toLowerCase();
+    const okContact = contact && (String(u.email || '').toLowerCase() === contact || String(u.mobile || '').toLowerCase() === contact);
+    if (!okContact) return res.status(401).json({ message: 'Contact does not match' });
+    u.passwordHash = await bcrypt.hash(String(newPassword), 10);
+    saveEmployees(employees);
+    res.json({ status: 'ok', message: 'Password updated' });
+  } catch (e) {
+    res.status(500).json({ message: 'Error resetting password' });
+  }
+});
 
 // Apple login: verify Apple ID token via Apple JWKS and issue employee session
 /**
@@ -822,42 +1376,72 @@ app.post("/order", (req, res) => {
     }
     shopNorm.items = Array.isArray(shopNorm.items) ? shopNorm.items : [];
 
-    // Expand combos into required item quantities
+    // Expand combos into required item quantities (with combo time window validation)
     const combos = getCombos();
     const isComboLine = (x) => x && (x.comboId != null);
+    const toHM = (d) => `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    const whenHM = scheduledTime ? toHM(new Date(scheduledTime)) : toHM(new Date());
+    const inComboWindowHM = (combo, hm) => {
+      const start = combo?.availableStart;
+      const end = combo?.availableEnd;
+      if (!start || !end) return true; // no constraint
+      return hm >= start && hm <= end;
+    };
+    const orderCombos = (items || []).filter(isComboLine);
+    const orderSingles = (items || []).filter((x)=>!isComboLine(x));
+    // Validate combo windows first
+    const invalidCombos = [];
+    const validCombos = [];
+    for (const it of orderCombos) {
+      const combo = combos.find(c => String(c.id) === String(it.comboId) && String(c.shopId) === String(shopId) && (c.active !== false));
+      if (!combo) { invalidCombos.push({ comboId: it.comboId, reason: 'Invalid combo' }); continue; }
+      if (!inComboWindowHM(combo, whenHM)) {
+        invalidCombos.push({ comboId: it.comboId, name: combo.name, window: (combo.availableStart && combo.availableEnd) ? `${combo.availableStart}-${combo.availableEnd}` : null });
+      } else {
+        validCombos.push({ line: it, combo });
+      }
+    }
+    if (scheduledTime && invalidCombos.length > 0) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Some combos are not available at the selected time window.',
+        notAvailableCombos: invalidCombos
+      });
+    }
     const required = new Map(); // itemId -> qty
     const flatItems = [];
-    for (const it of items || []) {
+    // Expand valid combos first
+    for (const ent of validCombos) {
+      const { line: it, combo } = ent;
       const qty = Number(it.quantity || 1);
-      if (isComboLine(it)) {
-        const combo = combos.find(c => String(c.id) === String(it.comboId) && String(c.shopId) === String(shopId) && (c.active !== false));
-        if (!combo) {
-          return res.status(400).json({ message: "Invalid combo", comboId: it.comboId });
-        }
-        const comp = Array.isArray(combo.components) ? combo.components : [];
-        for (const compIt of comp) {
-          const id = compIt.itemId;
-          const inc = Number(compIt.quantity || 1) * qty;
-          required.set(id, (required.get(id) || 0) + inc);
-          flatItems.push({ id, name: compIt.name || (shopNorm.items.find(i=>i.id===id)?.name) || `Item ${id}` , price: Number(compIt.overridePrice ?? (shopNorm.items.find(i=>i.id===id)?.price || 0)), quantity: inc, option: compIt.option || null, prepTime: compIt.prepTime || (shopNorm.items.find(i=>i.id===id)?.prepTime || 5) });
-        }
-      } else {
-        const key = it.id;
-        required.set(key, (required.get(key) || 0) + qty);
-        flatItems.push({ id: it.id, name: it.name, price: it.price, quantity: qty, option: it.option || null, prepTime: it.prepTime });
+      const comp = Array.isArray(combo.components) ? combo.components : [];
+      for (const compIt of comp) {
+        const id = compIt.itemId;
+        const inc = Number(compIt.quantity || 1) * qty;
+        required.set(id, (required.get(id) || 0) + inc);
+        flatItems.push({ id, name: compIt.name || (shopNorm.items.find(i=>i.id===id)?.name) || `Item ${id}` , price: Number(compIt.overridePrice ?? (shopNorm.items.find(i=>i.id===id)?.price || 0)), quantity: inc, option: compIt.option || null, prepTime: compIt.prepTime || (shopNorm.items.find(i=>i.id===id)?.prepTime || 5) });
       }
+    }
+    // For immediate orders, drop invalid combos silently but return info later
+    if (!scheduledTime && invalidCombos.length > 0) {
+      req._excludedCombos = invalidCombos;
+    }
+    // Process standalone items
+    for (const it of orderSingles) {
+      const qty = Number(it.quantity || 1);
+      const key = it.id;
+      required.set(key, (required.get(key) || 0) + qty);
+      flatItems.push({ id: it.id, name: it.name, price: it.price, quantity: qty, option: it.option || null, prepTime: it.prepTime });
     }
 
     // Section window enforcement
     const windows = getSectionWindows();
-    const toHM = (d) => `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
     const inWindowHM = (sec, hm) => {
       const w = windows[sec];
       if (!w || !w.start || !w.end) return true;
       return hm >= w.start && hm <= w.end;
     };
     const idToSection = new Map((shopNorm.items || []).map(i => [i.id, i.section || 'All Items']));
-    const whenHM = scheduledTime ? toHM(new Date(scheduledTime)) : toHM(new Date());
 
     if (scheduledTime) {
       // Reject order if any item outside its window at scheduled time
@@ -869,6 +1453,15 @@ app.post("/order", (req, res) => {
           const w = windows[sec];
           notAvailable.push({ id: itemId, name: it?.name || `Item ${itemId}`, section: sec, window: w ? `${w.start}-${w.end}` : null, quantity: qtyNeeded });
         }
+      }
+      // If any combos invalid, include them too
+      if (Array.isArray(invalidCombos) && invalidCombos.length > 0) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Some items/combos are not available at the selected time window. Please adjust scheduled time.',
+          notAvailable,
+          notAvailableCombos: invalidCombos
+        });
       }
       if (notAvailable.length > 0) {
         return res.status(400).json({
@@ -889,6 +1482,10 @@ app.post("/order", (req, res) => {
           required.delete(itemId);
           // Also remove from flatItems
         }
+      }
+      // Also attach excluded combos
+      if (Array.isArray(req._excludedCombos) && req._excludedCombos.length > 0) {
+        req._excludedItems = (req._excludedItems || []).concat(req._excludedCombos.map(c => ({ name: c.name || `Combo ${c.comboId}`, section: 'Combo', window: c.window || null })));
       }
       if (excluded.length > 0) {
         // remove excluded from flatItems array

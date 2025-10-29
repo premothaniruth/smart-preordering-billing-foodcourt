@@ -1,0 +1,18 @@
+[
+  {
+    "id": 1,
+    "username": "premoth",
+    "email": "prem@gmail.com",
+    "mobile": "9952911560",
+    "passwordHash": "$2b$10$u97ZqkZsVn5cRkC1V5LxJey8tM1oKkJ7b3SAb9cCwJ0F1e9f2mJMi",
+    "pinHash": "$2b$10$C8uN1pVv6sXw6v8N4xkD3u7xwqQyU0mX0h8v2m9Z1pQyT3a7bC9De"
+  },
+  {
+    "id": 2,
+    "username": "aniruth",
+    "email": "anir@gmail.com",
+    "mobile": "8489196891",
+    "passwordHash": "$2b$10$u97ZqkZsVn5cRkC1V5LxJey8tM1oKkJ7b3SAb9cCwJ0F1e9f2mJMi",
+    "pinHash": "$2b$10$C8uN1pVv6sXw6v8N4xkD3u7xwqQyU0mX0h8v2m9Z1pQyT3a7bC9De"
+  }
+]

@@ -11,11 +11,12 @@ import { fetchSectionsMeta } from "../api";
  *  incrementFromCart: (index:number)=>void,
  *  scheduledTime: string,
  *  setScheduledTime: (iso:string)=>void,
- *  onPayment: ()=>void
+ *  onPayment: ()=>void,
+ *  shopItems?: any[]
  * }} props
  */
 
-const Cart = ({ cart, removeFromCart, decrementFromCart, incrementFromCart, scheduledTime, setScheduledTime, onPayment }) => {
+const Cart = ({ cart, removeFromCart, decrementFromCart, incrementFromCart, scheduledTime, setScheduledTime, onPayment, shopItems = [] }) => {
   const [customNotes, setCustomNotes] = useState("");
   const getTodayStr = () => {
     const d = new Date();
@@ -134,11 +135,41 @@ const Cart = ({ cart, removeFromCart, decrementFromCart, incrementFromCart, sche
       {cart.length === 0 && <p className="empty-state">Your cart is empty</p>}
       <div>
         {cart.map((c, i) => {
-          const inventory = Number(c.item.inventory ?? 100);
-          const totalForThis = cart
-            .filter(d => d.shopId === c.shopId && d.item.id === c.item.id && (d.item.selectedOption?.name || null) === (c.item.selectedOption?.name || null))
-            .reduce((sum, d) => sum + d.quantity, 0);
-          const remaining = Math.max(0, inventory - totalForThis);
+          const isCombo = !!c.item?.comboId && Array.isArray(c.item?.comboComponents);
+          let remaining = 0;
+          if (isCombo) {
+            // Build consumed per item id across cart
+            const consumed = new Map();
+            for (const line of cart) {
+              if (line.item?.comboId && Array.isArray(line.item?.comboComponents)) {
+                for (const comp of line.item.comboComponents) {
+                  const need = Math.max(1, Number(comp.quantity || 1));
+                  consumed.set(comp.itemId, (consumed.get(comp.itemId) || 0) + need * Number(line.quantity || 0));
+                }
+              } else if (line.item && line.item.id != null) {
+                consumed.set(Number(line.item.id), (consumed.get(Number(line.item.id)) || 0) + Number(line.quantity || 0));
+              }
+            }
+            // Compute combo capacity from current inventories
+            let cap = Infinity;
+            for (const comp of c.item.comboComponents) {
+              const it = shopItems.find(si => Number(si.id) === Number(comp.itemId));
+              const inv = Number(it?.inventory ?? 0);
+              const used = Number(consumed.get(Number(comp.itemId)) || 0);
+              const avail = Math.max(0, inv - used);
+              const need = Math.max(1, Number(comp.quantity || 1));
+              const possible = Math.floor(avail / need);
+              cap = Math.min(cap, possible);
+            }
+            const totalThisCombo = cart.filter(d => d.shopId === c.shopId && d.item?.comboId === c.item.comboId).reduce((s, d) => s + d.quantity, 0);
+            remaining = Math.max(0, cap - totalThisCombo);
+          } else {
+            const inventory = Number(c.item.inventory ?? 100);
+            const totalForThis = cart
+              .filter(d => d.shopId === c.shopId && d.item.id === c.item.id && (d.item.selectedOption?.name || null) === (c.item.selectedOption?.name || null))
+              .reduce((sum, d) => sum + d.quantity, 0);
+            remaining = Math.max(0, inventory - totalForThis);
+          }
           const secName = c.item.section || 'All Items';
           const w = sectionWindows[secName];
           const availableNow = inWindow(secName, effectiveHM);

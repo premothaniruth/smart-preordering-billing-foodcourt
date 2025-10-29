@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import PropTypes from "prop-types";
-import { employeeRequestOtp, employeeVerifyOtp, employeeGoogleLogin, employeeAppleLogin } from "../api";
+import { employeeRequestOtp, employeeVerifyOtp, employeeGoogleLogin, employeeAppleLogin, employeePasswordLogin, employeePinLogin, employeeResetPin, employeeResetPassword, employeeCheckUsername, employeeRegister } from "../api";
 import { toast } from "react-toastify";
 
 /**
@@ -18,6 +18,25 @@ const EmployeeLogin = ({ onSuccess }) => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const inputRef = useRef(null);
   const [resendSeconds, setResendSeconds] = useState(0);
+  const [uname, setUname] = useState("");
+  const [pwd, setPwd] = useState("");
+  const [pinUname, setPinUname] = useState("");
+  const [pin, setPin] = useState("");
+  const [pinContact, setPinContact] = useState("");
+  const [resetPinUname, setResetPinUname] = useState("");
+  const [resetPinContact, setResetPinContact] = useState("");
+  const [resetPinValue, setResetPinValue] = useState("");
+  const [resetPwdUname, setResetPwdUname] = useState("");
+  const [resetPwdContact, setResetPwdContact] = useState("");
+  const [resetPwdValue, setResetPwdValue] = useState("");
+  const [showRegister, setShowRegister] = useState(false);
+  const [regUsername, setRegUsername] = useState("");
+  const [regEmail, setRegEmail] = useState("");
+  const [regMobile, setRegMobile] = useState("");
+  const [regPassword, setRegPassword] = useState("");
+  const [regPin, setRegPin] = useState("");
+  const [unameAvailable, setUnameAvailable] = useState(null); // true/false/null
+  const [unameSuggestions, setUnameSuggestions] = useState([]);
 
   useEffect(() => {
     try {
@@ -108,15 +127,16 @@ const EmployeeLogin = ({ onSuccess }) => {
           <div style={{ position:'relative', marginTop:12 }}>
             <input
               ref={inputRef}
-              placeholder="Mobile Number"
+              placeholder="Mobile Number (10 digits)"
               value={mobile}
               onChange={(e) => setMobile(e.target.value.replace(/[^0-9]/g, ""))}
               onFocus={() => setShowSuggestions(true)}
               onBlur={() => setTimeout(()=>setShowSuggestions(false), 120)}
               maxLength={10}
               required
-              style={{ width:'100%', padding:'10px 12px', border:'1px solid #ddd', borderRadius:8, fontSize:14 }}
+              style={{ width:'100%', padding:'10px 12px 10px 58px', border:'1px solid #ddd', borderRadius:8, fontSize:14 }}
             />
+            <div style={{ position:'absolute', top:0, left:0, height:'100%', display:'flex', alignItems:'center', padding:'0 8px', borderRight:'1px solid #eee', color:'#555', background:'#f8f9fa', borderTopLeftRadius:8, borderBottomLeftRadius:8, width:52, justifyContent:'center', fontWeight:700 }}>+91</div>
             {showSuggestions && recent.length > 0 && (
               <div style={{ position:'absolute', top:'100%', left:0, right:0, background:'#fff', border:'1px solid #ddd', borderRadius:6, marginTop:4, zIndex:10, overflow:'hidden' }}>
                 {recent.map((num, idx) => (
@@ -135,6 +155,82 @@ const EmployeeLogin = ({ onSuccess }) => {
               </div>
             )}
           </div>
+          <div style={{ marginTop: 10, textAlign:'center' }}>
+            <button type="button" onClick={() => setShowRegister(s=>!s)} style={{ background:'transparent', border:'none', color:'#0077cc', cursor:'pointer', fontSize:13 }}>
+              {showRegister ? 'Hide Registration' : 'New user? Register'}
+            </button>
+          </div>
+
+          {showRegister && (
+            <div className="card" style={{ marginTop:10, padding:12 }}>
+              <div style={{ fontWeight:700, marginBottom:8, fontSize:14 }}>Register New Employee</div>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr auto', gap:8, alignItems:'center' }}>
+                <input
+                  placeholder="Choose a username"
+                  value={regUsername}
+                  onChange={(e)=>{ setRegUsername(e.target.value.trim()); setUnameAvailable(null); setUnameSuggestions([]); }}
+                  onBlur={async ()=>{
+                    if (!regUsername) return;
+                    try {
+                      const r = await employeeCheckUsername(regUsername);
+                      setUnameAvailable(!!r?.available);
+                      if (r && r.available === false) {
+                        // generate suggestions
+                        const base = regUsername.replace(/[^a-zA-Z0-9_]/g,'').slice(0,16) || 'user';
+                        const nums = Array.from({length:5},()=>String(Math.floor(100+Math.random()*900)));
+                        setUnameSuggestions(nums.map(n=>`${base}${n}`));
+                      }
+                    } catch { setUnameAvailable(null); }
+                  }}
+                />
+                <div style={{ fontSize:12 }}>
+                  {unameAvailable === true && <span style={{ color:'#27ae60' }}>Available</span>}
+                  {unameAvailable === false && <span style={{ color:'#e74c3c' }}>Not available</span>}
+                </div>
+              </div>
+              {unameAvailable === false && unameSuggestions.length>0 && (
+                <div style={{ fontSize:12, color:'#555', marginTop:4, display:'flex', gap:8, flexWrap:'wrap' }}>
+                  <span>Suggestions:</span>
+                  {unameSuggestions.map((sug, i)=> (
+                    <button key={i} type="button" onClick={()=>{ setRegUsername(sug); setUnameAvailable(true); }} style={{ background:'#f1f5f9', border:'1px solid #e5e7eb', borderRadius:999, padding:'2px 8px', fontSize:12 }}>
+                      {sug}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <div style={{ display:'grid', gridTemplateColumns:'1fr', gap:8, marginTop:8 }}>
+                <input placeholder="Email" value={regEmail} onChange={(e)=>setRegEmail(e.target.value)} />
+                <div style={{ position:'relative' }}>
+                  <input placeholder="Mobile (10 digits)" value={regMobile} onChange={(e)=>setRegMobile(e.target.value.replace(/[^0-9]/g,'').slice(0,10))} maxLength={10} style={{ width:'100%', paddingLeft:58 }} />
+                  <div style={{ position:'absolute', top:0, left:0, height:'100%', display:'flex', alignItems:'center', padding:'0 8px', borderRight:'1px solid #eee', color:'#555', background:'#f8f9fa', borderTopLeftRadius:6, borderBottomLeftRadius:6, width:52, justifyContent:'center', fontWeight:700 }}>+91</div>
+                </div>
+                <input type="password" placeholder="Password (8-20; a-z, A-Z, 0-9, one of .,&%#@!)" value={regPassword} onChange={(e)=>setRegPassword(e.target.value)} />
+                <input placeholder="4-digit PIN" value={regPin} onChange={(e)=>setRegPin(e.target.value.replace(/[^0-9]/g,'').slice(0,4))} maxLength={4} />
+                <button type="button" onClick={async ()=>{
+                  try {
+                    // client validations
+                    const uname = regUsername.trim();
+                    if (!uname) { toast.error('Username required'); return; }
+                    if (!/^\d{4}$/.test(regPin)) { toast.error('PIN must be 4 digits'); return; }
+                    const pw = regPassword;
+                    const strong = pw.length>=8 && pw.length<=20 && /[a-z]/.test(pw) && /[A-Z]/.test(pw) && /\d/.test(pw) && /[\.,&%#@!]/.test(pw);
+                    if (!strong) { toast.error('Password must be 8-20 chars with a-z, A-Z, 0-9 and one of .,&%#@!'); return; }
+                    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(regEmail)) { toast.error('Enter a valid email'); return; }
+                    if (String(regMobile||'').length !== 10) { toast.error('Enter 10-digit mobile'); return; }
+                    setLoading(true);
+                    const r = await employeeRegister({ username: uname, password: pw, pin: regPin, mobile: regMobile, email: regEmail });
+                    if (r && r.status==='ok') {
+                      toast.success('Registered successfully. You can now login.');
+                      setShowRegister(false);
+                      setRegUsername(''); setRegEmail(''); setRegMobile(''); setRegPassword(''); setRegPin(''); setUnameAvailable(null); setUnameSuggestions([]);
+                    } else {
+                      toast.error(r?.message || 'Registration failed');
+                    }
+                  } catch { toast.error('Error during registration'); } finally { setLoading(false); }
+                }}>Register</button>
+              </div>
+            </div>
+          )}
           <button
             type="submit"
             disabled={loading || mobile.length !== 10}
@@ -215,6 +311,98 @@ const EmployeeLogin = ({ onSuccess }) => {
                 <path d="M16.365 1.43c0 1.14-.47 2.217-1.225 3.019-.78.83-2.05 1.474-3.128 1.37-.136-1.093.396-2.254 1.15-3.06.785-.84 2.173-1.465 3.203-1.329zM20.7 17.284c-.6 1.384-.886 1.987-1.656 3.21-1.073 1.68-2.58 3.778-4.449 3.796-1.661.016-2.096-1.118-4.364-1.106-2.269.012-2.735 1.124-4.397 1.11-1.869-.016-3.299-1.905-4.372-3.583C-.163 17.7-.78 13.91.885 11.284c1.28-2.015 3.317-3.195 5.223-3.195 1.936 0 3.154 1.107 4.758 1.107 1.57 0 2.526-1.11 4.75-1.11 1.623 0 3.347.885 4.62 2.41-4.052 2.208-3.398 7.98-.536 9.798z"/>
               </svg>
             </button>
+          </div>
+          <div style={{ display:'grid', gap:10, marginTop:12 }}>
+            <div className="card" style={{ padding:12 }}>
+              <div style={{ fontWeight:700, marginBottom:8, fontSize:14 }}>Login with Username & Password</div>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr auto', gap:8 }}>
+                <input placeholder="Username or Email" value={uname} onChange={(e)=>setUname(e.target.value)} />
+                <input type="password" placeholder="Password" value={pwd} onChange={(e)=>setPwd(e.target.value)} />
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      if (!uname || !pwd) { toast.error('Enter username and password'); return; }
+                      setLoading(true);
+                      const res = await employeePasswordLogin(uname, pwd);
+                      if (res && res.status === 'ok' && res.token) {
+                        onSuccess({ token: res.token, mobile: res.mobile });
+                        toast.success('Logged in');
+                      } else {
+                        toast.error(res?.message || 'Login failed');
+                      }
+                    } catch { toast.error('Error during login'); } finally { setLoading(false); }
+                  }}
+                >Login</button>
+              </div>
+            </div>
+            <div className="card" style={{ padding:12 }}>
+              <div style={{ fontWeight:700, marginBottom:8, fontSize:14 }}>Login with 4-digit PIN</div>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 120px 1fr auto', gap:8 }}>
+                <input placeholder="Username or Email" value={pinUname} onChange={(e)=>setPinUname(e.target.value)} />
+                <input placeholder="PIN" maxLength={4} value={pin} onChange={(e)=>setPin(e.target.value.replace(/[^0-9]/g,'').slice(0,4))} />
+                <input placeholder="Mobile or Email (pairing)" value={pinContact} onChange={(e)=>setPinContact(e.target.value)} />
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      if (!pinUname || !/^\d{4}$/.test(pin)) { toast.error('Enter username and 4-digit PIN'); return; }
+                      setLoading(true);
+                      const res = await employeePinLogin(pinUname, pin, pinContact || undefined);
+                      if (res && res.status === 'ok' && res.token) {
+                        onSuccess({ token: res.token, mobile: res.mobile });
+                        toast.success('Logged in');
+                      } else {
+                        toast.error(res?.message || 'PIN login failed');
+                      }
+                    } catch { toast.error('Error during PIN login'); } finally { setLoading(false); }
+                  }}
+                >Enter</button>
+              </div>
+              <div style={{ fontSize:12, color:'#666', marginTop:6 }}>
+                PIN must be exactly 4 digits. If this is your first PIN login, provide your registered mobile or email to pair your PIN.
+              </div>
+            </div>
+
+            <div className="card" style={{ padding:12 }}>
+              <div style={{ fontWeight:700, marginBottom:8, fontSize:14 }}>Reset PIN</div>
+              <div style={{ fontSize:12, color:'#666', marginBottom:6 }}>Rules: PIN must be exactly 4 digits (0-9). Provide your registered mobile or email for verification.</div>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 120px auto', gap:8 }}>
+                <input placeholder="Username or Email" value={resetPinUname} onChange={(e)=>setResetPinUname(e.target.value)} />
+                <input placeholder="Mobile or Email" value={resetPinContact} onChange={(e)=>setResetPinContact(e.target.value)} />
+                <input placeholder="New PIN" maxLength={4} value={resetPinValue} onChange={(e)=>setResetPinValue(e.target.value.replace(/[^0-9]/g,'').slice(0,4))} />
+                <button type="button" onClick={async ()=>{
+                  try {
+                    if (!resetPinUname || !resetPinContact || !/^\d{4}$/.test(resetPinValue)) { toast.error('Enter username, contact and 4-digit PIN'); return; }
+                    setLoading(true);
+                    const res = await employeeResetPin(resetPinUname, resetPinContact, resetPinValue);
+                    if (res && res.status==='ok') { toast.success('PIN reset successfully'); setResetPinUname(''); setResetPinContact(''); setResetPinValue(''); }
+                    else { toast.error(res?.message || 'Failed to reset PIN'); }
+                  } catch { toast.error('Error resetting PIN'); } finally { setLoading(false); }
+                }}>Reset PIN</button>
+              </div>
+            </div>
+
+            <div className="card" style={{ padding:12 }}>
+              <div style={{ fontWeight:700, marginBottom:8, fontSize:14 }}>Reset Password</div>
+              <div style={{ fontSize:12, color:'#666', marginBottom:6 }}>Rules: 8-20 chars with lowercase, UPPERCASE, number, and one symbol from .,&%#@!</div>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr auto', gap:8 }}>
+                <input placeholder="Username or Email" value={resetPwdUname} onChange={(e)=>setResetPwdUname(e.target.value)} />
+                <input placeholder="Mobile or Email" value={resetPwdContact} onChange={(e)=>setResetPwdContact(e.target.value)} />
+                <input type="password" placeholder="New Password" value={resetPwdValue} onChange={(e)=>setResetPwdValue(e.target.value)} />
+                <button type="button" onClick={async ()=>{
+                  try {
+                    const val = String(resetPwdValue || '');
+                    const strong = val.length>=8 && val.length<=20 && /[a-z]/.test(val) && /[A-Z]/.test(val) && /\d/.test(val) && /[\.,&%#@!]/.test(val);
+                    if (!resetPwdUname || !resetPwdContact || !strong) { toast.error('Enter username, contact and a strong password'); return; }
+                    setLoading(true);
+                    const res = await employeeResetPassword(resetPwdUname, resetPwdContact, resetPwdValue);
+                    if (res && res.status==='ok') { toast.success('Password reset successfully'); setResetPwdUname(''); setResetPwdContact(''); setResetPwdValue(''); }
+                    else { toast.error(res?.message || 'Failed to reset password'); }
+                  } catch { toast.error('Error resetting password'); } finally { setLoading(false); }
+                }}>Reset Password</button>
+              </div>
+            </div>
           </div>
         </form>
       )}

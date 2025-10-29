@@ -5,6 +5,7 @@ import Cart from "./components/Cart";
 import Payment from "./components/Payment";
 import Login from "./components/Login";
 import EmployeeLogin from "./components/EmployeeLogin";
+import EmployeeProfile from "./components/EmployeeProfile";
 import MenuEditor from "./components/MenuEditor";
 import AdminDashboard from "./components/AdminDashboard";
 import VendorCombos from "./components/VendorCombos";
@@ -498,6 +499,7 @@ function App() {
                     hideFavorites={true}
                     hideShopSelector={true}
                     showInventory={true}
+                    readOnly={true}
                   />
                 </div>
                 {/* Read-only user view for vendor: no cart, no order summary */}
@@ -518,6 +520,7 @@ function App() {
                       <button onClick={() => { fetchUserOrders(userId).then(setUserOrders); setView("orders"); }}>
                         My Orders
                       </button>
+                      <button onClick={() => setView("profile")}>My Profile</button>
                       <button onClick={handleEmployeeLogout} style={{ background: '#e74c3c', color: '#fff' }}>Logout</button>
                     </div>
                     <div className="layout-container">
@@ -568,6 +571,7 @@ function App() {
                           scheduledTime={scheduledTime}
                           setScheduledTime={setScheduledTime}
                           onPayment={handlePaymentSuccess}
+                          shopItems={(() => { const s = menu.find(m => m.shopId === selectedShop); return (s && Array.isArray(s.items)) ? s.items : []; })()}
                         />
                         {orderSummary && (
                           <div className="order-summary" style={{ marginTop: 20 }}>
@@ -632,6 +636,12 @@ function App() {
                 onClearHistory={handleClearHistory}
                 onReportIssue={handleReportIssue}
               />
+            )}
+            {view === "profile" && (
+              <>
+                <button onClick={() => setView("user")} style={{ marginBottom: 15 }}>← Back</button>
+                <EmployeeProfile token={employeeToken} />
+              </>
             )}
           </>
         )}

@@ -9,6 +9,141 @@ export const fetchMenu = async () => {
   return res.json();
 };
 
+// Chat
+export const employeeChatHistory = async (token, limit=100, groupOwner, groupName) => {
+  const res = await fetch(`${API_URL}/employee/chat/history`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, limit, groupOwner, groupName })
+  });
+  return res.json();
+};
+
+export const employeeChatStreamUrl = (token, groupOwner, groupName) => `${API_URL}/employee/chat/stream?token=${encodeURIComponent(token)}${groupOwner ? `&groupOwner=${encodeURIComponent(groupOwner)}` : ''}${groupName ? `&groupName=${encodeURIComponent(groupName)}` : ''}`;
+
+export const employeeChatSend = async (token, text, groupOwner, groupName) => {
+  const res = await fetch(`${API_URL}/employee/chat/send`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, text, groupOwner, groupName })
+  });
+  return res.json();
+};
+
+export const employeeChatTyping = async (token, isTyping, groupOwner, groupName) => {
+  const res = await fetch(`${API_URL}/employee/chat/typing`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, isTyping, groupOwner, groupName })
+  });
+  return res.json();
+};
+
+// Group management
+export const employeeGroupsList = async (token) => {
+  const res = await fetch(`${API_URL}/employee/chat/groups?token=${encodeURIComponent(token)}`);
+  return res.json();
+};
+
+export const employeeGroupsCreate = async (token, name, members) => {
+  const res = await fetch(`${API_URL}/employee/chat/groups/create`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, name, members })
+  });
+  return res.json();
+};
+
+export const employeeGroupsUpdate = async (token, name, { addMembers = [], removeMembers = [], newName } = {}) => {
+  const res = await fetch(`${API_URL}/employee/chat/groups/update`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, name, addMembers, removeMembers, newName })
+  });
+  return res.json();
+};
+
+export const employeeCheckUsername = async (username) => {
+  const u = encodeURIComponent(username || '');
+  const res = await fetch(`${API_URL}/employee/check-username?username=${u}`);
+  return res.json();
+};
+
+export const employeeRegister = async ({ username, password, pin, mobile, email }) => {
+  const res = await fetch(`${API_URL}/employee/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password, pin, mobile, email })
+  });
+  return res.json();
+};
+
+// Employee profile
+export const employeeProfile = async (token) => {
+  const res = await fetch(`${API_URL}/employee/profile`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token })
+  });
+  return res.json();
+};
+
+export const employeeProfileRequestOtp = async (token, action) => {
+  const res = await fetch(`${API_URL}/employee/profile/request-otp`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, action })
+  });
+  return res.json();
+};
+
+export const employeeProfileUpdate = async (body) => {
+  const res = await fetch(`${API_URL}/employee/profile/update`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  return res.json();
+};
+
+/** Employee password login */
+export const employeePasswordLogin = async (username, password) => {
+  const res = await fetch(`${API_URL}/employee/login-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password })
+  });
+  return res.json();
+};
+
+/** Employee 4-digit PIN login */
+export const employeePinLogin = async (username, pin, mobileOrEmail) => {
+  const res = await fetch(`${API_URL}/employee/login-pin`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, pin, mobileOrEmail })
+  });
+  return res.json();
+};
+
+export const employeeResetPin = async (username, mobileOrEmail, newPin) => {
+  const res = await fetch(`${API_URL}/employee/reset-pin`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, mobileOrEmail, newPin })
+  });
+  return res.json();
+};
+
+export const employeeResetPassword = async (username, mobileOrEmail, newPassword) => {
+  const res = await fetch(`${API_URL}/employee/reset-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, mobileOrEmail, newPassword })
+  });
+  return res.json();
+};
+
 /**
  * Employee Apple Login: send Apple ID token to backend for verification
  * @param {string} idToken

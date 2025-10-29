@@ -24,7 +24,7 @@ import { toast } from "react-toastify";
  *  showInventory?: boolean
  * }} props
  */
-const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemNoOption = () => {}, incItemVariant = () => {}, decItemVariant = () => {}, selectedShop, setSelectedShop, favorites = [], onFavoriteToggle, userId, hideFavorites = false, hideShopSelector = false, showInventory = false }) => {
+const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemNoOption = () => {}, incItemVariant = () => {}, decItemVariant = () => {}, selectedShop, setSelectedShop, favorites = [], onFavoriteToggle, userId, hideFavorites = false, hideShopSelector = false, showInventory = false, readOnly = false }) => {
   const [vegOnly, setVegOnly] = useState(false);
   const [nonVegOnly, setNonVegOnly] = useState(false);
   const [showOptionsModal, setShowOptionsModal] = useState(false);
@@ -84,6 +84,44 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
 
   const renderComboCard = (combo) => {
     const components = Array.isArray(combo.components) ? combo.components : [];
+    const now = new Date();
+    const hm = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    const start = combo?.availableStart;
+    const end = combo?.availableEnd;
+    const inWindow = (!start || !end) ? true : (hm >= start && hm <= end);
+    // Derive combo capacity from component inventories
+    const findItem = (id) => (shop && Array.isArray(shop.items)) ? shop.items.find(i => Number(i.id) === Number(id)) : null;
+    // Build consumed counts per item id from current cart (singles and combos)
+    const consumedByItemId = (() => {
+      const map = new Map();
+      for (const line of cart) {
+        if (line.item?.comboId && Array.isArray(line.item?.comboComponents)) {
+          for (const comp of line.item.comboComponents) {
+            const need = Math.max(1, Number(comp.quantity || 1));
+            map.set(comp.itemId, (map.get(comp.itemId) || 0) + need * Number(line.quantity || 0));
+          }
+        } else if (line.item && line.item.id != null) {
+          map.set(Number(line.item.id), (map.get(Number(line.item.id)) || 0) + Number(line.quantity || 0));
+        }
+      }
+      return map;
+    })();
+    const capacity = (() => {
+      if (!components.length) return 0;
+      let cap = Infinity;
+      for (const c of components) {
+        const it = findItem(c.itemId);
+        const inv = Number(it?.inventory ?? 0);
+        const need = Math.max(1, Number(c?.quantity || 1));
+        const consumed = Number(consumedByItemId.get(Number(c.itemId)) || 0);
+        const remainingUnits = Math.max(0, inv - consumed);
+        const possible = Math.floor(remainingUnits / need);
+        cap = Math.min(cap, possible);
+      }
+      return Number.isFinite(cap) ? cap : 0;
+    })();
+    const inCartCombo = cart.filter(c => c.shopId === selectedShop && c.item?.comboId === combo.id).reduce((s, c) => s + c.quantity, 0);
+    const stockLeft = Math.max(0, capacity - inCartCombo);
     const compLines = components.map((c, idx) => {
       const base = c && (c.name || ((shop && Array.isArray(shop.items)) ? (shop.items.find(i => Number(i.id) === Number(c.itemId))?.name) : null) || 'Item');
       const qty = Number(c?.quantity || 1);
@@ -96,15 +134,17 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
       );
     });
     const handleAddCombo = () => {
+      if (stockLeft <= 0) { toast.error('No more combos available to order'); return; }
       const synthetic = {
         id: 1000000 + Number(combo.id || 0),
         comboId: combo.id,
         name: combo.name || 'Combo',
         price: Number(combo.price || 0),
-        available: true,
+        available: stockLeft > 0,
         image: '',
         prepTime: 10,
-        inventory: 100
+        inventory: stockLeft,
+        comboComponents: components.map(c => ({ itemId: Number(c.itemId)||0, quantity: Number(c.quantity)||1 }))
       };
       addToCart(synthetic, selectedShop, null, {});
       toast.success(`${combo.name} combo added to cart!`);
@@ -113,7 +153,53 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
       <div key={combo.id} className="menu-item-card">
         <div className="menu-item-content">
           <div className="menu-item-name">{combo.name}</div>
-          <div className="menu-item-price">₹{combo.price}</div>
+          <div className="menu-item-price">
+            ₹{combo.price}
+            {(start && end) && (
+              <span style={{ fontSize: 12, color: '#666', marginLeft: 8 }}>({start}-{end})</span>
+            )}
+          </div>
+          {(() => {
+            if (stockLeft === 0) {
+              return (
+                <div style={{ position: 'relative' }}>
+                  <div style={{ position: 'absolute', top: 8, left: 0, background: '#e74c3c', color: '#fff', padding: '2px 8px', borderRadius: 4, fontSize: 12, fontWeight: 700 }}>
+                    SOLD OUT
+                  </div>
+                </div>
+              );
+            }
+            if (stockLeft > 0 && stockLeft <= 10) {
+              return (
+                <div style={{ position: 'relative' }}>
+                  <div style={{ position: 'absolute', top: 8, left: 0, background: '#e67e22', color: '#fff', padding: '2px 8px', borderRadius: 4, fontSize: 12, fontWeight: 700 }}>
+                    FEW LEFT
+                  </div>
+                </div>
+              );
+            }
+            // RESTOCKED if any component item restocked today
+            try {
+              const today = new Date();
+              const sameDay = (d) => d && d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth() && d.getDate() === today.getDate();
+              const anyRestocked = components.some(c => {
+                const it = findItem(c.itemId);
+                if (!it || !it.restockedAt) return false;
+                const d = new Date(it.restockedAt);
+                return sameDay(d);
+              });
+              if (anyRestocked) {
+                return (
+                  <div style={{ position: 'relative' }}>
+                    <div style={{ position: 'absolute', top: 8, left: 0, background: '#2ecc71', color: '#fff', padding: '2px 8px', borderRadius: 4, fontSize: 12, fontWeight: 700 }}>
+                      RESTOCKED
+                    </div>
+                  </div>
+                );
+              }
+            } catch {}
+            return null;
+          })()}
           <div style={{ fontSize: 12, color: '#666', margin: '6px 0' }}>Combo Offer</div>
           {components.length > 0 && (
             <div className="card" style={{ background:'#fafafa', border:'1px solid #eee', padding:8, margin:'6px 0' }}>
@@ -123,11 +209,19 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
               </div>
             </div>
           )}
-          <button
-            className="icon-btn"
-            onClick={handleAddCombo}
-            style={{ width: '100%', padding: '10px 12px', background: '#fff', color: '#111', border: '1px solid #111', borderRadius: 6 }}
-          >Add Combo</button>
+          {showInventory && (
+            <div style={{ fontSize: 11, color: stockLeft === 0 ? '#e74c3c' : '#666', marginBottom: 6 }}>Left: {stockLeft}</div>
+          )}
+          {!readOnly && (
+            <button
+              className="icon-btn"
+              onClick={handleAddCombo}
+              disabled={!inWindow || stockLeft <= 0}
+              style={{ width: '100%', padding: '10px 12px', background: '#fff', color: '#111', border: '1px solid #111', borderRadius: 6, opacity: (inWindow && stockLeft > 0) ? 1 : 0.6 }}
+            >
+              {inWindow ? (stockLeft > 0 ? 'Add Combo' : 'Sold Out') : 'Hurry up next time!'}
+            </button>
+          )}
         </div>
       </div>
     );
@@ -256,6 +350,7 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
               {item.options.length} options available
             </div>
           )}
+          {!readOnly && (
           <div className="menu-item-actions" style={{ minHeight: 48, display: 'flex', alignItems: 'center' }}>
             {(!item.hasOptions && thisQty > 0) ? (
               <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
@@ -312,6 +407,7 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
               </div>
             )}
           </div>
+          )}
         </div>
       </div>
     );
