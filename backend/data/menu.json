@@ -1,818 +1,521 @@
-[
-  {
-    "shopId": 1,
-    "shopName": "North Indian Meals",
-    "items": [
-      {
-        "id": 1,
-        "name": "Paneer Butter Masala",
-        "price": 120,
-        "available": true,
-        "image": "/images/paneer-butter-masala.jpg",
-        "isRecommended": true,
-        "isHotSeller": true,
-        "isVeg": true,
-        "prepTime": 15,
-        "inventory": 100
-      },
-      {
-        "id": 2,
-        "name": "Dal Makhani",
-        "price": 100,
-        "available": true,
-        "image": "/images/dal-makhani.jpg",
-        "isRecommended": false,
-        "isHotSeller": true,
-        "isVeg": true,
-        "prepTime": 10,
-        "inventory": 100
-      },
-      {
-        "id": 3,
-        "name": "Butter Chicken",
-        "price": 150,
-        "available": true,
-        "image": "/images/butter-chicken.jpg",
-        "isRecommended": true,
-        "isHotSeller": false,
-        "isVeg": false,
-        "prepTime": 20,
-        "inventory": 100
-      },
-      {
-        "id": 4,
-        "name": "Naan",
-        "price": 20,
-        "available": true,
-        "image": "/images/naan.jpg",
-        "isRecommended": false,
-        "isHotSeller": false,
-        "isVeg": true,
-        "prepTime": 5,
-        "inventory": 100
-      },
-      {
-        "id": 5,
-        "name": "Biryani",
-        "price": 150,
-        "available": true,
-        "image": "/images/biryani.jpg",
-        "isRecommended": true,
-        "isHotSeller": true,
-        "isVeg": true,
-        "prepTime": 25,
-        "hasOptions": true,
-        "options": [
-          {
-            "name": "Veg Biryani",
-            "priceModifier": 0
-          },
-          {
-            "name": "Mushroom Biryani",
-            "priceModifier": 20
-          },
-          {
-            "name": "Paneer Biryani",
-            "priceModifier": 30
-          }
-        ],
-        "inventory": 100,
-        "section": "Main Course",
-        "sectionOrder": 0
-      },
-      {
-        "id": 6,
-        "name": "Palak Paneer",
-        "price": 110,
-        "available": true,
-        "image": "/images/palak-paneer.jpg",
-        "isRecommended": false,
-        "isHotSeller": false,
-        "isVeg": true,
-        "prepTime": 12,
-        "inventory": 100
-      },
-      {
-        "id": 7,
-        "name": "Rogan Josh",
-        "price": 160,
-        "available": true,
-        "image": "/images/rogan-josh.jpg",
-        "isRecommended": false,
-        "isHotSeller": true,
-        "isVeg": false,
-        "prepTime": 18,
-        "inventory": 100
-      },
-      {
-        "id": 8,
-        "name": "Chole Bhature",
-        "price": 90,
-        "available": true,
-        "image": "/images/chole-bhature.jpg",
-        "isRecommended": true,
-        "isHotSeller": false,
-        "isVeg": true,
-        "prepTime": 15,
-        "inventory": 100
-      },
-      {
-        "id": 9,
-        "name": "Tandoori Roti",
-        "price": 15,
-        "available": true,
-        "image": "/images/tandoori-roti.jpg",
-        "isRecommended": false,
-        "isHotSeller": false,
-        "isVeg": true,
-        "prepTime": 5,
-        "inventory": 100
-      },
-      {
-        "id": 10,
-        "name": "Chicken Tikka",
-        "price": 140,
-        "available": true,
-        "image": "/images/chicken-tikka.jpg",
-        "isRecommended": false,
-        "isHotSeller": true,
-        "isVeg": false,
-        "prepTime": 20,
-        "inventory": 100
-      },
-      {
-        "id": 11,
-        "name": "Aloo Gobi",
-        "price": 80,
-        "available": true,
-        "image": "/images/aloo-gobi.jpg",
-        "isRecommended": false,
-        "isHotSeller": false,
-        "isVeg": true,
-        "prepTime": 12,
-        "inventory": 100
-      },
-      {
-        "id": 12,
-        "name": "Kadai Paneer",
-        "price": 125,
-        "available": true,
-        "image": "/images/kadai-paneer.jpg",
-        "isRecommended": true,
-        "isHotSeller": false,
-        "isVeg": true,
-        "prepTime": 14,
-        "inventory": 100
-      },
-      {
-        "id": 13,
-        "name": "Rajma Chawal",
-        "price": 95,
-        "available": true,
-        "image": "/images/rajma-chawal.jpg",
-        "isRecommended": false,
-        "isHotSeller": true,
-        "isVeg": true,
-        "prepTime": 10,
-        "inventory": 100
-      },
-      {
-        "id": 14,
-        "name": "Garlic Naan",
-        "price": 25,
-        "available": true,
-        "image": "/images/garlic-naan.jpg",
-        "isRecommended": false,
-        "isHotSeller": false,
-        "isVeg": true,
-        "prepTime": 6,
-        "inventory": 100
-      },
-      {
-        "id": 15,
-        "name": "Mutton Curry",
-        "price": 180,
-        "available": true,
-        "image": "/images/mutton-curry.jpg",
-        "isRecommended": false,
-        "isHotSeller": false,
-        "isVeg": false,
-        "prepTime": 25,
-        "inventory": 100
-      },
-      {
-        "id": 16,
-        "name": "Paneer Tikka",
-        "price": 130,
-        "available": true,
-        "image": "/images/paneer-tikka.jpg",
-        "isRecommended": true,
-        "isHotSeller": true,
-        "isVeg": true,
-        "prepTime": 16,
-        "inventory": 100
-      },
-      {
-        "id": 17,
-        "name": "Jeera Rice",
-        "price": 70,
-        "available": true,
-        "image": "/images/jeera-rice.jpg",
-        "isRecommended": false,
-        "isHotSeller": false,
-        "isVeg": true,
-        "prepTime": 8,
-        "inventory": 100
-      },
-      {
-        "id": 18,
-        "name": "Mix Veg",
-        "price": 85,
-        "available": true,
-        "image": "/images/mix-veg.jpg",
-        "isRecommended": false,
-        "isHotSeller": false,
-        "isVeg": true,
-        "prepTime": 12,
-        "inventory": 100
-      },
-      {
-        "id": 19,
-        "name": "Chicken Biryani",
-        "price": 170,
-        "available": true,
-        "image": "/images/chicken-biryani.jpg",
-        "isRecommended": true,
-        "isHotSeller": true,
-        "isVeg": false,
-        "prepTime": 28,
-        "inventory": 100
-      },
-      {
-        "id": 20,
-        "name": "Raita",
-        "price": 30,
-        "available": true,
-        "image": "/images/raita.jpg",
-        "isRecommended": false,
-        "isHotSeller": false,
-        "isVeg": true,
-        "prepTime": 5,
-        "inventory": 100
-      }
-    ]
-  },
-  {
-    "shopId": 2,
-    "shopName": "South Indian Delights",
-    "items": [
-      {
-        "id": 21,
-        "name": "Masala Dosa",
-        "price": 70,
-        "available": true,
-        "image": "/images/masala-dosa.jpg",
-        "isRecommended": true,
-        "isHotSeller": true,
-        "isVeg": true,
-        "prepTime": 12,
-        "inventory": 100,
-        "section": "Breakfast",
-        "sectionOrder": 0
-      },
-      {
-        "id": 22,
-        "name": "Idli Vada",
-        "price": 60,
-        "available": true,
-        "image": "/images/idli-vada.jpg",
-        "isRecommended": false,
-        "isHotSeller": true,
-        "isVeg": true,
-        "prepTime": 8,
-        "inventory": 100,
-        "section": "Breakfast",
-        "sectionOrder": 1
-      },
-      {
-        "id": 23,
-        "name": "Sambar Rice",
-        "price": 80,
-        "available": true,
-        "image": "/images/sambar-rice.jpg",
-        "isRecommended": false,
-        "isHotSeller": false,
-        "isVeg": true,
-        "prepTime": 10,
-        "inventory": 100
-      },
-      {
-        "id": 24,
-        "name": "Filter Coffee",
-        "price": 30,
-        "available": true,
-        "image": "/images/filter-coffee.jpg",
-        "isRecommended": true,
-        "isHotSeller": true,
-        "isVeg": true,
-        "prepTime": 5,
-        "hasOptions": true,
-        "options": [
-          {
-            "name": "Regular",
-            "priceModifier": 0
-          },
-          {
-            "name": "Strong",
-            "priceModifier": 5
-          },
-          {
-            "name": "Light",
-            "priceModifier": 0
-          }
-        ],
-        "inventory": 100
-      },
-      {
-        "id": 25,
-        "name": "Rava Dosa",
-        "price": 75,
-        "available": true,
-        "image": "/images/rava-dosa.jpg",
-        "isRecommended": false,
-        "isHotSeller": false,
-        "isVeg": true,
-        "prepTime": 14,
-        "inventory": 100
-      },
-      {
-        "id": 26,
-        "name": "Medu Vada",
-        "price": 50,
-        "available": true,
-        "image": "/images/medu-vada.jpg",
-        "isRecommended": true,
-        "isHotSeller": false,
-        "isVeg": true,
-        "prepTime": 10,
-        "inventory": 100
-      },
-      {
-        "id": 27,
-        "name": "Pongal",
-        "price": 65,
-        "available": true,
-        "image": "/images/pongal.jpg",
-        "isRecommended": false,
-        "isHotSeller": false,
-        "isVeg": true,
-        "prepTime": 12,
-        "inventory": 100,
-        "section": "Breakfast",
-        "sectionOrder": 2
-      },
-      {
-        "id": 28,
-        "name": "Upma",
-        "price": 55,
-        "available": true,
-        "image": "/images/upma.jpg",
-        "isRecommended": false,
-        "isHotSeller": false,
-        "isVeg": true,
-        "prepTime": 8,
-        "inventory": 100,
-        "section": "Breakfast",
-        "sectionOrder": 3
-      },
-      {
-        "id": 29,
-        "name": "Uttapam",
-        "price": 70,
-        "available": true,
-        "image": "/images/uttapam.jpg",
-        "isRecommended": true,
-        "isHotSeller": true,
-        "isVeg": true,
-        "prepTime": 15,
-        "inventory": 100
-      },
-      {
-        "id": 30,
-        "name": "Curd Rice",
-        "price": 60,
-        "available": true,
-        "image": "/images/curd-rice.jpg",
-        "isRecommended": false,
-        "isHotSeller": false,
-        "isVeg": true,
-        "prepTime": 5,
-        "inventory": 100
-      },
-      {
-        "id": 31,
-        "name": "Pesarattu",
-        "price": 75,
-        "available": true,
-        "image": "/images/pesarattu.jpg",
-        "isRecommended": false,
-        "isHotSeller": false,
-        "isVeg": true,
-        "prepTime": 13,
-        "inventory": 100
-      },
-      {
-        "id": 32,
-        "name": "Coconut Chutney",
-        "price": 20,
-        "available": true,
-        "image": "/images/coconut-chutney.jpg",
-        "isRecommended": false,
-        "isHotSeller": false,
-        "isVeg": true,
-        "prepTime": 5,
-        "inventory": 100
-      },
-      {
-        "id": 33,
-        "name": "Rasam",
-        "price": 40,
-        "available": true,
-        "image": "/images/rasam.jpg",
-        "isRecommended": false,
-        "isHotSeller": false,
-        "isVeg": true,
-        "prepTime": 10,
-        "inventory": 100
-      },
-      {
-        "id": 34,
-        "name": "Bisi Bele Bath",
-        "price": 85,
-        "available": true,
-        "image": "/images/bisi-bele-bath.jpg",
-        "isRecommended": true,
-        "isHotSeller": true,
-        "isVeg": true,
-        "prepTime": 18,
-        "inventory": 100
-      },
-      {
-        "id": 35,
-        "name": "Lemon Rice",
-        "price": 70,
-        "available": true,
-        "image": "/images/lemon-rice.jpg",
-        "isRecommended": false,
-        "isHotSeller": false,
-        "isVeg": true,
-        "prepTime": 8,
-        "inventory": 100
-      },
-      {
-        "id": 36,
-        "name": "Tomato Rice",
-        "price": 75,
-        "available": true,
-        "image": "/images/tomato-rice.jpg",
-        "isRecommended": false,
-        "isHotSeller": false,
-        "isVeg": true,
-        "prepTime": 10,
-        "inventory": 100
-      },
-      {
-        "id": 37,
-        "name": "Plain Dosa",
-        "price": 60,
-        "available": true,
-        "image": "/images/plain-dosa.jpg",
-        "isRecommended": false,
-        "isHotSeller": false,
-        "isVeg": true,
-        "prepTime": 10,
-        "inventory": 100,
-        "section": "Breakfast",
-        "sectionOrder": 4
-      },
-      {
-        "id": 38,
-        "name": "Set Dosa",
-        "price": 65,
-        "available": true,
-        "image": "/images/set-dosa.jpg",
-        "isRecommended": true,
-        "isHotSeller": false,
-        "isVeg": true,
-        "prepTime": 12,
-        "inventory": 100
-      },
-      {
-        "id": 39,
-        "name": "Appam",
-        "price": 70,
-        "available": true,
-        "image": "/images/appam.jpg",
-        "isRecommended": false,
-        "isHotSeller": true,
-        "isVeg": true,
-        "prepTime": 14,
-        "inventory": 100
-      },
-      {
-        "id": 40,
-        "name": "Paper Roast",
-        "price": 50,
-        "available": true,
-        "image": "/images/paper-roast.jpg",
-        "isRecommended": false,
-        "isHotSeller": false,
-        "isVeg": true,
-        "prepTime": 20,
-        "inventory": 100
-      }
-    ]
-  },
-  {
-    "shopId": 3,
-    "shopName": "Beverage Corner",
-    "items": [
-      {
-        "id": 41,
-        "name": "Cold Coffee",
-        "price": 40,
-        "available": true,
-        "image": "/images/cold-coffee.jpg",
-        "isRecommended": true,
-        "isHotSeller": true,
-        "isVeg": true,
-        "prepTime": 5,
-        "inventory": 100,
-        "section": "Beverages",
-        "sectionOrder": 0
-      },
-      {
-        "id": 42,
-        "name": "Mango Juice",
-        "price": 30,
-        "available": true,
-        "image": "/images/mango-juice.jpg",
-        "isRecommended": true,
-        "isHotSeller": false,
-        "isVeg": true,
-        "prepTime": 4,
-        "inventory": 100
-      },
-      {
-        "id": 43,
-        "name": "Green Tea",
-        "price": 25,
-        "available": true,
-        "image": "/images/green-tea.jpg",
-        "isRecommended": false,
-        "isHotSeller": false,
-        "isVeg": true,
-        "prepTime": 5,
-        "inventory": 100
-      },
-      {
-        "id": 44,
-        "name": "Smoothie",
-        "price": 60,
-        "available": true,
-        "image": "/images/smoothie.jpg",
-        "isRecommended": true,
-        "isHotSeller": true,
-        "isVeg": true,
-        "prepTime": 6,
-        "inventory": 100
-      },
-      {
-        "id": 45,
-        "name": "Lemonade",
-        "price": 30,
-        "available": true,
-        "image": "/images/lemonade.jpg",
-        "isRecommended": false,
-        "isHotSeller": true,
-        "isVeg": true,
-        "prepTime": 4,
-        "inventory": 100
-      },
-      {
-        "id": 46,
-        "name": "Hot Chocolate",
-        "price": 50,
-        "available": true,
-        "image": "/images/hot-chocolate.jpg",
-        "isRecommended": false,
-        "isHotSeller": false,
-        "isVeg": true,
-        "prepTime": 6,
-        "inventory": 100
-      },
-      {
-        "id": 47,
-        "name": "Iced Tea",
-        "price": 35,
-        "available": true,
-        "image": "/images/iced-tea.jpg",
-        "isRecommended": true,
-        "isHotSeller": false,
-        "isVeg": true,
-        "prepTime": 5,
-        "inventory": 100
-      },
-      {
-        "id": 48,
-        "name": "Masala Chai",
-        "price": 20,
-        "available": true,
-        "image": "/images/masala-chai.jpg",
-        "isRecommended": false,
-        "isHotSeller": true,
-        "isVeg": true,
-        "prepTime": 5,
-        "inventory": 100,
-        "section": "Beverages",
-        "sectionOrder": 1
-      },
-      {
-        "id": 49,
-        "name": "Orange Juice",
-        "price": 35,
-        "available": true,
-        "image": "/images/orange-juice.jpg",
-        "isRecommended": false,
-        "isHotSeller": false,
-        "isVeg": true,
-        "prepTime": 4,
-        "inventory": 100
-      },
-      {
-        "id": 50,
-        "name": "Cappuccino",
-        "price": 45,
-        "available": true,
-        "image": "/images/cappuccino.jpg",
-        "isRecommended": true,
-        "isHotSeller": true,
-        "isVeg": true,
-        "prepTime": 6,
-        "inventory": 100,
-        "section": "Beverages",
-        "sectionOrder": 2
-      },
-      {
-        "id": 51,
-        "name": "Espresso",
-        "price": 40,
-        "available": true,
-        "image": "/images/espresso.jpg",
-        "isRecommended": false,
-        "isHotSeller": false,
-        "isVeg": true,
-        "prepTime": 3,
-        "inventory": 100
-      },
-      {
-        "id": 52,
-        "name": "Milk Shake",
-        "price": 55,
-        "available": true,
-        "image": "/images/milk-shake.jpg",
-        "isRecommended": true,
-        "isHotSeller": true,
-        "isVeg": true,
-        "prepTime": 7,
-        "hasOptions": true,
-        "options": [
-          {
-            "name": "Chocolate",
-            "priceModifier": 0
-          },
-          {
-            "name": "Vanilla",
-            "priceModifier": 0
-          },
-          {
-            "name": "Strawberry",
-            "priceModifier": 5
-          }
-        ],
-        "inventory": 100
-      },
-      {
-        "id": 53,
-        "name": "Lassi",
-        "price": 40,
-        "available": true,
-        "image": "/images/lassi.jpg",
-        "isRecommended": false,
-        "isHotSeller": true,
-        "isVeg": true,
-        "prepTime": 5,
-        "inventory": 100
-      },
-      {
-        "id": 54,
-        "name": "Buttermilk",
-        "price": 25,
-        "available": true,
-        "image": "/images/buttermilk.jpg",
-        "isRecommended": false,
-        "isHotSeller": false,
-        "isVeg": true,
-        "prepTime": 3,
-        "inventory": 100
-      },
-      {
-        "id": 55,
-        "name": "Mojito",
-        "price": 50,
-        "available": true,
-        "image": "/images/mojito.jpg",
-        "isRecommended": true,
-        "isHotSeller": false,
-        "isVeg": true,
-        "prepTime": 6,
-        "hasOptions": true,
-        "options": [
-          {
-            "name": "Blueberry",
-            "priceModifier": 10
-          },
-          {
-            "name": "Grape",
-            "priceModifier": 10
-          },
-          {
-            "name": "Classic Mint",
-            "priceModifier": 0
-          }
-        ],
-        "inventory": 100
-      },
-      {
-        "id": 56,
-        "name": "Fresh Lime Soda",
-        "price": 30,
-        "available": true,
-        "image": "/images/fresh-lime-soda.jpg",
-        "isRecommended": false,
-        "isHotSeller": false,
-        "isVeg": true,
-        "prepTime": 4,
-        "inventory": 100
-      },
-      {
-        "id": 57,
-        "name": "Watermelon Juice",
-        "price": 35,
-        "available": true,
-        "image": "/images/watermelon-juice.jpg",
-        "isRecommended": false,
-        "isHotSeller": false,
-        "isVeg": true,
-        "prepTime": 5,
-        "inventory": 100
-      },
-      {
-        "id": 58,
-        "name": "Badam Milk",
-        "price": 45,
-        "available": true,
-        "image": "/images/badam-milk.jpg",
-        "isRecommended": true,
-        "isHotSeller": true,
-        "isVeg": true,
-        "prepTime": 7,
-        "inventory": 100
-      },
-      {
-        "id": 59,
-        "name": "Rose Milk",
-        "price": 40,
-        "available": true,
-        "image": "/images/rose-milk.jpg",
-        "isRecommended": false,
-        "isHotSeller": false,
-        "isVeg": true,
-        "prepTime": 5,
-        "inventory": 100
-      },
-      {
-        "id": 60,
-        "name": "Tender Coconut",
-        "price": 30,
-        "available": true,
-        "image": "/images/tender-coconut.jpg",
-        "isRecommended": false,
-        "isHotSeller": true,
-        "isVeg": true,
-        "prepTime": 3,
-        "inventory": 100
-      }
-    ]
-  }
-]
+{
+  "shops": [
+    {
+      "shopId": 1,
+      "shopName": "North Indian Meals",
+      "categories": [
+        {
+          "categoryName": "Breakfast",
+          "items": [
+            {"id":1,"name":"Aloo Paratha","price":60,"isVeg":true,"image":"/images/aloo-paratha.jpg","prepTime":10,"inventory":100},
+            {"id":2,"name":"Poha","price":45,"isVeg":true,"image":"/images/poha.jpg","prepTime":8,"inventory":100},
+            {"id":3,"name":"Chole Bhature","price":80,"isVeg":true,"image":"/images/chole-bhature.jpg","prepTime":12,"inventory":100},
+            {"id":4,"name":"Aloo Puri","price":70,"isVeg":true,"image":"/images/aloo-puri.jpg","prepTime":10,"inventory":100},
+            {"id":5,"name":"Paneer Paratha","price":75,"isVeg":true,"image":"/images/paneer-paratha.jpg","prepTime":12,"inventory":100},
+            {"id":6,"name":"Moong Dal Chilla","price":60,"isVeg":true,"image":"/images/moongdal-chilla.jpg","prepTime":9,"inventory":100},
+            {"id":7,"name":"Sabudana Khichdi","price":55,"isVeg":true,"image":"/images/sabudana-khichdi.jpg","prepTime":12,"inventory":100},
+            {"id":8,"name":"Gobi Paratha","price":65,"isVeg":true,"image":"/images/gobi-paratha.jpg","prepTime":10,"inventory":100},
+            {"id":9,"name":"Upma","price":55,"isVeg":true,"image":"/images/upma.jpg","prepTime":7,"inventory":100},
+            {"id":10,"name":"Dhokla","price":55,"isVeg":true,"image":"/images/dhokla.jpg","prepTime":14,"inventory":100},
+            {"id":11,"name":"Litti Chokha","price":70,"isVeg":true,"image":"/images/litti-chokha.jpg","prepTime":15,"inventory":100},
+            {"id":12,"name":"Kachori with Aloo Sabzi","price":65,"isVeg":true,"image":"/images/kachori-aloo.jpg","prepTime":13,"inventory":100},
+            {"id":13,"name":"Dal Baati Churma","price":85,"isVeg":true,"image":"/images/dal-baati-churma.jpg","prepTime":20,"inventory":100},
+            {"id":14,"name":"Methi Thepla","price":55,"isVeg":true,"image":"/images/methi-thepla.jpg","prepTime":10,"inventory":100},
+            {"id":15,"name":"Missi Roti","price":40,"isVeg":true,"image":"/images/missi-roti.jpg","prepTime":8,"inventory":100},
+            {"id":16,"name":"Besan Bread Toast","price":45,"isVeg":true,"image":"/images/besan-bread-toast.jpg","prepTime":7,"inventory":100},
+            {"id":17,"name":"Anda Bhurji","price":60,"isVeg":false,"image":"/images/anda-bhurji.jpg","prepTime":7,"inventory":100,"hasOptions":[{"name":"Egg only","priceModifier":0},{"name":"With Veggies","priceModifier":10}]},
+            {"id":18,"name":"Daliya","price":45,"isVeg":true,"image":"/images/daliya.jpg","prepTime":9,"inventory":100},
+            {"id":19,"name":"Stuffed Kachori","price":65,"isVeg":true,"image":"/images/stuffed-kachori.jpg","prepTime":13,"inventory":100},
+            {"id":20,"name":"Sweet Lassi","price":55,"isVeg":true,"image":"/images/sweet-lassi.jpg","prepTime":5,"inventory":100,"hasOptions":[{"name":"Classic","priceModifier":0},{"name":"Mango","priceModifier":10}]}
+          ]
+        },
+        {
+          "categoryName": "Lunch",
+          "items": [
+            {"id":21,"name":"Aloo Gobi","price":90,"isVeg":true,"image":"/images/aloo-gobi.jpg","prepTime":14,"inventory":100},
+            {"id":22,"name":"Palak Paneer","price":120,"isVeg":true,"image":"/images/palak-paneer.jpg","prepTime":15,"inventory":100},
+            {"id":23,"name":"Chana Masala","price":100,"isVeg":true,"image":"/images/chana-masala.jpg","prepTime":14,"inventory":100},
+            {"id":24,"name":"Dal Makhani","price":110,"isVeg":true,"image":"/images/dal-makhani.jpg","prepTime":15,"inventory":100},
+            {"id":25,"name":"Rajma Chawal","price":95,"isVeg":true,"image":"/images/rajma-chawal.jpg","prepTime":16,"inventory":100},
+            {"id":26,"name":"Kadai Paneer","price":125,"isVeg":true,"image":"/images/kadai-paneer.jpg","prepTime":13,"inventory":100},
+            {"id":27,"name":"Malai Kofta","price":135,"isVeg":true,"image":"/images/malai-kofta.jpg","prepTime":18,"inventory":100},
+            {"id":28,"name":"Butter Chicken","price":150,"isVeg":false,"image":"/images/butter-chicken.jpg","prepTime":20,"inventory":100,"hasOptions":[{"name":"With Bone","priceModifier":0},{"name":"Boneless","priceModifier":15}]},
+            {"id":29,"name":"Shahi Paneer","price":130,"isVeg":true,"image":"/images/shahi-paneer.jpg","prepTime":15,"inventory":100},
+            {"id":30,"name":"Baingan Bharta","price":110,"isVeg":true,"image":"/images/baingan-bharta.jpg","prepTime":11,"inventory":100},
+            {"id":31,"name":"Rogan Josh","price":175,"isVeg":false,"image":"/images/rogan-josh.jpg","prepTime":21,"inventory":100},
+            {"id":32,"name":"Paneer Tikka","price":115,"isVeg":true,"image":"/images/paneer-tikka.jpg","prepTime":13,"inventory":100},
+            {"id":33,"name":"Dal Tadka","price":90,"isVeg":true,"image":"/images/dal-tadka.jpg","prepTime":12,"inventory":100},
+            {"id":34,"name":"Matar Paneer","price":115,"isVeg":true,"image":"/images/matar-paneer.jpg","prepTime":12,"inventory":100},
+            {"id":35,"name":"Dum Aloo","price":110,"isVeg":true,"image":"/images/dum-aloo.jpg","prepTime":13,"inventory":100},
+            {"id":36,"name":"Chole Bhature","price":100,"isVeg":true,"image":"/images/chole-bhature.jpg","prepTime":14,"inventory":100},
+            {"id":37,"name":"Aloo Paratha","price":85,"isVeg":true,"image":"/images/aloo-paratha.jpg","prepTime":9,"inventory":100},
+            {"id":38,"name":"Veg Biryani","price":120,"isVeg":true,"image":"/images/veg-biryani.jpg","prepTime":18,"inventory":100,"hasOptions":[{"name":"Classic","priceModifier":0},{"name":"Paneer","priceModifier":15}]},
+            {"id":39,"name":"Kadhi Pakora","price":90,"isVeg":true,"image":"/images/kadhi-pakora.jpg","prepTime":13,"inventory":100},
+            {"id":40,"name":"Gatte ki Sabzi","price":105,"isVeg":true,"image":"/images/gatte-ki-sabzi.jpg","prepTime":14,"inventory":100}
+          ]
+        },
+        {
+          "categoryName": "Dinner",
+          "items": [
+            {"id":41,"name":"Dal Makhani","price":110,"isVeg":true,"image":"/images/dal-makhani.jpg","prepTime":15,"inventory":100},
+            {"id":42,"name":"Rajma Chawal","price":90,"isVeg":true,"image":"/images/rajma-chawal.jpg","prepTime":11,"inventory":100},
+            {"id":43,"name":"Butter Chicken","price":165,"isVeg":false,"image":"/images/butter-chicken.jpg","prepTime":20,"inventory":100,"hasOptions":[{"name":"With Bone","priceModifier":0},{"name":"Boneless","priceModifier":15}]},
+            {"id":44,"name":"Paneer Butter Masala","price":125,"isVeg":true,"image":"/images/paneer-butter-masala.jpg","prepTime":13,"inventory":100},
+            {"id":45,"name":"Chicken Tikka Masala","price":160,"isVeg":false,"image":"/images/chicken-tikka-masala.jpg","prepTime":22,"inventory":100},
+            {"id":46,"name":"Shahi Paneer","price":135,"isVeg":true,"image":"/images/shahi-paneer.jpg","prepTime":13,"inventory":100},
+            {"id":47,"name":"Rogan Josh","price":170,"isVeg":false,"image":"/images/rogan-josh.jpg","prepTime":24,"inventory":100},
+            {"id":48,"name":"Chole Bhature","price":105,"isVeg":true,"image":"/images/chole-bhature.jpg","prepTime":14,"inventory":100},
+            {"id":49,"name":"Palak Paneer","price":120,"isVeg":true,"image":"/images/palak-paneer.jpg","prepTime":12,"inventory":100},
+            {"id":50,"name":"Malai Kofta","price":140,"isVeg":true,"image":"/images/malai-kofta.jpg","prepTime":15,"inventory":100},
+            {"id":51,"name":"Aloo Gobi","price":95,"isVeg":true,"image":"/images/aloo-gobi.jpg","prepTime":10,"inventory":100},
+            {"id":52,"name":"Bhindi Masala","price":85,"isVeg":true,"image":"/images/bhindi-masala.jpg","prepTime":11,"inventory":100},
+            {"id":53,"name":"Kadhi Pakora","price":80,"isVeg":true,"image":"/images/kadhi-pakora.jpg","prepTime":15,"inventory":100},
+            {"id":54,"name":"Tandoori Chicken","price":175,"isVeg":false,"image":"/images/tandoori-chicken.jpg","prepTime":22,"inventory":100},
+            {"id":55,"name":"Mutton Curry","price":180,"isVeg":false,"image":"/images/mutton-curry.jpg","prepTime":27,"inventory":100},
+            {"id":56,"name":"Sarson Ka Saag","price":90,"isVeg":true,"image":"/images/sarson-ka-saag.jpg","prepTime":17,"inventory":100},
+            {"id":57,"name":"Makki Di Roti","price":40,"isVeg":true,"image":"/images/makki-di-roti.jpg","prepTime":9,"inventory":100},
+            {"id":58,"name":"Dum Aloo","price":95,"isVeg":true,"image":"/images/dum-aloo.jpg","prepTime":13,"inventory":100},
+            {"id":59,"name":"Baingan Bharta","price":105,"isVeg":true,"image":"/images/baingan-bharta.jpg","prepTime":13,"inventory":100},
+            {"id":60,"name":"Veg Biryani","price":115,"isVeg":true,"image":"/images/veg-biryani.jpg","prepTime":17,"inventory":100}
+          ]
+        },
+        {
+          "categoryName": "Quick Bites",
+          "items": [
+            {"id":61,"name":"Samosa","price":20,"isVeg":true,"image":"/images/samosa.jpg","prepTime":5,"inventory":100},
+            {"id":62,"name":"Paneer Roll","price":45,"isVeg":true,"image":"/images/paneer-roll.jpg","prepTime":7,"inventory":100},
+            {"id":63,"name":"Chicken Roll","price":55,"isVeg":false,"image":"/images/chicken-roll.jpg","prepTime":8,"inventory":100},
+            {"id":64,"name":"Kathi Roll","price":50,"isVeg":false,"image":"/images/kathi-roll.jpg","prepTime":9,"inventory":100},
+            {"id":65,"name":"Veg Puff","price":30,"isVeg":true,"image":"/images/veg-puff.jpg","prepTime":5,"inventory":100},
+            {"id":66,"name":"Egg Puff","price":35,"isVeg":false,"image":"/images/egg-puff.jpg","prepTime":6,"inventory":100},
+            {"id":67,"name":"Aloo Tikki","price":35,"isVeg":true,"image":"/images/aloo-tikki.jpg","prepTime":5,"inventory":100},
+            {"id":68,"name":"Pav Bhaji Slider","price":40,"isVeg":true,"image":"/images/pav-bhaji-slider.jpg","prepTime":7,"inventory":100},
+            {"id":69,"name":"Momos","price":45,"isVeg":true,"image":"/images/veg-momos.jpg","prepTime":11,"inventory":100,"hasOptions":[{"name":"Veg","priceModifier":0},{"name":"Chicken","priceModifier":10}]},
+            {"id":70,"name":"Kachori","price":30,"isVeg":true,"image":"/images/kachori.jpg","prepTime":7,"inventory":100},
+            {"id":71,"name":"Paneer Tikka Roll","price":55,"isVeg":true,"image":"/images/paneer-tikka-roll.jpg","prepTime":10,"inventory":100},
+            {"id":72,"name":"Veg Cutlet","price":35,"isVeg":true,"image":"/images/veg-cutlet.jpg","prepTime":8,"inventory":100},
+            {"id":73,"name":"Chicken Cutlet","price":50,"isVeg":false,"image":"/images/chicken-cutlet.jpg","prepTime":9,"inventory":100},
+            {"id":74,"name":"Corn Bhel","price":40,"isVeg":true,"image":"/images/corn-bhel.jpg","prepTime":6,"inventory":100},
+            {"id":75,"name":"Cheese Balls","price":45,"isVeg":true,"image":"/images/cheese-balls.jpg","prepTime":7,"inventory":100},
+            {"id":76,"name":"French Fries","price":35,"isVeg":true,"image":"/images/french-fries.jpg","prepTime":5,"inventory":100},
+            {"id":77,"name":"Cheese Toast","price":40,"isVeg":true,"image":"/images/cheese-toast.jpg","prepTime":7,"inventory":100},
+            {"id":78,"name":"Veg Sandwich","price":45,"isVeg":true,"image":"/images/veg-sandwich.jpg","prepTime":8,"inventory":100},
+            {"id":79,"name":"Egg Sandwich","price":50,"isVeg":false,"image":"/images/egg-sandwich.jpg","prepTime":9,"inventory":100},
+            {"id":80,"name":"Chicken Sandwich","price":55,"isVeg":false,"image":"/images/chicken-sandwich.jpg","prepTime":9,"inventory":100}
+          ]
+        },
+        {
+          "categoryName": "North Indian Chat Items",
+          "items": [
+            {"id":81,"name":"Pani Puri","price":35,"isVeg":true,"image":"/images/pani-puri.jpg","prepTime":5,"inventory":100},
+            {"id":82,"name":"Dahi Puri","price":45,"isVeg":true,"image":"/images/dahi-puri.jpg","prepTime":6,"inventory":100},
+            {"id":83,"name":"Sev Puri","price":40,"isVeg":true,"image":"/images/sev-puri.jpg","prepTime":5,"inventory":100},
+            {"id":84,"name":"Bhel Puri","price":35,"isVeg":true,"image":"/images/bhel-puri.jpg","prepTime":5,"inventory":100},
+            {"id":85,"name":"Aloo Tikki Chaat","price":40,"isVeg":true,"image":"/images/aloo-tikki-chaat.jpg","prepTime":7,"inventory":100},
+            {"id":86,"name":"Papdi Chaat","price":40,"isVeg":true,"image":"/images/papdi-chaat.jpg","prepTime":6,"inventory":100},
+            {"id":87,"name":"Raj Kachori","price":60,"isVeg":true,"image":"/images/raj-kachori.jpg","prepTime":8,"inventory":100},
+            {"id":88,"name":"Matar Kulcha Chaat","price":55,"isVeg":true,"image":"/images/matar-kulcha-chaat.jpg","prepTime":7,"inventory":100},
+            {"id":89,"name":"Fruit Chaat","price":45,"isVeg":true,"image":"/images/fruit-chaat.jpg","prepTime":6,"inventory":100},
+            {"id":90,"name":"Dahi Bhalla","price":50,"isVeg":true,"image":"/images/dahi-bhalla.jpg","prepTime":7,"inventory":100},
+            {"id":91,"name":"Ram Ladoo","price":35,"isVeg":true,"image":"/images/ram-ladoo.jpg","prepTime":7,"inventory":100},
+            {"id":92,"name":"Samosa Chaat","price":50,"isVeg":true,"image":"/images/samosa-chaat.jpg","prepTime":8,"inventory":100},
+            {"id":93,"name":"Shakarkandi Chaat","price":45,"isVeg":true,"image":"/images/shakarkandi-chaat.jpg","prepTime":7,"inventory":100},
+            {"id":94,"name":"Tamatar Chaat","price":50,"isVeg":true,"image":"/images/tamatar-chaat.jpg","prepTime":6,"inventory":100},
+            {"id":95,"name":"Tikki Chaat","price":55,"isVeg":true,"image":"/images/tikki-chaat.jpg","prepTime":7,"inventory":100},
+            {"id":96,"name":"Katori Chaat","price":55,"isVeg":true,"image":"/images/katori-chaat.jpg","prepTime":7,"inventory":100},
+            {"id":97,"name":"Chana Chaat","price":45,"isVeg":true,"image":"/images/chana-chaat.jpg","prepTime":6,"inventory":100},
+            {"id":98,"name":"Papri Chaat","price":40,"isVeg":true,"image":"/images/papri-chaat.jpg","prepTime":6,"inventory":100},
+            {"id":99,"name":"Pudhina Chutney Chaat","price":50,"isVeg":true,"image":"/images/pudhina-chutney-chaat.jpg","prepTime":6,"inventory":100},
+            {"id":100,"name":"Masala Corn","price":45,"isVeg":true,"image":"/images/masala-corn.jpg","prepTime":5,"inventory":100}
+          ]
+        }
+      ]
+    },
+    {
+      "shopId": 2,
+      "shopName": "South Indian Delights",
+      "categories": [
+        {
+          "categoryName": "Breakfast",
+          "items": [
+            {"id":101,"name":"Idli","price":40,"isVeg":true,"image":"/images/idli.jpg","prepTime":7,"inventory":100},
+            {"id":102,"name":"Dosa","price":55,"isVeg":true,"image":"/images/dosa.jpg","prepTime":10,"inventory":100},
+            {"id":103,"name":"Upma","price":50,"isVeg":true,"image":"/images/upma_south.jpg","prepTime":8,"inventory":100},
+            {"id":104,"name":"Pongal","price":55,"isVeg":true,"image":"/images/pongal.jpg","prepTime":12,"inventory":100},
+            {"id":105,"name":"Medu Vada","price":50,"isVeg":true,"image":"/images/medu-vada.jpg","prepTime":8,"inventory":100},
+            {"id":106,"name":"Puttu","price":55,"isVeg":true,"image":"/images/puttu.jpg","prepTime":13,"inventory":100},
+            {"id":107,"name":"Idiyappam","price":50,"isVeg":true,"image":"/images/idiyappam.jpg","prepTime":13,"inventory":100},
+            {"id":108,"name":"Appam","price":55,"isVeg":true,"image":"/images/appam.jpg","prepTime":14,"inventory":100},
+            {"id":109,"name":"Pesarattu","price":60,"isVeg":true,"image":"/images/pesarattu.jpg","prepTime":12,"inventory":100},
+            {"id":110,"name":"Uttapam","price":55,"isVeg":true,"image":"/images/uttapam.jpg","prepTime":12,"inventory":100},
+            {"id":111,"name":"Paniyaram","price":50,"isVeg":true,"image":"/images/paniyaram.jpg","prepTime":10,"inventory":100},
+            {"id":112,"name":"Adai","price":55,"isVeg":true,"image":"/images/adai.jpg","prepTime":11,"inventory":100},
+            {"id":113,"name":"Neer Dosa","price":55,"isVeg":true,"image":"/images/neer-dosa.jpg","prepTime":9,"inventory":100},
+            {"id":114,"name":"Rava Idli","price":50,"isVeg":true,"image":"/images/rava-idli.jpg","prepTime":9,"inventory":100},
+            {"id":115,"name":"Akki Roti","price":45,"isVeg":true,"image":"/images/akki-roti.jpg","prepTime":7,"inventory":100},
+            {"id":116,"name":"Set Dosa","price":60,"isVeg":true,"image":"/images/set-dosa.jpg","prepTime":10,"inventory":100},
+            {"id":117,"name":"Masala Dosa","price":65,"isVeg":true,"image":"/images/masala-dosa.jpg","prepTime":11,"inventory":100},
+            {"id":118,"name":"Ragi Dosa","price":55,"isVeg":true,"image":"/images/ragi-dosa.jpg","prepTime":10,"inventory":100},
+            {"id":119,"name":"Poori","price":50,"isVeg":true,"image":"/images/poori_south.jpg","prepTime":12,"inventory":100},
+            {"id":120,"name":"Semiya Upma","price":50,"isVeg":true,"image":"/images/semiya-upma.jpg","prepTime":9,"inventory":100}
+          ]
+        },
+        {
+          "categoryName": "Lunch",
+          "items": [
+            {"id":121,"name":"Curd Rice","price":40,"isVeg":true,"image":"/images/curd-rice.jpg","prepTime":12,"inventory":100},
+            {"id":122,"name":"Lemon Rice","price":38,"isVeg":true,"image":"/images/lemon-rice.jpg","prepTime":12,"inventory":100},
+            {"id":123,"name":"Bisi Bele Bath","price":45,"isVeg":true,"image":"/images/bisi-bele-bath.jpg","prepTime":15,"inventory":100},
+            {"id":124,"name":"Vazhakkai Varuval","price":50,"isVeg":true,"image":"/images/vazhakkai-fry.jpg","prepTime":10,"inventory":100},
+            {"id":125,"name":"Paruppu Vadai","price":35,"isVeg":true,"image":"/images/paruppu-vadai.jpg","prepTime":8,"inventory":100},
+            {"id":126,"name":"Rasam","price":35,"isVeg":true,"image":"/images/rasam.jpg","prepTime":10,"inventory":100},
+            {"id":127,"name":"Appalam","price":20,"isVeg":true,"image":"/images/appalam.jpg","prepTime":5,"inventory":100},
+            {"id":128,"name":"Aviyal","price":55,"isVeg":true,"image":"/images/aviyal.jpg","prepTime":14,"inventory":100},
+            {"id":129,"name":"Poriyal","price":40,"isVeg":true,"image":"/images/poriyal.jpg","prepTime":8,"inventory":100},
+            {"id":130,"name":"Ghee Rice","price":45,"isVeg":true,"image":"/images/ghee-rice.jpg","prepTime":10,"inventory":100},
+            {"id":131,"name":"Tomato Rice","price":42,"isVeg":true,"image":"/images/tomato-rice.jpg","prepTime":12,"inventory":100},
+            {"id":132,"name":"Chicken Biryani","price":120,"isVeg":false,"image":"/images/chicken-biryani.jpg","prepTime":20,"inventory":100},
+            {"id":133,"name":"Fish Fry","price":140,"isVeg":false,"image":"/images/fish-fry.jpg","prepTime":15,"inventory":100},
+            {"id":134,"name":"Pesarattu","price":60,"isVeg":true,"image":"/images/pesarattu.jpg","prepTime":12,"inventory":100},
+            {"id":135,"name":"Rava Idli","price":50,"isVeg":true,"image":"/images/rava-idli.jpg","prepTime":10,"inventory":100},
+            {"id":136,"name":"Payasam","price":40,"isVeg":true,"image":"/images/payasam.jpg","prepTime":15,"inventory":100},
+            {"id":137,"name":"Tamarind Rice (Puliyogare)","price":45,"isVeg":true,"image":"/images/tamarind-rice.jpg","prepTime":14,"inventory":100},
+            {"id":138,"name":"Coconut Rice","price":40,"isVeg":true,"image":"/images/coconut-rice.jpg","prepTime":12,"inventory":100},
+            {"id":139,"name":"Mor Kuzhambu","price":50,"isVeg":true,"image":"/images/mor-kuzhambu.jpg","prepTime":15,"inventory":100},
+            {"id":140,"name":"Avial","price":55,"isVeg":true,"image":"/images/avial.jpg","prepTime":14,"inventory":100}
+          ]
+        },
+        {
+          "categoryName": "Dinner",
+          "items": [
+            {"id":141,"name":"Plain Dosa","price":45,"isVeg":true,"image":"/images/plain-dosa.jpg","prepTime":12,"inventory":100},
+            {"id":142,"name":"Masala Dosa","price":65,"isVeg":true,"image":"/images/masala-dosa.jpg","prepTime":13,"inventory":100},
+            {"id":143,"name":"Pesarattu","price":60,"isVeg":true,"image":"/images/pesarattu.jpg","prepTime":12,"inventory":100},
+            {"id":144,"name":"Appam","price":55,"isVeg":true,"image":"/images/appam.jpg","prepTime":14,"inventory":100},
+            {"id":145,"name":"Adai","price":55,"isVeg":true,"image":"/images/adai.jpg","prepTime":11,"inventory":100},
+            {"id":146,"name":"Uthappam","price":60,"isVeg":true,"image":"/images/utthappam.jpg","prepTime":13,"inventory":100},
+            {"id":147,"name":"Idli","price":45,"isVeg":true,"image":"/images/idli.jpg","prepTime":10,"inventory":100},
+            {"id":148,"name":"Rava Idli","price":50,"isVeg":true,"image":"/images/rava-idli.jpg","prepTime":11,"inventory":100},
+            {"id":149,"name":"Puttu","price":55,"isVeg":true,"image":"/images/puttu.jpg","prepTime":15,"inventory":100},
+            {"id":150,"name":"Idiyappam","price":50,"isVeg":true,"image":"/images/idiyappam.jpg","prepTime":13,"inventory":100},
+            {"id":151,"name":"Set Dosa","price":60,"isVeg":true,"image":"/images/set-dosa.jpg","prepTime":12,"inventory":100},
+            {"id":152,"name":"Keema Curry","price":140,"isVeg":false,"image":"/images/keema-curry.jpg","prepTime":20,"inventory":100},
+            {"id":153,"name":"Chicken Chettinad","price":160,"isVeg":false,"image":"/images/chicken-chettinad.jpg","prepTime":25,"inventory":100},
+            {"id":154,"name":"Fish Curry (Kerala)","price":150,"isVeg":false,"image":"/images/fish-curry-kerala.jpg","prepTime":22,"inventory":100},
+            {"id":155,"name":"Kara Kuzhambu","price":60,"isVeg":true,"image":"/images/kara-kuzhambu.jpg","prepTime":15,"inventory":100},
+            {"id":156,"name":"Kadala Curry","price":55,"isVeg":true,"image":"/images/kadala-curry.jpg","prepTime":14,"inventory":100},
+            {"id":157,"name":"Kootu","price":50,"isVeg":true,"image":"/images/kootu.jpg","prepTime":12,"inventory":100},
+            {"id":158,"name":"Mor Kuzhambu","price":50,"isVeg":true,"image":"/images/mor-kuzhambu.jpg","prepTime":15,"inventory":100},
+            {"id":159,"name":"Avial (Kerala)","price":55,"isVeg":true,"image":"/images/avial-kerala.jpg","prepTime":14,"inventory":100},
+            {"id":160,"name":"Fish Fry","price":140,"isVeg":false,"image":"/images/fish-fry.jpg","prepTime":15,"inventory":100}
+          ]
+        },
+        {
+          "categoryName": "Quick Bites",
+          "items": [
+            {"id":161,"name":"Medu Vada","price":50,"isVeg":true,"image":"/images/medu-vada.jpg","prepTime":8,"inventory":100},
+            {"id":162,"name":"Masala Vada","price":45,"isVeg":true,"image":"/images/masala-vada.jpg","prepTime":8,"inventory":100},
+            {"id":163,"name":"Bonda","price":50,"isVeg":true,"image":"/images/bonda.jpg","prepTime":9,"inventory":100},
+            {"id":164,"name":"Mysore Bonda","price":50,"isVeg":true,"image":"/images/mysore-bonda.jpg","prepTime":9,"inventory":100},
+            {"id":165,"name":"Pazhampori","price":35,"isVeg":true,"image":"/images/pazhampori.jpg","prepTime":7,"inventory":100},
+            {"id":166,"name":"Bajji (Veg Fritters)","price":45,"isVeg":true,"image":"/images/bajji.jpg","prepTime":8,"inventory":100},
+            {"id":167,"name":"Ulli Vada","price":50,"isVeg":true,"image":"/images/ulli-vada.jpg","prepTime":9,"inventory":100},
+            {"id":168,"name":"Murukku (Chakli)","price":40,"isVeg":true,"image":"/images/murukku.jpg","prepTime":8,"inventory":100},
+            {"id":169,"name":"Ribbon Pakoda","price":35,"isVeg":true,"image":"/images/ribbon-pakoda.jpg","prepTime":7,"inventory":100},
+            {"id":170,"name":"Omapodi (Sev)","price":30,"isVeg":true,"image":"/images/omapodi.jpg","prepTime":6,"inventory":100},
+            {"id":171,"name":"Thattai (Rice Crackers)","price":30,"isVeg":true,"image":"/images/thattai.jpg","prepTime":7,"inventory":100},
+            {"id":172,"name":"Seedai","price":30,"isVeg":true,"image":"/images/seedai.jpg","prepTime":6,"inventory":100},
+            {"id":173,"name":"Kara Boondi","price":40,"isVeg":true,"image":"/images/kara-boondi.jpg","prepTime":7,"inventory":100},
+            {"id":174,"name":"Aloo Bonda","price":45,"isVeg":true,"image":"/images/aloo-bonda.jpg","prepTime":8,"inventory":100},
+            {"id":175,"name":"Punugulu","price":45,"isVeg":true,"image":"/images/punugulu.jpg","prepTime":8,"inventory":100},
+            {"id":176,"name":"Appam","price":50,"isVeg":true,"image":"/images/appam.jpg","prepTime":12,"inventory":100},
+            {"id":177,"name":"Kuzhi Paniyaram","price":50,"isVeg":true,"image":"/images/kuzhi-paniyaram.jpg","prepTime":10,"inventory":100},
+            {"id":178,"name":"Maddur Vada","price":55,"isVeg":true,"image":"/images/maddur-vada.jpg","prepTime":10,"inventory":100},
+            {"id":179,"name":"Goli Baje","price":45,"isVeg":true,"image":"/images/goli-baje.jpg","prepTime":9,"inventory":100},
+            {"id":180,"name":"Banana Chips","price":40,"isVeg":true,"image":"/images/banana-chips.jpg","prepTime":5,"inventory":100}
+          ]
+        }
+      ]
+    },
+    {
+      "shopId": 3,
+      "shopName": "Beverage Corner",
+      "categories": [
+        {
+          "categoryName": "Beverages",
+          "items": [
+            {
+              "id": 301,
+              "name": "Cold Coffee",
+              "price": 40,
+              "isVeg": true,
+              "image": "/images/cold-coffee.jpg",
+              "prepTime": 5,
+              "inventory": 100,
+              "hasOptions": [
+                { "name": "Regular", "priceModifier": 0 },
+                { "name": "Chocolate", "priceModifier": 5 },
+                { "name": "Hazelnut", "priceModifier": 7 }
+              ]
+            },
+            {
+              "id": 302,
+              "name": "Mango Juice",
+              "price": 30,
+              "isVeg": true,
+              "image": "/images/mango-juice.jpg",
+              "prepTime": 4,
+              "inventory": 100
+            },
+            {
+              "id": 303,
+              "name": "Green Tea",
+              "price": 25,
+              "isVeg": true,
+              "image": "/images/green-tea.jpg",
+              "prepTime": 5,
+              "inventory": 100
+            },
+            {
+              "id": 304,
+              "name": "Lemonade",
+              "price": 30,
+              "isVeg": true,
+              "image": "/images/lemonade.jpg",
+              "prepTime": 4,
+              "inventory": 100,
+              "hasOptions": [
+                { "name": "Classic", "priceModifier": 0 },
+                { "name": "Mint", "priceModifier": 5 }
+              ]
+            },
+            {
+              "id": 305,
+              "name": "Herbal Tea",
+              "price": 35,
+              "isVeg": true,
+              "image": "/images/herbal-tea.jpg",
+              "prepTime": 5,
+              "inventory": 100,
+              "hasOptions": [
+                { "name": "Chamomile", "priceModifier": 0 },
+                { "name": "Lemongrass", "priceModifier": 0 },
+                { "name": "Ginger", "priceModifier": 2 }
+              ]
+            },
+            {
+              "id": 306,
+              "name": "Iced Tea",
+              "price": 35,
+              "isVeg": true,
+              "image": "/images/iced-tea.jpg",
+              "prepTime": 4,
+              "inventory": 100
+            },
+            {
+              "id": 307,
+              "name": "Coconut Water",
+              "price": 40,
+              "isVeg": true,
+              "image": "/images/coconut-water.jpg",
+              "prepTime": 3,
+              "inventory": 100
+            },
+            {
+              "id": 308,
+              "name": "Water",
+              "price": 10,
+              "isVeg": true,
+              "image": "/images/water.jpg",
+              "prepTime": 1,
+              "inventory": 100
+            },
+            {
+              "id": 309,
+              "name": "Energy Drink",
+              "price": 50,
+              "isVeg": true,
+              "image": "/images/energy-drink.jpg",
+              "prepTime": 2,
+              "inventory": 100
+            },
+            {
+              "id": 310,
+              "name": "Fruit Mojito",
+              "price": 55,
+              "isVeg": true,
+              "image": "/images/fruit-mojito.jpg",
+              "prepTime": 5,
+              "inventory": 100,
+              "hasOptions": [
+                { "name": "Classic Mint", "priceModifier": 0 },
+                { "name": "Mango", "priceModifier": 5 },
+                { "name": "Watermelon", "priceModifier": 5 },
+                { "name": "Pineapple", "priceModifier": 5 }
+              ]
+            },
+            {
+              "id": 311,
+              "name": "Ginger Lemonade",
+              "price": 35,
+              "isVeg": true,
+              "image": "/images/ginger-lemonade.jpg",
+              "prepTime": 4,
+              "inventory": 100
+            },
+            {
+              "id": 312,
+              "name": "Strawberry Smoothie",
+              "price": 55,
+              "isVeg": true,
+              "image": "/images/strawberry-smoothie.jpg",
+              "prepTime": 6,
+              "inventory": 100,
+              "hasOptions": [
+                { "name": "Classic", "priceModifier": 0 },
+                { "name": "Low Sugar", "priceModifier": 0 }
+              ]
+            },
+            {
+              "id": 313,
+              "name": "Mango Lassi",
+              "price": 50,
+              "isVeg": true,
+              "image": "/images/mango-lassi.jpg",
+              "prepTime": 5,
+              "inventory": 100
+            },
+            {
+              "id": 314,
+              "name": "Buttermilk",
+              "price": 25,
+              "isVeg": true,
+              "image": "/images/buttermilk.jpg",
+              "prepTime": 3,
+              "inventory": 100
+            },
+            {
+              "id": 315,
+              "name": "Chocolate Milkshake",
+              "price": 50,
+              "isVeg": true,
+              "image": "/images/chocolate-milkshake.jpg",
+              "prepTime": 5,
+              "inventory": 100,
+              "hasOptions": [
+                { "name": "Chocolate", "priceModifier": 0 },
+                { "name": "Strawberry", "priceModifier": 2 },
+                { "name": "Vanilla", "priceModifier": 0 }
+              ]
+            },
+            {
+              "id": 316,
+              "name": "Vanilla Milkshake",
+              "price": 50,
+              "isVeg": true,
+              "image": "/images/vanilla-milkshake.jpg",
+              "prepTime": 5,
+              "inventory": 100
+            },
+            {
+              "id": 317,
+              "name": "Strawberry Milkshake",
+              "price": 55,
+              "isVeg": true,
+              "image": "/images/strawberry-milkshake.jpg",
+              "prepTime": 5,
+              "inventory": 100
+            },
+            {
+              "id": 318,
+              "name": "Rose Milk",
+              "price": 40,
+              "isVeg": true,
+              "image": "/images/rose-milk.jpg",
+              "prepTime": 4,
+              "inventory": 100
+            },
+            {
+              "id": 319,
+              "name": "Sangria Punch",
+              "price": 60,
+              "isVeg": true,
+              "image": "/images/sangria-punch.jpg",
+              "prepTime": 5,
+              "inventory": 100
+            },
+            {
+              "id": 320,
+              "name": "Lassi (Sweet / Salty)",
+              "price": 45,
+              "isVeg": true,
+              "image": "/images/lassi.jpg",
+              "prepTime": 5,
+              "inventory": 100,
+              "hasOptions": [
+                { "name": "Sweet", "priceModifier": 0 },
+                { "name": "Salty", "priceModifier": 0 }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "shopId": 4,
+      "shopName": "Fast Food & Italian Delights",
+      "categories": [
+        {
+          "categoryName": "Fast Food",
+          "items": [
+            {"id":401,"name":"Hamburger","price":60,"isVeg":false,"image":"/images/hamburger.jpg","prepTime":8,"inventory":100,"hasOptions":[{"name":"Single Patty","priceModifier":0},{"name":"Double Patty","priceModifier":20}]},
+            {"id":402,"name":"Cheeseburger","price":70,"isVeg":false,"image":"/images/cheeseburger.jpg","prepTime":9,"inventory":100,"hasOptions":[{"name":"Single Patty","priceModifier":0},{"name":"Double Patty","priceModifier":20}]},
+            {"id":403,"name":"Bacon Cheeseburger","price":80,"isVeg":false,"image":"/images/bacon-cheeseburger.jpg","prepTime":10,"inventory":100},
+            {"id":404,"name":"Fried Chicken Sandwich","price":75,"isVeg":false,"image":"/images/fried-chicken-sandwich.jpg","prepTime":11,"inventory":100},
+            {"id":405,"name":"Veggie Burger","price":65,"isVeg":true,"image":"/images/veggie-burger.jpg","prepTime":8,"inventory":100,"hasOptions":[{"name":"Cheddar Cheese","priceModifier":10},{"name":"Swiss Cheese","priceModifier":15}]},
+            {"id":406,"name":"Chicken Nuggets","price":50,"isVeg":false,"image":"/images/chicken-nuggets.jpg","prepTime":7,"inventory":100},
+            {"id":407,"name":"Chicken Tenders","price":55,"isVeg":false,"image":"/images/chicken-tenders.jpg","prepTime":7,"inventory":100},
+            {"id":408,"name":"Taco","price":70,"isVeg":false,"image":"/images/taco.jpg","prepTime":9,"inventory":100,"hasOptions":[{"name":"Beef","priceModifier":0},{"name":"Chicken","priceModifier":5},{"name":"Veg","priceModifier":0}]},
+            {"id":409,"name":"Burrito","price":75,"isVeg":false,"image":"/images/burrito.jpg","prepTime":9,"inventory":100,"hasOptions":[{"name":"Beef","priceModifier":0},{"name":"Chicken","priceModifier":5},{"name":"Veg","priceModifier":0}]},
+            {"id":410,"name":"Quesadilla","price":80,"isVeg":false,"image":"/images/quesadilla.jpg","prepTime":10,"inventory":100,"hasOptions":[{"name":"Cheese","priceModifier":0},{"name":"Chicken","priceModifier":10}]},
+            {"id":411,"name":"French Fries","price":35,"isVeg":true,"image":"/images/french-fries.jpg","prepTime":5,"inventory":100},
+            {"id":412,"name":"Onion Rings","price":40,"isVeg":true,"image":"/images/onion-rings.jpg","prepTime":5,"inventory":100},
+            {"id":413,"name":"Mozzarella Sticks","price":45,"isVeg":true,"image":"/images/mozzarella-sticks.jpg","prepTime":7,"inventory":100},
+            {"id":414,"name":"Mashed Potatoes","price":40,"isVeg":true,"image":"/images/mashed-potatoes.jpg","prepTime":8,"inventory":100},
+            {"id":415,"name":"Pepperoni Pizza","price":130,"isVeg":false,"image":"/images/pepperoni-pizza.jpg","prepTime":20,"inventory":100,"hasOptions":[{"name":"Small","priceModifier":0},{"name":"Medium","priceModifier":20},{"name":"Large","priceModifier":40}]},
+            {"id":416,"name":"Cheese Pizza","price":120,"isVeg":true,"image":"/images/cheese-pizza.jpg","prepTime":18,"inventory":100,"hasOptions":[{"name":"Small","priceModifier":0},{"name":"Medium","priceModifier":20},{"name":"Large","priceModifier":40}]},
+            {"id":417,"name":"Breakfast Sandwich","price":65,"isVeg":false,"image":"/images/breakfast-sandwich.jpg","prepTime":12,"inventory":100,"hasOptions":[{"name":"Egg","priceModifier":0},{"name":"Egg & Bacon","priceModifier":15}]},
+            {"id":418,"name":"Chicken Wings","price":80,"isVeg":false,"image":"/images/chicken-wings.jpg","prepTime":15,"inventory":100},
+            {"id":419,"name":"Veg Wrap","price":60,"isVeg":true,"image":"/images/veg-wrap.jpg","prepTime":10,"inventory":100},
+            {"id":420,"name":"Fish and Chips","price":90,"isVeg":false,"image":"/images/fish-and-chips.jpg","prepTime":20,"inventory":100}
+          ]
+        },
+        {
+          "categoryName": "Italian Delights",
+          "items": [
+            {"id":501,"name":"Chocolate Brownie","price":60,"isVeg":true,"image":"/images/chocolate-brownie.jpg","prepTime":10,"inventory":100},
+            {"id":502,"name":"New York Cheesecake","price":70,"isVeg":true,"image":"/images/ny-cheesecake.jpg","prepTime":10,"inventory":100},
+            {"id":503,"name":"Apple Pie","price":65,"isVeg":true,"image":"/images/apple-pie.jpg","prepTime":12,"inventory":100},
+            {"id":504,"name":"Classic Tiramisu","price":75,"isVeg":true,"image":"/images/tiramisu.jpg","prepTime":15,"inventory":100},
+            {"id":505,"name":"Key Lime Pie","price":70,"isVeg":true,"image":"/images/key-lime-pie.jpg","prepTime":12,"inventory":100},
+            {"id":506,"name":"Chocolate Chip Cookies","price":45,"isVeg":true,"image":"/images/choc-chip-cookies.jpg","prepTime":8,"inventory":100},
+            {"id":507,"name":"Peanut Butter Cookies","price":40,"isVeg":true,"image":"/images/peanut-butter-cookies.jpg","prepTime":8,"inventory":100},
+            {"id":508,"name":"Baklava","price":60,"isVeg":true,"image":"/images/baklava.jpg","prepTime":10,"inventory":100},
+            {"id":509,"name":"Crème brûlée","price":70,"isVeg":true,"image":"/images/creme-brulee.jpg","prepTime":15,"inventory":100},
+            {"id":510,"name":"Churros","price":55,"isVeg":true,"image":"/images/churros.jpg","prepTime":12,"inventory":100},
+            {"id":511,"name":"Rice Pudding","price":50,"isVeg":true,"image":"/images/rice-pudding.jpg","prepTime":10,"inventory":100},
+            {"id":512,"name":"Chocolate Mousse","price":65,"isVeg":true,"image":"/images/chocolate-mousse.jpg","prepTime":12,"inventory":100},
+            {"id":513,"name":"Vanilla Panna Cotta","price":70,"isVeg":true,"image":"/images/vanilla-panna-cotta.jpg","prepTime":12,"inventory":100},
+            {"id":514,"name":"Sticky Date Pudding","price":60,"isVeg":true,"image":"/images/sticky-date-pudding.jpg","prepTime":15,"inventory":100},
+            {"id":515,"name":"Gelato","price":55,"isVeg":true,"image":"/images/gelato.jpg","prepTime":6,"inventory":100,"hasOptions":[{"name":"Chocolate","priceModifier":0},{"name":"Strawberry","priceModifier":5},{"name":"Vanilla","priceModifier":0}]},
+            {"id":516,"name":"Mango Sorbet","price":50,"isVeg":true,"image":"/images/mango-sorbet.jpg","prepTime":7,"inventory":100},
+            {"id":517,"name":"Frozen Yogurt","price":50,"isVeg":true,"image":"/images/frozen-yogurt.jpg","prepTime":8,"inventory":100},
+            {"id":518,"name":"Strawberry Shortcake","price":65,"isVeg":true,"image":"/images/strawberry-shortcake.jpg","prepTime":10,"inventory":100},
+            {"id":519,"name":"Banana Split","price":75,"isVeg":true,"image":"/images/banana-split.jpg","prepTime":10,"inventory":100},
+            {"id":520,"name":"Apple Crumble","price":60,"isVeg":true,"image":"/images/apple-crumble.jpg","prepTime":12,"inventory":100}
+          ]
+        }
+      ]
+    }
+  ]
+}
