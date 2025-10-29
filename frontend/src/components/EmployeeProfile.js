@@ -39,6 +39,14 @@ const EmployeeProfile = ({ token }) => {
   const [mentionIndex, setMentionIndex] = useState(0);
 
   const load = async () => {
+    const decodeJwt = (tkn) => {
+      try {
+        const parts = String(tkn || '').split('.');
+        if (parts.length < 2) return null;
+        const json = atob(parts[1].replace(/-/g, '+').replace(/_/g, '/'));
+        return JSON.parse(json);
+      } catch { return null; }
+    };
     try {
       setLoading(true);
       const res = await employeeProfile(token);
@@ -50,9 +58,36 @@ const EmployeeProfile = ({ token }) => {
         setFriendsText((res.profile.friends || []).join(','));
         setBirthday(res.profile.birthday || '');
         setUsernameEdit(res.profile.username || '');
+        return;
+      }
+      // Fallback: create temporary profile from JWT
+      const payload = decodeJwt(token);
+      if (payload && payload.mobile) {
+        const mobileRaw = String(payload.mobile || '');
+        const tempProfile = { id: 0, username: mobileRaw, email: '', mobile: mobileRaw, friends: [], birthday: '' };
+        setProfile(tempProfile);
+        setEmail('');
+        setMobile(mobileRaw.replace(/^\+91/, ''));
+        setFriendsText('');
+        setBirthday('');
+        setUsernameEdit(mobileRaw);
+      } else {
+        toast.error('Failed to load profile');
       }
     } catch {
-      toast.error('Failed to load profile');
+      const payload = (function(){ try { const parts = String(token||'').split('.'); if (parts.length<2) return null; const json = atob(parts[1].replace(/-/g,'+').replace(/_/g,'/')); return JSON.parse(json);} catch { return null; }})();
+      if (payload && payload.mobile) {
+        const mobileRaw = String(payload.mobile || '');
+        const tempProfile = { id: 0, username: mobileRaw, email: '', mobile: mobileRaw, friends: [], birthday: '' };
+        setProfile(tempProfile);
+        setEmail('');
+        setMobile(mobileRaw.replace(/^\+91/, ''));
+        setFriendsText('');
+        setBirthday('');
+        setUsernameEdit(mobileRaw);
+      } else {
+        toast.error('Failed to load profile');
+      }
     } finally {
       setLoading(false);
     }
