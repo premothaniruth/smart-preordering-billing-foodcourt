@@ -185,6 +185,7 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
     const cartRemaining = Math.max(0, inventory - totalQty);
     const stockLeft = Math.max(0, inventory);
     const thisQty = qtyNoOption(item);
+    const isAvailable = (item.available !== false); // default to true when undefined
     return (
       <div key={item.id} className="menu-item-card" style={totalQty > 0 ? { border: '2px solid #111', boxShadow: '0 0 0 3px rgba(0,0,0,0.05)' } : {}}>
         <div style={{ position: "relative" }}>
@@ -278,7 +279,7 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
               <button 
                 className="icon-btn" 
                 onClick={() => handleAddClick(item)}
-                disabled={!item.available || cartRemaining <= 0}
+                disabled={!isAvailable || cartRemaining <= 0}
                 style={{
                   width: "100%",
                   padding: '10px 12px',
