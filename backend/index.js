@@ -165,8 +165,8 @@ app.post('/employee/apple-login', async (req, res) => {
       return res.status(401).json({ message: 'Token expired' });
     }
 
-    const email = payload.email || payload.sub;
-    const mobile = email; // reusing email/sub as identifier
+    const emailFromToken = payload.email || payload.sub;
+    const mobile = emailFromToken; // reusing email/sub as identifier
     const token = jwt.sign({ role: 'employee', mobile }, JWT_SECRET, { expiresIn: '8h' });
     employeeSessions.set(token, { mobile, createdAt: Date.now() });
     res.json({ status: 'ok', token, mobile });
