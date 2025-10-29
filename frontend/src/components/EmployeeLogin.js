@@ -32,6 +32,22 @@ const EmployeeLogin = ({ onSuccess }) => {
   const [regPin, setRegPin] = useState("");
   const [unameAvailable, setUnameAvailable] = useState(null); // true/false/null
   const [unameSuggestions, setUnameSuggestions] = useState([]);
+  const [showPwd, setShowPwd] = useState(false);
+  const [showRegPwd, setShowRegPwd] = useState(false);
+  const PIN_IDENTITY_KEY = 'employeePinIdentity';
+
+  const savePinIdentity = (identity) => {
+    try { localStorage.setItem(PIN_IDENTITY_KEY, JSON.stringify(identity)); } catch {}
+  };
+  const getPinIdentity = () => {
+    try {
+      const raw = localStorage.getItem(PIN_IDENTITY_KEY);
+      if (!raw) return null;
+      const obj = JSON.parse(raw);
+      if (obj && obj.username && (obj.mobile || obj.email)) return obj;
+      return obj && obj.username ? obj : null;
+    } catch { return null; }
+  };
 
   useEffect(() => {
     try {
@@ -148,9 +164,9 @@ const EmployeeLogin = ({ onSuccess }) => {
               onBlur={() => setTimeout(()=>setShowSuggestions(false), 120)}
               maxLength={10}
               required
-              style={{ width:'100%', padding:'10px 12px 10px 58px', border:'1px solid #ddd', borderRadius:8, fontSize:14 }}
+              style={{ width:'100%', padding:'10px 12px', border:'1px solid #ddd', borderRadius:8, fontSize:14 }}
             />
-            <div style={{ position:'absolute', top:0, left:0, height:'100%', display:'flex', alignItems:'center', padding:'0 8px', borderRight:'1px solid #eee', color:'#555', background:'#f8f9fa', borderTopLeftRadius:8, borderBottomLeftRadius:8, width:52, justifyContent:'center', fontWeight:700 }}>+91</div>
+            <div style={{ fontSize:12, color:'#666', marginTop:6 }}>Enter 10-digit mobile number</div>
             {showSuggestions && recent.length > 0 && (
               <div style={{ position:'absolute', top:'100%', left:0, right:0, background:'#fff', border:'1px solid #ddd', borderRadius:6, marginTop:4, zIndex:10, overflow:'hidden' }}>
                 {recent.map((num, idx) => (
@@ -214,11 +230,14 @@ const EmployeeLogin = ({ onSuccess }) => {
               )}
               <div style={{ display:'grid', gridTemplateColumns:'1fr', gap:8, marginTop:8 }}>
                 <input placeholder="Email" value={regEmail} onChange={(e)=>setRegEmail(e.target.value)} />
+                <input placeholder="Mobile (10 digits)" value={regMobile} onChange={(e)=>setRegMobile(e.target.value.replace(/[^0-9]/g,'').slice(0,10))} maxLength={10} />
+                <div style={{ fontSize:12, color:'#666' }}>Enter 10-digit mobile number</div>
                 <div style={{ position:'relative' }}>
-                  <input placeholder="Mobile (10 digits)" value={regMobile} onChange={(e)=>setRegMobile(e.target.value.replace(/[^0-9]/g,'').slice(0,10))} maxLength={10} style={{ width:'100%', paddingLeft:58 }} />
-                  <div style={{ position:'absolute', top:0, left:0, height:'100%', display:'flex', alignItems:'center', padding:'0 8px', borderRight:'1px solid #eee', color:'#555', background:'#f8f9fa', borderTopLeftRadius:6, borderBottomLeftRadius:6, width:52, justifyContent:'center', fontWeight:700 }}>+91</div>
+                  <input type={showRegPwd ? 'text' : 'password'} placeholder="Password (8-20; a-z, A-Z, 0-9, one of .,&%#@!)" value={regPassword} onChange={(e)=>setRegPassword(e.target.value)} style={{ width:'100%', paddingRight:74 }} />
+                  <button type="button" onClick={()=>setShowRegPwd(s=>!s)} style={{ position:'absolute', right:6, top:6, padding:'6px 10px', fontSize:12, border:'1px solid #ddd', background:'#f8f9fa', borderRadius:6 }}>
+                    {showRegPwd ? 'Hide' : 'Show'}
+                  </button>
                 </div>
-                <input type="password" placeholder="Password (8-20; a-z, A-Z, 0-9, one of .,&%#@!)" value={regPassword} onChange={(e)=>setRegPassword(e.target.value)} />
                 <input placeholder="4-digit PIN" value={regPin} onChange={(e)=>setRegPin(e.target.value.replace(/[^0-9]/g,'').slice(0,4))} maxLength={4} />
                 <button type="button" onClick={async ()=>{
                   try {
@@ -235,6 +254,8 @@ const EmployeeLogin = ({ onSuccess }) => {
                     const r = await employeeRegister({ username: uname, password: pw, pin: regPin, mobile: regMobile, email: regEmail });
                     if (r && r.status==='ok') {
                       toast.success('Registered successfully. You can now login.');
+                      // Save PIN identity on this device for device-bound PIN login
+                      savePinIdentity({ username: uname, mobile: regMobile, email: regEmail });
                       setShowRegister(false);
                       setRegUsername(''); setRegEmail(''); setRegMobile(''); setRegPassword(''); setRegPin(''); setUnameAvailable(null); setUnameSuggestions([]);
                     } else {
@@ -330,7 +351,7 @@ const EmployeeLogin = ({ onSuccess }) => {
         )}
 
         {mode === 'mobile' && step === "otp" && (
-        <form onSubmit={verifyOtp} style={{ width:'100%', maxWidth: 380, background:'#fff', border:'1px solid #eee', borderRadius:12, padding:18, boxShadow:'0 6px 24px rgba(0,0,0,0.06)' }}>
+        <form onSubmit={verifyOtp} style={{ width:'100%', background:'#fff', border:'1px solid #eee', borderRadius:12, padding:18, boxShadow:'0 6px 24px rgba(0,0,0,0.06)' }}>
           <h2 style={{ margin:0, fontSize:20 }}>Enter OTP</h2>
           <input
             placeholder="6-digit OTP"
@@ -360,9 +381,14 @@ const EmployeeLogin = ({ onSuccess }) => {
         {mode === 'password' && (
           <div className="card" style={{ padding:18, background:'#fff', border:'1px solid #eee', borderRadius:12, boxShadow:'0 6px 24px rgba(0,0,0,0.06)' }}>
             <h2 style={{ margin:0, fontSize:20 }}>Login with Username & Password</h2>
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr auto', gap:8, marginTop:12 }}>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr', gap:10, marginTop:12 }}>
               <input placeholder="Username or Email" value={uname} onChange={(e)=>setUname(e.target.value)} />
-              <input type="password" placeholder="Password" value={pwd} onChange={(e)=>setPwd(e.target.value)} />
+              <div style={{ position:'relative' }}>
+                <input type={showPwd ? 'text' : 'password'} placeholder="Password" value={pwd} onChange={(e)=>setPwd(e.target.value)} style={{ width:'100%', paddingRight:74 }} />
+                <button type="button" onClick={()=>setShowPwd(s=>!s)} style={{ position:'absolute', right:6, top:6, padding:'6px 10px', fontSize:12, border:'1px solid #ddd', background:'#f8f9fa', borderRadius:6 }}>
+                  {showPwd ? 'Hide' : 'Show'}
+                </button>
+              </div>
               <button
                 type="button"
                 onClick={async () => {
@@ -373,11 +399,15 @@ const EmployeeLogin = ({ onSuccess }) => {
                     if (res && res.status === 'ok' && res.token) {
                       onSuccess({ token: res.token, mobile: res.mobile });
                       toast.success('Logged in');
+                      if (res.username || uname) {
+                        savePinIdentity({ username: res.username || uname, mobile: res.mobile, email: res.email });
+                      }
                     } else {
                       toast.error(res?.message || 'Login failed');
                     }
                   } catch { toast.error('Error during login'); } finally { setLoading(false); }
                 }}
+                style={{ width:'100%', padding:'10px 12px', background:'#111', color:'#fff', border:'1px solid #111', borderRadius:8, fontWeight:600 }}
               >Login</button>
             </div>
           </div>
@@ -386,17 +416,20 @@ const EmployeeLogin = ({ onSuccess }) => {
         {mode === 'pin' && (
           <div className="card" style={{ padding:18, background:'#fff', border:'1px solid #eee', borderRadius:12, boxShadow:'0 6px 24px rgba(0,0,0,0.06)' }}>
             <h2 style={{ margin:0, fontSize:20 }}>Login with 4-digit PIN</h2>
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 120px 1fr auto', gap:8, marginTop:12 }}>
-              <input placeholder="Username or Email" value={pinUname} onChange={(e)=>setPinUname(e.target.value)} />
-              <input placeholder="PIN" maxLength={4} value={pin} onChange={(e)=>setPin(e.target.value.replace(/[^0-9]/g,'').slice(0,4))} />
-              <input placeholder="Mobile or Email (pairing)" value={pinContact} onChange={(e)=>setPinContact(e.target.value)} />
+            <div style={{ display:'grid', gridTemplateColumns:'1fr auto', gap:8, marginTop:12, alignItems:'center' }}>
+              <input placeholder="Enter 4-digit PIN" maxLength={4} value={pin} onChange={(e)=>setPin(e.target.value.replace(/[^0-9]/g,'').slice(0,4))} />
               <button
                 type="button"
                 onClick={async () => {
                   try {
-                    if (!pinUname || !/^\d{4}$/.test(pin)) { toast.error('Enter username and 4-digit PIN'); return; }
+                    if (!/^\d{4}$/.test(pin)) { toast.error('Enter your 4-digit PIN'); return; }
+                    const ident = getPinIdentity();
+                    if (!ident || !ident.username) {
+                      toast.error('PIN login not set up on this device. Please register or login once with username/password.');
+                      return;
+                    }
                     setLoading(true);
-                    const res = await employeePinLogin(pinUname, pin, pinContact || undefined);
+                    const res = await employeePinLogin(ident.username, pin, ident.mobile || ident.email);
                     if (res && res.status === 'ok' && res.token) {
                       onSuccess({ token: res.token, mobile: res.mobile });
                       toast.success('Logged in');
@@ -408,7 +441,7 @@ const EmployeeLogin = ({ onSuccess }) => {
               >Enter</button>
             </div>
             <div style={{ fontSize:12, color:'#666', marginTop:6 }}>
-              PIN must be exactly 4 digits. If this is your first PIN login, provide your registered mobile or email to pair your PIN.
+              PIN must be exactly 4 digits. PIN is device-bound here; registration or a prior login sets it up for this device.
             </div>
           </div>
         )}

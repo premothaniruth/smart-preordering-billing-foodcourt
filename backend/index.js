@@ -127,7 +127,7 @@ const persistChat = () => {
 
 const resolveUser = (payload) => {
   const employees = getEmployees();
-  return employees.find(e => e.email === payload.mobile || e.username === payload.mobile || String(e.id) === String(payload.mobile));
+  return employees.find(e => e.email === payload.mobile || e.username === payload.mobile || String(e.id) === String(payload.mobile) || String(e.mobile || '') === String(payload.mobile));
 };
 
 const authorizeInGroup = (requester, ownerUsername) => {
@@ -350,9 +350,22 @@ app.post('/employee/profile', (req, res) => {
     if (!token) return res.status(401).json({ message: 'Unauthorized' });
     let payload = null; try { payload = jwt.verify(token, JWT_SECRET); } catch {}
     if (!payload) return res.status(401).json({ message: 'Invalid token' });
-    const employees = getEmployees();
-    const u = employees.find(e => e.email === payload.mobile || e.username === payload.mobile || String(e.id) === String(payload.mobile));
-    if (!u) return res.status(404).json({ message: 'User not found' });
+    const u = resolveUser(payload);
+    if (!u) {
+      // OTP-only session not yet registered: return a temporary profile skeleton
+      const mobile = String(payload.mobile || '');
+      return res.json({
+        status: 'ok',
+        profile: {
+          id: 0,
+          username: mobile,
+          email: '',
+          mobile,
+          friends: [],
+          birthday: ''
+        }
+      });
+    }
     res.json({
       status: 'ok',
       profile: {
@@ -377,9 +390,8 @@ app.post('/employee/profile/request-otp', (req, res) => {
     if (!token || !action) return res.status(400).json({ message: 'token and action required' });
     let payload = null; try { payload = jwt.verify(token, JWT_SECRET); } catch {}
     if (!payload) return res.status(401).json({ message: 'Invalid token' });
-    const employees = getEmployees();
-    const u = employees.find(e => e.email === payload.mobile || e.username === payload.mobile || String(e.id) === String(payload.mobile));
-    if (!u) return res.status(404).json({ message: 'User not found' });
+    const u = resolveUser(payload);
+    if (!u) return res.status(400).json({ message: 'Complete your profile first' });
     const code = genOtp();
     const key = otpKey(u.username || u.email || u.id, action);
     profileOtps.set(key, { code, expiresAt: Date.now() + 5 * 60 * 1000 });
@@ -404,12 +416,20 @@ app.post('/employee/profile/update', async (req, res) => {
     let payload = null; try { payload = jwt.verify(token, JWT_SECRET); } catch {}
     if (!payload) return res.status(401).json({ message: 'Invalid token' });
     const employees = getEmployees();
-    const u = employees.find(e => e.email === payload.mobile || e.username === payload.mobile || String(e.id) === String(payload.mobile));
-    if (!u) return res.status(404).json({ message: 'User not found' });
+    let u = resolveUser(payload);
+    let firstTimeCreate = false;
+    if (!u) {
+      // Create a new employee record for OTP-only session completing profile
+      const nextId = (employees.reduce((m, e) => Math.max(m, Number(e.id)||0), 0) + 1) || 1;
+      const mobileDigits = String(payload.mobile || '').replace(/[^0-9+]/g,'');
+      u = { id: nextId, username: mobileDigits || `user${nextId}`, email: '', mobile: mobileDigits, friends: [] };
+      employees.push(u);
+      firstTimeCreate = true;
+    }
 
     // For email/mobile/password/pin changes, require OTP
-    const sensitive = updates.email || updates.mobile || updates.password || updates.pin;
-    if (sensitive) {
+    const sensitive = updates.email != null || updates.mobile != null || updates.password != null || updates.pin != null;
+    if (sensitive && !firstTimeCreate) {
       const key = otpKey(u.username || u.email || u.id, action || '');
       const rec = profileOtps.get(key);
       if (!rec || !otp || rec.code !== String(otp) || Date.now() > rec.expiresAt) {
@@ -419,6 +439,13 @@ app.post('/employee/profile/update', async (req, res) => {
     }
 
     // Apply updates with validation
+    if (firstTimeCreate && updates.username != null) {
+      const name = String(updates.username || '').trim();
+      if (!name) return res.status(400).json({ message: 'Username is required' });
+      const exists = employees.some(e => String(e.username).toLowerCase() === name.toLowerCase());
+      if (exists) return res.status(409).json({ message: 'Username not available' });
+      u.username = name;
+    }
     if (updates.email != null) {
       const emailStr = String(updates.email || '').trim();
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(emailStr)) return res.status(400).json({ message: 'Invalid email' });

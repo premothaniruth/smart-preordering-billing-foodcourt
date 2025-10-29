@@ -10,6 +10,7 @@ const EmployeeProfile = ({ token }) => {
   const [mobile, setMobile] = useState('');
   const [password, setPassword] = useState('');
   const [pin, setPin] = useState('');
+  const [usernameEdit, setUsernameEdit] = useState('');
   const [friendsText, setFriendsText] = useState('');
   const [birthday, setBirthday] = useState('');
 
@@ -48,6 +49,7 @@ const EmployeeProfile = ({ token }) => {
         setMobile(mobileLocal);
         setFriendsText((res.profile.friends || []).join(','));
         setBirthday(res.profile.birthday || '');
+        setUsernameEdit(res.profile.username || '');
       }
     } catch {
       toast.error('Failed to load profile');
@@ -195,6 +197,10 @@ const EmployeeProfile = ({ token }) => {
   const saveChanges = async () => {
     try {
       const updates = {};
+      const isTemp = !profile || Number(profile.id) === 0;
+      if (isTemp && usernameEdit && usernameEdit !== (profile?.username || '')) {
+        updates.username = usernameEdit;
+      }
       if (email !== (profile?.email || '')) updates.email = email;
       if (mobile && ('+91' + mobile) !== (profile?.mobile || '')) updates.mobile = mobile;
       if (password) updates.password = password;
@@ -202,7 +208,7 @@ const EmployeeProfile = ({ token }) => {
       const friends = friendsText.split(',').map(s => s.trim()).filter(Boolean);
       if (JSON.stringify(friends) !== JSON.stringify(profile?.friends || [])) updates.friends = friends;
       if (birthday !== (profile?.birthday || '')) updates.birthday = birthday;
-      const needsOtp = updates.email || updates.mobile || updates.password || updates.pin;
+      const needsOtp = (!isTemp) && (updates.email || updates.mobile || updates.password || updates.pin);
       const body = { token, updates };
       if (needsOtp) {
         if (!otp || !otpAction) { toast.error('Enter OTP after requesting it for this action'); return; }
@@ -224,9 +230,22 @@ const EmployeeProfile = ({ token }) => {
       {profile && (
         <div className="card" style={{ padding: 12 }}>
           <div style={{ display:'grid', gap:10 }}>
+            {/* Temporary profile banner */}
+            {(Number(profile.id) === 0) && (
+              <div style={{ padding:10, border:'1px solid #f59e0b', background:'#fffbeb', borderRadius:8, color:'#92400e' }}>
+                Complete your profile to enable PIN and password login.
+              </div>
+            )}
             <div>
               <div style={{ fontSize:12, color:'#666' }}>Username</div>
-              <div style={{ fontWeight:700 }}>{profile.username}</div>
+              {Number(profile.id) === 0 ? (
+                <div style={{ display:'grid', gridTemplateColumns:'1fr', gap:6 }}>
+                  <input value={usernameEdit} onChange={(e)=>setUsernameEdit(e.target.value)} placeholder="Choose a username" />
+                  <div style={{ fontSize:11, color:'#666' }}>Set your username. This enables PIN and password login.</div>
+                </div>
+              ) : (
+                <div style={{ fontWeight:700 }}>{profile.username}</div>
+              )}
             </div>
             <div>
               <div style={{ fontSize:12, color:'#666' }}>Email</div>
@@ -234,7 +253,7 @@ const EmployeeProfile = ({ token }) => {
                 <input value={email} onChange={(e)=>setEmail(e.target.value)} placeholder="you@example.com" />
                 <button type="button" onClick={()=>requestOtp('verify-email')}>Request OTP</button>
               </div>
-              <div style={{ fontSize:11, color:'#666' }}>Changing email will send OTP to your mobile</div>
+              <div style={{ fontSize:11, color:'#666' }}>Changing email will send OTP to your mobile{Number(profile.id) === 0 ? ' (first-time save will not require OTP)' : ''}</div>
             </div>
             <div>
               <div style={{ fontSize:12, color:'#666' }}>Mobile (+91)</div>
@@ -243,7 +262,7 @@ const EmployeeProfile = ({ token }) => {
                 <input value={mobile} onChange={(e)=>setMobile(e.target.value.replace(/[^0-9]/g,'').slice(0,10))} placeholder="10-digit mobile" maxLength={10} />
                 <button type="button" onClick={()=>requestOtp('verify-mobile')}>Request OTP</button>
               </div>
-              <div style={{ fontSize:11, color:'#666' }}>Changing mobile will send OTP to your email</div>
+              <div style={{ fontSize:11, color:'#666' }}>Changing mobile will send OTP to your email{Number(profile.id) === 0 ? ' (first-time save will not require OTP)' : ''}</div>
             </div>
             <div>
               <div style={{ fontSize:12, color:'#666' }}>Change Password</div>
@@ -252,7 +271,7 @@ const EmployeeProfile = ({ token }) => {
                 <input type="password" value={password} onChange={(e)=>setPassword(e.target.value)} placeholder="New password" />
                 <button type="button" onClick={()=>requestOtp('change-password')}>Request OTP</button>
               </div>
-              <div style={{ fontSize:11, color: pwdRuleOk(password) || !password ? '#666' : '#e74c3c' }}>8-20 chars with a-z, A-Z, 0-9 and one of .,&%#@!</div>
+              <div style={{ fontSize:11, color: pwdRuleOk(password) || !password ? '#666' : '#e74c3c' }}>8-20 chars with a-z, A-Z, 0-9 and one of .,&%#@!{Number(profile.id) === 0 ? ' (first-time save will not require OTP)' : ''}</div>
             </div>
             <div>
               <div style={{ fontSize:12, color:'#666' }}>Change PIN</div>
@@ -261,7 +280,7 @@ const EmployeeProfile = ({ token }) => {
                 <input value={pin} onChange={(e)=>setPin(e.target.value.replace(/[^0-9]/g,'').slice(0,4))} placeholder="4-digit PIN" maxLength={4} />
                 <button type="button" onClick={()=>requestOtp('change-pin')}>Request OTP</button>
               </div>
-              <div style={{ fontSize:11, color:'#666' }}>PIN must be exactly 4 digits</div>
+              <div style={{ fontSize:11, color:'#666' }}>PIN must be exactly 4 digits{Number(profile.id) === 0 ? ' (first-time save will not require OTP)' : ''}</div>
             </div>
             <div>
               <div style={{ fontSize:12, color:'#666' }}>Friends (usernames, comma-separated)</div>
