@@ -233,6 +233,20 @@ const EmployeeProfile = ({ token }) => {
     try {
       const updates = {};
       const isTemp = !profile || Number(profile.id) === 0;
+      // Client-side validations for first-time completion
+      const isValidEmail = (s) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(s||''));
+      if (isTemp) {
+        if (!usernameEdit || !usernameEdit.trim()) { toast.error('Please choose a username'); return; }
+        if (email && !isValidEmail(email)) { toast.error('Enter a valid email'); return; }
+        if (mobile && String(mobile).replace(/[^0-9]/g,'').length !== 10) { toast.error('Enter a 10-digit mobile'); return; }
+        if (password && !pwdRuleOk(password)) { toast.error('Password must be 8-20 chars with a-z, A-Z, 0-9 and one of .,&%#@!'); return; }
+        if (pin && !/^\d{4}$/.test(pin)) { toast.error('PIN must be exactly 4 digits'); return; }
+        // Username availability check
+        try {
+          const a = await (await import('../api')).employeeCheckUsername(usernameEdit.trim());
+          if (a && a.available === false) { toast.error('Username not available'); return; }
+        } catch {}
+      }
       if (isTemp && usernameEdit && usernameEdit !== (profile?.username || '')) {
         updates.username = usernameEdit;
       }
