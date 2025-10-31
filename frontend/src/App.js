@@ -121,7 +121,7 @@ function App() {
 
   useEffect(() => {
     if (!employeeToken && ["orders", "profile"].includes(view)) {
-      setView("user");
+      setView("landing");
     }
   }, [employeeToken, view]);
 
@@ -637,18 +637,9 @@ function App() {
                     </div>
                   </>
                 ) : (
-                  <>
-                    <div className="layout-container">
-                      <div className="menu-section">
-                        <EmployeeLogin onSuccess={handleEmployeeLogin} onBack={() => setView("landing")} />
-                      </div>
-                      <div className="cart-section">
-                        <h3>Vendor Access</h3>
-                        <p style={{ fontSize: 13, color: '#666' }}>Vendors can log in to manage orders, menu, analytics, and grievances.</p>
-                        <button onClick={() => setView("login")}>Vendor Login</button>
-                      </div>
-                    </div>
-                  </>
+                  <div className="employee-auth-container">
+                    <EmployeeLogin onSuccess={handleEmployeeLogin} onBack={() => setView("landing")} />
+                  </div>
                 )}
               </>
             )}

@@ -270,97 +270,42 @@ const EmployeeLogin = ({ onSuccess, onBack }) => {
   };
 
   return (
-    <div style={{ width: "100%", maxWidth: 440, margin: "0 auto" }}>
-      <button onClick={onBack} style={{ marginBottom: 20 }}>← Back</button>
-      <div className="card" style={{ padding: 20 }}>
-        <div style={{ display: "flex", marginBottom: 16, borderBottom: "1px solid #eee" }}>
-          <button
-            type="button"
-            onClick={() => setAuthMode("signin")}
-            style={{
-              flex: 1,
-              padding: "10px 12px",
-              border: "none",
-              borderBottom: authMode === "signin" ? "3px solid #111" : "3px solid transparent",
-              background: "transparent",
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            Sign In
-          </button>
-          <button
-            type="button"
-            onClick={() => setAuthMode("signup")}
-            style={{
-              flex: 1,
-              padding: "10px 12px",
-              border: "none",
-              borderBottom: authMode === "signup" ? "3px solid #111" : "3px solid transparent",
-              background: "transparent",
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            Sign Up
-          </button>
-        </div>
-
+    <div className="employee-login-wrapper">
+      <button onClick={onBack} className="link-button" style={{ marginBottom: 16 }}>
+        ← Back
+      </button>
+      <div className="card employee-login-card">
         {authMode === "signin" ? (
           <>
-            <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
+            <h2 className="employee-auth-title">Sign in if you have already registered</h2>
+            <p className="employee-auth-subtext">Choose any of the options below to access your employee account.</p>
+
+            <div className="employee-auth-methods">
               <button
                 type="button"
                 onClick={() => setSignInMethod("otp")}
-                style={{
-                  flex: 1,
-                  padding: "8px 10px",
-                  borderRadius: 8,
-                  border: signInMethod === "otp" ? "2px solid #111" : "1px solid #ddd",
-                  background: signInMethod === "otp" ? "#111" : "#fff",
-                  color: signInMethod === "otp" ? "#fff" : "#111",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                }}
+                className={`employee-auth-method ${signInMethod === "otp" ? "active" : ""}`}
               >
                 Mobile + OTP
               </button>
               <button
                 type="button"
                 onClick={() => setSignInMethod("pin")}
-                style={{
-                  flex: 1,
-                  padding: "8px 10px",
-                  borderRadius: 8,
-                  border: signInMethod === "pin" ? "2px solid #111" : "1px solid #ddd",
-                  background: signInMethod === "pin" ? "#111" : "#fff",
-                  color: signInMethod === "pin" ? "#fff" : "#111",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                }}
+                className={`employee-auth-method ${signInMethod === "pin" ? "active" : ""}`}
               >
                 4-digit PIN
               </button>
               <button
                 type="button"
                 onClick={() => setSignInMethod("password")}
-                style={{
-                  flex: 1,
-                  padding: "8px 10px",
-                  borderRadius: 8,
-                  border: signInMethod === "password" ? "2px solid #111" : "1px solid #ddd",
-                  background: signInMethod === "password" ? "#111" : "#fff",
-                  color: signInMethod === "password" ? "#fff" : "#111",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                }}
+                className={`employee-auth-method ${signInMethod === "password" ? "active" : ""}`}
               >
                 Username &amp; Password
               </button>
             </div>
 
             {signInMethod === "otp" && (
-              <form onSubmit={otpStage === "request" ? handleRequestOtp : handleVerifyOtp} style={{ display: "grid", gap: 12 }}>
+              <form onSubmit={otpStage === "request" ? handleRequestOtp : handleVerifyOtp} className="employee-auth-form">
                 <div>
                   <label className="label">Registered Mobile (+91)</label>
                   <input
@@ -383,8 +328,8 @@ const EmployeeLogin = ({ onSuccess, onBack }) => {
                     />
                   </div>
                 )}
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button type="submit" disabled={loading} style={{ flex: 1 }}>
+                <div className="employee-auth-actions">
+                  <button type="submit" disabled={loading}>
                     {loading ? "Please wait..." : otpStage === "request" ? "Send OTP" : "Verify & Login"}
                   </button>
                   {otpStage === "verify" && (
@@ -392,7 +337,7 @@ const EmployeeLogin = ({ onSuccess, onBack }) => {
                       type="button"
                       disabled={loading || otpCountdown > 0}
                       onClick={handleRequestOtp}
-                      style={{ flexBasis: 160 }}
+                      className="secondary"
                     >
                       {otpCountdown > 0 ? `Resend in ${otpCountdown}s` : "Resend OTP"}
                     </button>
@@ -402,7 +347,7 @@ const EmployeeLogin = ({ onSuccess, onBack }) => {
             )}
 
             {signInMethod === "pin" && (
-              <form onSubmit={handlePinLogin} style={{ display: "grid", gap: 12 }}>
+              <form onSubmit={handlePinLogin} className="employee-auth-form">
                 <div>
                   <label className="label">Username</label>
                   <input placeholder="Enter username" value={pinUsername} onChange={(e) => setPinUsername(e.target.value)} required />
@@ -424,12 +369,12 @@ const EmployeeLogin = ({ onSuccess, onBack }) => {
             )}
 
             {signInMethod === "password" && (
-              <form onSubmit={handlePasswordLogin} style={{ display: "grid", gap: 12 }}>
+              <form onSubmit={handlePasswordLogin} className="employee-auth-form">
                 <div>
                   <label className="label">Username or Email</label>
                   <input placeholder="john.doe" value={uname} onChange={(e) => setUname(e.target.value)} required />
                 </div>
-                <div style={{ position: "relative" }}>
+                <div className="password-field">
                   <label className="label">Password</label>
                   <input
                     type={showPwd ? "text" : "password"}
@@ -441,7 +386,7 @@ const EmployeeLogin = ({ onSuccess, onBack }) => {
                   <button
                     type="button"
                     onClick={() => setShowPwd((s) => !s)}
-                    style={{ position: "absolute", right: 8, bottom: 8, fontSize: 12, border: "1px solid #ddd", background: "#f8f9fa", borderRadius: 6, padding: "4px 8px" }}
+                    className="link-button toggle-password"
                   >
                     {showPwd ? "Hide" : "Show"}
                   </button>
@@ -451,67 +396,87 @@ const EmployeeLogin = ({ onSuccess, onBack }) => {
                 </button>
               </form>
             )}
+
+            <div className="employee-auth-footer">
+              <span>New employee?</span>
+              <button type="button" className="link-button" onClick={() => setAuthMode("signup")}>
+                Sign up if you are logging in for the first time
+              </button>
+            </div>
           </>
         ) : (
-          <form onSubmit={handleSignup} style={{ display: "grid", gap: 12 }}>
-            <div>
-              <label className="label">Username</label>
-              <input
-                placeholder="Choose a username"
-                value={signupData.username}
-                onChange={(e) => setSignupData((prev) => ({ ...prev, username: e.target.value }))}
-                required
-              />
+          <>
+            <h2 className="employee-auth-title">Create your employee account</h2>
+            <p className="employee-auth-subtext">Register once with your official details to access ordering and tracking.</p>
+
+            <form onSubmit={handleSignup} className="employee-auth-form">
+              <div>
+                <label className="label">Username</label>
+                <input
+                  placeholder="Choose a username"
+                  value={signupData.username}
+                  onChange={(e) => setSignupData((prev) => ({ ...prev, username: e.target.value }))}
+                  required
+                />
+              </div>
+              <div>
+                <label className="label">Email</label>
+                <input
+                  type="email"
+                  placeholder="you@example.com"
+                  value={signupData.email}
+                  onChange={(e) => setSignupData((prev) => ({ ...prev, email: e.target.value }))}
+                  required
+                />
+              </div>
+              <div>
+                <label className="label">Mobile (+91)</label>
+                <input
+                  placeholder="10-digit mobile"
+                  value={signupData.mobile}
+                  onChange={(e) => setSignupData((prev) => ({ ...prev, mobile: formatMobileDigits(e.target.value) }))}
+                  maxLength={10}
+                  required
+                />
+              </div>
+              <div>
+                <label className="label">Password</label>
+                <input
+                  type="password"
+                  placeholder="Password (8-20 chars, a-z, A-Z, 0-9, one of .,&%#@!)"
+                  value={signupData.password}
+                  onChange={(e) => setSignupData((prev) => ({ ...prev, password: e.target.value }))}
+                  required
+                />
+              </div>
+              <div>
+                <label className="label">4-digit PIN</label>
+                <input
+                  placeholder="PIN"
+                  value={signupData.pin}
+                  onChange={(e) => setSignupData((prev) => ({ ...prev, pin: e.target.value.replace(/[^0-9]/g, "").slice(0, 4) }))}
+                  maxLength={4}
+                  required
+                />
+              </div>
+              <button type="submit" disabled={signupLoading}>
+                {signupLoading ? "Registering..." : "Register"}
+              </button>
+            </form>
+
+            <div className="employee-auth-footer">
+              <span>Already registered?</span>
+              <button type="button" className="link-button" onClick={() => setAuthMode("signin")}>
+                Back to sign in options
+              </button>
             </div>
-            <div>
-              <label className="label">Email</label>
-              <input
-                type="email"
-                placeholder="you@example.com"
-                value={signupData.email}
-                onChange={(e) => setSignupData((prev) => ({ ...prev, email: e.target.value }))}
-                required
-              />
-            </div>
-            <div>
-              <label className="label">Mobile (+91)</label>
-              <input
-                placeholder="10-digit mobile"
-                value={signupData.mobile}
-                onChange={(e) => setSignupData((prev) => ({ ...prev, mobile: formatMobileDigits(e.target.value) }))}
-                maxLength={10}
-                required
-              />
-            </div>
-            <div>
-              <label className="label">Password</label>
-              <input
-                type="password"
-                placeholder="Password (8-20 chars, a-z, A-Z, 0-9, one of .,&%#@!)"
-                value={signupData.password}
-                onChange={(e) => setSignupData((prev) => ({ ...prev, password: e.target.value }))}
-                required
-              />
-            </div>
-            <div>
-              <label className="label">4-digit PIN</label>
-              <input
-                placeholder="PIN"
-                value={signupData.pin}
-                onChange={(e) => setSignupData((prev) => ({ ...prev, pin: e.target.value.replace(/[^0-9]/g, "").slice(0, 4) }))}
-                maxLength={4}
-                required
-              />
-            </div>
-            <button type="submit" disabled={signupLoading}>
-              {signupLoading ? "Registering..." : "Register"}
-            </button>
-          </form>
+          </>
         )}
       </div>
     </div>
   );
-};
+}
+;
 
 EmployeeLogin.propTypes = {
   onSuccess: PropTypes.func.isRequired,

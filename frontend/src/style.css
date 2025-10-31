@@ -1099,3 +1099,131 @@ textarea:focus-visible {
     font-size: 24px;
   }
 }
+
+/* ===== EMPLOYEE LOGIN ===== */
+.employee-auth-container {
+  display: flex;
+  justify-content: center;
+  padding: 30px 0;
+}
+
+.employee-login-wrapper {
+  width: 100%;
+  max-width: 520px;
+}
+
+.employee-login-card {
+  padding: 30px;
+}
+
+.employee-auth-title {
+  margin: 0 0 8px;
+  font-size: 22px;
+  color: #2c3e50;
+}
+
+.employee-auth-subtext {
+  margin: 0 0 24px;
+  color: #666;
+  font-size: 14px;
+}
+
+.employee-auth-methods {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.employee-auth-method {
+  flex: 1;
+  min-width: 140px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 1px solid #dcdcdc;
+  background: #f8f9fa;
+  color: #2c3e50;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s;
+}
+
+.employee-auth-method:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.employee-auth-method.active {
+  background: #2c3e50;
+  color: #fff;
+  border-color: #2c3e50;
+  box-shadow: 0 6px 18px rgba(44,62,80,0.18);
+}
+
+.employee-auth-form {
+  display: grid;
+  gap: 14px;
+}
+
+.employee-auth-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.employee-auth-actions .secondary {
+  background: #ecf0f1;
+  color: #2c3e50;
+}
+
+.employee-auth-footer {
+  margin-top: 24px;
+  display: flex;
+  gap: 6px;
+  font-size: 14px;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+
+.link-button {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #1e88e5;
+  font-size: 14px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.link-button:hover {
+  text-decoration: underline;
+}
+
+.password-field {
+  position: relative;
+}
+
+.toggle-password {
+  position: absolute;
+  right: 0;
+  bottom: -24px;
+  font-size: 12px;
+}
+
+.employee-login-card button[type="submit"] {
+  width: 100%;
+}
+
+@media (max-width: 540px) {
+  .employee-login-card {
+    padding: 22px;
+  }
+
+  .employee-auth-methods {
+    flex-direction: column;
+  }
+
+  .employee-auth-method {
+    width: 100%;
+  }
+}
