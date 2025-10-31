@@ -548,10 +548,23 @@ app.post('/employee/login-password', async (req, res) => {
     if (!u || !u.passwordHash) return res.status(401).json({ message: 'Invalid credentials' });
     const ok = await bcrypt.compare(String(password), String(u.passwordHash));
     if (!ok) return res.status(401).json({ message: 'Invalid credentials' });
+    ensureWalletFields(u);
     const contact = u.mobile || u.email || u.username || String(u.id);
-    const payload = { role: 'employee', mobile: u.mobile || null, employeeId: u.id, username: u.username, email: u.email, contact };
+    const payload = {
+      role: 'employee',
+      mobile: u.mobile || contact,
+      employeeId: u.id,
+      username: u.username,
+      email: u.email,
+      contact
+    };
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '8h' });
-    employeeSessions.set(token, { mobile: u.mobile || contact, contact, createdAt: Date.now(), employeeId: u.id });
+    employeeSessions.set(token, {
+      mobile: u.mobile || contact,
+      contact,
+      createdAt: Date.now(),
+      employeeId: u.id
+    });
     res.json({ status: 'ok', token, mobile: u.mobile || contact, username: u.username, email: u.email });
   } catch (e) {
     res.status(500).json({ message: 'Error during password login' });
@@ -570,11 +583,24 @@ app.post('/employee/login-pin', async (req, res) => {
     if (!u.pinHash) return res.status(403).json({ message: 'PIN not configured. Contact administrator.' });
     const ok = await bcrypt.compare(String(pin), String(u.pinHash));
     if (!ok) return res.status(401).json({ message: 'Invalid credentials' });
-    const mobile = u.email || u.username || String(u.id);
-    const payload = { role: 'employee', mobile: u.mobile || null, employeeId: u.id, username: u.username, email: u.email || null, contact: mobile };
+    ensureWalletFields(u);
+    const contact = u.mobile || u.email || u.username || String(u.id);
+    const payload = {
+      role: 'employee',
+      mobile: u.mobile || contact,
+      employeeId: u.id,
+      username: u.username,
+      email: u.email || null,
+      contact
+    };
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '8h' });
-    employeeSessions.set(token, { mobile: u.mobile || mobile, contact: mobile, createdAt: Date.now(), employeeId: u.id });
-    res.json({ status: 'ok', token, mobile });
+    employeeSessions.set(token, {
+      mobile: u.mobile || contact,
+      contact,
+      createdAt: Date.now(),
+      employeeId: u.id
+    });
+    res.json({ status: 'ok', token, mobile: u.mobile || contact });
   } catch (e) {
     res.status(500).json({ message: 'Error during PIN login' });
   }
