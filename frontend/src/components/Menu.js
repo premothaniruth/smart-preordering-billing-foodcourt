@@ -35,13 +35,28 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
   const [offers, setOffers] = useState([]);
   const [combos, setCombos] = useState([]);
   const [sectioned, setSectioned] = useState(null); // { shopId, shopName, sections }
+  const [activeSection, setActiveSection] = useState(null);
   const [sectionWindows, setSectionWindows] = useState({}); // name -> { start, end }
 
   useEffect(() => {
     if (!selectedShop) return;
     fetchActiveOffers(selectedShop).then(setOffers).catch(()=>setOffers([]));
     fetchCombos(selectedShop, true).then(setCombos).catch(()=>setCombos([]));
-    fetchMenuSections(selectedShop).then(setSectioned).catch(()=>setSectioned(null));
+    fetchMenuSections(selectedShop)
+      .then((data) => {
+        setSectioned(data);
+        if (data && Array.isArray(data.sections) && data.sections.length > 0) {
+          setActiveSection((current) => {
+            if (current && data.sections.some((sec) => sec.name === current)) {
+              return current;
+            }
+            return data.sections[0].name;
+          });
+        } else {
+          setActiveSection(null);
+        }
+      })
+      .catch(()=>{ setSectioned(null); setActiveSection(null); });
     fetchSectionsMeta().then((d)=> setSectionWindows(d?.windows || {})).catch(()=>setSectionWindows({}));
   }, [selectedShop]);
 
@@ -255,10 +270,20 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
   if (vegOnly) filteredItems = filteredItems.filter(item => item.isVeg);
   else if (nonVegOnly) filteredItems = filteredItems.filter(item => !item.isVeg);
 
-  const favoriteItems = filteredItems.filter(item => isFavorite(item.id));
-  const recommended = filteredItems.filter(item => item.isRecommended && !isFavorite(item.id));
-  const hotSellers = filteredItems.filter(item => item.isHotSeller && !item.isRecommended && !isFavorite(item.id));
-  const regularItems = filteredItems.filter(item => !item.isRecommended && !item.isHotSeller && !isFavorite(item.id));
+  const sectionItems = (() => {
+    if (!sectioned || !Array.isArray(sectioned.sections) || !activeSection) return filteredItems;
+    const sec = sectioned.sections.find((s) => s.name === activeSection);
+    if (!sec) return filteredItems;
+    let items = sec.items || [];
+    if (vegOnly) items = items.filter(it => it.isVeg);
+    else if (nonVegOnly) items = items.filter(it => !it.isVeg);
+    return items;
+  })();
+
+  const favoriteItems = sectionItems.filter(item => isFavorite(item.id));
+  const recommended = sectionItems.filter(item => item.isRecommended && !isFavorite(item.id));
+  const hotSellers = sectionItems.filter(item => item.isHotSeller && !item.isRecommended && !isFavorite(item.id));
+  const regularItems = sectionItems.filter(item => !item.isRecommended && !item.isHotSeller && !isFavorite(item.id));
 
   // total qty of this item across all variants for selected shop
   const qtyInCart = (item) => {
@@ -486,62 +511,61 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
       )}
 
       {sectioned && Array.isArray(sectioned.sections) && sectioned.sections.length > 0 && (
-        <>
+        <div className="section-tabs">
           {(() => {
-            const order = { 'Breakfast': 1, 'Lunch': 2, 'Dinner': 3 };
-            const sectionsSorted = sectioned.sections.slice().sort((a,b)=> (order[a.name]||10) - (order[b.name]||10));
-            return sectionsSorted.map((sec) => {
-              let secItems = (sec.items || []);
-              if (vegOnly) secItems = secItems.filter(it => it.isVeg);
-              else if (nonVegOnly) secItems = secItems.filter(it => !it.isVeg);
-              const fav = secItems.filter(it => isFavorite(it.id));
-              const hot = secItems.filter(it => it.isHotSeller && !isFavorite(it.id) && !it.isRecommended);
-              const rec = secItems.filter(it => it.isRecommended && !isFavorite(it.id));
-              const rest = secItems.filter(it => !isFavorite(it.id) && !it.isHotSeller && !it.isRecommended);
-              return (
-                <div key={sec.name}>
-                  <h3>
-                    {sec.name}
-                    {(() => {
-                      const w = sectionWindows[sec.name];
-                      if (!w || !w.start || !w.end) return null;
-                      return (
-                        <span style={{ fontSize: 12, color: '#666', marginLeft: 8 }}>({w.start}-{w.end})</span>
-                      );
-                    })()}
-                  </h3>
-                  {fav.length > 0 && (
-                    <>
-                      <h4 style={{ marginTop: 8 }}>❤️ Favorite Picks</h4>
-                      <div className="menu-grid">{fav.map(renderItem)}</div>
-                    </>
-                  )}
-                  {hot.length > 0 && (
-                    <>
-                      <h4 style={{ marginTop: 8 }}>🔥 Hot Sellers</h4>
-                      <div className="menu-grid">{hot.map(renderItem)}</div>
-                    </>
-                  )}
-                  {rec.length > 0 && (
-                    <>
-                      <h4 style={{ marginTop: 8 }}>🌟 Recommended</h4>
-                      <div className="menu-grid">{rec.map(renderItem)}</div>
-                    </>
-                  )}
-                  {rest.length > 0 && (
-                    <>
-                      <h4 style={{ marginTop: 8 }}>All Items</h4>
-                      <div className="menu-grid">{rest.map(renderItem)}</div>
-                    </>
-                  )}
-                </div>
-              );
-            });
+            const order = { Breakfast: 1, Lunch: 2, Dinner: 3 };
+            return sectioned.sections
+              .slice()
+              .sort((a, b) => (order[a.name] || 10) - (order[b.name] || 10))
+              .map((sec) => (
+                <button
+                  key={sec.name}
+                  type="button"
+                  className={`section-tab ${activeSection === sec.name ? 'active' : ''}`}
+                  onClick={() => setActiveSection(sec.name)}
+                >
+                  <span>{sec.name}</span>
+                  {(() => {
+                    const w = sectionWindows[sec.name];
+                    if (!w || !w.start || !w.end) return null;
+                    return <small>{w.start}-{w.end}</small>;
+                  })()}
+                </button>
+              ));
           })()}
+        </div>
+      )}
+
+      {sectionItems && sectionItems.length > 0 && (
+        <>
+          {favoriteItems.length > 0 && (
+            <>
+              <h4 style={{ marginTop: 16 }}>❤️ Favorite Picks</h4>
+              <div className="menu-grid">{favoriteItems.map(renderItem)}</div>
+            </>
+          )}
+          {hotSellers.length > 0 && (
+            <>
+              <h4 style={{ marginTop: 16 }}>🔥 Hot Sellers</h4>
+              <div className="menu-grid">{hotSellers.map(renderItem)}</div>
+            </>
+          )}
+          {recommended.length > 0 && (
+            <>
+              <h4 style={{ marginTop: 16 }}>🌟 Recommended</h4>
+              <div className="menu-grid">{recommended.map(renderItem)}</div>
+            </>
+          )}
+          {regularItems.length > 0 && (
+            <>
+              <h4 style={{ marginTop: 16 }}>All Items</h4>
+              <div className="menu-grid">{regularItems.map(renderItem)}</div>
+            </>
+          )}
         </>
       )}
 
-      {filteredItems.length === 0 && (
+      {sectionItems.length === 0 && (
         <p className="empty-state">No items match the selected filter.</p>
       )}
 
