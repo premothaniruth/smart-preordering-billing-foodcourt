@@ -45,6 +45,7 @@ const EmployeeLogin = ({ onSuccess, onBack }) => {
   const [uname, setUname] = useState("");
   const [pwd, setPwd] = useState("");
   const [showPwd, setShowPwd] = useState(false);
+  const [showSignupPwd, setShowSignupPwd] = useState(false);
 
   const [pinUsername, setPinUsername] = useState("");
   const [pin, setPin] = useState("");
@@ -376,20 +377,76 @@ const EmployeeLogin = ({ onSuccess, onBack }) => {
                 </div>
                 <div className="password-field">
                   <label className="label">Password</label>
-                  <input
-                    type={showPwd ? "text" : "password"}
-                    placeholder="Password"
-                    value={pwd}
-                    onChange={(e) => setPwd(e.target.value)}
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPwd((s) => !s)}
-                    className="link-button toggle-password"
-                  >
-                    {showPwd ? "Hide" : "Show"}
-                  </button>
+                  <div className="password-input-wrapper">
+                    <input
+                      type={showPwd ? "text" : "password"}
+                      placeholder="Password"
+                      value={pwd}
+                      onChange={(e) => setPwd(e.target.value)}
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPwd((s) => !s)}
+                      className="password-toggle"
+                      aria-label={showPwd ? "Hide password" : "Show password"}
+                    >
+                      {showPwd ? (
+                        <svg
+                          aria-hidden="true"
+                          className="eye-icon"
+                          viewBox="0 0 24 24"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M3 3l18 18"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                            strokeLinecap="round"
+                          />
+                          <path
+                            d="M9.88 9.88A3 3 0 0114.12 14.12"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            fill="none"
+                          />
+                          <path
+                            d="M10.73 5.08A10.86 10.86 0 0121 12c-1.1 1.86-2.57 3.47-4.31 4.71M6.24 6.24C4.03 7.73 2.28 9.67 1 12c1.88 3.34 5.36 6 10 6 1.48 0 2.86-.24 4.11-.69"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            fill="none"
+                          />
+                        </svg>
+                      ) : (
+                        <svg
+                          aria-hidden="true"
+                          className="eye-icon"
+                          viewBox="0 0 24 24"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                            strokeLinejoin="round"
+                            fill="none"
+                          />
+                          <circle
+                            cx="12"
+                            cy="12"
+                            r="3"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                            fill="none"
+                          />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
                 </div>
                 <button type="submit" disabled={loading}>
                   {loading ? "Logging in..." : "Login"}
@@ -441,13 +498,76 @@ const EmployeeLogin = ({ onSuccess, onBack }) => {
               </div>
               <div>
                 <label className="label">Password</label>
-                <input
-                  type="password"
-                  placeholder="Password (8-20 chars, a-z, A-Z, 0-9, one of .,&%#@!)"
-                  value={signupData.password}
-                  onChange={(e) => setSignupData((prev) => ({ ...prev, password: e.target.value }))}
-                  required
-                />
+                <div className="password-input-wrapper">
+                  <input
+                    type={showSignupPwd ? "text" : "password"}
+                    placeholder="Password (8-20 chars, a-z, A-Z, 0-9, one of .,&%#@!)"
+                    value={signupData.password}
+                    onChange={(e) => setSignupData((prev) => ({ ...prev, password: e.target.value }))}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowSignupPwd((v) => !v)}
+                    className="password-toggle"
+                    aria-label={showSignupPwd ? "Hide password" : "Show password"}
+                  >
+                    {showSignupPwd ? (
+                      <svg
+                        aria-hidden="true"
+                        className="eye-icon"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M3 3l18 18"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                        />
+                        <path
+                          d="M9.88 9.88A3 3 0 0114.12 14.12"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          fill="none"
+                        />
+                        <path
+                          d="M10.73 5.08A10.86 10.86 0 0121 12c-1.1 1.86-2.57 3.47-4.31 4.71M6.24 6.24C4.03 7.73 2.28 9.67 1 12c1.88 3.34 5.36 6 10 6 1.48 0 2.86-.24 4.11-.69"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          fill="none"
+                        />
+                      </svg>
+                    ) : (
+                      <svg
+                        aria-hidden="true"
+                        className="eye-icon"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinejoin="round"
+                          fill="none"
+                        />
+                        <circle
+                          cx="12"
+                          cy="12"
+                          r="3"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          fill="none"
+                        />
+                      </svg>
+                    )}
+                  </button>
+                </div>
               </div>
               <div>
                 <label className="label">4-digit PIN</label>

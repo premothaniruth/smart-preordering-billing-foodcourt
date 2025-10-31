@@ -18,6 +18,8 @@ const EmployeeProfile = ({ token }) => {
   const [otpAction, setOtpAction] = useState('');
   const [activeField, setActiveField] = useState(null);
   const [viewMode, setViewMode] = useState('view');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showPin, setShowPin] = useState(false);
 
   const load = async () => {
     try {
@@ -84,7 +86,7 @@ const EmployeeProfile = ({ token }) => {
       }
       setLoading(true);
       const r = await employeeProfileUpdate(body);
-      if (r && r.status === 'ok') { toast.success('Profile updated'); load(); setPassword(''); setPin(''); setOtp(''); setActiveField(null); setOtpAction(''); setViewMode('view'); }
+      if (r && r.status === 'ok') { toast.success('Profile updated'); load(); setPassword(''); setPin(''); setOtp(''); setActiveField(null); setOtpAction(''); setViewMode('view'); setShowPassword(false); setShowPin(false); }
       else { toast.error(r?.message || 'Failed to update profile'); }
     } catch { toast.error('Failed to update profile'); } finally { setLoading(false); }
   };
@@ -182,7 +184,33 @@ const EmployeeProfile = ({ token }) => {
                 {viewMode === 'view' ? (
                   <div className="profile-text">{profile.hasPassword ? '••••••••' : 'Not set'}</div>
                 ) : (
-                  <input type="password" value={password} onChange={(e)=>setPassword(e.target.value)} placeholder="New password" />
+                  <div className="password-input-wrapper">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e)=>setPassword(e.target.value)}
+                      placeholder="New password"
+                    />
+                    <button
+                      type="button"
+                      className="password-toggle"
+                      onClick={() => setShowPassword((v) => !v)}
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showPassword ? (
+                        <svg aria-hidden="true" className="eye-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M3 3l18 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                          <path d="M9.88 9.88A3 3 0 0114.12 14.12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                          <path d="M10.73 5.08A10.86 10.86 0 0121 12c-1.1 1.86-2.57 3.47-4.31 4.71M6.24 6.24C4.03 7.73 2.28 9.67 1 12c1.88 3.34 5.36 6 10 6 1.48 0 2.86-.24 4.11-.69" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                        </svg>
+                      ) : (
+                        <svg aria-hidden="true" className="eye-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" fill="none" />
+                          <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.8" fill="none" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
                 )}
                 {viewMode === 'edit' && (
                   <button type="button" className="secondary" onClick={() => requestOtp('change-password', 'password')}>
@@ -199,7 +227,35 @@ const EmployeeProfile = ({ token }) => {
                 {viewMode === 'view' ? (
                   <div className="profile-text">{profile.hasPin ? '••••' : 'Not set'}</div>
                 ) : (
-                  <input value={pin} onChange={(e)=>setPin(e.target.value.replace(/[^0-9]/g,'').slice(0,4))} placeholder="4-digit PIN" maxLength={4} />
+                  <div className="password-input-wrapper">
+                    <input
+                      type={showPin ? 'text' : 'password'}
+                      inputMode="numeric"
+                      value={pin}
+                      onChange={(e)=>setPin(e.target.value.replace(/[^0-9]/g,'').slice(0,4))}
+                      placeholder="4-digit PIN"
+                      maxLength={4}
+                    />
+                    <button
+                      type="button"
+                      className="password-toggle"
+                      onClick={() => setShowPin((v) => !v)}
+                      aria-label={showPin ? 'Hide PIN' : 'Show PIN'}
+                    >
+                      {showPin ? (
+                        <svg aria-hidden="true" className="eye-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M3 3l18 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                          <path d="M9.88 9.88A3 3 0 0114.12 14.12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                          <path d="M10.73 5.08A10.86 10.86 0 0121 12c-1.1 1.86-2.57 3.47-4.31 4.71M6.24 6.24C4.03 7.73 2.28 9.67 1 12c1.88 3.34 5.36 6 10 6 1.48 0 2.86-.24 4.11-.69" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                        </svg>
+                      ) : (
+                        <svg aria-hidden="true" className="eye-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" fill="none" />
+                          <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.8" fill="none" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
                 )}
                 {viewMode === 'edit' && (
                   <button type="button" className="secondary" onClick={() => requestOtp('change-pin', 'pin')}>
