@@ -1278,6 +1278,9 @@ textarea:focus-visible {
 
 .password-toggle:hover {
   color: #2c3e50;
+  outline: none;
+  box-shadow: none;
+  background: transparent;
 }
 
 .password-toggle:focus,
