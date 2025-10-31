@@ -60,14 +60,11 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
   const [currentHm, setCurrentHm] = useState(toHM());
 
   useEffect(() => {
-    if (activeSectionProp == null) {
-      if (activeSection !== null) {
-        setActiveSection(null);
-      }
-    } else if (activeSectionProp !== activeSection) {
-      setActiveSection(activeSectionProp);
+    if (activeSectionProp === undefined) return;
+    if (activeSectionProp !== activeSection) {
+      setActiveSection(activeSectionProp || null);
     }
-  }, [activeSectionProp, activeSection]);
+  }, [activeSectionProp]);
 
   useEffect(() => {
     if (typeof onActiveSectionChange === 'function') {
