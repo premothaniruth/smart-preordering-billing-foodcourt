@@ -363,7 +363,7 @@ function App() {
 
     const totalCharge = orderItems.reduce((sum, it) => sum + it.price * it.quantity, 0);
     if (paymentMethod === 'wallet' && wallet.balance < totalCharge) {
-      toast.error('Insufficient wallet balance. Please top up or choose another payment method.');
+      toast.error('Your wallet is hungry too! Top-up needed!');
       return;
     }
 
@@ -634,12 +634,27 @@ function App() {
               <>
                 {employeeToken ? (
                   <>
-                    <div style={{ marginBottom: 15 }}>
-                      <button onClick={() => { fetchUserOrders(userId).then(setUserOrders); setView("orders"); }}>
-                        My Orders
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        alignItems: 'center',
+                        gap: 12,
+                        marginBottom: 20
+                      }}
+                    >
+                      <button onClick={() => setView("profile")} className="secondary-button" style={{ minWidth: 150 }}>
+                        My Profile
                       </button>
-                      <button onClick={() => setView("profile")}>My Profile</button>
-                      <button onClick={handleEmployeeLogout} style={{ background: '#e74c3c', color: '#fff' }}>Logout</button>
+                      <div style={{ marginLeft: 'auto', display: 'flex' }}>
+                        <button
+                          onClick={() => { fetchUserOrders(userId).then(setUserOrders); setView("orders"); }}
+                          className="primary-button"
+                          style={{ minWidth: 150 }}
+                        >
+                          My Orders
+                        </button>
+                      </div>
                     </div>
                     <div className="layout-container">
                       <div className="menu-section">
@@ -724,6 +739,11 @@ function App() {
                           </div>
                         )}
                       </div>
+                    </div>
+                    <div style={{ marginTop: 24, display: 'flex', justifyContent: 'flex-end' }}>
+                      <button onClick={handleEmployeeLogout} style={{ background: '#e74c3c', color: '#fff', minWidth: 140 }}>
+                        Logout
+                      </button>
                     </div>
                   </>
                 ) : (

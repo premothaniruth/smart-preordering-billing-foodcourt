@@ -154,7 +154,7 @@ const Cart = ({
   return (
     <div>
       <h2>Cart ({cart.length})</h2>
-      {cart.length === 0 && <p className="empty-state">Your cart is empty</p>}
+      {cart.length === 0 && <p className="empty-state">This cart is hungry...add some tasty treats!</p>}
       <div>
         {cart.map((c, i) => {
           const isCombo = !!c.item?.comboId && Array.isArray(c.item?.comboComponents);

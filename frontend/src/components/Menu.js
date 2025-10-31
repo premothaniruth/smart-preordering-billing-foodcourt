@@ -60,6 +60,15 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
     fetchSectionsMeta().then((d)=> setSectionWindows(d?.windows || {})).catch(()=>setSectionWindows({}));
   }, [selectedShop]);
 
+  useEffect(() => {
+    if (cart.length !== 0) return;
+    setVariantDrafts((prev) => (Object.keys(prev || {}).length ? {} : prev));
+    setMultiOptionQuantities((prev) => (Object.keys(prev || {}).length ? {} : prev));
+    setSelectedOption(null);
+    setSelectedItem(null);
+    setShowOptionsModal(false);
+  }, [cart.length]);
+
   if (!menu.length) return <p>Loading menu...</p>;
 
   const shop = menu.find((s) => s.shopId === selectedShop);
