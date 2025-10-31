@@ -1213,11 +1213,44 @@ textarea:focus-visible {
   position: relative;
 }
 
-.toggle-password {
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-input-wrapper input {
+  padding-right: 36px;
+}
+
+.password-toggle {
   position: absolute;
-  right: 0;
-  bottom: -24px;
-  font-size: 12px;
+  right: 8px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #7f8c8d;
+  cursor: pointer;
+  height: 100%;
+  width: 24px;
+}
+
+.password-toggle:hover {
+  color: #2c3e50;
+}
+
+.password-toggle:focus,
+.password-toggle:focus-visible {
+  outline: none;
+}
+
+.eye-icon {
+  width: 18px;
+  height: 18px;
+  pointer-events: none;
 }
 
 .employee-login-card button[type="submit"] {
