@@ -49,8 +49,9 @@ const Cart = ({
   })();
   const [scheduledDate, setScheduledDate] = useState(() => todayStr); // YYYY-MM-DD, locked to today
   const [scheduledHM, setScheduledHM] = useState(""); // HH:MM
+  const [scheduleEnabled, setScheduleEnabled] = useState(Boolean(scheduledTime));
   const MIN_HM = "08:00";
-  const MAX_HM = "22:00";
+  const MAX_HM = "22:30";
 
   const slots = useMemo(() => {
     const toMinutes = (hm) => {
@@ -70,7 +71,13 @@ const Cart = ({
   }, []);
 
   useEffect(() => {
-    if (!scheduledTime) { setScheduledDate(todayStr); setScheduledHM(""); return; }
+    if (!scheduledTime) {
+      setScheduleEnabled(false);
+      setScheduledDate(todayStr);
+      setScheduledHM("");
+      return;
+    }
+    setScheduleEnabled(true);
     // Expecting ISO-like 'YYYY-MM-DDTHH:MM'
     try {
       const [d, t] = scheduledTime.split("T");
@@ -79,7 +86,7 @@ const Cart = ({
     } catch {
       setScheduledDate(""); setScheduledHM("");
     }
-  }, [scheduledTime]);
+  }, [scheduledTime, todayStr]);
 
   const clampHM = (hm) => {
     if (!hm) return hm;
@@ -94,6 +101,12 @@ const Cart = ({
     if (hm > MAX_HM) return MAX_HM;
     // fallback to first slot
     return slots[0] || MIN_HM;
+  };
+
+  const findNextSlot = (hm) => {
+    if (!slots.length) return MIN_HM;
+    const candidate = slots.find((slot) => slot >= hm);
+    return candidate || slots[slots.length - 1] || MIN_HM;
   };
 
   const syncScheduled = (nextDate, nextHM) => {
@@ -124,6 +137,19 @@ const Cart = ({
     return () => clearInterval(id);
   }, []);
   const effectiveHM = scheduledHM || currentHM; // if scheduled, validate against selected slot; else now
+  const handleToggleSchedule = (e) => {
+    const enabled = e.target.checked;
+    if (enabled) {
+      const defaultHM = scheduledHM || findNextSlot(currentHM);
+      setScheduleEnabled(true);
+      syncScheduled(todayStr, defaultHM || MIN_HM);
+    } else {
+      setScheduleEnabled(false);
+      setScheduledHM("");
+      setScheduledDate(todayStr);
+      setScheduledTime("");
+    }
+  };
   const inWindow = (secName, hm) => {
     const w = sectionWindows[secName];
     if (!w || !w.start || !w.end) return true;
@@ -251,7 +277,8 @@ const Cart = ({
               </button>
             </div>
           </div>
-        );})}
+        );
+        })}
 
         {cart.length > 0 && (
           <>
@@ -352,25 +379,43 @@ const Cart = ({
             </div>
 
             <div style={{ marginTop: 15 }}>
-              <label style={{ fontSize: "12px", fontWeight: "bold", display: 'block' }}>Schedule for Later (optional):</label>
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600 }}>
                 <input
-                  type="text"
-                  value={todayDisplay}
-                  readOnly
-                  aria-label="Scheduled date"
-                  style={{ flex: 1, background: '#f8f9fa', border: '1px solid #ddd', padding: '8px 10px', borderRadius: 6 }}
+                  type="checkbox"
+                  checked={scheduleEnabled}
+                  onChange={handleToggleSchedule}
                 />
-                <select
-                  value={scheduledHM || MIN_HM}
-                  onChange={(e) => syncScheduled(scheduledDate, e.target.value)}
-                  style={{ width: 160 }}
-                >
-                  {slots.map((t) => (
-                    <option key={t} value={t}>{t}</option>
-                  ))}
-                </select>
-              </div>
+                <span>Schedule this order for later today</span>
+              </label>
+              {scheduleEnabled ? (
+                <>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8 }}>
+                    <input
+                      type="text"
+                      value={todayDisplay}
+                      readOnly
+                      aria-label="Scheduled date"
+                      style={{ flex: 1, background: '#f8f9fa', border: '1px solid #ddd', padding: '8px 10px', borderRadius: 6 }}
+                    />
+                    <select
+                      value={scheduledHM || findNextSlot(currentHM)}
+                      onChange={(e) => syncScheduled(scheduledDate, e.target.value)}
+                      style={{ width: 160 }}
+                    >
+                      {slots.map((t) => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <small style={{ display: 'block', marginTop: 6, color: '#7f8c8d' }}>
+                    Slots run every 5 minutes between 08:00 and 22:30 today.
+                  </small>
+                </>
+              ) : (
+                <small style={{ display: 'block', marginTop: 6, color: '#7f8c8d' }}>
+                  Leave unchecked to prepare this order immediately.
+                </small>
+              )}
             </div>
 
             <button
@@ -383,6 +428,7 @@ const Cart = ({
         )}
       </div>
     </div>
+  </div>
   );
 };
 
