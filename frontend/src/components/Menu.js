@@ -118,8 +118,8 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
 
   useEffect(() => {
     if (cart.length !== 0) return;
-    setVariantDrafts((prev) => (Object.keys(prev || {}).length ? {} : prev));
-    setMultiOptionQuantities((prev) => (Object.keys(prev || {}).length ? {} : prev));
+    setVariantDrafts((prev) => (prev && Object.keys(prev).length ? {} : prev));
+    setMultiOptionQuantities((prev) => (prev && Object.keys(prev).length ? {} : prev));
     setSelectedOption(null);
     setSelectedItem(null);
     setShowOptionsModal(false);
@@ -462,7 +462,7 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
               <button 
                 className="icon-btn" 
                 onClick={() => handleAddClick(item)}
-                disabled={!isAvailable || cartRemaining <= 0}
+                disabled={!allowAction || cartRemaining <= 0}
                 style={{
                   width: "100%",
                   padding: '10px 12px',
