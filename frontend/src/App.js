@@ -521,12 +521,12 @@ function App() {
             {view === "landing" && (
               <div className="landing-page">
                 <div className="welcome-section">
-                  <h2>Welcome to Smart Preordering & Billing</h2>
+                  <h2>Welcome to Infy Bhojans</h2>
                   <p>Choose your access level to continue:</p>
                   
                   <div className="landing-options">
                     <div className="option-card employee-card">
-                      <h3>Employee Access</h3>
+                      <h3>Infy Bhojans Employee Access</h3>
                       <p>Order food, view menu, track orders, and provide feedback</p>
                       <button onClick={() => setView("user")} className="primary-button">
                         Employee Login
@@ -534,7 +534,7 @@ function App() {
                     </div>
                     
                     <div className="option-card vendor-card">
-                      <h3>Vendor Access</h3>
+                      <h3>Infy Bhojans Vendor Access</h3>
                       <p>Manage menu, view analytics, handle orders, and resolve complaints</p>
                       <button onClick={() => setView("login")} className="secondary-button">
                         Vendor Login
