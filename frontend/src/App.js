@@ -223,7 +223,7 @@ function App() {
 
   useEffect(() => {
     if (employeeToken) {
-      loadWallet();
+      loadWallet(employeeToken);
     } else {
       applyWalletPayload({ balance: 0, transactions: [] });
     }

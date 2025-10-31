@@ -56,7 +56,7 @@ const EmployeeProfile = ({ token, wallet = { balance: 0, transactions: [] }, onW
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [token]);
 
   useEffect(() => {
     // reset input when wallet tab revisited
@@ -64,6 +64,11 @@ const EmployeeProfile = ({ token, wallet = { balance: 0, transactions: [] }, onW
       setTopupAmount('');
     }
   }, [activeTab]);
+
+  useEffect(() => {
+    if (!wallet) return;
+    setTopupAmount('');
+  }, [wallet?.balance]);
 
   const handleTopup = async () => {
     if (!token) {
@@ -218,6 +223,18 @@ const EmployeeProfile = ({ token, wallet = { balance: 0, transactions: [] }, onW
             </div>
 
             <div style={{ display: 'grid', gap: 14 }}>
+              <div>
+                <div className="profile-label">Username</div>
+                <div className="profile-field-row">
+                  {viewMode === 'view' || !canEditUsername ? (
+                    <div className="profile-text">{profileSummary?.username || '—'}</div>
+                  ) : (
+                    <input value={usernameEdit} onChange={(e) => setUsernameEdit(e.target.value)} placeholder="Choose a username" />
+                  )}
+                </div>
+                <div className="profile-hint">Your username is used for PIN and password logins.</div>
+              </div>
+
               <div>
                 <div className="profile-label">Email</div>
                 <div className="profile-field-row">

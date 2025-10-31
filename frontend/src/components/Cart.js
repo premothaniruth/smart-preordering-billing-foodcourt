@@ -252,132 +252,132 @@ const Cart = ({
             </div>
           </div>
         );})}
-      </div>
-      
-      {cart.length > 0 && (
-        <>
-          <div style={{ marginTop: 15, paddingTop: 15, borderTop: "2px solid #ddd" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-              <span>Subtotal:</span>
-              <span>₹{total}</span>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "18px", fontWeight: "bold", marginTop: 10, paddingTop: 10, borderTop: "1px solid #ddd" }}>
-              <span>Total:</span>
-              <span>₹{total}</span>
-            </div>
+
+        <div style={{ marginTop: 15, paddingTop: 15, borderTop: "2px solid #ddd" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+            <span>Subtotal:</span>
+            <span>₹{total.toFixed(2)}</span>
           </div>
-
-          <div style={{ marginTop: 15, border: '1px solid #e1e6eb', borderRadius: 8, padding: 16 }}>
-            <div style={{ fontWeight: 600, marginBottom: 10 }}>Select Payment Method</div>
-            <div style={{ display: 'grid', gap: 10 }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <input
-                  type="radio"
-                  name="payment-method"
-                  value="wallet"
-                  checked={paymentMethod === 'wallet'}
-                  onChange={() => setPaymentMethod('wallet')}
-                  disabled={Boolean(walletDisabledReason)}
-                />
-                <span>
-                  Wallet ({walletEnabled ? `₹${walletBalance.toFixed(2)} available` : 'Login required'})
-                  {walletDisabledReason && paymentMethod === 'wallet' && (
-                    <span style={{ color: '#c0392b', fontSize: 12, marginLeft: 6 }}>• {walletDisabledReason}</span>
-                  )}
-                </span>
-              </label>
-
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <input
-                  type="radio"
-                  name="payment-method"
-                  value="gateway"
-                  checked={paymentMethod === 'gateway'}
-                  onChange={() => setPaymentMethod('gateway')}
-                />
-                <span>Google Pay (Online)</span>
-              </label>
-
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <input
-                  type="radio"
-                  name="payment-method"
-                  value="cash"
-                  checked={paymentMethod === 'cash'}
-                  onChange={() => setPaymentMethod('cash')}
-                />
-                <span>Cash on Pickup</span>
-              </label>
-            </div>
-            {paymentMethod === 'cash' && (
-              <div style={{ marginTop: 8, fontSize: 12, color: '#7f8c8d' }}>
-                Please carry the exact amount for faster handover at pickup counter.
-              </div>
-            )}
-            {paymentMethod === 'gateway' && (
-              <div style={{ marginTop: 8, fontSize: 12, color: '#7f8c8d' }}>
-                You will be redirected to Google Pay demo gateway to complete the payment.
-              </div>
-            )}
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+            <span>Prep Time:</span>
+            <span>{totalPrepTime} mins</span>
           </div>
-
-          <div style={{ marginTop: 15 }}>
-            <label style={{ fontSize: "12px", fontWeight: "bold", display: "block", marginBottom: 5 }}>
-              Special Instructions for All Items (Optional):
-            </label>
-            <textarea 
-              value={customNotes}
-              onChange={(e) => {
-                const input = e.target.value;
-                const words = input.trim().split(/\s+/).filter(Boolean);
-                const limited = words.length > 100 ? words.slice(0, 100).join(' ') : input;
-                setCustomNotes(limited);
-              }}
-              placeholder="E.g., Less spicy, no onions, extra garnish, less oil..."
-              rows={4}
-              style={{ 
-                width: "100%", 
-                padding: 8, 
-                minHeight: 70, 
-                fontFamily: "inherit",
-                fontSize: 13,
-                borderRadius: 6,
-                border: "1px solid #ddd",
-                resize: 'none'
-              }}
-            />
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "18px", fontWeight: "bold", marginTop: 10, paddingTop: 10, borderTop: "1px solid #ddd" }}>
+            <span>Total:</span>
+            <span>₹{total.toFixed(2)}</span>
           </div>
-          
-          {/* Optional later schedule for pickup */}
-          <div style={{ marginTop: 15 }}>
-            <label style={{ fontSize: "12px", fontWeight: "bold", display:'block' }}>Schedule for Later (optional):</label>
-            <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+        </div>
+
+        <div style={{ marginTop: 15, border: '1px solid #e1e6eb', borderRadius: 8, padding: 16 }}>
+          <div style={{ fontWeight: 600, marginBottom: 10 }}>Select Payment Method</div>
+          <div style={{ display: 'grid', gap: 10 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <input
-                type="text"
-                value={todayDisplay}
-                readOnly
-                aria-label="Scheduled date"
-                style={{ flex:1, background:'#f8f9fa', border:'1px solid #ddd', padding:'8px 10px', borderRadius:6 }}
+                type="radio"
+                name="payment-method"
+                value="wallet"
+                checked={paymentMethod === 'wallet'}
+                onChange={() => setPaymentMethod('wallet')}
+                disabled={Boolean(walletDisabledReason)}
               />
-              <select
-                value={scheduledHM || MIN_HM}
-                onChange={(e) => syncScheduled(scheduledDate, e.target.value)}
-                style={{ width: 160 }}
-              >
-                {slots.map((t) => (
-                  <option key={t} value={t}>{t}</option>
-                ))}
-              </select>
-            </div>
+              <span>
+                Wallet ({walletEnabled ? `₹${Number(walletBalance || 0).toFixed(2)} available` : 'Login required'})
+                {walletDisabledReason && (
+                  <span style={{ color: '#c0392b', fontSize: 12, marginLeft: 6 }}>• {walletDisabledReason}</span>
+                )}
+              </span>
+            </label>
+
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <input
+                type="radio"
+                name="payment-method"
+                value="gateway"
+                checked={paymentMethod === 'gateway'}
+                onChange={() => setPaymentMethod('gateway')}
+              />
+              <span>Google Pay (Online)</span>
+            </label>
+
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <input
+                type="radio"
+                name="payment-method"
+                value="cash"
+                checked={paymentMethod === 'cash'}
+                onChange={() => setPaymentMethod('cash')}
+              />
+              <span>Cash on Pickup</span>
+            </label>
           </div>
-          
-          <button 
-            onClick={handlePayment} 
-            style={{ width: "100%", marginTop: 15, background: "#27ae60", padding: "14px", fontSize: "16px", fontWeight: "bold" }}
-          >
-            Place Order (₹{total})
-          </button>
-        </>
+          {paymentMethod === 'cash' && (
+            <div style={{ marginTop: 8, fontSize: 12, color: '#7f8c8d' }}>
+              Please carry the exact amount for faster handover at pickup counter.
+            </div>
+          )}
+          {paymentMethod === 'gateway' && (
+            <div style={{ marginTop: 8, fontSize: 12, color: '#7f8c8d' }}>
+              You will be redirected to Google Pay demo gateway to complete the payment.
+            </div>
+          )}
+        </div>
+
+        <div style={{ marginTop: 15 }}>
+          <label style={{ fontSize: "12px", fontWeight: "bold", display: "block", marginBottom: 5 }}>
+            Special Instructions for All Items (Optional):
+          </label>
+          <textarea
+            value={customNotes}
+            onChange={(e) => {
+              const input = e.target.value;
+              const words = input.trim().split(/\s+/).filter(Boolean);
+              const limited = words.length > 100 ? words.slice(0, 100).join(' ') : input;
+              setCustomNotes(limited);
+            }}
+            placeholder="E.g., Less spicy, no onions, extra garnish, less oil..."
+            rows={4}
+            style={{
+              width: "100%",
+              padding: 8,
+              minHeight: 70,
+              fontFamily: "inherit",
+              fontSize: 13,
+              borderRadius: 6,
+              border: "1px solid #ddd",
+              resize: 'none'
+            }}
+          />
+        </div>
+
+        <div style={{ marginTop: 15 }}>
+          <label style={{ fontSize: "12px", fontWeight: "bold", display: 'block' }}>Schedule for Later (optional):</label>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <input
+              type="text"
+              value={todayDisplay}
+              readOnly
+              aria-label="Scheduled date"
+              style={{ flex: 1, background: '#f8f9fa', border: '1px solid #ddd', padding: '8px 10px', borderRadius: 6 }}
+            />
+            <select
+              value={scheduledHM || MIN_HM}
+              onChange={(e) => syncScheduled(scheduledDate, e.target.value)}
+              style={{ width: 160 }}
+            >
+              {slots.map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <button
+          onClick={handlePayment}
+          style={{ width: "100%", marginTop: 15, background: "#27ae60", padding: "14px", fontSize: "16px", fontWeight: "bold", color: '#fff', border: 'none', borderRadius: 6 }}
+        >
+          Place Order (₹{total.toFixed(2)})
+        </button>
+      </>
       )}
     </div>
   );

@@ -1569,17 +1569,17 @@ app.post('/wallet/topup', (req, res) => {
     const employees = resolved.employees || getEmployees();
     const employee = employees[resolved.index];
     ensureWalletFields(employee);
+    const newBalance = formatCurrency(Number(employee.walletBalance || 0) + value);
+    employee.walletBalance = newBalance;
     const tx = recordWalletTransaction(employees, employee, {
       type: 'credit',
       reason: 'wallet-topup',
       provider,
       amount: value
     });
-    employee.walletBalance = formatCurrency(Number(employee.walletBalance || 0) + formatCurrency(value));
-    saveEmployees(employees);
     res.json({
       status: 'success',
-      balance: formatCurrency(employee.walletBalance),
+      balance: newBalance,
       transaction: tx
     });
   } catch (error) {
