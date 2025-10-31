@@ -120,8 +120,8 @@ function App() {
   }, [userId]);
 
   useEffect(() => {
-    if (!employeeToken && ["user", "orders", "profile"].includes(view)) {
-      setView("landing");
+    if (!employeeToken && ["orders", "profile"].includes(view)) {
+      setView("user");
     }
   }, [employeeToken, view]);
 
