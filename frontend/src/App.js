@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { fetchMenu, placeOrder, fetchUserOrders, fetchFavorites, vendorLogin, updateMenu, markOrderReady, fetchAnalytics, submitRating, cancelOrder, employeeProfile } from "./api";
 import Menu from "./components/Menu";
 import Cart from "./components/Cart";
@@ -122,6 +122,14 @@ function App() {
     }
   }, [userId]);
 
+  useEffect(() => {
+    if (employeeToken) {
+      loadWallet();
+    } else {
+      applyWalletPayload({ balance: 0, transactions: [] });
+    }
+  }, [employeeToken, loadWallet, applyWalletPayload]);
+
   // Reset notification tracking whenever the logged-in employee changes
   useEffect(() => {
     readyNotifiedRef.current.clear();
@@ -198,25 +206,28 @@ function App() {
     fetchFavorites(userId).then(setFavorites);
   };
 
-  const loadWallet = async (tokenOverride = null) => {
+  const applyWalletPayload = useCallback((payload = {}) => {
+    const balance = Number(payload.balance || 0);
+    const transactions = Array.isArray(payload.transactions) ? payload.transactions : [];
+    setWallet({ balance, transactions });
+  }, []);
+
+  const loadWallet = useCallback(async (tokenOverride = null) => {
     const authToken = tokenOverride || employeeToken;
     if (!authToken) {
-      setWallet({ balance: 0, transactions: [] });
+      applyWalletPayload({ balance: 0, transactions: [] });
       return;
     }
     try {
       const res = await employeeProfile(authToken);
       if (res?.status === 'ok') {
         const walletData = res?.wallet || {};
-        setWallet({
-          balance: Number(walletData.balance || 0),
-          transactions: Array.isArray(walletData.transactions) ? walletData.transactions : []
-        });
+        applyWalletPayload(walletData);
       }
-    } catch {
-      setWallet((prev) => prev);
+    } catch (err) {
+      console.warn('Failed to load wallet', err);
     }
-  };
+  }, [employeeToken, applyWalletPayload]);
 
   const playSound = (soundUrl) => {
     const audio = new Audio(soundUrl);
@@ -518,7 +529,6 @@ function App() {
     setView("user");
     playSound(READY_SOUND);
     toast.success("Employee logged in");
-    loadWallet(token);
   };
 
   const handleEmployeeLogout = () => {
@@ -526,7 +536,7 @@ function App() {
     setEmployeeMobile("");
     setCart([]);
     setOrderSummary(null);
-    setWallet({ balance: 0, transactions: [] });
+    applyWalletPayload({ balance: 0, transactions: [] });
     setPaymentMethod('gateway');
     readyNotifiedRef.current.clear();
     etaNotifiedRef.current.clear();
@@ -744,7 +754,12 @@ function App() {
             {view === "profile" && (
               <>
                 <button onClick={() => setView("user")} style={{ marginBottom: 15 }}>← Back</button>
-                <EmployeeProfile token={employeeToken} />
+                <EmployeeProfile
+                  token={employeeToken}
+                  wallet={wallet}
+                  onWalletChange={applyWalletPayload}
+                  onRequestWalletRefresh={loadWallet}
+                />
               </>
             )}
           </>

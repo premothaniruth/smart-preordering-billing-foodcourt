@@ -12,11 +12,28 @@ import { fetchSectionsMeta } from "../api";
  *  scheduledTime: string,
  *  setScheduledTime: (iso:string)=>void,
  *  onPayment: ()=>void,
- *  shopItems?: any[]
+ *  shopItems?: any[],
+ *  paymentMethod?: 'wallet' | 'gateway' | 'cash',
+ *  setPaymentMethod?: (method: 'wallet' | 'gateway' | 'cash')=>void,
+ *  walletBalance?: number,
+ *  walletEnabled?: boolean
  * }} props
  */
 
-const Cart = ({ cart, removeFromCart, decrementFromCart, incrementFromCart, scheduledTime, setScheduledTime, onPayment, shopItems = [] }) => {
+const Cart = ({
+  cart,
+  removeFromCart,
+  decrementFromCart,
+  incrementFromCart,
+  scheduledTime,
+  setScheduledTime,
+  onPayment,
+  shopItems = [],
+  paymentMethod = 'gateway',
+  setPaymentMethod = () => {},
+  walletBalance = 0,
+  walletEnabled = false
+}) => {
   const [customNotes, setCustomNotes] = useState("");
   const getTodayStr = () => {
     const d = new Date();
@@ -115,6 +132,11 @@ const Cart = ({ cart, removeFromCart, decrementFromCart, incrementFromCart, sche
 
   const total = cart.reduce((sum, c) => sum + c.item.finalPrice * c.quantity, 0);
   const totalPrepTime = cart.reduce((sum, c) => sum + (c.item.prepTime || 5) * c.quantity, 0);
+  const walletDisabledReason = (() => {
+    if (!walletEnabled) return 'Login to use wallet';
+    if (walletBalance < total) return 'Insufficient balance';
+    return null;
+  })();
 
   // Attach custom notes to the first item (simple demo) and trigger payment
   const handlePayment = () => {
@@ -243,6 +265,60 @@ const Cart = ({ cart, removeFromCart, decrementFromCart, incrementFromCart, sche
               <span>Total:</span>
               <span>₹{total}</span>
             </div>
+          </div>
+
+          <div style={{ marginTop: 15, border: '1px solid #e1e6eb', borderRadius: 8, padding: 16 }}>
+            <div style={{ fontWeight: 600, marginBottom: 10 }}>Select Payment Method</div>
+            <div style={{ display: 'grid', gap: 10 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <input
+                  type="radio"
+                  name="payment-method"
+                  value="wallet"
+                  checked={paymentMethod === 'wallet'}
+                  onChange={() => setPaymentMethod('wallet')}
+                  disabled={Boolean(walletDisabledReason)}
+                />
+                <span>
+                  Wallet ({walletEnabled ? `₹${walletBalance.toFixed(2)} available` : 'Login required'})
+                  {walletDisabledReason && paymentMethod === 'wallet' && (
+                    <span style={{ color: '#c0392b', fontSize: 12, marginLeft: 6 }}>• {walletDisabledReason}</span>
+                  )}
+                </span>
+              </label>
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <input
+                  type="radio"
+                  name="payment-method"
+                  value="gateway"
+                  checked={paymentMethod === 'gateway'}
+                  onChange={() => setPaymentMethod('gateway')}
+                />
+                <span>Google Pay (Online)</span>
+              </label>
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <input
+                  type="radio"
+                  name="payment-method"
+                  value="cash"
+                  checked={paymentMethod === 'cash'}
+                  onChange={() => setPaymentMethod('cash')}
+                />
+                <span>Cash on Pickup</span>
+              </label>
+            </div>
+            {paymentMethod === 'cash' && (
+              <div style={{ marginTop: 8, fontSize: 12, color: '#7f8c8d' }}>
+                Please carry the exact amount for faster handover at pickup counter.
+              </div>
+            )}
+            {paymentMethod === 'gateway' && (
+              <div style={{ marginTop: 8, fontSize: 12, color: '#7f8c8d' }}>
+                You will be redirected to Google Pay demo gateway to complete the payment.
+              </div>
+            )}
           </div>
 
           <div style={{ marginTop: 15 }}>
