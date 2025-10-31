@@ -296,5 +296,117 @@
     "basePrepTime": 10,
     "rating": null,
     "feedback": null
+  },
+  {
+    "id": 15,
+    "items": [
+      {
+        "id": 43,
+        "name": "Butter Chicken",
+        "price": 180,
+        "quantity": 1,
+        "option": "Boneless",
+        "prepTime": 20
+      }
+    ],
+    "shopId": 1,
+    "user": "+919952911560",
+    "scheduledTime": null,
+    "status": "pending",
+    "createdAt": "2025-10-31T13:32:09.227Z",
+    "billingId": "00001",
+    "estimatedReadyTime": "2025-10-31T14:14:09.227Z",
+    "prepTime": 42,
+    "baseEstimatedReadyTime": "2025-10-31T14:14:09.227Z",
+    "basePrepTime": 42,
+    "rating": null,
+    "feedback": null,
+    "totalAmount": 180,
+    "payment": {
+      "method": "gateway",
+      "amount": 180,
+      "provider": "google-pay",
+      "reference": "PG-1761917529227"
+    }
+  },
+  {
+    "id": 16,
+    "items": [
+      {
+        "id": 44,
+        "name": "Paneer Butter Masala",
+        "price": 125,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 13
+      }
+    ],
+    "shopId": 1,
+    "user": "+919952911560",
+    "scheduledTime": "2025-10-31T22:00",
+    "status": "cancelled",
+    "createdAt": "2025-10-31T13:32:52.799Z",
+    "billingId": "00002",
+    "estimatedReadyTime": "2025-10-31T14:09:52.799Z",
+    "prepTime": 37,
+    "baseEstimatedReadyTime": "2025-10-31T14:09:52.799Z",
+    "basePrepTime": 37,
+    "rating": null,
+    "feedback": null,
+    "totalAmount": 125,
+    "payment": {
+      "method": "gateway",
+      "amount": 125,
+      "provider": "google-pay",
+      "reference": "PG-1761917572799"
+    },
+    "cancelledAt": "2025-10-31T13:33:23.270Z",
+    "cancelledBy": "+919952911560",
+    "cancellationReason": "test cancel",
+    "refundAmount": 125,
+    "cancellationFee": 0,
+    "cancellationPolicy": "Full refund (cancel ≥ 60 minutes before scheduled time)",
+    "cancellationRefundPercent": 1,
+    "cancellationLeadMinutes": 176.6123
+  },
+  {
+    "id": 17,
+    "items": [
+      {
+        "id": 42,
+        "name": "Rajma Chawal",
+        "price": 90,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 11
+      }
+    ],
+    "shopId": 1,
+    "user": "+919952911560",
+    "scheduledTime": "2025-10-31T19:40",
+    "status": "cancelled",
+    "createdAt": "2025-10-31T13:35:03.263Z",
+    "billingId": "00003",
+    "estimatedReadyTime": "2025-10-31T14:10:03.263Z",
+    "prepTime": 35,
+    "baseEstimatedReadyTime": "2025-10-31T14:10:03.263Z",
+    "basePrepTime": 35,
+    "rating": null,
+    "feedback": null,
+    "totalAmount": 90,
+    "payment": {
+      "method": "gateway",
+      "amount": 90,
+      "provider": "google-pay",
+      "reference": "PG-1761917703263"
+    },
+    "cancelledAt": "2025-10-31T13:35:28.470Z",
+    "cancelledBy": "+919952911560",
+    "cancellationReason": "test 2",
+    "refundAmount": 67.5,
+    "cancellationFee": 22.5,
+    "cancellationPolicy": "75% refund (cancel 30-59 minutes before scheduled time)",
+    "cancellationRefundPercent": 0.75,
+    "cancellationLeadMinutes": 34.52555
   }
 ]
