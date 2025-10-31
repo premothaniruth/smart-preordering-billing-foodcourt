@@ -56,6 +56,7 @@ function App() {
   const [favorites, setFavorites] = useState([]);
   const [wallet, setWallet] = useState({ balance: 0, transactions: [] });
   const [paymentMethod, setPaymentMethod] = useState('gateway');
+  const [activeMenuSection, setActiveMenuSection] = useState(null);
   const readyNotifiedRef = useRef(new Set());
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [currentOrderForRating, setCurrentOrderForRating] = useState(null);
@@ -583,15 +584,17 @@ function App() {
                     menu={menu}
                     addToCart={() => {}}
                     cart={[]}
-                    selectedShop={vendorShopId || selectedShop}
+                    selectedShop={selectedShop}
                     setSelectedShop={setSelectedShop}
                     favorites={[]}
                     onFavoriteToggle={() => {}}
-                    userId={"Vendor Preview"}
-                    hideFavorites={true}
-                    hideShopSelector={true}
-                    showInventory={true}
-                    readOnly={true}
+                    userId={null}
+                    hideFavorites
+                    hideShopSelector={false}
+                    showInventory
+                    readOnly
+                    activeSection={activeMenuSection}
+                    onActiveSectionChange={setActiveMenuSection}
                   />
                 </div>
                 {/* Read-only user view for vendor: no cart, no order summary */}
@@ -643,14 +646,18 @@ function App() {
                         marginBottom: 20
                       }}
                     >
-                      <button onClick={() => setView("profile")} className="secondary-button" style={{ minWidth: 150 }}>
+                      <button
+                        onClick={() => setView("profile")}
+                        className="secondary-button"
+                        style={{ minWidth: 150, width: 150 }}
+                      >
                         My Profile
                       </button>
                       <div style={{ marginLeft: 'auto', display: 'flex' }}>
                         <button
                           onClick={() => { fetchUserOrders(userId).then(setUserOrders); setView("orders"); }}
                           className="primary-button"
-                          style={{ minWidth: 150 }}
+                          style={{ minWidth: 150, width: 150 }}
                         >
                           My Orders
                         </button>
@@ -672,6 +679,8 @@ function App() {
                           onFavoriteToggle={loadFavorites}
                           userId={userId}
                           scheduledTime={scheduledTime}
+                          activeSection={activeMenuSection}
+                          onActiveSectionChange={setActiveMenuSection}
                         />
                         {/* Inline feedback form for employees */}
                         {employeeToken && (

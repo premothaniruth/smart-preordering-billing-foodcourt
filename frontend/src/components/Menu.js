@@ -39,10 +39,12 @@ const isHmWithinWindow = (hm, windowInfo) => {
  *  userId: string,
  *  hideFavorites?: boolean,
  *  hideShopSelector?: boolean,
- *  showInventory?: boolean
+ *  showInventory?: boolean,
+ *  activeSection?: string | null,
+ *  onActiveSectionChange?: (section: string | null) => void
  * }} props
  */
-const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemNoOption = () => {}, incItemVariant = () => {}, decItemVariant = () => {}, selectedShop, setSelectedShop, favorites = [], onFavoriteToggle, userId, hideFavorites = false, hideShopSelector = false, showInventory = false, readOnly = false, scheduledTime = '' }) => {
+const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemNoOption = () => {}, incItemVariant = () => {}, decItemVariant = () => {}, selectedShop, setSelectedShop, favorites = [], onFavoriteToggle, userId, hideFavorites = false, hideShopSelector = false, showInventory = false, readOnly = false, scheduledTime = '', activeSection: activeSectionProp = null, onActiveSectionChange }) => {
   const [vegOnly, setVegOnly] = useState(false);
   const [nonVegOnly, setNonVegOnly] = useState(false);
   const [showOptionsModal, setShowOptionsModal] = useState(false);
@@ -53,9 +55,25 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
   const [offers, setOffers] = useState([]);
   const [combos, setCombos] = useState([]);
   const [sectioned, setSectioned] = useState(null); // { shopId, shopName, sections }
-  const [activeSection, setActiveSection] = useState(null);
+  const [activeSection, setActiveSection] = useState(activeSectionProp || null);
   const [sectionWindows, setSectionWindows] = useState({}); // name -> { start, end }
   const [currentHm, setCurrentHm] = useState(toHM());
+
+  useEffect(() => {
+    if (activeSectionProp == null) {
+      if (activeSection !== null) {
+        setActiveSection(null);
+      }
+    } else if (activeSectionProp !== activeSection) {
+      setActiveSection(activeSectionProp);
+    }
+  }, [activeSectionProp, activeSection]);
+
+  useEffect(() => {
+    if (typeof onActiveSectionChange === 'function') {
+      onActiveSectionChange(activeSection || null);
+    }
+  }, [activeSection, onActiveSectionChange]);
 
   useEffect(() => {
     const id = setInterval(() => setCurrentHm(toHM()), 60000);
@@ -105,6 +123,9 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
           setActiveSection((current) => {
             if (current && data.sections.some((sec) => sec.name === current)) {
               return current;
+            }
+            if (activeSectionProp && data.sections.some((sec) => sec.name === activeSectionProp)) {
+              return activeSectionProp;
             }
             return data.sections[0].name;
           });
