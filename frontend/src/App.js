@@ -671,6 +671,7 @@ function App() {
                           favorites={favorites}
                           onFavoriteToggle={loadFavorites}
                           userId={userId}
+                          scheduledTime={scheduledTime}
                         />
                         {/* Inline feedback form for employees */}
                         {employeeToken && (
