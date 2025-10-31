@@ -1,9 +1,16 @@
 import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
-import { employeePasswordLogin, employeePinLogin } from "../api";
+import {
+  employeePasswordLogin,
+  employeePinLogin,
+  employeeRequestOtp,
+  employeeVerifyOtp,
+  employeeRegister,
+} from "../api";
 import { toast } from "react-toastify";
 
 const PIN_IDENTITY_KEY = "employeePinIdentity";
+const OTP_IDENTITY_KEY = "employeeOtpIdentity";
 
 const readPinIdentity = () => {
   try {
@@ -17,24 +24,67 @@ const readPinIdentity = () => {
   return null;
 };
 
-const EmployeeLogin = ({ onSuccess }) => {
-  const [mode, setMode] = useState("password");
+const readOtpIdentity = () => {
+  try {
+    const raw = localStorage.getItem(OTP_IDENTITY_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed && parsed.username && (parsed.mobile || parsed.email)) {
+      return parsed;
+    }
+  } catch {}
+  return null;
+};
+
+const EmployeeLogin = ({ onSuccess, onBack }) => {
+  const [authMode, setAuthMode] = useState("signin");
+  const [signInMethod, setSignInMethod] = useState("password");
   const [loading, setLoading] = useState(false);
+  const [signupLoading, setSignupLoading] = useState(false);
+
   const [uname, setUname] = useState("");
   const [pwd, setPwd] = useState("");
   const [showPwd, setShowPwd] = useState(false);
+
+  const [pinUsername, setPinUsername] = useState("");
   const [pin, setPin] = useState("");
+
+  const [otpMobile, setOtpMobile] = useState("");
+  const [otpStage, setOtpStage] = useState("request");
+  const [otp, setOtp] = useState("");
+  const [otpCountdown, setOtpCountdown] = useState(0);
+
   const [pinIdentity, setPinIdentity] = useState(() => readPinIdentity());
+  const [otpIdentity, setOtpIdentity] = useState(() => readOtpIdentity());
+
+  const [signupData, setSignupData] = useState({
+    username: "",
+    email: "",
+    mobile: "",
+    password: "",
+    pin: "",
+  });
+
+  useEffect(() => {
+    if (otpStage === "verify" && otpCountdown > 0) {
+      const id = setTimeout(() => setOtpCountdown((c) => c - 1), 1000);
+      return () => clearTimeout(id);
+    }
+  }, [otpStage, otpCountdown]);
 
   useEffect(() => {
     setLoading(false);
-    if (mode === "password") {
-      setPin("");
-    } else {
-      setPwd("");
-      setShowPwd(false);
+    setOtpStage("request");
+    setOtp("");
+    setOtpCountdown(0);
+  }, [signInMethod]);
+
+  useEffect(() => {
+    setLoading(false);
+    if (authMode === "signin") {
+      setSignupLoading(false);
     }
-  }, [mode]);
+  }, [authMode]);
 
   const persistPinIdentity = (identity) => {
     try {
@@ -42,6 +92,15 @@ const EmployeeLogin = ({ onSuccess }) => {
       setPinIdentity(identity);
     } catch {}
   };
+
+  const persistOtpIdentity = (identity) => {
+    try {
+      localStorage.setItem(OTP_IDENTITY_KEY, JSON.stringify(identity));
+      setOtpIdentity(identity);
+    } catch {}
+  };
+
+  const formatMobileDigits = (value) => String(value || "").replace(/[^0-9]/g, "").slice(0, 10);
 
   const handlePasswordLogin = async (event) => {
     event.preventDefault();
@@ -62,6 +121,7 @@ const EmployeeLogin = ({ onSuccess }) => {
         };
         if (identity.username) {
           persistPinIdentity(identity);
+          persistOtpIdentity(identity);
         }
       } else {
         toast.error(res?.message || "Login failed");
@@ -75,20 +135,21 @@ const EmployeeLogin = ({ onSuccess }) => {
 
   const handlePinLogin = async (event) => {
     event.preventDefault();
+    if (!pinUsername.trim()) {
+      toast.error("Enter your username");
+      return;
+    }
     if (!/^\d{4}$/.test(pin)) {
       toast.error("Enter your 4-digit PIN");
       return;
     }
-    if (!pinIdentity || !pinIdentity.username) {
-      toast.error("PIN login not set up on this device. Please login once with username & password.");
-      return;
-    }
     try {
       setLoading(true);
-      const res = await employeePinLogin(pinIdentity.username, pin, pinIdentity.mobile || pinIdentity.email);
+      const res = await employeePinLogin(pinUsername.trim(), pin, pinIdentity?.mobile || pinIdentity?.email);
       if (res && res.status === "ok" && res.token) {
         onSuccess({ token: res.token, mobile: res.mobile });
         toast.success("Logged in");
+        persistPinIdentity({ username: pinUsername.trim(), mobile: res.mobile, email: res.email });
       } else {
         toast.error(res?.message || "PIN login failed");
       }
@@ -99,77 +160,352 @@ const EmployeeLogin = ({ onSuccess }) => {
     }
   };
 
+  const handleRequestOtp = async (event) => {
+    event.preventDefault();
+    const digits = formatMobileDigits(otpMobile);
+    if (digits.length !== 10) {
+      toast.error("Enter a valid 10-digit mobile");
+      return;
+    }
+    try {
+      setLoading(true);
+      const res = await employeeRequestOtp(digits);
+      if (res && res.status === "ok") {
+        toast.success("OTP sent to your registered mobile");
+        setOtpStage("verify");
+        setOtpCountdown(45);
+      } else {
+        toast.error(res?.message || "Failed to send OTP");
+      }
+    } catch {
+      toast.error("Error requesting OTP");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (event) => {
+    event.preventDefault();
+    const digits = formatMobileDigits(otpMobile);
+    if (digits.length !== 10) {
+      toast.error("Enter a valid 10-digit mobile");
+      return;
+    }
+    if (!/^\d{6}$/.test(otp)) {
+      toast.error("Enter the 6-digit OTP");
+      return;
+    }
+    try {
+      setLoading(true);
+      const res = await employeeVerifyOtp(digits, otp);
+      if (res && res.status === "ok" && res.token) {
+        toast.success("Logged in");
+        onSuccess({ token: res.token, mobile: res.mobile });
+        setOtp("");
+        setOtpMobile("");
+        setOtpStage("request");
+        setOtpCountdown(0);
+      } else {
+        toast.error(res?.message || "Invalid OTP");
+      }
+    } catch {
+      toast.error("Error verifying OTP");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const validateSignup = () => {
+    const { username, email, mobile, password, pin } = signupData;
+    if (!username.trim()) {
+      toast.error("Username is required");
+      return false;
+    }
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(email || "").trim())) {
+      toast.error("Enter a valid email address");
+      return false;
+    }
+    if (formatMobileDigits(mobile).length !== 10) {
+      toast.error("Enter a valid 10-digit mobile");
+      return false;
+    }
+    if (!(password && password.length >= 8 && password.length <= 20 && /[a-z]/.test(password) && /[A-Z]/.test(password) && /\d/.test(password) && /[\.,&%#@!]/.test(password))) {
+      toast.error("Password must be 8-20 chars with a-z, A-Z, 0-9 and one of .,&%#@!");
+      return false;
+    }
+    if (!/^\d{4}$/.test(pin)) {
+      toast.error("PIN must be exactly 4 digits");
+      return false;
+    }
+    return true;
+  };
+
+  const handleSignup = async (event) => {
+    event.preventDefault();
+    if (!validateSignup()) return;
+    try {
+      setSignupLoading(true);
+      const payload = {
+        username: signupData.username.trim(),
+        email: signupData.email.trim(),
+        mobile: formatMobileDigits(signupData.mobile),
+        password: signupData.password,
+        pin: signupData.pin,
+      };
+      const res = await employeeRegister(payload);
+      if (res && res.status === "ok") {
+        toast.success("Registration successful. You can now sign in.");
+        setAuthMode("signin");
+        setSignInMethod("password");
+        setUname(payload.username);
+        setPwd("");
+      } else {
+        toast.error(res?.message || "Registration failed");
+      }
+    } catch {
+      toast.error("Error during registration");
+    } finally {
+      setSignupLoading(false);
+    }
+  };
+
   return (
-    <div style={{ display: "flex", justifyContent: "center", padding: "20px" }}>
-      <div style={{ width: "100%", maxWidth: 420 }}>
-        <div className="card" style={{ marginBottom: 12, padding: 12 }}>
-          <div style={{ fontWeight: 700, marginBottom: 8, fontSize: 14 }}>Choose Login Method</div>
-          <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-            <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <input type="radio" name="emp-login-mode" checked={mode === "password"} onChange={() => setMode("password")} />
-              <span>Username &amp; Password</span>
-            </label>
-            <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <input type="radio" name="emp-login-mode" checked={mode === "pin"} onChange={() => setMode("pin")} />
-              <span>4-digit PIN</span>
-            </label>
-          </div>
+    <div style={{ width: "100%", maxWidth: 440, margin: "0 auto" }}>
+      <button onClick={onBack} style={{ marginBottom: 20 }}>← Back</button>
+      <div className="card" style={{ padding: 20 }}>
+        <div style={{ display: "flex", marginBottom: 16, borderBottom: "1px solid #eee" }}>
+          <button
+            type="button"
+            onClick={() => setAuthMode("signin")}
+            style={{
+              flex: 1,
+              padding: "10px 12px",
+              border: "none",
+              borderBottom: authMode === "signin" ? "3px solid #111" : "3px solid transparent",
+              background: "transparent",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Sign In
+          </button>
+          <button
+            type="button"
+            onClick={() => setAuthMode("signup")}
+            style={{
+              flex: 1,
+              padding: "10px 12px",
+              border: "none",
+              borderBottom: authMode === "signup" ? "3px solid #111" : "3px solid transparent",
+              background: "transparent",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Sign Up
+          </button>
         </div>
 
-        {mode === "password" && (
-          <form onSubmit={handlePasswordLogin} className="card" style={{ padding: 18, background: "#fff", border: "1px solid #eee", borderRadius: 12, boxShadow: "0 6px 24px rgba(0,0,0,0.06)" }}>
-            <h2 style={{ margin: 0, fontSize: 20 }}>Login with Username &amp; Password</h2>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 10, marginTop: 12 }}>
-              <input placeholder="Username or Email" value={uname} onChange={(e) => setUname(e.target.value)} />
-              <div style={{ position: "relative" }}>
-                <input
-                  type={showPwd ? "text" : "password"}
-                  placeholder="Password"
-                  value={pwd}
-                  onChange={(e) => setPwd(e.target.value)}
-                  style={{ width: "100%", paddingRight: 74 }}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPwd((s) => !s)}
-                  style={{ position: "absolute", right: 6, top: 6, padding: "6px 10px", fontSize: 12, border: "1px solid #ddd", background: "#f8f9fa", borderRadius: 6 }}
-                >
-                  {showPwd ? "Hide" : "Show"}
-                </button>
-              </div>
+        {authMode === "signin" ? (
+          <>
+            <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
               <button
-                type="submit"
-                style={{ width: "100%", padding: "10px 12px", background: "#111", color: "#fff", border: "1px solid #111", borderRadius: 8, fontWeight: 600 }}
-                disabled={loading}
+                type="button"
+                onClick={() => setSignInMethod("otp")}
+                style={{
+                  flex: 1,
+                  padding: "8px 10px",
+                  borderRadius: 8,
+                  border: signInMethod === "otp" ? "2px solid #111" : "1px solid #ddd",
+                  background: signInMethod === "otp" ? "#111" : "#fff",
+                  color: signInMethod === "otp" ? "#fff" : "#111",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
               >
-                {loading ? "Logging in..." : "Login"}
+                Mobile + OTP
+              </button>
+              <button
+                type="button"
+                onClick={() => setSignInMethod("pin")}
+                style={{
+                  flex: 1,
+                  padding: "8px 10px",
+                  borderRadius: 8,
+                  border: signInMethod === "pin" ? "2px solid #111" : "1px solid #ddd",
+                  background: signInMethod === "pin" ? "#111" : "#fff",
+                  color: signInMethod === "pin" ? "#fff" : "#111",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                4-digit PIN
+              </button>
+              <button
+                type="button"
+                onClick={() => setSignInMethod("password")}
+                style={{
+                  flex: 1,
+                  padding: "8px 10px",
+                  borderRadius: 8,
+                  border: signInMethod === "password" ? "2px solid #111" : "1px solid #ddd",
+                  background: signInMethod === "password" ? "#111" : "#fff",
+                  color: signInMethod === "password" ? "#fff" : "#111",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                Username &amp; Password
               </button>
             </div>
-          </form>
-        )}
 
-        {mode === "pin" && (
-          <form onSubmit={handlePinLogin} className="card" style={{ padding: 18, background: "#fff", border: "1px solid #eee", borderRadius: 12, boxShadow: "0 6px 24px rgba(0,0,0,0.06)" }}>
-            <h2 style={{ margin: 0, fontSize: 20 }}>Login with 4-digit PIN</h2>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 8, marginTop: 12, alignItems: "center" }}>
-              <input placeholder="Enter 4-digit PIN" maxLength={4} value={pin} onChange={(e) => setPin(e.target.value.replace(/[^0-9]/g, "").slice(0, 4))} />
-              <button type="submit" disabled={loading}>
-                {loading ? "Logging in..." : "Enter"}
-              </button>
-            </div>
-            <div style={{ fontSize: 12, color: "#666", marginTop: 6 }}>
-              PIN login uses the credentials saved on this device after a successful username/password login.
-            </div>
-            {pinIdentity ? (
-              <div style={{ fontSize: 12, color: "#444", marginTop: 8 }}>
-                Stored identity: <strong>{pinIdentity.username}</strong>
-                {pinIdentity.email ? ` (${pinIdentity.email})` : pinIdentity.mobile ? ` (${pinIdentity.mobile})` : ""}
-              </div>
-            ) : (
-              <div style={{ fontSize: 12, color: "#d35400", marginTop: 8 }}>
-                No PIN identity stored yet. Please login once with username and password to enable PIN login.
-              </div>
+            {signInMethod === "otp" && (
+              <form onSubmit={otpStage === "request" ? handleRequestOtp : handleVerifyOtp} style={{ display: "grid", gap: 12 }}>
+                <div>
+                  <label className="label">Registered Mobile (+91)</label>
+                  <input
+                    placeholder="10-digit mobile"
+                    value={otpMobile}
+                    onChange={(e) => setOtpMobile(formatMobileDigits(e.target.value))}
+                    maxLength={10}
+                    required
+                  />
+                </div>
+                {otpStage === "verify" && (
+                  <div>
+                    <label className="label">Enter OTP</label>
+                    <input
+                      placeholder="6-digit OTP"
+                      value={otp}
+                      onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, "").slice(0, 6))}
+                      maxLength={6}
+                      required
+                    />
+                  </div>
+                )}
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button type="submit" disabled={loading} style={{ flex: 1 }}>
+                    {loading ? "Please wait..." : otpStage === "request" ? "Send OTP" : "Verify & Login"}
+                  </button>
+                  {otpStage === "verify" && (
+                    <button
+                      type="button"
+                      disabled={loading || otpCountdown > 0}
+                      onClick={handleRequestOtp}
+                      style={{ flexBasis: 160 }}
+                    >
+                      {otpCountdown > 0 ? `Resend in ${otpCountdown}s` : "Resend OTP"}
+                    </button>
+                  )}
+                </div>
+              </form>
             )}
+
+            {signInMethod === "pin" && (
+              <form onSubmit={handlePinLogin} style={{ display: "grid", gap: 12 }}>
+                <div>
+                  <label className="label">Username</label>
+                  <input placeholder="Enter username" value={pinUsername} onChange={(e) => setPinUsername(e.target.value)} required />
+                </div>
+                <div>
+                  <label className="label">4-digit PIN</label>
+                  <input
+                    placeholder="PIN"
+                    value={pin}
+                    onChange={(e) => setPin(e.target.value.replace(/[^0-9]/g, "").slice(0, 4))}
+                    maxLength={4}
+                    required
+                  />
+                </div>
+                <button type="submit" disabled={loading}>
+                  {loading ? "Logging in..." : "Login"}
+                </button>
+              </form>
+            )}
+
+            {signInMethod === "password" && (
+              <form onSubmit={handlePasswordLogin} style={{ display: "grid", gap: 12 }}>
+                <div>
+                  <label className="label">Username or Email</label>
+                  <input placeholder="john.doe" value={uname} onChange={(e) => setUname(e.target.value)} required />
+                </div>
+                <div style={{ position: "relative" }}>
+                  <label className="label">Password</label>
+                  <input
+                    type={showPwd ? "text" : "password"}
+                    placeholder="Password"
+                    value={pwd}
+                    onChange={(e) => setPwd(e.target.value)}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPwd((s) => !s)}
+                    style={{ position: "absolute", right: 8, bottom: 8, fontSize: 12, border: "1px solid #ddd", background: "#f8f9fa", borderRadius: 6, padding: "4px 8px" }}
+                  >
+                    {showPwd ? "Hide" : "Show"}
+                  </button>
+                </div>
+                <button type="submit" disabled={loading}>
+                  {loading ? "Logging in..." : "Login"}
+                </button>
+              </form>
+            )}
+          </>
+        ) : (
+          <form onSubmit={handleSignup} style={{ display: "grid", gap: 12 }}>
+            <div>
+              <label className="label">Username</label>
+              <input
+                placeholder="Choose a username"
+                value={signupData.username}
+                onChange={(e) => setSignupData((prev) => ({ ...prev, username: e.target.value }))}
+                required
+              />
+            </div>
+            <div>
+              <label className="label">Email</label>
+              <input
+                type="email"
+                placeholder="you@example.com"
+                value={signupData.email}
+                onChange={(e) => setSignupData((prev) => ({ ...prev, email: e.target.value }))}
+                required
+              />
+            </div>
+            <div>
+              <label className="label">Mobile (+91)</label>
+              <input
+                placeholder="10-digit mobile"
+                value={signupData.mobile}
+                onChange={(e) => setSignupData((prev) => ({ ...prev, mobile: formatMobileDigits(e.target.value) }))}
+                maxLength={10}
+                required
+              />
+            </div>
+            <div>
+              <label className="label">Password</label>
+              <input
+                type="password"
+                placeholder="Password (8-20 chars, a-z, A-Z, 0-9, one of .,&%#@!)"
+                value={signupData.password}
+                onChange={(e) => setSignupData((prev) => ({ ...prev, password: e.target.value }))}
+                required
+              />
+            </div>
+            <div>
+              <label className="label">4-digit PIN</label>
+              <input
+                placeholder="PIN"
+                value={signupData.pin}
+                onChange={(e) => setSignupData((prev) => ({ ...prev, pin: e.target.value.replace(/[^0-9]/g, "").slice(0, 4) }))}
+                maxLength={4}
+                required
+              />
+            </div>
+            <button type="submit" disabled={signupLoading}>
+              {signupLoading ? "Registering..." : "Register"}
+            </button>
           </form>
         )}
       </div>
@@ -179,6 +515,7 @@ const EmployeeLogin = ({ onSuccess }) => {
 
 EmployeeLogin.propTypes = {
   onSuccess: PropTypes.func.isRequired,
+  onBack: PropTypes.func.isRequired,
 };
 
 export default EmployeeLogin;

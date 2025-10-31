@@ -50,7 +50,7 @@ function App() {
   const [vendorToken, setVendorToken] = useState(null);
   const [employeeToken, setEmployeeToken] = useState(null);
   const [employeeMobile, setEmployeeMobile] = useState("");
-  const [view, setView] = useState("user");
+  const [view, setView] = useState("landing");
   const [orderSummary, setOrderSummary] = useState(null);
   const [userOrders, setUserOrders] = useState([]);
   const [favorites, setFavorites] = useState([]);
@@ -118,6 +118,12 @@ function App() {
       setFavorites([]);
     }
   }, [userId]);
+
+  useEffect(() => {
+    if (!employeeToken && ["user", "orders", "profile"].includes(view)) {
+      setView("landing");
+    }
+  }, [employeeToken, view]);
 
   // Employee ready notification: poll orders and alert when status becomes ready
   useEffect(() => {

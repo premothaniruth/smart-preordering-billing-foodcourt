@@ -1,3 +1,45 @@
+// Request OTP for employee login (registered users only)
+app.post("/employee/request-otp", (req, res) => {
+  try {
+    const { mobile } = req.body || {};
+    if (!mobile || !/^\d{10}$/.test(mobile)) {
+      return res.status(400).json({ message: "Mobile must be 10 digits" });
+    }
+    const fullMobile = `+91${mobile}`;
+    const employees = getEmployees();
+    const user = employees.find(e => String(e.mobile || '').toLowerCase() === fullMobile.toLowerCase());
+    if (!user) return res.status(404).json({ message: 'Mobile not registered' });
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    employeeOtps.set(fullMobile, { otp, expiresAt: Date.now() + 2 * 60 * 1000 });
+    console.log(`[OTP] Mobile: ${fullMobile} -> ${otp}`);
+    res.json({ status: 'ok' });
+  } catch {
+    res.status(500).json({ message: 'Error requesting OTP' });
+  }
+});
+
+// Verify OTP and issue session
+app.post("/employee/verify-otp", (req, res) => {
+  try {
+    const { mobile, otp } = req.body || {};
+    if (!mobile || !otp) return res.status(400).json({ message: 'Mobile and OTP required' });
+    if (!/^\d{10}$/.test(String(mobile))) return res.status(400).json({ message: 'Invalid mobile' });
+    const fullMobile = `+91${mobile}`;
+    const record = employeeOtps.get(fullMobile);
+    if (!record || record.otp !== String(otp) || Date.now() > record.expiresAt) {
+      return res.status(401).json({ message: 'Invalid or expired OTP' });
+    }
+    employeeOtps.delete(fullMobile);
+    const employees = getEmployees();
+    const user = employees.find(e => String(e.mobile || '').toLowerCase() === fullMobile.toLowerCase());
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    const token = jwt.sign({ role: 'employee', mobile: fullMobile }, JWT_SECRET, { expiresIn: '8h' });
+    employeeSessions.set(token, { mobile: fullMobile, createdAt: Date.now() });
+    res.json({ status: 'ok', token, mobile: fullMobile, username: user.username, email: user.email });
+  } catch {
+    res.status(500).json({ message: 'Error verifying OTP' });
+  }
+});
 // Employees
 /** @returns {Array<{id:number,username?:string,email?:string,mobile?:string,passwordHash?:string,pinHash?:string}>} */
 const getEmployees = () => {
@@ -219,6 +261,10 @@ app.post('/employee/register', async (req, res) => {
     const employees = getEmployees();
     const exists = employees.some(e => String(e.username).toLowerCase() === username.toLowerCase());
     if (exists) return res.status(409).json({ message: 'Username not available' });
+    const mobileExists = employees.some(e => String(e.mobile || '').toLowerCase() === mobileNorm.toLowerCase());
+    if (mobileExists) return res.status(409).json({ message: 'Mobile already registered' });
+    const emailExists = employees.some(e => String(e.email || '').toLowerCase() === emailStr.toLowerCase());
+    if (emailExists) return res.status(409).json({ message: 'Email already registered' });
     const id = (employees.reduce((m, e) => Math.max(m, Number(e.id)||0), 0) + 1) || 1;
     const passwordHash = await bcrypt.hash(String(password), 10);
     const pinHash = await bcrypt.hash(String(pin), 10);
@@ -240,10 +286,10 @@ app.post('/employee/login-password', async (req, res) => {
     if (!u || !u.passwordHash) return res.status(401).json({ message: 'Invalid credentials' });
     const ok = await bcrypt.compare(String(password), String(u.passwordHash));
     if (!ok) return res.status(401).json({ message: 'Invalid credentials' });
-    const mobile = u.email || u.username || String(u.id);
+    const mobile = u.mobile || u.email || u.username || String(u.id);
     const token = jwt.sign({ role: 'employee', mobile }, JWT_SECRET, { expiresIn: '8h' });
     employeeSessions.set(token, { mobile, createdAt: Date.now() });
-    res.json({ status: 'ok', token, mobile });
+    res.json({ status: 'ok', token, mobile, username: u.username, email: u.email });
   } catch (e) {
     res.status(500).json({ message: 'Error during password login' });
   }
@@ -541,6 +587,7 @@ const getSectionWindows = () => {
 };
 
 // In-memory stores (no database)
+const employeeOtps = new Map(); // mobile -> { otp, expiresAt }
 const employeeSessions = new Map(); // token -> { mobile, createdAt }
 
 // Billing counter management

@@ -24,6 +24,24 @@ export const employeeRegister = async ({ username, password, pin, mobile, email 
   return res.json();
 };
 
+export const employeeRequestOtp = async (mobile) => {
+  const res = await fetch(`${API_URL}/employee/request-otp`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ mobile })
+  });
+  return res.json();
+};
+
+export const employeeVerifyOtp = async (mobile, otp) => {
+  const res = await fetch(`${API_URL}/employee/verify-otp`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ mobile, otp })
+  });
+  return res.json();
+};
+
 // Employee profile
 export const employeeProfile = async (token) => {
   const res = await fetch(`${API_URL}/employee/profile`, {
