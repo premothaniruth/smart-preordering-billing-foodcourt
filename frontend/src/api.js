@@ -53,6 +53,15 @@ export const employeePasswordLogin = async (username, password) => {
   return res.json();
 };
 
+export const employeePinLogin = async (username, pin, mobileOrEmail) => {
+  const res = await fetch(`${API_URL}/employee/login-pin`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, pin, mobileOrEmail })
+  });
+  return res.json();
+};
+
 export const employeeResetPin = async (username, mobileOrEmail, newPin) => {
   const res = await fetch(`${API_URL}/employee/reset-pin`, {
     method: 'POST',
@@ -67,6 +76,15 @@ export const employeeResetPassword = async (username, mobileOrEmail, newPassword
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, mobileOrEmail, newPassword })
+  });
+  return res.json();
+};
+
+export const employeeProfileRequestOtp = async (token, action) => {
+  const res = await fetch(`${API_URL}/employee/profile/request-otp`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, action })
   });
   return res.json();
 };
