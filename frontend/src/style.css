@@ -1281,8 +1281,11 @@ textarea:focus-visible {
 }
 
 .password-toggle:focus,
-.password-toggle:focus-visible {
+.password-toggle:focus-visible,
+.password-toggle:active {
   outline: none;
+  box-shadow: none;
+  background: transparent;
 }
 
 .eye-icon {
