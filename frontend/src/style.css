@@ -1199,6 +1199,16 @@ textarea:focus-visible {
   text-decoration: underline;
 }
 
+.employee-login-card button:focus,
+.employee-login-card button:focus-visible,
+.link-button:focus,
+.link-button:focus-visible,
+.employee-auth-method:focus,
+.employee-auth-method:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
 .password-field {
   position: relative;
 }
