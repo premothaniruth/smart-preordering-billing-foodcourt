@@ -67,12 +67,15 @@ const EmployeeProfile = ({ token }) => {
       if (!profile || !profile.id) { toast.error('Profile not loaded'); return; }
       const updates = {};
       const isValidEmail = (s) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(s||''));
-      if (!usernameEdit || !usernameEdit.trim()) { toast.error('Username is required'); return; }
+      const canEditUsername = !Boolean(profile?.username);
+      if (canEditUsername) {
+        if (!usernameEdit || !usernameEdit.trim()) { toast.error('Username is required'); return; }
+      }
       if (email && !isValidEmail(email)) { toast.error('Enter a valid email'); return; }
       if (mobile && String(mobile).replace(/[^0-9]/g,'').length !== 10) { toast.error('Enter a 10-digit mobile'); return; }
       if (password && !pwdRuleOk(password)) { toast.error('Password must be 8-20 chars with a-z, A-Z, 0-9 and one of .,&%#@!'); return; }
       if (pin && !/^\d{4}$/.test(pin)) { toast.error('PIN must be exactly 4 digits'); return; }
-      if (usernameEdit !== (profile?.username || '')) updates.username = usernameEdit;
+      if (canEditUsername && usernameEdit !== (profile?.username || '')) updates.username = usernameEdit;
       if (email !== (profile?.email || '')) updates.email = email;
       if (mobile && ('+91' + mobile) !== (profile?.mobile || '')) updates.mobile = mobile;
       if (password) updates.password = password;
@@ -104,6 +107,11 @@ const EmployeeProfile = ({ token }) => {
     };
   }, [profile, usernameEdit, email, mobile]);
 
+  const canEditUsername = useMemo(() => {
+    const current = profile?.username;
+    return !current || !String(current).trim();
+  }, [profile]);
+
   return (
     <div>
       <h2>My Profile</h2>
@@ -132,13 +140,13 @@ const EmployeeProfile = ({ token }) => {
             <div>
               <div className="profile-label">Current Username</div>
               <div className="profile-field-row">
-                {viewMode === 'view' ? (
+                {viewMode === 'view' || !canEditUsername ? (
                   <div className="profile-text">{profileSummary?.username || '—'}</div>
                 ) : (
                   <input value={usernameEdit} onChange={(e) => setUsernameEdit(e.target.value)} placeholder="Choose a username" />
                 )}
               </div>
-              <div className="profile-hint">Username is used for PIN and password logins.</div>
+              <div className="profile-hint">{canEditUsername ? 'Username is used for PIN and password logins.' : 'Username is locked after registration. Contact support to request a change.'}</div>
             </div>
 
             <div>

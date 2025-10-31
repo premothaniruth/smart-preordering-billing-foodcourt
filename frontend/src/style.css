@@ -1236,6 +1236,7 @@ textarea:focus-visible {
   cursor: pointer;
   height: 100%;
   width: 24px;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .password-toggle:hover {

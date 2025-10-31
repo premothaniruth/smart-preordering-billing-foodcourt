@@ -268,7 +268,12 @@ app.post('/employee/profile/update', async (req, res) => {
     if (Object.prototype.hasOwnProperty.call(updates, 'username')) {
       const candidate = String(updates.username || '').trim();
       if (!candidate) return res.status(400).json({ message: 'Username is required' });
-      if (candidate.toLowerCase() !== String(employee.username || '').toLowerCase()) {
+      const currentUsername = String(employee.username || '').trim();
+      if (currentUsername) {
+        if (candidate.toLowerCase() !== currentUsername.toLowerCase()) {
+          return res.status(403).json({ message: 'Username cannot be changed after registration' });
+        }
+      } else if (candidate.toLowerCase() !== currentUsername.toLowerCase()) {
         const exists = employees.some((e, idx) => idx !== index && String(e.username || '').toLowerCase() === candidate.toLowerCase());
         if (exists) return res.status(409).json({ message: 'Username not available' });
         updated.username = candidate;
