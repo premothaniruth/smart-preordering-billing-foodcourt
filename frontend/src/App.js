@@ -16,11 +16,16 @@ import OrderHistory from "./components/OrderHistory";
 import RatingModal from "./components/RatingModal";
 import GrievanceModal from "./components/GrievanceModal";
 import VendorGrievances from "./components/VendorGrievances";
+import AdminControl from "./components/AdminControl";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 const ORDER_PLACED_SOUND = "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBDWM0/K/gC4EH29+3WgyBCk4XoCWJhcBTnLcWswB";
 const READY_SOUND = "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBDWM0/K/gC4EH29+3WgyBCk4XoCWJhcBTnLcWswB";
+const ADMIN_CREDENTIALS = {
+  username: "infybhojans",
+  password: "infybhojans"
+};
 
 /**
  * App
@@ -69,6 +74,8 @@ function App() {
   const readySeededRef = useRef(false);
   const [targetItemId, setTargetItemId] = useState(null);
   const [recentOrdersTodayCount, setRecentOrdersTodayCount] = useState(0);
+  const [adminSession, setAdminSession] = useState(null);
+  const [adminManagedVendors, setAdminManagedVendors] = useState([]);
 
   const userId = employeeMobile || null;
   const vendorShopId = (() => {
@@ -584,6 +591,44 @@ function App() {
     toast.info("Logged out");
   };
 
+  const handleAdminLogin = ({ username, password }) => {
+    const trimmedUser = String(username || '').trim();
+    const trimmedPass = String(password || '').trim();
+    if (!trimmedUser || !trimmedPass) {
+      toast.error("Enter admin credentials");
+      return;
+    }
+    if (
+      trimmedUser !== ADMIN_CREDENTIALS.username ||
+      trimmedPass !== ADMIN_CREDENTIALS.password
+    ) {
+      toast.error("Invalid admin username or password");
+      return;
+    }
+    setAdminSession({ username: trimmedUser });
+    toast.success("Admin logged in");
+  };
+
+  const handleAdminLogout = () => {
+    setAdminSession(null);
+    toast.info("Admin logged out");
+    setView("landing");
+  };
+
+  const handleCreateVendor = (payload) => {
+    const id = Date.now();
+    setAdminManagedVendors((prev) => [...prev, { id, ...payload }]);
+    toast.success(`Vendor ${payload.shopName} created. Email sent to ${payload.email}.`);
+  };
+
+  const handleUpdateVendor = (vendorId, payload) => {
+    setAdminManagedVendors((prev) => prev.map((vendor) => {
+      if (String(vendor.id) !== String(vendorId)) return vendor;
+      return { ...vendor, ...payload };
+    }));
+    toast.success("Vendor credentials updated and notification sent");
+  };
+
   return (
     <>
       <header>
@@ -664,6 +709,13 @@ function App() {
                       <p>Manage menu, view analytics, handle orders, and resolve complaints</p>
                       <button onClick={() => setView("login")} className="secondary-button">
                         Vendor Login
+                      </button>
+                    </div>
+                    <div className="option-card admin-card">
+                      <h3>Infy Bhojans Admin Control</h3>
+                      <p>Create vendors, reset credentials, and oversee platform access</p>
+                      <button onClick={() => setView("admin")} className="secondary-button">
+                        Admin Login
                       </button>
                     </div>
                   </div>
@@ -829,6 +881,17 @@ function App() {
                   onRequestWalletRefresh={loadWallet}
                 />
               </>
+            )}
+
+            {view === "admin" && (
+              <AdminControl
+                adminSession={adminSession}
+                onAdminLogin={handleAdminLogin}
+                onAdminLogout={handleAdminLogout}
+                onCreateVendor={handleCreateVendor}
+                onUpdateVendor={handleUpdateVendor}
+                vendors={adminManagedVendors}
+              />
             )}
           </>
         )}
