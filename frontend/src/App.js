@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import { fetchMenu, placeOrder, fetchUserOrders, fetchFavorites, vendorLogin, updateMenu, markOrderReady, fetchAnalytics, submitRating } from "./api";
+import { fetchMenu, placeOrder, fetchUserOrders, fetchFavorites, vendorLogin, updateMenu, markOrderReady, fetchAnalytics, submitRating, cancelOrder } from "./api";
 import Menu from "./components/Menu";
 import Cart from "./components/Cart";
 import Payment from "./components/Payment";
@@ -419,6 +419,34 @@ function App() {
     setShowGrievanceModal(true);
   };
 
+  const handleCancelScheduledOrder = async (order) => {
+    if (!order || !order.id) return;
+    if (!order.scheduledTime) {
+      toast.error("Only scheduled orders can be cancelled");
+      return;
+    }
+    if (!userId) {
+      toast.error("Login required");
+      return;
+    }
+    const scheduledAt = new Date(order.scheduledTime).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+    const confirmMsg = `Cancel order ${order.billingId || order.id} scheduled for ${scheduledAt}?\nRefunds depend on how early you cancel.`;
+    const confirmed = window.confirm(confirmMsg);
+    if (!confirmed) return;
+    const reason = window.prompt("Optional: share the reason for cancellation", "");
+    try {
+      const response = await cancelOrder(order.id, userId, reason || "");
+      if (!response || response.status !== 'success') {
+        toast.error(response?.message || "Could not cancel order");
+        return;
+      }
+      setUserOrders((prev) => prev.map((o) => (o.id === order.id ? response.order : o)));
+      toast.success(`Order cancelled. Refund: ₹${response.refundAmount?.toFixed?.(2) ?? response.refundAmount ?? 0}`);
+    } catch (error) {
+      toast.error("Error while cancelling order");
+    }
+  };
+
   const submitInlineFeedback = async () => {
     try {
       if (!inlineRating) return toast.error("Please select a rating");
@@ -669,6 +697,7 @@ function App() {
                 onBack={() => setView("user")}
                 onClearHistory={handleClearHistory}
                 onReportIssue={handleReportIssue}
+                onCancel={handleCancelScheduledOrder}
               />
             )}
             {view === "profile" && (

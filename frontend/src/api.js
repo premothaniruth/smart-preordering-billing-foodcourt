@@ -465,6 +465,22 @@ export const fetchUserOrders = async (userId) => {
 };
 
 /**
+ * Cancel a scheduled order for a user
+ * @param {number} orderId
+ * @param {string} userId
+ * @param {string=} reason
+ * @returns {Promise<any>}
+ */
+export const cancelOrder = async (orderId, userId, reason = "") => {
+  const res = await fetch(`${API_URL}/order/cancel/${orderId}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId, reason })
+  });
+  return res.json();
+};
+
+/**
  * Fetch feedbacks for this vendor's shop
  * @param {string} token
  * @returns {Promise<any>}

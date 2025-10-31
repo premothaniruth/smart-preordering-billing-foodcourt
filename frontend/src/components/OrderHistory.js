@@ -12,10 +12,11 @@ import { submitRating } from "../api";
  *  onBack: ()=>void,
  *  onClearHistory: ()=>void,
  *  onReportIssue: (order:any)=>void,
+ *  onCancel?: (order:any)=>void,
  * }} props
  */
 
-const OrderHistory = ({ orders, onReorder, onBack, onClearHistory, onReportIssue }) => {
+const OrderHistory = ({ orders, onReorder, onBack, onClearHistory, onReportIssue, onCancel }) => {
   const byCreatedDesc = (a, b) => new Date(b.createdAt) - new Date(a.createdAt);
   const readyOrders = useMemo(() => orders.filter(o => o.status === 'ready').sort(byCreatedDesc), [orders]);
   const completedOrders = useMemo(() => orders.filter(o => o.status === 'completed').sort(byCreatedDesc), [orders]);
@@ -112,6 +113,23 @@ const OrderHistory = ({ orders, onReorder, onBack, onClearHistory, onReportIssue
 
   function renderOrderCard(order) {
     const early = isEarly(order);
+    const isScheduled = Boolean(order.scheduledTime);
+    const isPending = (order.status || '').toLowerCase() === 'pending';
+    const cancellable = Boolean(onCancel) && isScheduled && isPending;
+    let cancellationWindow = null;
+    if (isScheduled) {
+      try {
+        const scheduledDate = new Date(order.scheduledTime);
+        const diffMinutes = Math.round((scheduledDate.getTime() - Date.now()) / 60000);
+        if (!Number.isNaN(diffMinutes)) {
+          if (diffMinutes <= 0) {
+            cancellationWindow = 'Scheduled window in progress';
+          } else {
+            cancellationWindow = diffMinutes >= 60 ? 'Full refund if cancelled ≥ 60 min before' : (diffMinutes >= 30 ? '75% refund if cancelled 30-59 min before' : 'Cancellation window closes in <30 min');
+          }
+        }
+      } catch {}
+    }
     return (
       <>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: 15 }}>
@@ -153,6 +171,11 @@ const OrderHistory = ({ orders, onReorder, onBack, onClearHistory, onReportIssue
                 ETA: {new Date(order.estimatedReadyTime).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
               </div>
             )}
+            {isScheduled && order.scheduledTime && (
+              <div style={{ fontSize: 11, color: "#666", marginTop: 2 }}>
+                Scheduled for: {new Date(order.scheduledTime).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+              </div>
+            )}
             {order.etaExtensionMinutes > 0 && (
               <div style={{ fontSize: 11, color: "#c0392b", marginTop: 2 }}>
                 Vendor extended by {order.etaExtensionMinutes} min{order.etaExtensionMinutes>1?'s':''} {order.etaExtendedAt ? `on ${new Date(order.etaExtendedAt).toLocaleString('en-IN', { dateStyle:'medium', timeStyle:'short' })}` : ''}
@@ -163,10 +186,30 @@ const OrderHistory = ({ orders, onReorder, onBack, onClearHistory, onReportIssue
                 We prepared your order earlier than expected. Hope you enjoy our quick service! Please encourage us with a positive rating and feedback to serve you better.
               </div>
             )}
+            {cancellationWindow && (
+              <div style={{ fontSize: 11, color: '#8e44ad', marginTop: 6 }}>
+                {cancellationWindow}
+              </div>
+            )}
+            {order.status === 'cancelled' && (
+              <div style={{ fontSize: 12, color: '#c0392b', marginTop: 6 }}>
+                Cancelled at {order.cancelledAt ? new Date(order.cancelledAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : '—'}
+                {order.refundAmount != null && ` · Refund: ₹${Number(order.refundAmount).toFixed(2)}`}
+                {order.cancellationPolicy && ` · ${order.cancellationPolicy}`}
+              </div>
+            )}
           </div>
           <div style={{ display: "flex", gap: 10 }}>
             <button onClick={() => onReorder(order)} style={{ background: "#3498db", padding: "8px 16px" }}>🔄 Reorder</button>
             <button onClick={() => onReportIssue(order)} style={{ background: "#e67e22", padding: "8px 16px" }}>⚠️ Report Issue</button>
+            {cancellable && (
+              <button
+                onClick={() => onCancel(order)}
+                style={{ background: "#e74c3c", padding: "8px 16px" }}
+              >
+                ❌ Cancel Order
+              </button>
+            )}
           </div>
         </div>
 

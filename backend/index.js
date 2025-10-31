@@ -881,6 +881,94 @@ const calculatePreparationTime = (items, shopId) => {
   return Math.max(totalItemTime + queueTime, 5);
 };
 
+const calculateOrderTotal = (order) => {
+  if (!order) return 0;
+  if (order.totalAmount != null) {
+    const parsed = Number(order.totalAmount);
+    if (!Number.isNaN(parsed)) return parsed;
+  }
+  if (!Array.isArray(order.items)) return 0;
+  const total = order.items.reduce((sum, it) => {
+    const price = Number(it?.price || 0);
+    const qty = Number(it?.quantity || 0);
+    return sum + price * qty;
+  }, 0);
+  return Math.round(total * 100) / 100;
+};
+
+const evaluateScheduledCancellation = (order) => {
+  if (!order) return { allowed: false, reason: "Order not found" };
+  if (!order.scheduledTime) {
+    return { allowed: false, reason: "Only scheduled orders can be cancelled." };
+  }
+  if ((order.status || "").toLowerCase() !== "pending") {
+    return { allowed: false, reason: "Only pending scheduled orders can be cancelled." };
+  }
+  const scheduledDate = new Date(order.scheduledTime);
+  if (Number.isNaN(scheduledDate.getTime())) {
+    return { allowed: false, reason: "Scheduled time is invalid for this order." };
+  }
+  const now = new Date();
+  const diffMinutes = (scheduledDate.getTime() - now.getTime()) / 60000;
+  if (diffMinutes <= 0) {
+    return { allowed: false, reason: "The scheduled window has already started." };
+  }
+  let refundPercent = null;
+  let policy = null;
+  if (diffMinutes >= 60) {
+    refundPercent = 1;
+    policy = "Full refund (cancel ≥ 60 minutes before scheduled time)";
+  } else if (diffMinutes >= 30) {
+    refundPercent = 0.75;
+    policy = "75% refund (cancel 30-59 minutes before scheduled time)";
+  } else {
+    return {
+      allowed: false,
+      reason: "Cancellations are allowed until 30 minutes before the scheduled time.",
+      diffMinutes
+    };
+  }
+  const total = calculateOrderTotal(order);
+  const refundAmount = Math.round(total * refundPercent * 100) / 100;
+  const feeAmount = Math.round((total - refundAmount) * 100) / 100;
+  return {
+    allowed: true,
+    refundAmount,
+    feeAmount,
+    refundPercent,
+    diffMinutes,
+    policy
+  };
+};
+
+const restockInventory = (rawMenu, targetShopId, itemId, qty) => {
+  const quantity = Number(qty || 0);
+  if (!quantity) return;
+  const shopIdStr = String(targetShopId);
+  if (Array.isArray(rawMenu)) {
+    const shopEntry = rawMenu.find((x) => String(x.shopId) === shopIdStr);
+    if (!shopEntry || !Array.isArray(shopEntry.items)) return;
+    const item = shopEntry.items.find((i) => i.id === itemId);
+    if (item) {
+      const current = Number(item.inventory ?? 0);
+      item.inventory = current + quantity;
+    }
+    return;
+  }
+  const shops = Array.isArray(rawMenu?.shops) ? rawMenu.shops : [];
+  const shopEntry = shops.find((x) => String(x.shopId) === shopIdStr);
+  if (!shopEntry || !Array.isArray(shopEntry.categories)) return;
+  for (const category of shopEntry.categories) {
+    if (!Array.isArray(category.items)) continue;
+    const found = category.items.find((i) => i.id === itemId);
+    if (found) {
+      const current = Number(found.inventory ?? 0);
+      found.inventory = current + quantity;
+      return;
+    }
+  }
+};
+
 // Middleware: Authenticate vendor
 /**
  * Middleware: Validates vendor JWT and enriches req.vendor.
@@ -1315,7 +1403,8 @@ app.post("/order", (req, res) => {
       baseEstimatedReadyTime: estimatedReadyTime,
       basePrepTime: prepTime,
       rating: null,
-      feedback: null
+      feedback: null,
+      totalAmount
     };
 
     orders.push(newOrder);
@@ -1344,6 +1433,82 @@ app.post("/order", (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: "Error placing order" });
+  }
+});
+
+app.post("/order/cancel/:id", (req, res) => {
+  try {
+    const orderId = parseInt(req.params.id, 10);
+    if (Number.isNaN(orderId)) {
+      return res.status(400).json({ message: "Invalid order id" });
+    }
+    const { userId, reason } = req.body || {};
+    if (!userId) {
+      return res.status(400).json({ message: "userId is required" });
+    }
+    const orders = getOrders();
+    const index = orders.findIndex((o) => Number(o.id) === orderId);
+    if (index === -1) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+    const order = orders[index];
+    if (String(order.user || "").trim() !== String(userId).trim()) {
+      return res.status(403).json({ message: "You can only cancel your own orders" });
+    }
+    if ((order.status || "").toLowerCase() === "cancelled") {
+      return res.status(400).json({ status: "error", message: "Order is already cancelled." });
+    }
+    const outcome = evaluateScheduledCancellation(order);
+    if (!outcome.allowed) {
+      return res.status(400).json({
+        status: "error",
+        message: outcome.reason || "Cancellation not allowed",
+        policy: outcome.policy || null,
+        diffMinutes: outcome.diffMinutes ?? null
+      });
+    }
+
+    let rawMenu;
+    try {
+      rawMenu = getMenu();
+    } catch {
+      rawMenu = null;
+    }
+
+    if (rawMenu && Array.isArray(order.items)) {
+      for (const item of order.items) {
+        const quantity = Number(item?.quantity || 0);
+        const itemId = item?.id;
+        if (!itemId || !quantity) continue;
+        restockInventory(rawMenu, order.shopId, itemId, quantity);
+      }
+      try {
+        saveMenu(rawMenu);
+      } catch {}
+    }
+
+    order.status = "cancelled";
+    order.cancelledAt = new Date().toISOString();
+    order.cancelledBy = userId;
+    order.cancellationReason = reason || null;
+    order.refundAmount = outcome.refundAmount;
+    order.cancellationFee = outcome.feeAmount;
+    order.cancellationPolicy = outcome.policy;
+    order.cancellationRefundPercent = outcome.refundPercent;
+    order.cancellationLeadMinutes = outcome.diffMinutes;
+
+    saveOrders(orders);
+
+    res.json({
+      status: "success",
+      message: "Order cancelled successfully",
+      refundAmount: outcome.refundAmount,
+      feeAmount: outcome.feeAmount,
+      policy: outcome.policy,
+      order
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Error cancelling order" });
   }
 });
 
