@@ -5,7 +5,7 @@
     "email": "prem@gmail.com",
     "mobile": "9952911560",
     "passwordHash": "$2b$10$u97ZqkZsVn5cRkC1V5LxJey8tM1oKkJ7b3SAb9cCwJ0F1e9f2mJMi",
-    "pinHash": "$2b$10$7grbDLf9NeqQK5aujXDybOa5EC2QKAshQMfVX.BcRFuFrvdo6BYNq"
+    "pinHash": "$2b$10$E02aXoibfruc8qzInFPNM.oxu7GqgW5/4UcW1fwFxVfquCfsh7Z4a"
   },
   {
     "id": 2,
@@ -13,6 +13,14 @@
     "email": "anir@gmail.com",
     "mobile": "8489196891",
     "passwordHash": "$2b$10$u97ZqkZsVn5cRkC1V5LxJey8tM1oKkJ7b3SAb9cCwJ0F1e9f2mJMi",
-    "pinHash": "$2b$10$C1xcpDYAIaiCqcWMoKFaRuGSc81EWnbOJWNkNp1E15JTPn4gDMDl."
+    "pinHash": "$2b$10$YbjNBK5FBOrq1WVKS5Mm4uDSPOD2mwr1WIliskNe72J5FpjkKt8j6"
+  },
+  {
+    "id": 3,
+    "username": "prem",
+    "email": "premtg@gmail.com",
+    "mobile": "+919952911560",
+    "passwordHash": "$2b$10$GwTgBChdV9IXXJadYwj1tu/BHHnkhK30Mj46XWP7yM/eIzpaiI8eu",
+    "pinHash": "$2b$10$ZceCSEMwtdt0LP1OuLzEBuToqVdyeBrvUw3976vz0JMJ8UlGtH3/y"
   }
 ]
