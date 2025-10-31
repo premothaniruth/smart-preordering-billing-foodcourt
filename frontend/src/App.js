@@ -120,6 +120,13 @@ function App() {
     }
   }, [userId]);
 
+  // Reset notification tracking whenever the logged-in employee changes
+  useEffect(() => {
+    readyNotifiedRef.current.clear();
+    etaNotifiedRef.current.clear();
+    readySeededRef.current = false;
+  }, [userId]);
+
   useEffect(() => {
     if (!employeeToken && ["orders", "profile"].includes(view)) {
       setView("landing");
@@ -456,6 +463,9 @@ function App() {
     setEmployeeMobile("");
     setCart([]);
     setOrderSummary(null);
+    readyNotifiedRef.current.clear();
+    etaNotifiedRef.current.clear();
+    readySeededRef.current = false;
     toast.info("Logged out");
   };
 
