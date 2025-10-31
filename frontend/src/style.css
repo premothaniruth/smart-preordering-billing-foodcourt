@@ -25,10 +25,10 @@
 }
 
 .section-tab.active {
-  background: #1e88e5;
+  background: #2c3e50;
   color: #ffffff;
-  border-color: #1e88e5;
-  box-shadow: 0 4px 12px rgba(30, 136, 229, 0.25);
+  border-color: #2c3e50;
+  box-shadow: none;
 }
 
 .section-tab:not(.active):hover {
