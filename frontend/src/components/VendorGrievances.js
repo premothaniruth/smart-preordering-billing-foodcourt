@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import PropTypes from "prop-types";
 import { fetchGrievances } from "../api";
 
 /**
@@ -6,7 +7,7 @@ import { fetchGrievances } from "../api";
  * Vendor view of customer grievances with auto-refresh and resolve action.
  * @param {{ token:string }} props
  */
-const VendorGrievances = ({ token }) => {
+const VendorGrievances = ({ token, onClose, isModal }) => {
   const [grievances, setGrievances] = useState([]);
 
   // auto-refresh grievances periodically
@@ -14,7 +15,14 @@ const VendorGrievances = ({ token }) => {
     loadGrievances();
     const interval = setInterval(loadGrievances, 10000);
     return () => clearInterval(interval);
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
+
+  const handleOverlayClick = (event) => {
+    if (event.target === event.currentTarget && onClose) {
+      onClose();
+    }
+  };
 
   const loadGrievances = () => {
     fetchGrievances(token).then(setGrievances);
@@ -37,10 +45,16 @@ const VendorGrievances = ({ token }) => {
 
   const pendingGrievances = grievances.filter(g => g.status === "pending");
   const resolvedGrievances = grievances.filter(g => g.status === "resolved");
-
-  return (
-    <div>
-      <h2>Customer Complaints & Grievances</h2>
+  const content = (
+    <div className="vendor-grievances-content">
+      <div className="modal-header" style={{ justifyContent: "space-between" }}>
+        <h2 style={{ margin: 0 }}>Customer Complaints &amp; Grievances</h2>
+        {onClose && (
+          <button className="icon-btn" type="button" onClick={onClose} aria-label="Close" style={{ fontSize: 20 }}>
+            ×
+          </button>
+        )}
+      </div>
       <p style={{ fontSize: 14, color: "#666", marginBottom: 20 }}>
         Total: {grievances.length} | Pending: {pendingGrievances.length} | Resolved: {resolvedGrievances.length}
       </p>
@@ -109,6 +123,29 @@ const VendorGrievances = ({ token }) => {
       )}
     </div>
   );
+
+  if (isModal) {
+    return (
+      <div className="modal-overlay" onClick={handleOverlayClick}>
+        <div className="modal-content" style={{ maxWidth: 640 }} onClick={(e) => e.stopPropagation()}>
+          {content}
+        </div>
+      </div>
+    );
+  }
+
+  return content;
+};
+
+VendorGrievances.propTypes = {
+  token: PropTypes.string.isRequired,
+  onClose: PropTypes.func,
+  isModal: PropTypes.bool
+};
+
+VendorGrievances.defaultProps = {
+  onClose: null,
+  isModal: false
 };
 
 export default VendorGrievances;

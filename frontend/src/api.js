@@ -581,3 +581,68 @@ export const fetchGrievances = async (token) => {
   });
   return res.json();
 };
+
+/**
+ * Submit grievance from vendor to admin
+ * @param {{subject:string,description:string,priority?:'low'|'medium'|'high'}} grievance
+ * @param {string} token Vendor bearer token
+ */
+export const submitVendorGrievance = async (grievance, token) => {
+  const res = await fetch(`${API_URL}/vendor/grievances`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(grievance),
+  });
+  return res.json();
+};
+
+/**
+ * Fetch grievances raised by current vendor
+ * @param {string} token
+ */
+export const fetchVendorGrievances = async (token) => {
+  const res = await fetch(`${API_URL}/vendor/grievances`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.json();
+};
+
+const buildAdminHeaders = (session) => {
+  if (!session || !session.username || !session.password) return {};
+  return {
+    "x-admin-username": session.username,
+    "x-admin-password": session.password,
+  };
+};
+
+/**
+ * Fetch all vendor grievances for admin desk
+ * @param {{username:string,password:string}} session
+ */
+export const fetchAdminVendorGrievances = async (session) => {
+  const res = await fetch(`${API_URL}/admin/vendor-grievances`, {
+    headers: buildAdminHeaders(session),
+  });
+  return res.json();
+};
+
+/**
+ * Update a vendor grievance from admin side
+ * @param {number} grievanceId
+ * @param {{status?:string,adminNote?:string}} updates
+ * @param {{username:string,password:string}} session
+ */
+export const updateAdminVendorGrievance = async (grievanceId, updates, session) => {
+  const res = await fetch(`${API_URL}/admin/vendor-grievances/${grievanceId}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      ...buildAdminHeaders(session),
+    },
+    body: JSON.stringify(updates),
+  });
+  return res.json();
+};

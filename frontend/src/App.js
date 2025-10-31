@@ -17,6 +17,9 @@ import RatingModal from "./components/RatingModal";
 import GrievanceModal from "./components/GrievanceModal";
 import VendorGrievances from "./components/VendorGrievances";
 import AdminControl from "./components/AdminControl";
+import VendorGrievanceForm from "./components/VendorGrievanceForm";
+import VendorGrievanceList from "./components/VendorGrievanceList";
+import AdminVendorGrievances from "./components/AdminVendorGrievances";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -71,6 +74,8 @@ function App() {
   const [inlineHoverRating, setInlineHoverRating] = useState(0);
   const [showGrievanceModal, setShowGrievanceModal] = useState(false);
   const [selectedOrderForGrievance, setSelectedOrderForGrievance] = useState(null);
+  const [showVendorConcernForm, setShowVendorConcernForm] = useState(false);
+  const [showVendorConcernList, setShowVendorConcernList] = useState(false);
   const etaNotifiedRef = useRef(new Map()); // orderId -> lastNotifiedETA ms
   const readySeededRef = useRef(false);
   const [targetItemId, setTargetItemId] = useState(null);
@@ -587,6 +592,8 @@ function App() {
 
   const handleLogout = () => {
     setVendorToken(null);
+    setShowVendorConcernForm(false);
+    setShowVendorConcernList(false);
     setView("user");
     toast.info("Logged out from vendor account");
   };
@@ -627,7 +634,7 @@ function App() {
       toast.error("Invalid admin username or password");
       return;
     }
-    setAdminSession({ username: trimmedUser });
+    setAdminSession({ username: trimmedUser, password: trimmedPass });
     toast.success("Admin logged in");
   };
 
@@ -663,15 +670,25 @@ function App() {
 
         {vendorToken ? (
           <>
-            <div style={{ marginBottom: 15 }}>
-              <button onClick={() => setView("dashboard")}>Dashboard</button>
-              <button onClick={() => setView("menu-editor")}>Edit Menu</button>
-              <button onClick={() => setView("analytics")}>Analytics</button>
-              <button onClick={() => setView("vendor-combos")}>Combos</button>
-              <button onClick={() => setView("vendor-offers")}>Offers</button>
-              <button onClick={() => setView("feedbacks")}>Feedbacks</button>
-              <button onClick={() => setView("grievances")}>Complaints</button>
-              <button onClick={() => setView("user")}>Switch to User View</button>
+            <div className="vendor-toolbar">
+              <div className="vendor-toolbar-left">
+                <button onClick={() => setView("dashboard")}>Dashboard</button>
+                <button onClick={() => setView("menu-editor")}>Edit Menu</button>
+                <button onClick={() => setView("analytics")}>Analytics</button>
+                <button onClick={() => setView("vendor-combos")}>Combos</button>
+                <button onClick={() => setView("vendor-offers")}>Offers</button>
+                <button onClick={() => setView("feedbacks")}>Feedbacks</button>
+                <button onClick={() => setView("grievances")}>Complaints</button>
+                <button onClick={() => setView("user")}>Switch to User View</button>
+              </div>
+              <div className="vendor-toolbar-right">
+                <button className="secondary-button" onClick={() => setShowVendorConcernForm(true)}>
+                  Raise Concern to Admin
+                </button>
+                <button className="secondary-button" onClick={() => setShowVendorConcernList(true)}>
+                  View My Concerns
+                </button>
+              </div>
             </div>
 
             {view === "menu-editor" && (
@@ -910,14 +927,19 @@ function App() {
             )}
 
             {view === "admin" && (
-              <AdminControl
-                adminSession={adminSession}
-                onAdminLogin={handleAdminLogin}
-                onAdminLogout={handleAdminLogout}
-                onCreateVendor={handleCreateVendor}
-                onUpdateVendor={handleUpdateVendor}
-                vendors={adminManagedVendors}
-              />
+              <div className="admin-panel">
+                <AdminControl
+                  adminSession={adminSession}
+                  onAdminLogin={handleAdminLogin}
+                  onAdminLogout={handleAdminLogout}
+                  onCreateVendor={handleCreateVendor}
+                  onUpdateVendor={handleUpdateVendor}
+                  vendors={adminManagedVendors}
+                />
+                {adminSession && (
+                  <AdminVendorGrievances adminSession={adminSession} />
+                )}
+              </div>
             )}
           </>
         )}
@@ -935,10 +957,23 @@ function App() {
           onClose={() => setShowGrievanceModal(false)}
         />
       )}
+
+      {showVendorConcernForm && vendorToken && (
+        <VendorGrievanceForm
+          token={vendorToken}
+          onClose={() => setShowVendorConcernForm(false)}
+        />
+      )}
+
+      {showVendorConcernList && vendorToken && (
+        <VendorGrievanceList
+          token={vendorToken}
+          onClose={() => setShowVendorConcernList(false)}
+        />
+      )}
     </div>
   </>
-);
-
-};
+  );
+}
 
 export default App;

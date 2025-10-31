@@ -24,10 +24,15 @@ const billingCounterFile = __dirname + "/data/billing_counter.json";
 const favoritesFile = __dirname + "/data/favorites.json";
 const ratingsFile = __dirname + "/data/ratings.json";
 const grievancesFile = __dirname + "/data/grievances.json";
+const vendorGrievancesFile = __dirname + "/data/vendor_grievances.json";
 const employeesFile = __dirname + "/data/employees.json";
 const combosFile = __dirname + "/data/combos.json";
 const offersFile = __dirname + "/data/offers.json";
 const sectionWindowsFile = __dirname + "/data/section_windows.json";
+
+// Simple admin credentials (can be overridden via env)
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "infybhojans";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "infybhojans";
 
 // Helper functions (defined after paths)
 const getEmployees = () => {
@@ -879,6 +884,24 @@ const getGrievances = () => {
  */
 const saveGrievances = (grievances) => fs.writeFileSync(grievancesFile, JSON.stringify(grievances, null, 2));
 
+/**
+ * Read vendor grievances from disk.
+ * @returns {Array}
+ */
+const getVendorGrievances = () => {
+  try {
+    return JSON.parse(fs.readFileSync(vendorGrievancesFile, "utf8"));
+  } catch {
+    return [];
+  }
+};
+
+/**
+ * Persist vendor grievances to disk.
+ * @param {Array} grievances
+ */
+const saveVendorGrievances = (grievances) => fs.writeFileSync(vendorGrievancesFile, JSON.stringify(grievances, null, 2));
+
 // Combos
 /** @returns {Array} */
 const getCombos = () => {
@@ -1090,6 +1113,20 @@ const authenticateVendor = (req, res, next) => {
     req.vendor = decoded;
     next();
   });
+};
+
+// Middleware: Authenticate admin via headers
+const authenticateAdmin = (req, res, next) => {
+  const username = String(req.headers["x-admin-username"] || "").trim();
+  const password = String(req.headers["x-admin-password"] || "").trim();
+  if (!username || !password) {
+    return res.status(401).json({ message: "Admin credentials required" });
+  }
+  if (username !== ADMIN_USERNAME || password !== ADMIN_PASSWORD) {
+    return res.status(403).json({ message: "Invalid admin credentials" });
+  }
+  req.admin = { username };
+  next();
 };
 
 // Get menu
@@ -1829,6 +1866,127 @@ app.post("/grievance", (req, res) => {
     res.json({ status: "success", message: "Grievance submitted successfully" });
   } catch (error) {
     res.status(500).json({ message: "Error submitting grievance" });
+  }
+});
+
+// Submit vendor grievance to admin
+/**
+ * POST /vendor/grievances
+ * Vendor: Submit a grievance to admin.
+ */
+app.post("/vendor/grievances", authenticateVendor, (req, res) => {
+  try {
+    const { subject, description, priority = "medium" } = req.body || {};
+    if (!subject || !description) {
+      return res.status(400).json({ message: "Subject and description are required" });
+    }
+    const sanitizedPriority = ["low", "medium", "high"].includes(String(priority).toLowerCase())
+      ? String(priority).toLowerCase()
+      : "medium";
+
+    const grievances = getVendorGrievances();
+    const now = new Date().toISOString();
+    const nextId = grievances.length > 0 ? Math.max(...grievances.map((g) => Number(g.id) || 0)) + 1 : 1;
+
+    const record = {
+      id: nextId,
+      vendorId: req.vendor.vendorId,
+      shopId: req.vendor.shopId,
+      username: req.vendor.username,
+      subject: String(subject).trim(),
+      description: String(description).trim(),
+      priority: sanitizedPriority,
+      status: "pending",
+      adminNote: "",
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    grievances.unshift(record);
+    saveVendorGrievances(grievances);
+
+    res.json({ status: "success", message: "Grievance submitted", grievance: record });
+  } catch (error) {
+    res.status(500).json({ message: "Error submitting vendor grievance" });
+  }
+});
+
+// List vendor grievances for vendor
+/**
+ * GET /vendor/grievances
+ * Vendor: list grievances created by current vendor.
+ */
+app.get("/vendor/grievances", authenticateVendor, (req, res) => {
+  try {
+    const grievances = getVendorGrievances();
+    const vendorId = req.vendor.vendorId;
+    const filtered = grievances.filter((g) => Number(g.vendorId) === Number(vendorId));
+    res.json(filtered);
+  } catch (error) {
+    res.status(500).json({ message: "Error loading vendor grievances" });
+  }
+});
+
+// Admin: list all vendor grievances
+/**
+ * GET /admin/vendor-grievances
+ * Admin: view all vendor grievances.
+ */
+app.get("/admin/vendor-grievances", authenticateAdmin, (req, res) => {
+  try {
+    const grievances = getVendorGrievances();
+    res.json(grievances);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching vendor grievances" });
+  }
+});
+
+// Admin: update vendor grievance
+/**
+ * PATCH /admin/vendor-grievances/:id
+ * Admin: update status or note.
+ */
+app.patch("/admin/vendor-grievances/:id", authenticateAdmin, (req, res) => {
+  try {
+    const grievances = getVendorGrievances();
+    const grievanceId = Number(req.params.id);
+    const index = grievances.findIndex((g) => Number(g.id) === grievanceId);
+    if (index === -1) {
+      return res.status(404).json({ message: "Grievance not found" });
+    }
+
+    const allowedStatus = new Set(["pending", "in_progress", "resolved"]);
+    const updates = {};
+
+    if (req.body && Object.prototype.hasOwnProperty.call(req.body, "status")) {
+      const status = String(req.body.status || "").toLowerCase();
+      if (allowedStatus.has(status)) {
+        updates.status = status;
+        if (status === "resolved") {
+          updates.resolvedAt = new Date().toISOString();
+        }
+      }
+    }
+
+    if (req.body && Object.prototype.hasOwnProperty.call(req.body, "adminNote")) {
+      updates.adminNote = String(req.body.adminNote || "").trim();
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ message: "No valid fields to update" });
+    }
+
+    grievances[index] = {
+      ...grievances[index],
+      ...updates,
+      updatedAt: new Date().toISOString(),
+    };
+
+    saveVendorGrievances(grievances);
+
+    res.json({ status: "success", grievance: grievances[index] });
+  } catch (error) {
+    res.status(500).json({ message: "Error updating grievance" });
   }
 });
 
