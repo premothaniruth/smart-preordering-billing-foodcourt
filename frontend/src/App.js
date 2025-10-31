@@ -114,22 +114,6 @@ function App() {
     if (vendorShopId) setSelectedShop(vendorShopId);
   }, [vendorShopId]);
 
-  useEffect(() => {
-    if (userId) {
-      loadFavorites();
-    } else {
-      setFavorites([]);
-    }
-  }, [userId]);
-
-  useEffect(() => {
-    if (employeeToken) {
-      loadWallet();
-    } else {
-      applyWalletPayload({ balance: 0, transactions: [] });
-    }
-  }, [employeeToken, loadWallet, applyWalletPayload]);
-
   // Reset notification tracking whenever the logged-in employee changes
   useEffect(() => {
     readyNotifiedRef.current.clear();
@@ -228,6 +212,22 @@ function App() {
       console.warn('Failed to load wallet', err);
     }
   }, [employeeToken, applyWalletPayload]);
+
+  useEffect(() => {
+    if (userId) {
+      loadFavorites();
+    } else {
+      setFavorites([]);
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    if (employeeToken) {
+      loadWallet();
+    } else {
+      applyWalletPayload({ balance: 0, transactions: [] });
+    }
+  }, [employeeToken, loadWallet, applyWalletPayload]);
 
   const playSound = (soundUrl) => {
     const audio = new Audio(soundUrl);
