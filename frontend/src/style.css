@@ -1227,3 +1227,91 @@ textarea:focus-visible {
     width: 100%;
   }
 }
+
+/* ===== EMPLOYEE PROFILE ===== */
+.employee-profile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.profile-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #7f8c8d;
+  margin-bottom: 6px;
+}
+
+.profile-field-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.profile-text {
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.profile-hint {
+  font-size: 12px;
+  color: #7f8c8d;
+  margin-top: 4px;
+}
+
+.profile-input-inline {
+  display: flex;
+  align-items: center;
+  border: 1px solid #dcdcdc;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.profile-input-inline .prefix {
+  background: #ecf0f1;
+  padding: 0 10px;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.profile-input-inline input {
+  border: none;
+  padding: 8px 10px;
+  width: 140px;
+}
+
+.profile-otp-block {
+  border-top: 1px dashed #dcdcdc;
+  padding-top: 12px;
+}
+
+.profile-actions {
+  margin-top: 10px;
+}
+
+@media (max-width: 640px) {
+  .employee-profile-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .profile-field-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .profile-field-row button {
+    width: 100%;
+  }
+
+  .profile-input-inline {
+    width: 100%;
+  }
+
+  .profile-input-inline input {
+    width: 100%;
+  }
+}

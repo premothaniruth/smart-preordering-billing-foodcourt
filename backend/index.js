@@ -55,7 +55,8 @@ const validatePassword = (pwd) => {
 
 // In-memory stores (no database)
 const employeeOtps = new Map(); // mobile -> { otp, expiresAt }
-const employeeSessions = new Map(); // token -> { mobile, createdAt }
+const employeeSessions = new Map(); // token -> { mobile, createdAt, employeeId?, contact? }
+const employeeProfileOtps = new Map(); // key `${action}:${employeeId}` -> { otp, expiresAt }
 
 // Startup: hash any pinPlain, and set initial pins for demo users 1 and 2 if missing
 const ensureEmployeePins = async () => {
@@ -75,6 +76,75 @@ const ensureEmployeePins = async () => {
     if (u2) { u2.pinHash = await bcrypt.hash('4321', 10); changed = true; }
     if (changed) saveEmployees(list);
   } catch {}
+};
+
+const validateEmailAddress = (email) => {
+  const str = String(email || '').trim();
+  if (!str) return false;
+  return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(str);
+};
+
+const normalizeMobileInput = (value) => {
+  if (value == null) return null;
+  const digits = String(value).replace(/[^0-9]/g, '');
+  if (!digits) return '';
+  if (digits.length !== 10) return null;
+  return `+91${digits}`;
+};
+
+const sanitizeEmployeeProfile = (employee) => ({
+  id: employee.id,
+  username: employee.username || '',
+  email: employee.email || '',
+  mobile: employee.mobile || '',
+  birthday: employee.birthday || '',
+  friends: Array.isArray(employee.friends) ? employee.friends : [],
+  hasPassword: Boolean(employee.passwordHash),
+  hasPin: Boolean(employee.pinHash),
+});
+
+const resolveEmployeeFromToken = (token) => {
+  if (!token) return null;
+  const tokenStr = String(token);
+  let decoded;
+  try {
+    decoded = jwt.verify(tokenStr, JWT_SECRET);
+  } catch {
+    return null;
+  }
+  if (!decoded || decoded.role !== 'employee') return null;
+  const identifiers = new Set();
+  const pushIdent = (val) => {
+    if (val === undefined || val === null) return;
+    const str = String(val).trim();
+    if (!str) return;
+    identifiers.add(str.toLowerCase());
+  };
+  pushIdent(decoded.employeeId);
+  pushIdent(decoded.mobile);
+  pushIdent(decoded.contact);
+  pushIdent(decoded.username);
+  pushIdent(decoded.email);
+  const sessionInfo = employeeSessions.get(tokenStr);
+  if (sessionInfo) {
+    pushIdent(sessionInfo.employeeId);
+    pushIdent(sessionInfo.mobile);
+    pushIdent(sessionInfo.contact);
+  }
+  const employees = getEmployees();
+  let index = -1;
+  for (const ident of identifiers) {
+    index = employees.findIndex((emp) => {
+      const username = String(emp.username || '').toLowerCase();
+      const email = String(emp.email || '').toLowerCase();
+      const mobile = String(emp.mobile || '').toLowerCase();
+      const idStr = String(emp.id || '').toLowerCase();
+      return username === ident || email === ident || mobile === ident || idStr === ident;
+    });
+    if (index >= 0) break;
+  }
+  if (index === -1) return null;
+  return { employee: employees[index], index, employees, token: tokenStr };
 };
 
 /**
@@ -148,6 +218,184 @@ app.post("/employee/request-otp", (req, res) => {
   }
 });
 
+// Employee profile fetch
+app.post('/employee/profile', (req, res) => {
+  try {
+    const { token } = req.body || {};
+    const resolved = resolveEmployeeFromToken(token);
+    if (!resolved) return res.status(401).json({ message: 'Invalid or expired session' });
+    return res.json({ status: 'ok', profile: sanitizeEmployeeProfile(resolved.employee) });
+  } catch {
+    res.status(500).json({ message: 'Failed to load profile' });
+  }
+});
+
+// Employee profile OTP request
+app.post('/employee/profile/request-otp', (req, res) => {
+  try {
+    const { token, action } = req.body || {};
+    const resolved = resolveEmployeeFromToken(token);
+    if (!resolved) return res.status(401).json({ message: 'Invalid or expired session' });
+    const validActions = new Set(['verify-email', 'verify-mobile', 'change-password', 'change-pin']);
+    if (!validActions.has(action)) {
+      return res.status(400).json({ message: 'Invalid action' });
+    }
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const key = `${action}:${resolved.employee.id}`;
+    employeeProfileOtps.set(key, { otp, expiresAt: Date.now() + 5 * 60 * 1000 });
+    console.log(`[Profile OTP] employee ${resolved.employee.id} action ${action} -> ${otp}`);
+    return res.json({ status: 'ok' });
+  } catch {
+    res.status(500).json({ message: 'Failed to request OTP' });
+  }
+});
+
+// Employee profile update
+app.post('/employee/profile/update', async (req, res) => {
+  try {
+    const { token, updates, otp, action } = req.body || {};
+    if (!token || !updates || typeof updates !== 'object') {
+      return res.status(400).json({ message: 'Token and updates are required' });
+    }
+    const resolved = resolveEmployeeFromToken(token);
+    if (!resolved) return res.status(401).json({ message: 'Invalid or expired session' });
+    const { employee, index, employees, token: tokenStr } = resolved;
+    const updated = { ...employee };
+    let changed = false;
+
+    const sensitiveChanges = [];
+
+    if (Object.prototype.hasOwnProperty.call(updates, 'username')) {
+      const candidate = String(updates.username || '').trim();
+      if (!candidate) return res.status(400).json({ message: 'Username is required' });
+      if (candidate.toLowerCase() !== String(employee.username || '').toLowerCase()) {
+        const exists = employees.some((e, idx) => idx !== index && String(e.username || '').toLowerCase() === candidate.toLowerCase());
+        if (exists) return res.status(409).json({ message: 'Username not available' });
+        updated.username = candidate;
+        changed = true;
+      }
+    }
+
+    if (Object.prototype.hasOwnProperty.call(updates, 'email')) {
+      const candidate = String(updates.email || '').trim();
+      if (!validateEmailAddress(candidate)) {
+        return res.status(400).json({ message: 'Invalid email' });
+      }
+      if (candidate.toLowerCase() !== String(employee.email || '').toLowerCase()) {
+        const exists = employees.some((e, idx) => idx !== index && String(e.email || '').toLowerCase() === candidate.toLowerCase());
+        if (exists) return res.status(409).json({ message: 'Email already registered' });
+        updated.email = candidate;
+        changed = true;
+        sensitiveChanges.push('email');
+      }
+    }
+
+    if (Object.prototype.hasOwnProperty.call(updates, 'mobile')) {
+      const normalized = normalizeMobileInput(updates.mobile);
+      if (!normalized) return res.status(400).json({ message: 'Mobile must be 10 digits (India)' });
+      if (normalized !== String(employee.mobile || '')) {
+        const exists = employees.some((e, idx) => idx !== index && String(e.mobile || '').toLowerCase() === normalized.toLowerCase());
+        if (exists) return res.status(409).json({ message: 'Mobile already registered' });
+        updated.mobile = normalized;
+        changed = true;
+        sensitiveChanges.push('mobile');
+      }
+    }
+
+    if (Object.prototype.hasOwnProperty.call(updates, 'password')) {
+      const pwd = String(updates.password || '');
+      if (!validatePassword(pwd)) {
+        return res.status(400).json({ message: 'Password must be 8-20 chars with lower, upper, number, and one of .,&%#@!' });
+      }
+      updated.passwordHash = await bcrypt.hash(pwd, 10);
+      changed = true;
+      sensitiveChanges.push('password');
+    }
+
+    if (Object.prototype.hasOwnProperty.call(updates, 'pin')) {
+      const pinStr = String(updates.pin || '');
+      if (!validatePin(pinStr)) {
+        return res.status(400).json({ message: 'PIN must be 4 digits' });
+      }
+      updated.pinHash = await bcrypt.hash(pinStr, 10);
+      changed = true;
+      sensitiveChanges.push('pin');
+    }
+
+    if (Object.prototype.hasOwnProperty.call(updates, 'birthday')) {
+      const bday = String(updates.birthday || '').trim();
+      if (bday !== String(employee.birthday || '')) {
+        updated.birthday = bday;
+        changed = true;
+      }
+    }
+
+    if (Object.prototype.hasOwnProperty.call(updates, 'friends')) {
+      let friendsList = updates.friends;
+      if (typeof friendsList === 'string') {
+        friendsList = friendsList
+          .split(',')
+          .map((f) => f.trim())
+          .filter(Boolean);
+      }
+      if (Array.isArray(friendsList)) {
+        const existing = Array.isArray(employee.friends) ? employee.friends : [];
+        const changedFriends = friendsList.length !== existing.length || friendsList.some((f, idx) => existing[idx] !== f);
+        if (changedFriends) {
+          updated.friends = friendsList;
+          changed = true;
+        }
+      }
+    }
+
+    if (sensitiveChanges.length > 1) {
+      return res.status(400).json({ message: 'Update one sensitive field at a time (email, mobile, password, or pin)' });
+    }
+
+    if (sensitiveChanges.length === 1) {
+      const requiredActionMap = {
+        email: 'verify-email',
+        mobile: 'verify-mobile',
+        password: 'change-password',
+        pin: 'change-pin',
+      };
+      const field = sensitiveChanges[0];
+      const expectedAction = requiredActionMap[field];
+      if (!otp || !action || action !== expectedAction) {
+        return res.status(400).json({ message: 'Valid OTP is required for this change' });
+      }
+      const key = `${action}:${employee.id}`;
+      const stored = employeeProfileOtps.get(key);
+      if (!stored || stored.otp !== String(otp) || Date.now() > stored.expiresAt) {
+        return res.status(401).json({ message: 'Invalid or expired OTP' });
+      }
+      employeeProfileOtps.delete(key);
+    }
+
+    if (!changed) {
+      return res.json({ status: 'ok', profile: sanitizeEmployeeProfile(employee) });
+    }
+
+    employees[index] = updated;
+    saveEmployees(employees);
+
+    const sessionInfo = employeeSessions.get(tokenStr);
+    if (sessionInfo) {
+      employeeSessions.set(tokenStr, {
+        ...sessionInfo,
+        employeeId: updated.id,
+        mobile: updated.mobile || sessionInfo.mobile,
+        contact: updated.mobile || sessionInfo.contact,
+      });
+    }
+
+    return res.json({ status: 'ok', profile: sanitizeEmployeeProfile(updated) });
+  } catch (error) {
+    console.error('Error updating employee profile', error);
+    res.status(500).json({ message: 'Failed to update profile' });
+  }
+});
+
 // Verify OTP and issue session
 app.post("/employee/verify-otp", (req, res) => {
   try {
@@ -163,8 +411,9 @@ app.post("/employee/verify-otp", (req, res) => {
     const employees = getEmployees();
     const user = employees.find(e => String(e.mobile || '').toLowerCase() === fullMobile.toLowerCase());
     if (!user) return res.status(404).json({ message: 'User not found' });
-    const token = jwt.sign({ role: 'employee', mobile: fullMobile }, JWT_SECRET, { expiresIn: '8h' });
-    employeeSessions.set(token, { mobile: fullMobile, createdAt: Date.now() });
+    const payload = { role: 'employee', mobile: fullMobile, employeeId: user.id, username: user.username, email: user.email };
+    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '8h' });
+    employeeSessions.set(token, { mobile: fullMobile, contact: fullMobile, createdAt: Date.now(), employeeId: user.id });
     res.json({ status: 'ok', token, mobile: fullMobile, username: user.username, email: user.email });
   } catch {
     res.status(500).json({ message: 'Error verifying OTP' });
@@ -227,10 +476,11 @@ app.post('/employee/login-password', async (req, res) => {
     if (!u || !u.passwordHash) return res.status(401).json({ message: 'Invalid credentials' });
     const ok = await bcrypt.compare(String(password), String(u.passwordHash));
     if (!ok) return res.status(401).json({ message: 'Invalid credentials' });
-    const mobile = u.mobile || u.email || u.username || String(u.id);
-    const token = jwt.sign({ role: 'employee', mobile }, JWT_SECRET, { expiresIn: '8h' });
-    employeeSessions.set(token, { mobile, createdAt: Date.now() });
-    res.json({ status: 'ok', token, mobile, username: u.username, email: u.email });
+    const contact = u.mobile || u.email || u.username || String(u.id);
+    const payload = { role: 'employee', mobile: u.mobile || null, employeeId: u.id, username: u.username, email: u.email, contact };
+    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '8h' });
+    employeeSessions.set(token, { mobile: u.mobile || contact, contact, createdAt: Date.now(), employeeId: u.id });
+    res.json({ status: 'ok', token, mobile: u.mobile || contact, username: u.username, email: u.email });
   } catch (e) {
     res.status(500).json({ message: 'Error during password login' });
   }
@@ -249,8 +499,9 @@ app.post('/employee/login-pin', async (req, res) => {
     const ok = await bcrypt.compare(String(pin), String(u.pinHash));
     if (!ok) return res.status(401).json({ message: 'Invalid credentials' });
     const mobile = u.email || u.username || String(u.id);
-    const token = jwt.sign({ role: 'employee', mobile }, JWT_SECRET, { expiresIn: '8h' });
-    employeeSessions.set(token, { mobile, createdAt: Date.now() });
+    const payload = { role: 'employee', mobile: u.mobile || null, employeeId: u.id, username: u.username, email: u.email || null, contact: mobile };
+    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '8h' });
+    employeeSessions.set(token, { mobile: u.mobile || mobile, contact: mobile, createdAt: Date.now(), employeeId: u.id });
     res.json({ status: 'ok', token, mobile });
   } catch (e) {
     res.status(500).json({ message: 'Error during PIN login' });
