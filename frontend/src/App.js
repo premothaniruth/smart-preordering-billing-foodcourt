@@ -26,6 +26,7 @@ const ADMIN_CREDENTIALS = {
   username: "infybhojans",
   password: "infybhojans"
 };
+const ADMIN_VENDORS_STORAGE_KEY = "adminManagedVendors";
 
 /**
  * App
@@ -76,6 +77,27 @@ function App() {
   const [recentOrdersTodayCount, setRecentOrdersTodayCount] = useState(0);
   const [adminSession, setAdminSession] = useState(null);
   const [adminManagedVendors, setAdminManagedVendors] = useState([]);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(ADMIN_VENDORS_STORAGE_KEY);
+      if (!stored) return;
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed)) {
+        setAdminManagedVendors(parsed);
+      }
+    } catch (error) {
+      console.warn("Failed to load admin vendors from storage", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(ADMIN_VENDORS_STORAGE_KEY, JSON.stringify(adminManagedVendors));
+    } catch (error) {
+      console.warn("Failed to persist admin vendors", error);
+    }
+  }, [adminManagedVendors]);
 
   const userId = employeeMobile || null;
   const vendorShopId = (() => {
@@ -714,7 +736,11 @@ function App() {
                     <div className="option-card admin-card">
                       <h3>Infy Bhojans Admin Control</h3>
                       <p>Create vendors, reset credentials, and oversee platform access</p>
-                      <button onClick={() => setView("admin")} className="secondary-button">
+                      <button
+                        onClick={() => setView("admin")}
+                        className="secondary-button"
+                        style={{ background: '#e67e22', borderColor: '#d35400', color: '#fff' }}
+                      >
                         Admin Login
                       </button>
                     </div>
@@ -872,7 +898,7 @@ function App() {
             )}
 
             {view === "profile" && (
-              <>
+              <div>
                 <button onClick={() => setView("user")} style={{ marginBottom: 15 }}>← Back</button>
                 <EmployeeProfile
                   token={employeeToken}
@@ -880,7 +906,7 @@ function App() {
                   onWalletChange={applyWalletPayload}
                   onRequestWalletRefresh={loadWallet}
                 />
-              </>
+              </div>
             )}
 
             {view === "admin" && (
@@ -896,22 +922,23 @@ function App() {
           </>
         )}
 
-        {showRatingModal && currentOrderForRating && (
-          <RatingModal
-            orderId={currentOrderForRating}
-            onClose={() => setShowRatingModal(false)}
-          />
-        )}
+      {showRatingModal && currentOrderForRating && (
+        <RatingModal
+          orderId={currentOrderForRating}
+          onClose={() => setShowRatingModal(false)}
+        />
+      )}
 
-        {showGrievanceModal && selectedOrderForGrievance && (
-          <GrievanceModal
-            order={selectedOrderForGrievance}
-            onClose={() => setShowGrievanceModal(false)}
-          />
-        )}
-      </div>
-    </>
-  );
-}
+      {showGrievanceModal && selectedOrderForGrievance && (
+        <GrievanceModal
+          order={selectedOrderForGrievance}
+          onClose={() => setShowGrievanceModal(false)}
+        />
+      )}
+    </div>
+  </>
+);
+
+};
 
 export default App;
