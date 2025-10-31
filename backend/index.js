@@ -258,18 +258,9 @@ app.post('/employee/login-pin', async (req, res) => {
     const employees = getEmployees();
     const u = employees.find(e => String(e.username).toLowerCase() === String(username).toLowerCase() || String(e.email || '').toLowerCase() === String(username).toLowerCase());
     if (!u) return res.status(401).json({ message: 'Invalid credentials' });
-    if (!u.pinHash) {
-      // First-time pairing: require contact match and set PIN
-      const contact = String(mobileOrEmail || '').toLowerCase();
-      const okContact = contact && (String(u.email || '').toLowerCase() === contact || String(u.mobile || '').toLowerCase() === contact);
-      if (!okContact) return res.status(400).json({ message: 'Pairing required: provide your registered mobile or email' });
-      // Set PIN now
-      u.pinHash = await bcrypt.hash(String(pin), 10);
-      saveEmployees(employees);
-    } else {
-      const ok = await bcrypt.compare(String(pin), String(u.pinHash));
-      if (!ok) return res.status(401).json({ message: 'Invalid credentials' });
-    }
+    if (!u.pinHash) return res.status(403).json({ message: 'PIN not configured. Contact administrator.' });
+    const ok = await bcrypt.compare(String(pin), String(u.pinHash));
+    if (!ok) return res.status(401).json({ message: 'Invalid credentials' });
     const mobile = u.email || u.username || String(u.id);
     const token = jwt.sign({ role: 'employee', mobile }, JWT_SECRET, { expiresIn: '8h' });
     employeeSessions.set(token, { mobile, createdAt: Date.now() });
@@ -550,7 +541,6 @@ const getSectionWindows = () => {
 };
 
 // In-memory stores (no database)
-const employeeOtps = new Map(); // mobile -> { otp, expiresAt }
 const employeeSessions = new Map(); // token -> { mobile, createdAt }
 
 // Billing counter management
@@ -865,119 +855,8 @@ app.get("/vendor/feedbacks", authenticateVendor, (req, res) => {
     res.status(500).json({ message: "Error fetching feedbacks" });
   }
 });
-// Request OTP for employee (mock: OTP logged to console)
-/**
- * POST /employee/request-otp
- * Public: Request OTP for employee login (demo: logs OTP to server console).
- * @body {mobile:string}
- */
-app.post("/employee/request-otp", (req, res) => {
-  try {
-    const { mobile } = req.body;
-    if (!mobile || !/^\d{10}$/.test(mobile)) {
-      return res.status(400).json({ message: "Invalid mobile number" });
-    }
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = Date.now() + 2 * 60 * 1000; // 2 minutes
-    employeeOtps.set(mobile, { otp, expiresAt });
-
-    console.log(`[OTP] Mobile: ${mobile} OTP: ${otp} (valid 2m)`);
-    res.json({ status: "ok", message: "OTP sent (check server console)" });
-  } catch (error) {
-    res.status(500).json({ message: "Error requesting OTP" });
-  }
-});
-
-// Verify OTP for employee and create in-memory session
-/**
- * POST /employee/verify-otp
- * Public: Verify OTP and return a session token (JWT).
- * @body {mobile:string, otp:string}
- */
-app.post("/employee/verify-otp", (req, res) => {
-  try {
-    const { mobile, otp } = req.body;
-    if (!mobile || !otp) {
-      return res.status(400).json({ message: "Mobile and OTP are required" });
-    }
-
-    const record = employeeOtps.get(mobile);
-    if (!record || record.otp !== otp || Date.now() > record.expiresAt) {
-      return res.status(401).json({ message: "Invalid or expired OTP" });
-    }
-
-    employeeOtps.delete(mobile);
-
-    // Create a simple session token (JWT for convenience)
-    const token = jwt.sign({ role: "employee", mobile }, JWT_SECRET, { expiresIn: "8h" });
-    employeeSessions.set(token, { mobile, createdAt: Date.now() });
-
-    res.json({ status: "ok", token, mobile });
-  } catch (error) {
-    res.status(500).json({ message: "Error verifying OTP" });
-  }
-});
-
-// Google login (real): verify Google ID token via tokeninfo endpoint
-/**
- * POST /employee/google-login
- * Public: Accepts { idToken } and returns a session token after verification.
- * Requires env GOOGLE_CLIENT_ID to match token audience.
- */
-app.post("/employee/google-login", async (req, res) => {
-  try {
-    const { idToken, email } = req.body || {};
-    // Demo fallback: accept email directly
-    if (email) {
-      if (typeof email !== 'string' || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
-        return res.status(400).json({ message: "Valid email is required" });
-      }
-      const mobile = email;
-      const token = jwt.sign({ role: "employee", mobile }, JWT_SECRET, { expiresIn: "8h" });
-      employeeSessions.set(token, { mobile, createdAt: Date.now() });
-      return res.json({ status: "ok", token, mobile });
-    }
-    if (!idToken || typeof idToken !== 'string') {
-      return res.status(400).json({ message: "idToken is required" });
-    }
-    const clientId = process.env.GOOGLE_CLIENT_ID || '';
-    // Verify with Google tokeninfo endpoint
-    const https = require('https');
-    const tokeninfoUrl = `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`;
-    const tokeninfo = await new Promise((resolve, reject) => {
-      https.get(tokeninfoUrl, (resp) => {
-        let data = '';
-        resp.on('data', chunk => data += chunk);
-        resp.on('end', () => {
-          try {
-            const json = JSON.parse(data);
-            resolve(json);
-          } catch (e) { reject(e); }
-        });
-      }).on('error', reject);
-    });
-    if (!tokeninfo || tokeninfo.error_description) {
-      return res.status(401).json({ message: "Invalid Google token" });
-    }
-    if (clientId && tokeninfo.aud !== clientId) {
-      return res.status(401).json({ message: "Google token audience mismatch" });
-    }
-    if (tokeninfo.email_verified !== 'true' && tokeninfo.email_verified !== true) {
-      return res.status(401).json({ message: "Google email not verified" });
-    }
-    const emailFromToken = tokeninfo.email;
-    if (!emailFromToken) {
-      return res.status(401).json({ message: "Email not present in Google token" });
-    }
-    const mobile = emailFromToken;
-    const token = jwt.sign({ role: "employee", mobile }, JWT_SECRET, { expiresIn: "8h" });
-    employeeSessions.set(token, { mobile, createdAt: Date.now() });
-    res.json({ status: "ok", token, mobile });
-  } catch (error) {
-    res.status(500).json({ message: "Error during Google login" });
-  }
-});
+// Note: employee authentication is limited to registered credentials (username/password or PIN)
 
 // Place order with billing ID and customization
 /**

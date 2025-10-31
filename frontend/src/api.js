@@ -34,15 +34,6 @@ export const employeeProfile = async (token) => {
   return res.json();
 };
 
-export const employeeProfileRequestOtp = async (token, action) => {
-  const res = await fetch(`${API_URL}/employee/profile/request-otp`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ token, action })
-  });
-  return res.json();
-};
-
 export const employeeProfileUpdate = async (body) => {
   const res = await fetch(`${API_URL}/employee/profile/update`, {
     method: 'POST',
@@ -58,16 +49,6 @@ export const employeePasswordLogin = async (username, password) => {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, password })
-  });
-  return res.json();
-};
-
-/** Employee 4-digit PIN login */
-export const employeePinLogin = async (username, pin, mobileOrEmail) => {
-  const res = await fetch(`${API_URL}/employee/login-pin`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, pin, mobileOrEmail })
   });
   return res.json();
 };
@@ -90,18 +71,6 @@ export const employeeResetPassword = async (username, mobileOrEmail, newPassword
   return res.json();
 };
 
-/**
- * Employee Apple Login: send Apple ID token to backend for verification
- * @param {string} idToken
- */
-export const employeeAppleLogin = async (email) => {
-  const res = await fetch(`${API_URL}/employee/apple-login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email })
-  });
-  return res.json();
-};
 
 /**
  * Upload vendor item image
@@ -280,35 +249,6 @@ export const vendorLogin = async (username, password) => {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username, password }),
-  });
-  return res.json();
-};
-
-/**
- * Request OTP for employee login
- * @param {string} mobile - 10-digit mobile number
- * @returns {Promise<any>}
- */
-export const employeeRequestOtp = async (mobile) => {
-  const res = await fetch(`${API_URL}/employee/request-otp`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ mobile }),
-  });
-  return res.json();
-};
-
-/**
- * Verify OTP for employee and receive a session token
- * @param {string} mobile
- * @param {string} otp
- * @returns {Promise<any>}
- */
-export const employeeVerifyOtp = async (mobile, otp) => {
-  const res = await fetch(`${API_URL}/employee/verify-otp`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ mobile, otp }),
   });
   return res.json();
 };
@@ -536,20 +476,6 @@ export const toggleFavorite = async (userId, itemId) => {
  */
 export const fetchFavorites = async (userId) => {
   const res = await fetch(`${API_URL}/favorites/${userId}`);
-  return res.json();
-};
-
-/**
- * Employee Google Login (demo): send email to backend
- * @param {string} email
- * @returns {Promise<any>}
- */
-export const employeeGoogleLogin = async (email) => {
-  const res = await fetch(`${API_URL}/employee/google-login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email })
-  });
   return res.json();
 };
 
