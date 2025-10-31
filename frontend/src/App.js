@@ -640,7 +640,7 @@ function App() {
                   <>
                     <div className="layout-container">
                       <div className="menu-section">
-                        <EmployeeLogin onSuccess={handleEmployeeLogin} />
+                        <EmployeeLogin onSuccess={handleEmployeeLogin} onBack={() => setView("landing")} />
                       </div>
                       <div className="cart-section">
                         <h3>Vendor Access</h3>
