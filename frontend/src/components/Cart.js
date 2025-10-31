@@ -13,6 +13,7 @@ import { fetchSectionsMeta } from "../api";
  *  setScheduledTime: (iso:string)=>void,
  *  onPayment: ()=>void,
  *  shopItems?: any[],
+ *  inventoryById?: Map<number, any> | Record<string, any>,
  *  paymentMethod?: 'wallet' | 'gateway' | 'cash',
  *  setPaymentMethod?: (method: 'wallet' | 'gateway' | 'cash')=>void,
  *  walletBalance?: number,
@@ -29,6 +30,7 @@ const Cart = ({
   setScheduledTime,
   onPayment,
   shopItems = [],
+  inventoryById = new Map(),
   paymentMethod = 'gateway',
   setPaymentMethod = () => {},
   walletBalance = 0,
@@ -156,6 +158,36 @@ const Cart = ({
     return hm >= w.start && hm <= w.end;
   };
 
+  const inventoryLookup = useMemo(() => {
+    if (inventoryById instanceof Map) {
+      return inventoryById;
+    }
+    const map = new Map();
+    if (inventoryById && typeof inventoryById === 'object') {
+      Object.values(inventoryById).forEach((entry) => {
+        if (entry && entry.id != null) {
+          map.set(Number(entry.id), entry);
+        }
+      });
+    }
+    if (Array.isArray(shopItems)) {
+      shopItems.forEach((item) => {
+        if (item && item.id != null && !map.has(Number(item.id))) {
+          map.set(Number(item.id), item);
+        }
+      });
+    }
+    return map;
+  }, [inventoryById, shopItems]);
+
+  const getInventoryFor = useCallback((itemId, fallback) => {
+    const entry = inventoryLookup.get(Number(itemId));
+    const inv = entry?.inventory ?? entry?.item?.inventory;
+    if (inv != null && !Number.isNaN(Number(inv))) return Number(inv);
+    if (fallback != null && !Number.isNaN(Number(fallback))) return Number(fallback);
+    return 0;
+  }, [inventoryLookup]);
+
   const total = cart.reduce((sum, c) => sum + c.item.finalPrice * c.quantity, 0);
   const totalPrepTime = cart.reduce((sum, c) => sum + (c.item.prepTime || 5) * c.quantity, 0);
   const walletDisabledReason = (() => {
@@ -201,8 +233,7 @@ const Cart = ({
             // Compute combo capacity from current inventories
             let cap = Infinity;
             for (const comp of c.item.comboComponents) {
-              const it = shopItems.find(si => Number(si.id) === Number(comp.itemId));
-              const inv = Number(it?.inventory ?? 0);
+              const inv = getInventoryFor(comp.itemId, 0);
               const used = Number(consumed.get(Number(comp.itemId)) || 0);
               const avail = Math.max(0, inv - used);
               const need = Math.max(1, Number(comp.quantity || 1));
@@ -212,11 +243,11 @@ const Cart = ({
             const totalThisCombo = cart.filter(d => d.shopId === c.shopId && d.item?.comboId === c.item.comboId).reduce((s, d) => s + d.quantity, 0);
             remaining = Math.max(0, cap - totalThisCombo);
           } else {
-            const inventory = Number(c.item.inventory ?? 100);
+            const baseInventory = getInventoryFor(c.item.id, c.item.inventory ?? 100);
             const totalForThis = cart
               .filter(d => d.shopId === c.shopId && d.item.id === c.item.id && (d.item.selectedOption?.name || null) === (c.item.selectedOption?.name || null))
               .reduce((sum, d) => sum + d.quantity, 0);
-            remaining = Math.max(0, inventory - totalForThis);
+            remaining = Math.max(0, baseInventory - totalForThis);
           }
           const secName = c.item.section || 'All Items';
           const w = sectionWindows[secName];

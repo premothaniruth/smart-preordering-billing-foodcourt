@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback } from "react";
+import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { fetchMenu, placeOrder, fetchUserOrders, fetchFavorites, vendorLogin, updateMenu, markOrderReady, fetchAnalytics, submitRating, cancelOrder, employeeProfile } from "./api";
 import Menu from "./components/Menu";
 import Cart from "./components/Cart";
@@ -176,6 +176,45 @@ function App() {
     poll();
     return () => clearInterval(id);
   }, [employeeToken, userId]);
+
+  const shopInventoryMap = useMemo(() => {
+    const map = new Map();
+    menu.forEach((shop) => {
+      if (!shop) return;
+      const itemMap = new Map();
+      const addItem = (item) => {
+        if (!item || item.id == null) return;
+        const id = Number(item.id);
+        if (!itemMap.has(id)) {
+          const inventory = Number(item.inventory ?? 100);
+          const cloned = { ...item, inventory };
+          itemMap.set(id, cloned);
+        }
+      };
+      if (Array.isArray(shop.items)) {
+        shop.items.forEach(addItem);
+      }
+      if (Array.isArray(shop.categories)) {
+        shop.categories.forEach((category) => {
+          if (!Array.isArray(category?.items)) return;
+          category.items.forEach(addItem);
+        });
+      }
+      map.set(String(shop.shopId), itemMap);
+    });
+    return map;
+  }, [menu]);
+
+  const selectedShopItems = useMemo(() => {
+    const mapEntry = shopInventoryMap.get(String(selectedShop));
+    if (!mapEntry) return [];
+    return Array.from(mapEntry.values());
+  }, [shopInventoryMap, selectedShop]);
+
+  const currentShopInventory = useMemo(() => {
+    const entry = shopInventoryMap.get(String(selectedShop));
+    return entry ? entry : new Map();
+  }, [shopInventoryMap, selectedShop]);
 
   /** Load all shops and their items */
   const loadMenu = () => {
@@ -612,7 +651,6 @@ function App() {
                 <div className="welcome-section">
                   <h2>Welcome to Infy Bhojans</h2>
                   <p>Choose your access level to continue:</p>
-                  
                   <div className="landing-options">
                     <div className="option-card employee-card">
                       <h3>Infy Bhojans Employee Access</h3>
@@ -621,7 +659,6 @@ function App() {
                         Employee Login
                       </button>
                     </div>
-                    
                     <div className="option-card vendor-card">
                       <h3>Infy Bhojans Vendor Access</h3>
                       <p>Manage menu, view analytics, handle orders, and resolve complaints</p>
@@ -633,136 +670,135 @@ function App() {
                 </div>
               </div>
             )}
+
             {view === "user" && (
-              <>
-                {employeeToken ? (
-                  <>
-                    <div
-                      style={{
-                        display: 'flex',
-                        flexWrap: 'wrap',
-                        alignItems: 'center',
-                        gap: 12,
-                        marginBottom: 20
-                      }}
+              employeeToken ? (
+                <>
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      alignItems: 'center',
+                      gap: 12,
+                      marginBottom: 20
+                    }}
+                  >
+                    <button
+                      onClick={() => setView("profile")}
+                      className="secondary-button"
+                      style={{ minWidth: 150, width: 150 }}
                     >
+                      My Profile
+                    </button>
+                    <div style={{ marginLeft: 'auto', display: 'flex' }}>
                       <button
-                        onClick={() => setView("profile")}
-                        className="secondary-button"
+                        onClick={() => { fetchUserOrders(userId).then(setUserOrders); setView("orders"); }}
+                        className="primary-button"
                         style={{ minWidth: 150, width: 150 }}
                       >
-                        My Profile
-                      </button>
-                      <div style={{ marginLeft: 'auto', display: 'flex' }}>
-                        <button
-                          onClick={() => { fetchUserOrders(userId).then(setUserOrders); setView("orders"); }}
-                          className="primary-button"
-                          style={{ minWidth: 150, width: 150 }}
-                        >
-                          My Orders
-                        </button>
-                      </div>
-                    </div>
-                    <div className="layout-container">
-                      <div className="menu-section">
-                        <Menu
-                          menu={menu}
-                          addToCart={addToCart}
-                          cart={cart}
-                          incItemNoOption={incItemNoOption}
-                          decItemNoOption={decItemNoOption}
-                          incItemVariant={incItemVariant}
-                          decItemVariant={decItemVariant}
-                          selectedShop={selectedShop}
-                          setSelectedShop={setSelectedShop}
-                          favorites={favorites}
-                          onFavoriteToggle={loadFavorites}
-                          userId={userId}
-                          scheduledTime={scheduledTime}
-                          activeSection={activeMenuSection}
-                          onActiveSectionChange={setActiveMenuSection}
-                        />
-                        {/* Inline feedback form for employees */}
-                        {employeeToken && (
-                          <div className="card" style={{ marginTop: 20 }}>
-                            <div className="card-header">Rate your experience</div>
-                            <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}>
-                              {[1,2,3,4,5].map(n => (
-                                <span
-                                  key={n}
-                                  className="rating-star"
-                                  onMouseEnter={() => setInlineHoverRating(n)}
-                                  onMouseLeave={() => setInlineHoverRating(0)}
-                                  onClick={() => setInlineRating(n)}
-                                  style={{ color: n <= (inlineHoverRating || inlineRating) ? '#f1c40f' : '#ccc', fontSize: 22, cursor: 'pointer' }}
-                                >★</span>
-                              ))}
-                            </div>
-                            <textarea placeholder="Share your feedback on food quality and service" value={inlineFeedback} onChange={(e)=>setInlineFeedback(e.target.value)} />
-                            <div className="mt-10">
-                              <button onClick={submitInlineFeedback} disabled={!inlineRating}>Submit Feedback</button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                      <div className="cart-section">
-                        <Cart
-                          cart={cart}
-                          removeFromCart={removeFromCart}
-                          decrementFromCart={decrementFromCart}
-                          incrementFromCart={incrementFromCart}
-                          scheduledTime={scheduledTime}
-                          setScheduledTime={setScheduledTime}
-                          onPayment={handlePaymentSuccess}
-                          shopItems={(() => { const s = menu.find(m => m.shopId === selectedShop); return (s && Array.isArray(s.items)) ? s.items : []; })()}
-                          paymentMethod={paymentMethod}
-                          setPaymentMethod={setPaymentMethod}
-                          walletBalance={wallet.balance}
-                          walletEnabled={Boolean(employeeToken)}
-                        />
-                        {orderSummary && (
-                          <div className="order-summary" style={{ marginTop: 20 }}>
-                            <h3>Order Confirmation</h3>
-                            <div><strong>Billing ID:</strong> {orderSummary.billingId}</div>
-                            <div><strong>User:</strong> {orderSummary.user}</div>
-                            <div><strong>Prep Time:</strong> {orderSummary.prepTime} mins</div>
-                            <h4>Items:</h4>
-                            <ul style={{ listStyle: "none", paddingLeft: 0 }}>
-                              {orderSummary.items.map((item, idx) => (
-                                <li key={idx} style={{ fontSize: 13, marginBottom: 4 }}>
-                                  {item.name} {item.option && `(${item.option})`} x{item.quantity} - ₹{item.price * item.quantity}
-                                </li>
-                              ))}
-                            </ul>
-                            <div><strong>Total:</strong> ₹{orderSummary.totalAmount}</div>
-                            {recentOrdersTodayCount > 1 && (
-                              <div style={{ marginTop: 10 }}>
-                                <span
-                                  role="button"
-                                  onClick={() => { fetchUserOrders(userId).then(setUserOrders); setView("orders"); }}
-                                  style={{ cursor: 'pointer', color: '#2c3e50', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
-                                >
-                                  View recent orders
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div style={{ marginTop: 24, display: 'flex', justifyContent: 'flex-end' }}>
-                      <button onClick={handleEmployeeLogout} style={{ background: '#e74c3c', color: '#fff', minWidth: 140 }}>
-                        Logout
+                        My Orders
                       </button>
                     </div>
-                  </>
-                ) : (
-                  <div className="employee-auth-container">
-                    <EmployeeLogin onSuccess={handleEmployeeLogin} onBack={() => setView("landing")} />
                   </div>
-                )}
-              </>
+                  <div className="layout-container">
+                    <div className="menu-section">
+                      <Menu
+                        menu={menu}
+                        addToCart={addToCart}
+                        cart={cart}
+                        incItemNoOption={incItemNoOption}
+                        decItemNoOption={decItemNoOption}
+                        incItemVariant={incItemVariant}
+                        decItemVariant={decItemVariant}
+                        selectedShop={selectedShop}
+                        setSelectedShop={setSelectedShop}
+                        favorites={favorites}
+                        onFavoriteToggle={loadFavorites}
+                        userId={userId}
+                        scheduledTime={scheduledTime}
+                        activeSection={activeMenuSection}
+                        onActiveSectionChange={setActiveMenuSection}
+                      />
+                      {/* Inline feedback form for employees */}
+                      <div className="card" style={{ marginTop: 20 }}>
+                        <div className="card-header">Rate your experience</div>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}>
+                          {[1,2,3,4,5].map(n => (
+                            <span
+                              key={n}
+                              className="rating-star"
+                              onMouseEnter={() => setInlineHoverRating(n)}
+                              onMouseLeave={() => setInlineHoverRating(0)}
+                              onClick={() => setInlineRating(n)}
+                              style={{ color: n <= (inlineHoverRating || inlineRating) ? '#f1c40f' : '#ccc', fontSize: 22, cursor: 'pointer' }}
+                            >★</span>
+                          ))}
+                        </div>
+                        <textarea placeholder="Share your feedback on food quality and service" value={inlineFeedback} onChange={(e)=>setInlineFeedback(e.target.value)} />
+                        <div className="mt-10">
+                          <button onClick={submitInlineFeedback} disabled={!inlineRating}>Submit Feedback</button>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="cart-section">
+                      <Cart
+                        cart={cart}
+                        removeFromCart={removeFromCart}
+                        decrementFromCart={decrementFromCart}
+                        incrementFromCart={incrementFromCart}
+                        scheduledTime={scheduledTime}
+                        setScheduledTime={setScheduledTime}
+                        onPayment={handlePaymentSuccess}
+                        shopItems={selectedShopItems}
+                        inventoryById={currentShopInventory}
+                        paymentMethod={paymentMethod}
+                        setPaymentMethod={setPaymentMethod}
+                        walletBalance={wallet.balance}
+                        walletEnabled={Boolean(employeeToken)}
+                      />
+                      {orderSummary && (
+                        <div className="order-summary" style={{ marginTop: 20 }}>
+                          <h3>Order Confirmation</h3>
+                          <div><strong>Billing ID:</strong> {orderSummary.billingId}</div>
+                          <div><strong>User:</strong> {orderSummary.user}</div>
+                          <div><strong>Prep Time:</strong> {orderSummary.prepTime} mins</div>
+                          <h4>Items:</h4>
+                          <ul style={{ listStyle: "none", paddingLeft: 0 }}>
+                            {orderSummary.items.map((item, idx) => (
+                              <li key={idx} style={{ fontSize: 13, marginBottom: 4 }}>
+                                {item.name} {item.option && `(${item.option})`} x{item.quantity} - ₹{item.price * item.quantity}
+                              </li>
+                            ))}
+                          </ul>
+                          <div><strong>Total:</strong> ₹{orderSummary.totalAmount}</div>
+                          {recentOrdersTodayCount > 1 && (
+                            <div style={{ marginTop: 10 }}>
+                              <span
+                                role="button"
+                                onClick={() => { fetchUserOrders(userId).then(setUserOrders); setView("orders"); }}
+                                style={{ cursor: 'pointer', color: '#2c3e50', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
+                              >
+                                View recent orders
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div style={{ marginTop: 24, display: 'flex', justifyContent: 'flex-end' }}>
+                    <button onClick={handleEmployeeLogout} style={{ background: '#e74c3c', color: '#fff', minWidth: 140 }}>
+                      Logout
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="employee-auth-container">
+                  <EmployeeLogin onSuccess={handleEmployeeLogin} onBack={() => setView("landing")} />
+                </div>
+              )
             )}
+
             {view === "login" && (
               <>
                 <button onClick={() => setView("user")} style={{ marginBottom: 15 }}>
@@ -771,6 +807,7 @@ function App() {
                 <Login onLogin={handleLogin} />
               </>
             )}
+
             {view === "orders" && (
               <OrderHistory
                 orders={userOrders}
@@ -781,6 +818,7 @@ function App() {
                 onCancel={handleCancelScheduledOrder}
               />
             )}
+
             {view === "profile" && (
               <>
                 <button onClick={() => setView("user")} style={{ marginBottom: 15 }}>← Back</button>
