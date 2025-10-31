@@ -107,6 +107,15 @@ export const employeeProfileRequestOtp = async (token, action) => {
   return res.json();
 };
 
+export const walletTopUp = async (token, amount, provider = 'google-pay') => {
+  const res = await fetch(`${API_URL}/wallet/topup`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, amount, provider })
+  });
+  return res.json();
+};
+
 
 /**
  * Upload vendor item image

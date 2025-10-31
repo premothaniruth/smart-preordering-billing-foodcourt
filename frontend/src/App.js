@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import { fetchMenu, placeOrder, fetchUserOrders, fetchFavorites, vendorLogin, updateMenu, markOrderReady, fetchAnalytics, submitRating, cancelOrder } from "./api";
+import { fetchMenu, placeOrder, fetchUserOrders, fetchFavorites, vendorLogin, updateMenu, markOrderReady, fetchAnalytics, submitRating, cancelOrder, employeeProfile } from "./api";
 import Menu from "./components/Menu";
 import Cart from "./components/Cart";
 import Payment from "./components/Payment";
@@ -54,6 +54,8 @@ function App() {
   const [orderSummary, setOrderSummary] = useState(null);
   const [userOrders, setUserOrders] = useState([]);
   const [favorites, setFavorites] = useState([]);
+  const [wallet, setWallet] = useState({ balance: 0, transactions: [] });
+  const [paymentMethod, setPaymentMethod] = useState('gateway');
   const readyNotifiedRef = useRef(new Set());
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [currentOrderForRating, setCurrentOrderForRating] = useState(null);
@@ -196,6 +198,26 @@ function App() {
     fetchFavorites(userId).then(setFavorites);
   };
 
+  const loadWallet = async (tokenOverride = null) => {
+    const authToken = tokenOverride || employeeToken;
+    if (!authToken) {
+      setWallet({ balance: 0, transactions: [] });
+      return;
+    }
+    try {
+      const res = await employeeProfile(authToken);
+      if (res?.status === 'ok') {
+        const walletData = res?.wallet || {};
+        setWallet({
+          balance: Number(walletData.balance || 0),
+          transactions: Array.isArray(walletData.transactions) ? walletData.transactions : []
+        });
+      }
+    } catch {
+      setWallet((prev) => prev);
+    }
+  };
+
   const playSound = (soundUrl) => {
     const audio = new Audio(soundUrl);
     audio.play().catch(err => console.log("Audio play failed:", err));
@@ -328,11 +350,19 @@ function App() {
       prepTime: c.item.prepTime
     }));
 
+    const totalCharge = orderItems.reduce((sum, it) => sum + it.price * it.quantity, 0);
+    if (paymentMethod === 'wallet' && wallet.balance < totalCharge) {
+      toast.error('Insufficient wallet balance. Please top up or choose another payment method.');
+      return;
+    }
+
     placeOrder({
       items: orderItems,
       scheduledTime,
       user: userId,
       shopId: selectedShop,
+      paymentMethod,
+      paymentPayload: paymentMethod === 'gateway' ? { provider: 'google-pay' } : undefined,
     }).then((response) => {
       if (!response || response.status !== 'success') {
         const msg = response?.message || 'Order failed. Please try again';
@@ -353,6 +383,9 @@ function App() {
       setOrderSummary(response.orderSummary);
       // refresh menu to reflect decremented inventory
       loadMenu();
+      if (paymentMethod === 'wallet') {
+        loadWallet();
+      }
 
       // If some items were excluded for immediate orders, inform the user
       if (Array.isArray(response.excludedItems) && response.excludedItems.length > 0) {
@@ -481,9 +514,11 @@ function App() {
   const handleEmployeeLogin = ({ token, mobile }) => {
     setEmployeeToken(token);
     setEmployeeMobile(mobile);
+    setPaymentMethod('gateway');
     setView("user");
     playSound(READY_SOUND);
     toast.success("Employee logged in");
+    loadWallet(token);
   };
 
   const handleEmployeeLogout = () => {
@@ -491,6 +526,8 @@ function App() {
     setEmployeeMobile("");
     setCart([]);
     setOrderSummary(null);
+    setWallet({ balance: 0, transactions: [] });
+    setPaymentMethod('gateway');
     readyNotifiedRef.current.clear();
     etaNotifiedRef.current.clear();
     readySeededRef.current = false;
@@ -643,6 +680,10 @@ function App() {
                           setScheduledTime={setScheduledTime}
                           onPayment={handlePaymentSuccess}
                           shopItems={(() => { const s = menu.find(m => m.shopId === selectedShop); return (s && Array.isArray(s.items)) ? s.items : []; })()}
+                          paymentMethod={paymentMethod}
+                          setPaymentMethod={setPaymentMethod}
+                          walletBalance={wallet.balance}
+                          walletEnabled={Boolean(employeeToken)}
                         />
                         {orderSummary && (
                           <div className="order-summary" style={{ marginTop: 20 }}>

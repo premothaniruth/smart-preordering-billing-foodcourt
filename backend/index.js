@@ -32,7 +32,24 @@ const sectionWindowsFile = __dirname + "/data/section_windows.json";
 // Helper functions (defined after paths)
 const getEmployees = () => {
   try {
-    return JSON.parse(fs.readFileSync(employeesFile, "utf8"));
+    const list = JSON.parse(fs.readFileSync(employeesFile, "utf8"));
+    let changed = false;
+    if (Array.isArray(list)) {
+      for (const emp of list) {
+        if (typeof emp.walletBalance !== 'number' || Number.isNaN(emp.walletBalance)) {
+          emp.walletBalance = 0;
+          changed = true;
+        }
+        if (!Array.isArray(emp.walletTransactions)) {
+          emp.walletTransactions = [];
+          changed = true;
+        }
+      }
+      if (changed) {
+        saveEmployees(list);
+      }
+    }
+    return list;
   } catch {
     return [];
   }
@@ -40,6 +57,47 @@ const getEmployees = () => {
 
 const saveEmployees = (list) => {
   fs.writeFileSync(employeesFile, JSON.stringify(list, null, 2));
+};
+
+const formatCurrency = (amount) => Math.round(Number(amount || 0) * 100) / 100;
+
+const MIN_WALLET_TOPUP = 100;
+const MAX_WALLET_TOPUP = 5000;
+
+const ensureWalletFields = (employee) => {
+  if (!employee) return false;
+  let changed = false;
+  if (typeof employee.walletBalance !== 'number' || Number.isNaN(employee.walletBalance)) {
+    employee.walletBalance = 0;
+    changed = true;
+  }
+  if (!Array.isArray(employee.walletTransactions)) {
+    employee.walletTransactions = [];
+    changed = true;
+  }
+  return changed;
+};
+
+const appendWalletTransaction = (employee, tx = {}) => {
+  ensureWalletFields(employee);
+  const transaction = {
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    timestamp: new Date().toISOString(),
+    ...tx,
+  };
+  transaction.amount = formatCurrency(transaction.amount || 0);
+  if (!transaction.status) transaction.status = 'success';
+  employee.walletTransactions.unshift(transaction);
+  if (employee.walletTransactions.length > 1000) {
+    employee.walletTransactions.length = 1000;
+  }
+  return transaction;
+};
+
+const recordWalletTransaction = (employees, employee, tx = {}) => {
+  const entry = appendWalletTransaction(employee, tx);
+  saveEmployees(employees);
+  return entry;
 };
 
 const validatePin = (pin) => /^\d{4}$/.test(String(pin || ''));
@@ -224,7 +282,16 @@ app.post('/employee/profile', (req, res) => {
     const { token } = req.body || {};
     const resolved = resolveEmployeeFromToken(token);
     if (!resolved) return res.status(401).json({ message: 'Invalid or expired session' });
-    return res.json({ status: 'ok', profile: sanitizeEmployeeProfile(resolved.employee) });
+    const employee = resolved.employee;
+    ensureWalletFields(employee);
+    return res.json({
+      status: 'ok',
+      profile: sanitizeEmployeeProfile(employee),
+      wallet: {
+        balance: formatCurrency(employee.walletBalance || 0),
+        transactions: (employee.walletTransactions || []).slice(0, 20)
+      }
+    });
   } catch {
     res.status(500).json({ message: 'Failed to load profile' });
   }
@@ -896,6 +963,17 @@ const calculateOrderTotal = (order) => {
   return Math.round(total * 100) / 100;
 };
 
+const getEmployeeByUserId = (user) => {
+  if (!user) return null;
+  const employees = getEmployees();
+  const key = String(user).trim().toLowerCase();
+  return employees.find((emp) =>
+    String(emp.mobile || '').trim().toLowerCase() === key ||
+    String(emp.username || '').trim().toLowerCase() === key ||
+    String(emp.email || '').trim().toLowerCase() === key
+  ) || null;
+};
+
 const evaluateScheduledCancellation = (order) => {
   if (!order) return { allowed: false, reason: "Order not found" };
   if (!order.scheduledTime) {
@@ -1134,12 +1212,12 @@ app.get("/vendor/feedbacks", authenticateVendor, (req, res) => {
 /**
  * POST /order
  * Public: Place an order.
- * @body {items:Array,user?:string,scheduledTime?:string,shopId:string}
+ * @body {items:Array,user?:string,scheduledTime?:string,shopId:string,paymentMethod?:string,paymentPayload?:object}
  * @returns { billingId:string, orderSummary:object }
  */
 app.post("/order", (req, res) => {
   try {
-    const { items, user, scheduledTime, shopId } = req.body;
+    const { items, user, scheduledTime, shopId, paymentMethod = 'gateway', paymentPayload = {} } = req.body;
     // Validate inventory and decrement (supports combo expansion)
     const raw = getMenu();
     const normalizedShops = normalizeMenuShops(raw);
@@ -1407,6 +1485,43 @@ app.post("/order", (req, res) => {
       totalAmount
     };
 
+    let paymentSummary = { method: paymentMethod, amount: totalAmount };
+
+    if (paymentMethod === 'wallet') {
+      const employees = getEmployees();
+      const employeeIndex = employees.findIndex((emp) => String(emp.mobile || '').toLowerCase() === String(user || '').toLowerCase());
+      if (employeeIndex === -1) {
+        return res.status(400).json({ status: 'error', message: 'Wallet not available for this user' });
+      }
+      const employee = employees[employeeIndex];
+      ensureWalletFields(employee);
+      if (Number(employee.walletBalance || 0) < totalAmount) {
+        return res.status(400).json({ status: 'error', message: 'Insufficient wallet balance' });
+      }
+      const newBalance = formatCurrency(employee.walletBalance - totalAmount);
+      employee.walletBalance = newBalance;
+      const tx = {
+        type: 'debit',
+        reason: 'order-payment',
+        orderBillingId: billingId,
+        amount: totalAmount
+      };
+      recordWalletTransaction(employees, employee, tx);
+      saveEmployees(employees);
+      paymentSummary = { method: 'wallet', amount: totalAmount, walletBalance: newBalance };
+    } else if (paymentMethod === 'cash') {
+      paymentSummary = { method: 'cash', amount: totalAmount };
+    } else {
+      paymentSummary = {
+        method: 'gateway',
+        amount: totalAmount,
+        provider: paymentPayload?.provider || 'google-pay',
+        reference: paymentPayload?.reference || `PG-${Date.now()}`
+      };
+    }
+
+    newOrder.payment = paymentSummary;
+
     orders.push(newOrder);
     saveOrders(orders);
 
@@ -1433,6 +1548,42 @@ app.post("/order", (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: "Error placing order" });
+  }
+});
+
+app.post('/wallet/topup', (req, res) => {
+  try {
+    const { token, amount, provider = 'google-pay' } = req.body || {};
+    const resolved = resolveEmployeeFromToken(token);
+    if (!resolved) return res.status(401).json({ message: 'Invalid or expired session' });
+    const value = Number(amount);
+    if (!Number.isFinite(value) || value <= 0) {
+      return res.status(400).json({ message: 'Invalid amount' });
+    }
+    if (value < MIN_WALLET_TOPUP) {
+      return res.status(400).json({ message: `Minimum top-up is ₹${MIN_WALLET_TOPUP}` });
+    }
+    if (value > MAX_WALLET_TOPUP) {
+      return res.status(400).json({ message: `Maximum top-up is ₹${MAX_WALLET_TOPUP}` });
+    }
+    const employees = resolved.employees || getEmployees();
+    const employee = employees[resolved.index];
+    ensureWalletFields(employee);
+    const tx = recordWalletTransaction(employees, employee, {
+      type: 'credit',
+      reason: 'wallet-topup',
+      provider,
+      amount: value
+    });
+    employee.walletBalance = formatCurrency(Number(employee.walletBalance || 0) + formatCurrency(value));
+    saveEmployees(employees);
+    res.json({
+      status: 'success',
+      balance: formatCurrency(employee.walletBalance),
+      transaction: tx
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error processing wallet top-up' });
   }
 });
 
@@ -1496,6 +1647,26 @@ app.post("/order/cancel/:id", (req, res) => {
     order.cancellationPolicy = outcome.policy;
     order.cancellationRefundPercent = outcome.refundPercent;
     order.cancellationLeadMinutes = outcome.diffMinutes;
+
+    try {
+      if (order.payment?.method === 'wallet' && outcome.refundAmount > 0) {
+        const employees = getEmployees();
+        const employeeIndex = employees.findIndex((emp) => String(emp.mobile || '').toLowerCase() === String(order.user || '').toLowerCase());
+        if (employeeIndex >= 0) {
+          const employee = employees[employeeIndex];
+          ensureWalletFields(employee);
+          employee.walletBalance = formatCurrency(Number(employee.walletBalance || 0) + Number(outcome.refundAmount || 0));
+          recordWalletTransaction(employees, employee, {
+            type: 'credit',
+            reason: 'order-refund',
+            orderBillingId: order.billingId,
+            amount: outcome.refundAmount
+          });
+          saveEmployees(employees);
+          order.payment.walletBalanceAfterRefund = employee.walletBalance;
+        }
+      }
+    } catch {}
 
     saveOrders(orders);
 
