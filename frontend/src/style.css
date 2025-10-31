@@ -986,3 +986,116 @@ textarea:focus-visible {
 .gap-15 {
   gap: 15px;
 }
+
+/* ===== LANDING PAGE STYLES ===== */
+.landing-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  text-align: center;
+}
+
+.welcome-section h2 {
+  margin-bottom: 10px;
+  font-size: 28px;
+  color: #2c3e50;
+}
+
+.welcome-section p {
+  margin-bottom: 40px;
+  font-size: 16px;
+  color: #666;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.landing-options {
+  display: flex;
+  gap: 30px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.option-card {
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  transition: transform 0.3s, box-shadow 0.3s;
+  max-width: 300px;
+  text-align: left;
+}
+
+.option-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+}
+
+.option-card h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: #2c3e50;
+  font-size: 20px;
+}
+
+.option-card p {
+  color: #666;
+  line-height: 1.6;
+  margin-bottom: 25px;
+  font-size: 14px;
+}
+
+.primary-button {
+  background: #3498db;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  width: 100%;
+}
+
+.primary-button:hover {
+  background: #2980b9;
+  transform: translateY(-2px);
+}
+
+.secondary-button {
+  background: #2ecc71;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  width: 100%;
+}
+
+.secondary-button:hover {
+  background: #27ae60;
+  transform: translateY(-2px);
+}
+
+/* Responsive landing page */
+@media (max-width: 768px) {
+  .landing-options {
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .option-card {
+    max-width: 100%;
+  }
+  
+  .welcome-section h2 {
+    font-size: 24px;
+  }
+}
