@@ -1,47 +1,35 @@
-// Request OTP for employee login (registered users only)
-app.post("/employee/request-otp", (req, res) => {
-  try {
-    const { mobile } = req.body || {};
-    if (!mobile || !/^\d{10}$/.test(mobile)) {
-      return res.status(400).json({ message: "Mobile must be 10 digits" });
-    }
-    const fullMobile = `+91${mobile}`;
-    const employees = getEmployees();
-    const user = employees.find(e => String(e.mobile || '').toLowerCase() === fullMobile.toLowerCase());
-    if (!user) return res.status(404).json({ message: 'Mobile not registered' });
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    employeeOtps.set(fullMobile, { otp, expiresAt: Date.now() + 2 * 60 * 1000 });
-    console.log(`[OTP] Mobile: ${fullMobile} -> ${otp}`);
-    res.json({ status: 'ok' });
-  } catch {
-    res.status(500).json({ message: 'Error requesting OTP' });
-  }
-});
+// Imports
+const express = require("express");
+const cors = require("cors");
+const bodyParser = require("body-parser");
+const fs = require("fs");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+const path = require("path");
 
-// Verify OTP and issue session
-app.post("/employee/verify-otp", (req, res) => {
-  try {
-    const { mobile, otp } = req.body || {};
-    if (!mobile || !otp) return res.status(400).json({ message: 'Mobile and OTP required' });
-    if (!/^\d{10}$/.test(String(mobile))) return res.status(400).json({ message: 'Invalid mobile' });
-    const fullMobile = `+91${mobile}`;
-    const record = employeeOtps.get(fullMobile);
-    if (!record || record.otp !== String(otp) || Date.now() > record.expiresAt) {
-      return res.status(401).json({ message: 'Invalid or expired OTP' });
-    }
-    employeeOtps.delete(fullMobile);
-    const employees = getEmployees();
-    const user = employees.find(e => String(e.mobile || '').toLowerCase() === fullMobile.toLowerCase());
-    if (!user) return res.status(404).json({ message: 'User not found' });
-    const token = jwt.sign({ role: 'employee', mobile: fullMobile }, JWT_SECRET, { expiresIn: '8h' });
-    employeeSessions.set(token, { mobile: fullMobile, createdAt: Date.now() });
-    res.json({ status: 'ok', token, mobile: fullMobile, username: user.username, email: user.email });
-  } catch {
-    res.status(500).json({ message: 'Error verifying OTP' });
-  }
-});
-// Employees
-/** @returns {Array<{id:number,username?:string,email?:string,mobile?:string,passwordHash?:string,pinHash?:string}>} */
+// App setup
+const app = express();
+const PORT = process.env.PORT || 3001;
+const JWT_SECRET = process.env.JWT_SECRET || "MySuperSecretKeyForJWT";
+
+app.use(cors());
+app.use(bodyParser.json({ limit: '6mb' }));
+app.use('/images', express.static(path.join(__dirname, 'data', 'images')));
+
+// File paths
+const menuFile = __dirname + "/data/menu.json";
+const ordersFile = __dirname + "/data/orders.json";
+const vendorsFile = __dirname + "/data/vendors.json";
+const billingCounterFile = __dirname + "/data/billing_counter.json";
+const favoritesFile = __dirname + "/data/favorites.json";
+const ratingsFile = __dirname + "/data/ratings.json";
+const grievancesFile = __dirname + "/data/grievances.json";
+const employeesFile = __dirname + "/data/employees.json";
+const combosFile = __dirname + "/data/combos.json";
+const offersFile = __dirname + "/data/offers.json";
+const sectionWindowsFile = __dirname + "/data/section_windows.json";
+
+// Helper functions (defined after paths)
 const getEmployees = () => {
   try {
     return JSON.parse(fs.readFileSync(employeesFile, "utf8"));
@@ -64,6 +52,10 @@ const validatePassword = (pwd) => {
   const hasSymbol = /[\.,&%#@!]/.test(s);
   return hasLower && hasUpper && hasDigit && hasSymbol;
 };
+
+// In-memory stores (no database)
+const employeeOtps = new Map(); // mobile -> { otp, expiresAt }
+const employeeSessions = new Map(); // token -> { mobile, createdAt }
 
 // Startup: hash any pinPlain, and set initial pins for demo users 1 and 2 if missing
 const ensureEmployeePins = async () => {
@@ -130,106 +122,54 @@ const ensureHotRecFlags = () => {
   } catch {}
 };
 
-const express = require("express");
-const cors = require("cors");
-const bodyParser = require("body-parser");
-const fs = require("fs");
-const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken");
-const path = require("path");
-
-const app = express();
-const PORT = process.env.PORT || 3001;
-const JWT_SECRET = process.env.JWT_SECRET || "MySuperSecretKeyForJWT";
-
-app.use(cors());
-app.use(bodyParser.json({ limit: '6mb' }));
-app.use('/images', express.static(path.join(__dirname, 'data', 'images')));
-
-// File paths
-const menuFile = __dirname + "/data/menu.json";
-const ordersFile = __dirname + "/data/orders.json";
-const vendorsFile = __dirname + "/data/vendors.json";
-const billingCounterFile = __dirname + "/data/billing_counter.json";
-const favoritesFile = __dirname + "/data/favorites.json";
-const ratingsFile = __dirname + "/data/ratings.json";
-const grievancesFile = __dirname + "/data/grievances.json";
-const employeesFile = __dirname + "/data/employees.json";
-const combosFile = __dirname + "/data/combos.json";
-const offersFile = __dirname + "/data/offers.json";
-const sectionWindowsFile = __dirname + "/data/section_windows.json";
-
 // Run migrations at startup (after modules and paths are defined)
 ensureHotRecFlags();
 ensureEmployeePins();
 
-// Helper functions
-/**
- * Read raw menu JSON from disk.
- * Supports both legacy (array of shops with items) and new format ({ shops: [ { categories: [...] } ] }).
- * @returns {any}
- */
-const getMenu = () => JSON.parse(fs.readFileSync(menuFile, "utf8"));
+// Routes
 
-/**
- * Normalize the menu into an array of shops with flattened items[] for UI/back-compat.
- * Each item gets an `options` array if `hasOptions` is present in data, and a `section` equal to its category name when applicable.
- * @param {any} raw
- * @returns {Array<{shopId:number|string, shopName:string, items:Array}>}
- */
-// Stable per-process random picks for category highlights
-const categoryHotPicks = new Map(); // categoryName -> Set<itemId>
-const categoryRecPicks = new Map(); // categoryName -> Set<itemId>
-
-const normalizeMenuShops = (raw) => {
-  // Legacy shape already array of shops with items[]
-  if (Array.isArray(raw)) {
-    return raw.map((shop) => ({
-      shopId: shop.shopId,
-      shopName: shop.shopName,
-      items: Array.isArray(shop.items) ? shop.items.map((it) => normalizeItem(it)) : []
-    }));
-  }
-  // New shape: { shops: [ { categories: [ {categoryName, items:[] } ] } ] }
-  const shops = Array.isArray(raw?.shops) ? raw.shops : [];
-  return shops.map((shop) => {
-    const categories = Array.isArray(shop.categories) ? shop.categories : [];
-    const items = [];
-    for (const cat of categories) {
-      const catName = cat?.categoryName || 'All Items';
-      const catItems = Array.isArray(cat?.items) ? cat.items : [];
-      // Pick 5 random items per category for hot sellers and recommended (stable while server runs)
-      const ensurePicks = () => {
-        if (!categoryHotPicks.has(catName)) {
-          const ids = catItems.map(i => i.id);
-          const hot = new Set();
-          const rec = new Set();
-          const pickN = (n, target) => {
-            const pool = ids.slice();
-            for (let i = pool.length - 1; i > 0; i--) { // shuffle
-              const j = Math.floor(Math.random() * (i + 1));
-              [pool[i], pool[j]] = [pool[j], pool[i]];
-            }
-            for (let i = 0; i < Math.min(n, pool.length); i++) target.add(pool[i]);
-          };
-          pickN(5, hot);
-          pickN(5, rec);
-          categoryHotPicks.set(catName, hot);
-          categoryRecPicks.set(catName, rec);
-        }
-      };
-      ensurePicks();
-      const hotSet = categoryHotPicks.get(catName) || new Set();
-      const recSet = categoryRecPicks.get(catName) || new Set();
-      for (const it of catItems) {
-        const base = { ...it, section: it.section || catName };
-        if (base.isHotSeller == null) base.isHotSeller = hotSet.has(base.id);
-        if (base.isRecommended == null) base.isRecommended = recSet.has(base.id);
-        items.push(normalizeItem(base));
-      }
+// Request OTP for employee login (registered users only)
+app.post("/employee/request-otp", (req, res) => {
+  try {
+    const { mobile } = req.body || {};
+    if (!mobile || !/^\d{10}$/.test(mobile)) {
+      return res.status(400).json({ message: "Mobile must be 10 digits" });
     }
-    return { shopId: shop.shopId, shopName: shop.shopName, items };
-  });
+    const fullMobile = `+91${mobile}`;
+    const employees = getEmployees();
+    const user = employees.find(e => String(e.mobile || '').toLowerCase() === fullMobile.toLowerCase());
+    if (!user) return res.status(404).json({ message: 'Mobile not registered' });
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    employeeOtps.set(fullMobile, { otp, expiresAt: Date.now() + 2 * 60 * 1000 });
+    console.log(`[OTP] Mobile: ${fullMobile} -> ${otp}`);
+    res.json({ status: 'ok' });
+  } catch {
+    res.status(500).json({ message: 'Error requesting OTP' });
+  }
+});
+
+// Verify OTP and issue session
+app.post("/employee/verify-otp", (req, res) => {
+  try {
+    const { mobile, otp } = req.body || {};
+    if (!mobile || !otp) return res.status(400).json({ message: 'Mobile and OTP required' });
+    if (!/^\d{10}$/.test(String(mobile))) return res.status(400).json({ message: 'Invalid mobile' });
+    const fullMobile = `+91${mobile}`;
+    const record = employeeOtps.get(fullMobile);
+    if (!record || record.otp !== String(otp) || Date.now() > record.expiresAt) {
+      return res.status(401).json({ message: 'Invalid or expired OTP' });
+    }
+    employeeOtps.delete(fullMobile);
+    const employees = getEmployees();
+    const user = employees.find(e => String(e.mobile || '').toLowerCase() === fullMobile.toLowerCase());
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    const token = jwt.sign({ role: 'employee', mobile: fullMobile }, JWT_SECRET, { expiresIn: '8h' });
+    employeeSessions.set(token, { mobile: fullMobile, createdAt: Date.now() });
+    res.json({ status: 'ok', token, mobile: fullMobile, username: user.username, email: user.email });
+  } catch {
+    res.status(500).json({ message: 'Error verifying OTP' });
+  }
+});
 
 // Username availability
 app.get('/employee/check-username', (req, res) => {
@@ -276,6 +216,7 @@ app.post('/employee/register', async (req, res) => {
     res.status(500).json({ message: 'Error registering user' });
   }
 });
+
 // Employee username/password login
 app.post('/employee/login-password', async (req, res) => {
   try {
@@ -464,6 +405,33 @@ app.post('/employee/apple-login', async (req, res) => {
     res.status(500).json({ message: 'Error during Apple login' });
   }
 });
+
+// Get menu
+/**
+ * Read menu JSON from disk.
+ * @returns {Array}
+ */
+const getMenu = () => {
+  try {
+    return JSON.parse(fs.readFileSync(menuFile, "utf8"));
+  } catch {
+    return [];
+  }
+};
+
+/**
+ * Normalize menu shops to ensure consistent structure.
+ * @param {any} raw
+ * @returns {Array}
+ */
+const normalizeMenuShops = (raw) => {
+  if (!raw || !Array.isArray(raw.shops)) return [];
+  return raw.shops.map((shop) => {
+    const items = Array.isArray(shop.categories)
+      ? shop.categories.flatMap((cat) => Array.isArray(cat.items) ? cat.items.map((it) => normalizeItem({ ...it, section: cat.categoryName || 'All Items' })) : [])
+      : Array.isArray(shop.items) ? shop.items.map(normalizeItem) : [];
+    return { ...shop, items };
+  });
 };
 
 /**
@@ -481,28 +449,33 @@ const normalizeItem = (it) => {
     inventory: (it.inventory == null || isNaN(Number(it.inventory))) ? 100 : Number(it.inventory)
   };
 };
+
 /**
  * Persist menu to disk.
  * @param {any} menu - Full menu array
  * @returns {void}
  */
 const saveMenu = (menu) => fs.writeFileSync(menuFile, JSON.stringify(menu, null, 2));
+
 /**
  * Read orders JSON from disk.
  * @returns {Array}
  */
 const getOrders = () => JSON.parse(fs.readFileSync(ordersFile, "utf8"));
+
 /**
  * Persist orders to disk.
  * @param {Array} orders
  * @returns {void}
  */
 const saveOrders = (orders) => fs.writeFileSync(ordersFile, JSON.stringify(orders, null, 2));
+
 /**
  * Read vendor credentials/data.
  * @returns {Array}
  */
 const getVendors = () => JSON.parse(fs.readFileSync(vendorsFile, "utf8"));
+
 /**
  * Read favorites from disk.
  * @returns {Array<{userId:string,itemId:number}>}
@@ -514,11 +487,13 @@ const getFavorites = () => {
     return [];
   }
 };
+
 /**
  * Persist favorites to disk.
  * @param {Array} favorites
  */
 const saveFavorites = (favorites) => fs.writeFileSync(favoritesFile, JSON.stringify(favorites, null, 2));
+
 /**
  * Read ratings from disk.
  * @returns {Array}
@@ -530,11 +505,13 @@ const getRatings = () => {
     return [];
   }
 };
+
 /**
  * Persist ratings to disk.
  * @param {Array} ratings
  */
 const saveRatings = (ratings) => fs.writeFileSync(ratingsFile, JSON.stringify(ratings, null, 2));
+
 /**
  * Read grievances from disk.
  * @returns {Array}
@@ -546,6 +523,7 @@ const getGrievances = () => {
     return [];
   }
 };
+
 /**
  * Persist grievances to disk.
  * @param {Array} grievances
@@ -585,10 +563,6 @@ const getSectionWindows = () => {
     return {};
   }
 };
-
-// In-memory stores (no database)
-const employeeOtps = new Map(); // mobile -> { otp, expiresAt }
-const employeeSessions = new Map(); // token -> { mobile, createdAt }
 
 // Billing counter management
 /**
@@ -662,97 +636,6 @@ const authenticateVendor = (req, res, next) => {
   const token = req.headers["authorization"];
   if (!token) return res.status(401).json({ message: "No token provided" });
 
-// Revoke previously extended preparation time, restoring to base or subtracting accumulated extension
-app.post("/order/extend-reset/:id", authenticateVendor, (req, res) => {
-  try {
-    const orders = getOrders();
-    const orderId = parseInt(req.params.id);
-    const vendorShopId = req.vendor.shopId;
-
-    const order = orders.find((o) => o.id === orderId && o.shopId === vendorShopId);
-    if (!order) {
-      return res.status(404).json({ message: "Order not found for your shop" });
-    }
-
-    const ext = order.etaExtensionMinutes || 0;
-    if (order.baseEstimatedReadyTime) {
-      order.estimatedReadyTime = order.baseEstimatedReadyTime;
-    } else if (order.estimatedReadyTime && ext > 0) {
-      order.estimatedReadyTime = new Date(new Date(order.estimatedReadyTime).getTime() - ext * 60000).toISOString();
-    }
-    if (order.basePrepTime != null) {
-      order.prepTime = order.basePrepTime;
-    } else if (ext > 0) {
-      order.prepTime = Math.max(0, (order.prepTime || 0) - ext);
-    }
-    order.etaExtensionMinutes = 0;
-    order.etaExtendedAt = null;
-
-    saveOrders(orders);
-    res.json({ status: "success", message: "Extension revoked", order });
-  } catch (error) {
-    res.status(500).json({ message: "Error revoking extension" });
-  }
-});
-
-// Vendor: Upload item image (base64 data)
-/**
- * POST /vendor/upload-image
- * Auth: Bearer token (vendor)
- * Body: { name?:string, mime?:string, data?:string } where data is base64 without data URI prefix
- * Constraints: max 5MB; mime must be image/jpeg or image/png
- * Returns: { status:"ok", path:"/images/<file>" }
- */
-app.post('/vendor/upload-image', authenticateVendor, (req, res) => {
-  try {
-    const { name, mime, data } = req.body || {};
-    if (!data || typeof data !== 'string') {
-      return res.status(400).json({ message: 'Missing image data' });
-    }
-    const allowed = new Set(['image/jpeg','image/png','image/jpg']);
-    const m = (mime || '').toLowerCase();
-    if (!allowed.has(m)) {
-      return res.status(400).json({ message: 'Only JPEG and PNG images are allowed' });
-    }
-    const buf = Buffer.from(data, 'base64');
-    const MAX = 5 * 1024 * 1024;
-    if (buf.length > MAX) {
-      return res.status(400).json({ message: 'Image exceeds 5MB limit' });
-    }
-    const ext = m === 'image/png' ? '.png' : '.jpg';
-    const safeBase = String(name || 'upload').replace(/[^a-zA-Z0-9_-]/g, '').slice(0,32) || 'upload';
-    const fname = `${Date.now()}_${safeBase}${ext}`;
-    const outDir = path.join(__dirname, 'data', 'images');
-    try { fs.mkdirSync(outDir, { recursive: true }); } catch {}
-    const outPath = path.join(outDir, fname);
-    fs.writeFileSync(outPath, buf);
-    const servedPath = `/images/${fname}`;
-    res.json({ status: 'ok', path: servedPath });
-  } catch (e) {
-    res.status(500).json({ message: 'Error uploading image' });
-  }
-});
-
-// Mark order as picked up/completed
-app.post("/order/picked/:id", authenticateVendor, (req, res) => {
-  try {
-    const orders = getOrders();
-    const orderId = parseInt(req.params.id);
-    const vendorShopId = req.vendor.shopId;
-
-    const order = orders.find((o) => o.id === orderId && o.shopId === vendorShopId);
-    if (!order) {
-      return res.status(404).json({ message: "Order not found for your shop" });
-    }
-
-    order.status = "completed";
-    order.completedAt = new Date().toISOString();
-    saveOrders(orders);
-    res.json({ status: "success", message: `Order ${orderId} marked as completed` });
-  } catch (error) {
-    res.status(500).json({ message: "Error marking order completed" });
-  }
-});
   const tokenValue = token.replace("Bearer ", "");
   jwt.verify(tokenValue, JWT_SECRET, (err, decoded) => {
     if (err) return res.status(401).json({ message: "Failed to authenticate token" });
@@ -760,8 +643,6 @@ app.post("/order/picked/:id", authenticateVendor, (req, res) => {
     next();
   });
 };
-
-// ========== PUBLIC ROUTES ==========
 
 // Get menu
 /**
@@ -932,7 +813,7 @@ app.post("/order", (req, res) => {
     const inComboWindowHM = (combo, hm) => {
       const start = combo?.availableStart;
       const end = combo?.availableEnd;
-      if (!start || !end) return true; // no constraint
+      if (!start || !end) return true;
       return hm >= start && hm <= end;
     };
     const orderCombos = (items || []).filter(isComboLine);
