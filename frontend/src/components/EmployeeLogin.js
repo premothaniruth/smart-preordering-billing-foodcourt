@@ -21,9 +21,7 @@ const EmployeeLogin = ({ onSuccess }) => {
   const [resendSeconds, setResendSeconds] = useState(0);
   const [uname, setUname] = useState("");
   const [pwd, setPwd] = useState("");
-  const [pinUname, setPinUname] = useState("");
   const [pin, setPin] = useState("");
-  const [pinContact, setPinContact] = useState("");
   const [showRegister, setShowRegister] = useState(false);
   const [regUsername, setRegUsername] = useState("");
   const [regEmail, setRegEmail] = useState("");
@@ -152,7 +150,7 @@ const EmployeeLogin = ({ onSuccess }) => {
         </div>
 
         {mode === 'mobile' && step === "mobile" && (
-        <form onSubmit={requestOtp} style={{ width:'100%', background:'#fff', border:'1px solid #eee', borderRadius:12, padding:18, boxShadow:'0 6px 24px rgba(0,0,0,0.06)' }}>
+          <form onSubmit={requestOtp} style={{ width:'100%', background:'#fff', border:'1px solid #eee', borderRadius:12, padding:18, boxShadow:'0 6px 24px rgba(0,0,0,0.06)' }}>
           <h2 style={{ margin:0, fontSize:20 }}>Employee Login</h2>
           <div style={{ position:'relative', marginTop:12 }}>
             <input
@@ -347,35 +345,7 @@ const EmployeeLogin = ({ onSuccess }) => {
               </svg>
             </button>
           </div>
-        </form>
-        )}
-
-        {mode === 'mobile' && step === "otp" && (
-        <form onSubmit={verifyOtp} style={{ width:'100%', background:'#fff', border:'1px solid #eee', borderRadius:12, padding:18, boxShadow:'0 6px 24px rgba(0,0,0,0.06)' }}>
-          <h2 style={{ margin:0, fontSize:20 }}>Enter OTP</h2>
-          <input
-            placeholder="6-digit OTP"
-            value={otp}
-            onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, ""))}
-            maxLength={6}
-            required
-            style={{ width:'100%', marginTop:12, padding:'10px 12px', border:'1px solid #ddd', borderRadius:8, fontSize:14, letterSpacing:2 }}
-          />
-          <button type="submit" disabled={loading || otp.length !== 6} style={{ width:'100%', marginTop:12, padding:'10px 12px', background:'#111', color:'#fff', border:'1px solid #111', borderRadius:8, fontWeight:600 }}>
-            {loading ? "Verifying..." : "Verify & Continue"}
-          </button>
-          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:10 }}>
-            <button type="button" onClick={() => setStep("mobile")} style={{ background:'#fff', color:'#111', border:'1px solid #111', padding:'8px 12px', borderRadius:8 }}>Back</button>
-            <button
-              type="button"
-              onClick={async () => { if (resendSeconds > 0) return; setLoading(true); try { const r = await employeeRequestOtp(mobile); if (r.status === 'ok') { toast.info('OTP sent. Check server console.', { autoClose: 2000 }); setResendSeconds(45); } else { toast.error(r.message || 'Failed to resend OTP'); } } catch { toast.error('Error requesting OTP'); } finally { setLoading(false);} }}
-              disabled={resendSeconds > 0}
-              style={{ background:'#fff', color:'#111', border:'1px solid #111', padding:'8px 12px', borderRadius:8, opacity: resendSeconds>0 ? 0.6 : 1 }}
-            >
-              {resendSeconds > 0 ? `Resend OTP in ${resendSeconds}s` : 'Resend OTP'}
-            </button>
-          </div>
-        </form>
+          </form>
         )}
 
         {mode === 'password' && (

@@ -9,60 +9,6 @@ export const fetchMenu = async () => {
   return res.json();
 };
 
-// Chat
-export const employeeChatHistory = async (token, limit=100, groupOwner, groupName) => {
-  const res = await fetch(`${API_URL}/employee/chat/history`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ token, limit, groupOwner, groupName })
-  });
-  return res.json();
-};
-
-export const employeeChatStreamUrl = (token, groupOwner, groupName) => `${API_URL}/employee/chat/stream?token=${encodeURIComponent(token)}${groupOwner ? `&groupOwner=${encodeURIComponent(groupOwner)}` : ''}${groupName ? `&groupName=${encodeURIComponent(groupName)}` : ''}`;
-
-export const employeeChatSend = async (token, text, groupOwner, groupName) => {
-  const res = await fetch(`${API_URL}/employee/chat/send`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ token, text, groupOwner, groupName })
-  });
-  return res.json();
-};
-
-export const employeeChatTyping = async (token, isTyping, groupOwner, groupName) => {
-  const res = await fetch(`${API_URL}/employee/chat/typing`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ token, isTyping, groupOwner, groupName })
-  });
-  return res.json();
-};
-
-// Group management
-export const employeeGroupsList = async (token) => {
-  const res = await fetch(`${API_URL}/employee/chat/groups?token=${encodeURIComponent(token)}`);
-  return res.json();
-};
-
-export const employeeGroupsCreate = async (token, name, members) => {
-  const res = await fetch(`${API_URL}/employee/chat/groups/create`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ token, name, members })
-  });
-  return res.json();
-};
-
-export const employeeGroupsUpdate = async (token, name, { addMembers = [], removeMembers = [], newName } = {}) => {
-  const res = await fetch(`${API_URL}/employee/chat/groups/update`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ token, name, addMembers, removeMembers, newName })
-  });
-  return res.json();
-};
-
 export const employeeCheckUsername = async (username) => {
   const u = encodeURIComponent(username || '');
   const res = await fetch(`${API_URL}/employee/check-username?username=${u}`);
