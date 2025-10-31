@@ -79,6 +79,7 @@ function App() {
   })();
 
   useEffect(() => {
+    document.title = "Infy Bhojans";
     loadMenu();
   }, []);
 
@@ -461,8 +462,8 @@ function App() {
   return (
     <>
       <header>
-        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/95/Infosys_logo.svg/200px-Infosys_logo.svg.png" alt="Company Logo" />
-        <h1>Smart Preordering & Billing - Food Court</h1>
+        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/95/Infosys_logo.svg/200px-Infosys_logo.svg.png" alt="Infy Bhojans Logo" />
+        <h1>Infy Bhojans</h1>
       </header>
 
       <div className="app-container">
