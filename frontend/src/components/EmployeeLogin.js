@@ -49,6 +49,7 @@ const EmployeeLogin = ({ onSuccess, onBack }) => {
 
   const [pinUsername, setPinUsername] = useState("");
   const [pin, setPin] = useState("");
+  const [showPin, setShowPin] = useState(false);
 
   const [otpMobile, setOtpMobile] = useState("");
   const [otpStage, setOtpStage] = useState("request");
@@ -353,15 +354,79 @@ const EmployeeLogin = ({ onSuccess, onBack }) => {
                   <label className="label">Username</label>
                   <input placeholder="Enter username" value={pinUsername} onChange={(e) => setPinUsername(e.target.value)} required />
                 </div>
-                <div>
+                <div className="password-field">
                   <label className="label">4-digit PIN</label>
-                  <input
-                    placeholder="PIN"
-                    value={pin}
-                    onChange={(e) => setPin(e.target.value.replace(/[^0-9]/g, "").slice(0, 4))}
-                    maxLength={4}
-                    required
-                  />
+                  <div className="password-input-wrapper">
+                    <input
+                      type={showPin ? "text" : "password"}
+                      placeholder="PIN"
+                      value={pin}
+                      onChange={(e) => setPin(e.target.value.replace(/[^0-9]/g, "").slice(0, 4))}
+                      maxLength={4}
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPin((s) => !s)}
+                      className="password-toggle"
+                      aria-label={showPin ? "Hide PIN" : "Show PIN"}
+                    >
+                      {showPin ? (
+                        <svg
+                          aria-hidden="true"
+                          className="eye-icon"
+                          viewBox="0 0 24 24"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M3 3l18 18"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                            strokeLinecap="round"
+                          />
+                          <path
+                            d="M9.88 9.88A3 3 0 0114.12 14.12"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            fill="none"
+                          />
+                          <path
+                            d="M10.73 5.08A10.86 10.86 0 0121 12c-1.1 1.86-2.57 3.47-4.31 4.71M6.24 6.24C4.03 7.73 2.28 9.67 1 12c1.88 3.34 5.36 6 10 6 1.48 0 2.86-.24 4.11-.69"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            fill="none"
+                          />
+                        </svg>
+                      ) : (
+                        <svg
+                          aria-hidden="true"
+                          className="eye-icon"
+                          viewBox="0 0 24 24"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                            strokeLinejoin="round"
+                            fill="none"
+                          />
+                          <circle
+                            cx="12"
+                            cy="12"
+                            r="3"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                            fill="none"
+                          />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
                 </div>
                 <button type="submit" disabled={loading}>
                   {loading ? "Logging in..." : "Login"}

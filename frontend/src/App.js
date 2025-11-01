@@ -668,7 +668,7 @@ function App() {
     setVendorToken(null);
     setShowVendorConcernForm(false);
     setShowVendorConcernList(false);
-    setView("user");
+    setView("login");
     toast.info("Logged out from vendor account");
   };
 
