@@ -270,7 +270,7 @@ const Cart = ({
 
       {cart.length === 0 ? (
         <div className="empty-cart">
-          <p>Your cart is Hungry too!. Let's add some delicious treats!</p>
+          <p>Your cart is Hungry too! Let's add some delicious treats!</p>
         </div>
       ) : (
         <div className="cart-items">
@@ -404,7 +404,7 @@ const Cart = ({
             </div>
             <small style={{ display: 'block', marginTop: 6, color: '#7f8c8d' }}>
               {availableSlots.length
-                ? 'Slots run every 5 minutes between 08:00 and 22:30 today.'
+                ? ''
                 : 'No future slots available today. Please place an immediate order.'}
             </small>
           </>
@@ -498,7 +498,7 @@ const Cart = ({
                 const limited = words.length > 100 ? words.slice(0, 100).join(' ') : input;
                 setCustomNotes(limited);
               }}
-              placeholder="E.g., Less spicy, no onions, extra garnish, less oil..."
+              placeholder="E.g., Extra spicy, less oil, more garnish..."
               rows={4}
               style={{
                 width: "100%",
