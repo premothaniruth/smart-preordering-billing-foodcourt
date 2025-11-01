@@ -372,6 +372,8 @@ const sanitizeConfig = (config = {}) => {
     });
   }
 
+  const hasWildcardTargets = normalizedTargetItems.some((item) => typeof item.id === 'string' && item.id.startsWith('custom-target-'));
+
   let legacyFreeItemId = config.freeItemId != null ? String(config.freeItemId) : "";
   let legacyFreeItemLabel = config.freeItemLabel != null ? String(config.freeItemLabel) : "";
   let legacyFreeItemPrice = config.freeItemPrice != null ? String(config.freeItemPrice) : "";
@@ -407,8 +409,10 @@ const sanitizeConfig = (config = {}) => {
     freeItems: normalizedFreeItems,
     targetItems: normalizedTargetItems,
     targetItemIds,
-    discountPercent: config.discountPercent != null ? String(config.discountPercent) : "",
-    targetItemIds
+    targetMatchMode: hasWildcardTargets && normalizedTargetItems.length > 0
+      ? (normalizedTargetItems.some((item) => Number.isFinite(Number(item.id))) ? 'mixed' : 'any')
+      : 'specific',
+    discountPercent: config.discountPercent != null ? String(config.discountPercent) : ""
   };
 };
 

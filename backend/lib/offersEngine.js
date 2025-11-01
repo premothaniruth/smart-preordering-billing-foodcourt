@@ -242,16 +242,26 @@ const evaluateCondition = (condition, context, evaluationTimeHM, evaluationDate)
     }
     case 'item_quantity': {
       const ids = Array.isArray(condition.itemIds) ? condition.itemIds : [];
-      if (ids.length === 0) return false;
+      const hasWildcard = ids.some((id) => typeof id === 'string' && id.startsWith('custom-target-'));
+      if (!hasWildcard && ids.length === 0) return false;
       let subtotal = 0;
       let quantity = 0;
+
+      if (hasWildcard) {
+        subtotal = context.totalAmount;
+        quantity = context.totalQuantity;
+      }
+
       for (const id of ids) {
-        const entry = context.itemTotals.get(Number(id));
+        const numericId = Number(id);
+        if (!Number.isFinite(numericId)) continue;
+        const entry = context.itemTotals.get(numericId);
         if (entry) {
           subtotal += entry.amount;
           quantity += entry.quantity;
         }
       }
+
       if (condition.minQuantity != null && quantity < Number(condition.minQuantity)) return false;
       if (condition.minSubtotal != null && subtotal < Number(condition.minSubtotal)) return false;
       return quantity > 0 || subtotal > 0;
@@ -391,7 +401,17 @@ const evaluateReward = ({ reward, context, offer, itemLookup, summary }) => {
             const targetIdsRaw = Array.isArray(configSource.targetItemIds) && configSource.targetItemIds.length > 0
               ? configSource.targetItemIds
               : (Array.isArray(itemCond?.itemIds) ? itemCond.itemIds : []);
-            const ids = (targetIdsRaw.length ? targetIdsRaw : [itemId])
+            const idsRaw = targetIdsRaw.length ? targetIdsRaw : [itemId];
+            const hasWildcard = idsRaw.some((id) => typeof id === 'string' && id.startsWith('custom-target-'));
+
+            if (hasWildcard) {
+              const qualifyingQuantity = context.totalQuantity;
+              if (!qualifyingQuantity || qualifyingQuantity <= 0) return 1;
+              const tiers = Math.floor(qualifyingQuantity / buyQuantity);
+              return tiers > 0 ? tiers : 1;
+            }
+
+            const ids = idsRaw
               .map((id) => Number(id))
               .filter((id) => Number.isFinite(id));
             if (!ids.length) return 1;
