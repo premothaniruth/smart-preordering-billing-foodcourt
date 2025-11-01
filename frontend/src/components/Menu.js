@@ -44,7 +44,7 @@ const isHmWithinWindow = (hm, windowInfo) => {
  *  onActiveSectionChange?: (section: string | null) => void
  * }} props
  */
-const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemNoOption = () => {}, incItemVariant = () => {}, decItemVariant = () => {}, selectedShop, setSelectedShop, favorites = [], onFavoriteToggle, userId, hideFavorites = false, hideShopSelector = false, showInventory = false, readOnly = false, scheduledTime = '', activeSection: activeSectionProp = null, onActiveSectionChange }) => {
+const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemNoOption = () => {}, incItemVariant = () => {}, decItemVariant = () => {}, selectedShop, setSelectedShop, favorites = [], cartShopMismatch = false, onFavoriteToggle, userId, hideFavorites = false, hideShopSelector = false, showInventory = false, readOnly = false, scheduledTime = '', activeSection: activeSectionProp = null, onActiveSectionChange }) => {
   const [vegOnly, setVegOnly] = useState(false);
   const [nonVegOnly, setNonVegOnly] = useState(false);
   const [showOptionsModal, setShowOptionsModal] = useState(false);
@@ -170,8 +170,12 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
 
   // Open modal for variant items; otherwise add immediately
   const handleAddClick = (item) => {
+    if (cartShopMismatch) {
+      toast.warn("Cart already has items from another shop. Please place separate orders.");
+      return;
+    }
     setSelectedItem(item);
-    
+
     // Inventory guard
     const inv = Number(item.inventory ?? 100);
     const remaining = Math.max(0, inv - qtyInCart(item));
@@ -257,6 +261,7 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
       );
     });
     const handleAddCombo = () => {
+      if (cartShopMismatch) { toast.warn("Cart already has items from another shop. Please place separate orders."); return; }
       if (stockLeft <= 0) { toast.error('No more combos available to order'); return; }
       if (!comboAllowed) { toast.info('Next order is from tomorrow'); return; }
       const synthetic = {
@@ -317,7 +322,7 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
             <button
               className="icon-btn"
               onClick={handleAddCombo}
-              disabled={!comboAllowed || stockLeft <= 0}
+              disabled={!comboAllowed || stockLeft <= 0 || cartShopMismatch}
               style={{
                 width: '100%',
                 padding: '10px 12px',
@@ -489,9 +494,13 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
                   className="icon-btn"
                   onClick={() => {
                     if (cartRemaining <= 0) { toast.error('No more items available to order'); return; }
+                    if (cartShopMismatch) {
+                      toast.warn("Cart already has items from another shop. Please place separate orders.");
+                      return;
+                    }
                     incItemNoOption(item, selectedShop);
                   }}
-                  disabled={cartRemaining <= 0}
+                  disabled={cartRemaining <= 0 || cartShopMismatch}
                   style={{ width: 32, height: 32, background: '#fff', color: '#111', border: '1px solid #111', borderRadius: 6 }}
                 >+</button>
               </div>
@@ -499,7 +508,7 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
               <button 
                 className="icon-btn" 
                 onClick={() => handleAddClick(item)}
-                disabled={!allowAction || cartRemaining <= 0}
+                disabled={!allowAction || cartRemaining <= 0 || cartShopMismatch}
                 style={{
                   width: "100%",
                   padding: '10px 12px',

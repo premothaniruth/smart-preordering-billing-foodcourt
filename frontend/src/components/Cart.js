@@ -34,7 +34,8 @@ const Cart = ({
   paymentMethod = 'gateway',
   setPaymentMethod = () => {},
   walletBalance = 0,
-  walletEnabled = false
+  walletEnabled = false,
+  cartShopMismatch = false
 }) => {
   const [customNotes, setCustomNotes] = useState("");
   const getTodayStr = () => {
@@ -212,6 +213,23 @@ const Cart = ({
   return (
     <div>
       <h2>Cart ({cart.length})</h2>
+
+      {cartShopMismatch && cart.length > 0 && (
+        <div
+          style={{
+            marginBottom: 12,
+            padding: '10px 12px',
+            borderRadius: 8,
+            background: '#fff4e6',
+            border: '1px solid #f5cba7',
+            color: '#8a4b08',
+            fontSize: 13,
+            fontWeight: 600
+          }}
+        >
+          Cart already has items from another shop. Please place separate orders.
+        </div>
+      )}
 
       {cart.length === 0 ? (
         <div className="empty-cart">

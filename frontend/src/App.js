@@ -59,6 +59,7 @@ function App() {
   const [cart, setCart] = useState([]);
   const [scheduledTime, setScheduledTime] = useState("");
   const [selectedShop, setSelectedShop] = useState(1);
+  const [cartShopMismatch, setCartShopMismatch] = useState(false);
   const [vendorToken, setVendorToken] = useState(null);
   const [employeeToken, setEmployeeToken] = useState(null);
   const [employeeMobile, setEmployeeMobile] = useState("");
@@ -388,25 +389,29 @@ function App() {
    */
   const currentCartShop = cart.length > 0 ? cart[0]?.shopId : null;
 
-  const guardedSetCart = (updater, incomingShopId) => {
-    const targetShopId = incomingShopId ?? currentCartShop;
-    setCart((prev) => {
-      if (prev.length > 0) {
-        const existingShopId = prev[0]?.shopId;
-        if (existingShopId != null && targetShopId != null && String(existingShopId) !== String(targetShopId)) {
-          const confirmClear = window.confirm("Your cart already has items from another shop. Clear cart to switch shops?");
-          if (!confirmClear) {
-            toast.warn("Please place separate orders for each shop.");
-            return prev;
-          }
-          return typeof updater === "function" ? updater([]) : updater;
-        }
-      }
-      return typeof updater === "function" ? updater(prev) : updater;
-    });
+  useEffect(() => {
+    if (!cart.length) {
+      setCartShopMismatch(false);
+      return;
+    }
+    const mismatch = currentCartShop != null && selectedShop != null && String(currentCartShop) !== String(selectedShop);
+    setCartShopMismatch(mismatch);
+  }, [cart, currentCartShop, selectedShop]);
+
+  const ensureSameShop = (incomingShopId) => {
+    if (cart.length === 0) return true;
+    const existingShopId = currentCartShop;
+    if (existingShopId == null || incomingShopId == null) return true;
+    const same = String(existingShopId) === String(incomingShopId);
+    if (!same) {
+      toast.warn("Cart already has items from another shop. Please place separate orders.");
+    }
+    return same;
   };
 
   const addToCart = (item, shopId, selectedOption = null, customization = {}) => {
+    if (!ensureSameShop(shopId)) return;
+
     const cartItem = {
       ...item,
       selectedOption,
@@ -415,7 +420,7 @@ function App() {
       prepTime: item.prepTime || 5
     };
 
-    guardedSetCart((prev) => {
+    setCart((prev) => {
       const idx = prev.findIndex((c) => 
         c.item.id === item.id && 
         c.shopId === shopId && 
@@ -460,7 +465,8 @@ function App() {
   // Helpers for items without options: adjust by item+shop
   /** Increase qty in cart for non-variant item (by item+shop) */
   const incItemNoOption = (item, shopId) => {
-    guardedSetCart((prev) => {
+    if (!ensureSameShop(shopId)) return;
+    setCart((prev) => {
       const idx = prev.findIndex((c) => c.item.id === item.id && c.shopId === shopId && !c.item.selectedOption);
       if (idx >= 0) {
         const next = [...prev];
@@ -469,7 +475,7 @@ function App() {
       }
       const cartItem = { ...item, selectedOption: null, customization: {}, finalPrice: item.price, prepTime: item.prepTime || 5 };
       return [...prev, { item: cartItem, shopId, quantity: 1 }];
-    }, shopId);
+    });
   };
 
   /** Decrease qty in cart for non-variant item (by item+shop) */
@@ -490,7 +496,8 @@ function App() {
   // Helpers for items with variants (options)
   /** Increase qty for a specific item variant (by item+shop+option) */
   const incItemVariant = (item, shopId, option) => {
-    guardedSetCart((prev) => {
+    if (!ensureSameShop(shopId)) return;
+    setCart((prev) => {
       const idx = prev.findIndex((c) => c.item.id === item.id && c.shopId === shopId && c.item.selectedOption?.name === option?.name);
       if (idx >= 0) {
         const next = [...prev];
@@ -499,7 +506,7 @@ function App() {
       }
       const cartItem = { ...item, selectedOption: option, customization: {}, finalPrice: item.price + (option?.priceModifier || 0), prepTime: item.prepTime || 5 };
       return [...prev, { item: cartItem, shopId, quantity: 1 }];
-    }, shopId);
+    });
   };
 
   /** Decrease qty for a specific item variant (by item+shop+option) */
@@ -912,6 +919,7 @@ function App() {
                         selectedShop={selectedShop}
                         setSelectedShop={setSelectedShop}
                         favorites={favorites}
+                        cartShopMismatch={cartShopMismatch}
                         onFavoriteToggle={loadFavorites}
                         userId={userId}
                         scheduledTime={scheduledTime}
@@ -954,6 +962,7 @@ function App() {
                         setPaymentMethod={setPaymentMethod}
                         walletBalance={wallet.balance}
                         walletEnabled={Boolean(employeeToken)}
+                        cartShopMismatch={cartShopMismatch}
                       />
                       {orderSummary && (
                         <div className="order-summary" style={{ marginTop: 20 }}>
