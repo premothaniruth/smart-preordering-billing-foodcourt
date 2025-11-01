@@ -20,7 +20,7 @@
     "id": 1761996699527,
     "shopId": 2,
     "title": "snack offer",
-    "bannerText": "buy 3 paniyaram set and get 1 maddur vada free",
+    "bannerText": "buy 1 get 1 free",
     "description": "",
     "active": true,
     "stackable": false,
@@ -42,53 +42,22 @@
       {
         "type": "item_quantity",
         "itemIds": [
-          177
+          "custom-target-1"
         ],
-        "minQuantity": 3
+        "minQuantity": 2
       }
     ],
     "rewards": [
       {
         "type": "free_item",
-        "itemId": 178,
-        "quantity": 1
+        "itemId": "custom-1",
+        "quantity": 1,
+        "description": "Custom 1"
       }
     ],
     "metadata": null,
     "createdAt": "2025-11-01T11:34:56.581Z",
-    "updatedAt": "2025-11-01T11:34:56.581Z"
-  },
-  {
-    "id": 1761994119879,
-    "shopId": 2,
-    "title": "New Offer",
-    "bannerText": "New Offer",
-    "description": "",
-    "active": true,
-    "stackable": true,
-    "priority": 0,
-    "maxDiscountAmount": null,
-    "discountPercent": 5,
-    "discountAmount": null,
-    "applicableSections": [],
-    "applicableComboIds": [],
-    "start": null,
-    "end": null,
-    "timeStart": null,
-    "timeEnd": null,
-    "daysOfWeek": null,
-    "schedule": null,
-    "conditions": [],
-    "rewards": [
-      {
-        "type": "percentage_discount",
-        "percent": 5,
-        "appliesTo": "order"
-      }
-    ],
-    "metadata": null,
-    "createdAt": "2025-11-01T11:34:56.581Z",
-    "updatedAt": "2025-11-01T11:34:56.581Z"
+    "updatedAt": "2025-11-01T16:55:01.520Z"
   },
   {
     "id": "diwali-sections-10",
@@ -97,7 +66,7 @@
     "bannerText": "Diwali Offer: 10% off Breakfast & Lunch",
     "description": "",
     "active": true,
-    "stackable": true,
+    "stackable": false,
     "priority": 0,
     "maxDiscountAmount": 100,
     "discountPercent": 10,
@@ -127,6 +96,6 @@
     ],
     "metadata": null,
     "createdAt": "2025-11-01T11:34:56.581Z",
-    "updatedAt": "2025-11-01T11:34:56.581Z"
+    "updatedAt": "2025-11-01T16:55:01.520Z"
   }
 ]
