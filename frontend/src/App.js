@@ -525,6 +525,15 @@ function App() {
       prepTime: c.item.prepTime
     }));
 
+    const checkoutShopId = cart[0]?.shopId ?? selectedShop;
+    if (!checkoutShopId) {
+      toast.error('Unable to determine shop for this order. Please select a shop and try again.');
+      return;
+    }
+    if (selectedShop !== checkoutShopId) {
+      setSelectedShop(checkoutShopId);
+    }
+
     const totalCharge = orderItems.reduce((sum, it) => sum + it.price * it.quantity, 0);
     if (paymentMethod === 'wallet' && wallet.balance < totalCharge) {
       toast.error('Your wallet is hungry too! Top-up needed!');
@@ -535,7 +544,7 @@ function App() {
       items: orderItems,
       scheduledTime,
       user: userId,
-      shopId: selectedShop,
+      shopId: checkoutShopId,
       paymentMethod,
       paymentPayload: paymentMethod === 'gateway' ? { provider: 'google-pay' } : undefined,
     }).then((response) => {
