@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
-import { fetchMenu, placeOrder, fetchUserOrders, fetchFavorites, vendorLogin, updateMenu, markOrderReady, fetchAnalytics, submitRating, cancelOrder, employeeProfile, triggerSosAlert, resolveSosAlert, fetchSosStatus } from "./api";
+import { fetchMenu, placeOrder, fetchUserOrders, fetchFavorites, vendorLogin, updateMenu, markOrderReady, fetchAnalytics, submitRating, cancelOrder, employeeProfile, triggerSosAlert, resolveSosAlert, fetchSosStatus, previewOffers } from "./api";
 import Menu from "./components/Menu";
 import Cart from "./components/Cart";
 import Payment from "./components/Payment";
@@ -89,6 +89,8 @@ function App() {
   const [sosState, setSosState] = useState({ active: false, message: null, lastTriggeredAt: null, currentEventId: null });
   const sosPollRef = useRef(null);
   const lastSosEventIdRef = useRef(null);
+  const [offerPreview, setOfferPreview] = useState(null);
+  const [offersLoading, setOffersLoading] = useState(false);
 
   useEffect(() => {
     try {
@@ -278,6 +280,46 @@ function App() {
     });
     return map;
   }, [menu]);
+
+  useEffect(() => {
+    if (!cart.length || !selectedShop) {
+      setOfferPreview(null);
+      setOffersLoading(false);
+      return;
+    }
+
+    const itemsPayload = cart.map((c) => ({
+      id: c.item.id,
+      name: c.item.name,
+      price: c.item.finalPrice,
+      quantity: c.quantity,
+      comboId: c.item.comboId ?? null,
+      option: c.item.selectedOption?.name || null,
+      prepTime: c.item.prepTime
+    }));
+
+    let cancelled = false;
+    setOffersLoading(true);
+    previewOffers({ shopId: selectedShop, items: itemsPayload, scheduledTime: scheduledTime || undefined })
+      .then((data) => {
+        if (cancelled) return;
+        if (data?.status === 'ok') {
+          setOfferPreview(data);
+        } else {
+          setOfferPreview(null);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setOfferPreview(null);
+      })
+      .finally(() => {
+        if (!cancelled) setOffersLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [cart, selectedShop, scheduledTime]);
 
   const selectedShopItems = useMemo(() => {
     const mapEntry = shopInventoryMap.get(String(selectedShop));
@@ -545,7 +587,10 @@ function App() {
       setSelectedShop(checkoutShopId);
     }
 
-    const totalCharge = orderItems.reduce((sum, it) => sum + it.price * it.quantity, 0);
+    const rawTotalCharge = orderItems.reduce((sum, it) => sum + it.price * it.quantity, 0);
+    const totalCharge = offerPreview?.totalPayable != null
+      ? Number(offerPreview.totalPayable)
+      : rawTotalCharge;
     if (paymentMethod === 'wallet' && wallet.balance < totalCharge) {
       toast.error('Your wallet is hungry too! Top-up needed!');
       return;
@@ -558,6 +603,13 @@ function App() {
       shopId: checkoutShopId,
       paymentMethod,
       paymentPayload: paymentMethod === 'gateway' ? { provider: 'google-pay' } : undefined,
+      offerPreview: offerPreview && offerPreview.status === 'ok' ? {
+        subtotalBeforeDiscount: offerPreview.subtotalBeforeDiscount,
+        discountTotal: offerPreview.discountTotal,
+        totalPayable: offerPreview.totalPayable,
+        appliedOffers: offerPreview.appliedOffers,
+        extraItems: offerPreview.extraItems
+      } : undefined,
     }).then((response) => {
       if (!response || response.status !== 'success') {
         const msg = response?.message || 'Order failed. Please try again';
@@ -963,6 +1015,8 @@ function App() {
                         walletBalance={wallet.balance}
                         walletEnabled={Boolean(employeeToken)}
                         cartShopMismatch={cartShopMismatch}
+                        offerPreview={offerPreview}
+                        offersLoading={offersLoading}
                       />
                       {orderSummary && (
                         <div className="order-summary" style={{ marginTop: 20 }}>

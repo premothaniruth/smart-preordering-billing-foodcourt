@@ -35,7 +35,9 @@ const Cart = ({
   setPaymentMethod = () => {},
   walletBalance = 0,
   walletEnabled = false,
-  cartShopMismatch = false
+  cartShopMismatch = false,
+  offerPreview = null,
+  offersLoading = false
 }) => {
   const [customNotes, setCustomNotes] = useState("");
   const getTodayStr = () => {
@@ -226,7 +228,10 @@ const Cart = ({
     return 0;
   }, [inventoryLookup]);
 
-  const total = cart.reduce((sum, c) => sum + c.item.finalPrice * c.quantity, 0);
+  const subtotal = cart.reduce((sum, c) => sum + c.item.finalPrice * c.quantity, 0);
+  const discountTotal = offerPreview?.discountTotal != null ? Number(offerPreview.discountTotal) : 0;
+  const total = offerPreview?.totalPayable != null ? Number(offerPreview.totalPayable) : subtotal;
+  const extraItems = Array.isArray(offerPreview?.extraItems) ? offerPreview.extraItems : [];
   const totalPrepTime = cart.reduce((sum, c) => sum + (c.item.prepTime || 5) * c.quantity, 0);
   const walletDisabledReason = (() => {
     if (!walletEnabled) return 'Login to use wallet';
@@ -420,8 +425,14 @@ const Cart = ({
           <div style={{ marginTop: 15, paddingTop: 15, borderTop: "2px solid #ddd" }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
               <span>Subtotal:</span>
-              <span>₹{total.toFixed(2)}</span>
+              <span>₹{subtotal.toFixed(2)}</span>
             </div>
+            {discountTotal > 0 && (
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, color: '#27ae60' }}>
+                <span>Offer Savings:</span>
+                <span>-₹{discountTotal.toFixed(2)}</span>
+              </div>
+            )}
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
               <span>Prep Time:</span>
               <span>{totalPrepTime} mins</span>
@@ -430,7 +441,44 @@ const Cart = ({
               <span>Total:</span>
               <span>₹{total.toFixed(2)}</span>
             </div>
+            {offersLoading && (
+              <div style={{ marginTop: 6, fontSize: 12, color: '#7f8c8d' }}>Refreshing offers…</div>
+            )}
+            {!offersLoading && offerPreview?.appliedOffers && offerPreview.appliedOffers.length > 0 && (
+              <div style={{ marginTop: 12, padding: 10, borderRadius: 6, background: '#f5f9f6', border: '1px solid #d4edda' }}>
+                <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>Applied Offers</div>
+                <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12 }}>
+                  {offerPreview.appliedOffers.map((off) => (
+                    <li key={off.id}>
+                      <strong>{off.title || 'Offer'}</strong>
+                      {off.discountAmount != null && off.discountAmount > 0 && (
+                        <span> — saved ₹{Number(off.discountAmount).toFixed(2)}</span>
+                      )}
+                      {off.rewards && off.rewards.some((r) => r.type === 'free_item') && (
+                        <span> — includes freebies</span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
+
+          {extraItems.length > 0 && (
+            <div style={{ marginTop: 15, padding: 12, border: '1px dashed #95a5a6', borderRadius: 6, background: '#f7f9fa' }}>
+              <div style={{ fontWeight: 600, marginBottom: 6 }}>Complimentary Items</div>
+              <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12 }}>
+                {extraItems.map((item, idx) => (
+                  <li key={`${item.id || 'free'}-${idx}`}>
+                    {item.name || `Free Item ${idx + 1}`} ×{item.quantity || 1}
+                    {item.fromOfferTitle && (
+                      <span style={{ color: '#7f8c8d' }}> ({item.fromOfferTitle})</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           <div style={{ marginTop: 15, border: '1px solid #e1e6eb', borderRadius: 8, padding: 16 }}>
             <div style={{ fontWeight: 600, marginBottom: 10 }}>Select Payment Method</div>

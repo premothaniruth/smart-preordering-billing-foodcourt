@@ -6,6 +6,7 @@ const fs = require("fs");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const path = require("path");
+const { evaluateOffers } = require("./lib/offersEngine");
 
 // App setup
 const app = express();
@@ -968,6 +969,46 @@ const getOffers = () => {
 /** @param {Array} offers */
 const saveOffers = (offers) => fs.writeFileSync(offersFile, JSON.stringify(offers, null, 2));
 
+const normalizeOfferInputForStorage = (offer, vendorShopId) => {
+  const safeId = offer?.id || `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  const base = {
+    id: safeId,
+    shopId: Number(vendorShopId),
+    title: offer?.title || "Special Offer",
+    bannerText: offer?.bannerText || offer?.title || "Offer",
+    description: offer?.description || "",
+    active: offer?.active !== false,
+    stackable: offer?.stackable !== false,
+    priority: offer?.priority != null ? Number(offer.priority) : 0,
+    maxDiscountAmount: offer?.maxDiscountAmount != null ? Number(offer.maxDiscountAmount) : null,
+    discountPercent: offer?.discountPercent != null && offer.discountPercent !== "" ? Number(offer.discountPercent) : null,
+    discountAmount: offer?.discountAmount != null && offer.discountAmount !== "" ? Number(offer.discountAmount) : null,
+    applicableSections: Array.isArray(offer?.applicableSections) ? offer.applicableSections.map(String) : [],
+    applicableComboIds: Array.isArray(offer?.applicableComboIds) ? offer.applicableComboIds.map((cid) => String(cid)) : [],
+    start: offer?.start || null,
+    end: offer?.end || null,
+    timeStart: offer?.timeStart || null,
+    timeEnd: offer?.timeEnd || null,
+    daysOfWeek: Array.isArray(offer?.daysOfWeek) ? offer.daysOfWeek.map((d) => Number(d)) : null,
+    schedule: offer?.schedule && typeof offer.schedule === "object"
+      ? {
+          start: offer.schedule.start || null,
+          end: offer.schedule.end || null,
+          timeStart: offer.schedule.timeStart || null,
+          timeEnd: offer.schedule.timeEnd || null,
+          daysOfWeek: Array.isArray(offer.schedule.daysOfWeek) ? offer.schedule.daysOfWeek.map((d) => Number(d)) : null,
+        }
+      : null,
+    conditions: Array.isArray(offer?.conditions) ? offer.conditions : [],
+    rewards: Array.isArray(offer?.rewards) ? offer.rewards : [],
+    metadata: offer?.metadata && typeof offer.metadata === "object" ? offer.metadata : null,
+    createdAt: offer?.createdAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+
+  return base;
+};
+
 // Section time windows
 /** @returns {Record<string,{start:string,end:string}>} */
 const getSectionWindows = () => {
@@ -1397,7 +1438,14 @@ app.post("/order", (req, res) => {
       if (!w || !w.start || !w.end) return true;
       return hm >= w.start && hm <= w.end;
     };
-    const idToSection = new Map((shopNorm.items || []).map(i => [i.id, i.section || 'All Items']));
+    const idToSection = new Map((shopNorm.items || []).map(i => [Number(i.id), i.section || 'All Items']));
+    const itemLookup = new Map((shopNorm.items || []).map((i) => [Number(i.id), i]));
+    const comboCounts = new Map();
+    for (const { line } of validCombos) {
+      const comboQty = Number(line.quantity || 1);
+      const comboKey = String(line.comboId);
+      comboCounts.set(comboKey, (comboCounts.get(comboKey) || 0) + comboQty);
+    }
 
     if (scheduledTime) {
       // Reject order if any item outside its window at scheduled time
@@ -1510,65 +1558,85 @@ app.post("/order", (req, res) => {
     const orders = getOrders();
 
     const billingId = generateBillingId();
-    let totalAmount = flatItems.reduce((sum, it) => sum + it.price * (it.quantity || 1), 0);
-    // Apply active offers/discounts
-    try {
-      const now = new Date();
-      const offers = getOffers().filter(o => {
-        if (String(o.shopId) !== String(shopId)) return false;
-        const start = o.start ? new Date(o.start) : null;
-        const end = o.end ? new Date(o.end) : null;
-        if (start && now < start) return false;
-        if (end && now > end) return false;
-        return o.active !== false;
-      });
-      if (offers.length > 0) {
-        const idToSection = new Map((shop.items || []).map(i => [i.id, i.section || null]));
-        const comboIdsInOrder = new Set((items || []).filter(x => x && x.comboId != null).map(x => String(x.comboId)));
-        let discountTotal = 0;
-        const OFFERS_MAX_DISCOUNT = Number(process.env.OFFERS_MAX_DISCOUNT || 0); // 0 = no global cap
-        for (const off of offers) {
-          const percent = off.discountPercent ? Number(off.discountPercent) : null;
-          const amount = off.discountAmount ? Number(off.discountAmount) : null;
-          const hasScopeSections = Array.isArray(off.applicableSections) && off.applicableSections.length > 0;
-          const hasScopeCombos = Array.isArray(off.applicableComboIds) && off.applicableComboIds.length > 0;
-          let base = 0;
-          if (!hasScopeSections && !hasScopeCombos) {
-            base = totalAmount; // global order-level offer
-          } else {
-            if (hasScopeSections) {
-              for (const fi of flatItems) {
-                const sec = idToSection.get(fi.id);
-                if (sec && off.applicableSections.includes(sec)) {
-                  base += (fi.price * (fi.quantity || 1));
-                }
-              }
-            }
-            if (hasScopeCombos && comboIdsInOrder.size > 0) {
-              // If any targeted combos were ordered, apply over entire order or same base (choose conservative: apply on totalAmount)
-              const any = off.applicableComboIds.some(cid => comboIdsInOrder.has(String(cid)));
-              if (any && base === 0) base = totalAmount; // if no sections base, apply to total
-            }
-          }
-          if (base <= 0) continue;
-          // Non-stackable: if any discount already applied, skip
-          if (off.stackable === false && discountTotal > 0) continue;
-          let thisDiscount = 0;
-          if (percent != null && percent > 0) thisDiscount += (base * (percent / 100));
-          if (amount != null && amount > 0) thisDiscount += amount;
-          if (off.maxDiscountAmount != null && off.maxDiscountAmount > 0) {
-            thisDiscount = Math.min(thisDiscount, Number(off.maxDiscountAmount));
-          }
-          if (OFFERS_MAX_DISCOUNT > 0 && (discountTotal + thisDiscount) > OFFERS_MAX_DISCOUNT) {
-            const remaining = Math.max(0, OFFERS_MAX_DISCOUNT - discountTotal);
-            thisDiscount = Math.min(thisDiscount, remaining);
-          }
-          discountTotal += thisDiscount;
+
+    const now = new Date();
+    const evaluationDate = scheduledTime ? new Date(scheduledTime) : now;
+    const activeOffers = getOffers().filter((o) => {
+      if (String(o.shopId) !== String(shopId)) return false;
+      const start = o.start ? new Date(o.start) : null;
+      const end = o.end ? new Date(o.end) : null;
+      if (start && evaluationDate < start) return false;
+      if (end && evaluationDate > end) return false;
+      return o.active !== false;
+    });
+
+    const evaluation = evaluateOffers({
+      offers: activeOffers,
+      flatItems,
+      sectionLookup: idToSection,
+      itemLookup,
+      comboCounts,
+      evaluationDate,
+      now
+    });
+
+    const subtotalBeforeDiscount = evaluation.subtotalBeforeDiscount;
+    let discountTotal = evaluation.discountTotal;
+    const offerExtras = Array.isArray(evaluation.extraItems) ? evaluation.extraItems : [];
+    let appliedOffers = Array.isArray(evaluation.appliedOffers)
+      ? evaluation.appliedOffers.map((off) => ({
+          ...off,
+          rewards: Array.isArray(off.rewards) ? off.rewards.map((r) => ({ ...r })) : [],
+        }))
+      : [];
+
+    const OFFERS_MAX_DISCOUNT = Number(process.env.OFFERS_MAX_DISCOUNT || 0);
+    if (OFFERS_MAX_DISCOUNT > 0 && discountTotal > OFFERS_MAX_DISCOUNT) {
+      let excess = discountTotal - OFFERS_MAX_DISCOUNT;
+      discountTotal = OFFERS_MAX_DISCOUNT;
+      for (let i = appliedOffers.length - 1; i >= 0 && excess > 0; i -= 1) {
+        const offer = appliedOffers[i];
+        const reducible = Math.min(excess, offer.discountAmount || 0);
+        if (reducible > 0) {
+          offer.discountAmount = Math.max(0, (offer.discountAmount || 0) - reducible);
+          excess -= reducible;
         }
-        if (discountTotal > 0) totalAmount = Math.max(0, totalAmount - discountTotal);
       }
-    } catch {}
-    
+    }
+
+    const offerSummary = {
+      subtotalBeforeDiscount,
+      discountTotal,
+      totalPayable: Math.max(0, subtotalBeforeDiscount - discountTotal),
+      appliedOffers,
+      extraItems: offerExtras
+    };
+
+    const freeLines = [];
+    for (const extra of offerExtras) {
+      const itemId = Number(extra.id);
+      if (!Number.isFinite(itemId)) continue;
+      const quantity = Math.max(1, Number(extra.quantity || 1));
+      const ref = itemLookup.get(itemId) || {};
+      const name = extra.name || ref.name || `Item ${itemId}`;
+      const price = Number(extra.price || 0);
+      freeLines.push({
+        id: itemId,
+        name,
+        price,
+        quantity,
+        option: null,
+        prepTime: ref.prepTime || 5,
+        offerSource: extra.fromOfferId || null,
+        isOfferFreebie: true
+      });
+    }
+    if (freeLines.length > 0) {
+      flatItems.push(...freeLines);
+    }
+
+    let totalAmount = offerSummary.totalPayable;
+
     const prepTime = calculatePreparationTime(items, shopId);
     const estimatedReadyTime = new Date(Date.now() + prepTime * 60000).toISOString();
 
@@ -1587,7 +1655,10 @@ app.post("/order", (req, res) => {
       basePrepTime: prepTime,
       rating: null,
       feedback: null,
-      totalAmount
+      totalAmount,
+      subtotalBeforeDiscount,
+      discountTotal,
+      offerSummary
     };
 
     let paymentSummary = { method: paymentMethod, amount: totalAmount };
@@ -1636,7 +1707,11 @@ app.post("/order", (req, res) => {
       totalAmount,
       items: flatItems,
       estimatedReadyTime,
-      prepTime
+      prepTime,
+      subtotalBeforeDiscount,
+      discountTotal,
+      appliedOffers,
+      offerExtras: offerExtras
     };
 
     const extra = {};
@@ -2240,6 +2315,120 @@ app.put('/offers', authenticateVendor, (req, res) => {
     res.json({ status: 'success', message: 'Offers updated' });
   } catch (e) {
     res.status(500).json({ message: 'Error updating offers' });
+  }
+});
+
+/**
+ * POST /offers/preview
+ * Public: Evaluate active offers for a hypothetical cart without placing an order.
+ * Body: { shopId, items, scheduledTime }
+ */
+app.post('/offers/preview', (req, res) => {
+  try {
+    const { shopId, items, scheduledTime } = req.body || {};
+    if (!shopId || !Array.isArray(items)) {
+      return res.status(400).json({ status: 'error', message: 'shopId and items are required' });
+    }
+
+    const rawMenu = getMenu();
+    const normalizedShops = normalizeMenuShops(rawMenu);
+    const shopNorm = normalizedShops.find((s) => String(s.shopId) === String(shopId));
+    if (!shopNorm) {
+      return res.status(404).json({ status: 'error', message: 'Shop not found' });
+    }
+
+    shopNorm.items = Array.isArray(shopNorm.items) ? shopNorm.items : [];
+    const itemLookup = new Map((shopNorm.items || []).map((i) => [Number(i.id), i]));
+    const sectionLookup = new Map((shopNorm.items || []).map((i) => [Number(i.id), i.section || 'All Items']));
+
+    const combos = getCombos();
+    const shopCombos = combos.filter((c) => String(c.shopId) === String(shopId) && c.active !== false);
+
+    const flatItems = [];
+    const comboCounts = new Map();
+
+    for (const entry of items) {
+      if (!entry) continue;
+      const quantity = Math.max(0, Number(entry.quantity || 0));
+      if (quantity <= 0) continue;
+
+      if (entry.comboId != null) {
+        const combo = shopCombos.find((c) => String(c.id) === String(entry.comboId));
+        if (!combo) continue;
+        comboCounts.set(String(entry.comboId), (comboCounts.get(String(entry.comboId)) || 0) + quantity);
+        const components = Array.isArray(combo.components) ? combo.components : [];
+        for (const comp of components) {
+          if (!comp || comp.itemId == null) continue;
+          const compId = Number(comp.itemId);
+          const compQty = Math.max(1, Number(comp.quantity || 1)) * quantity;
+          const ref = itemLookup.get(compId) || {};
+          const price = comp.overridePrice != null ? Number(comp.overridePrice) : Number(ref.price || 0);
+          flatItems.push({
+            id: compId,
+            name: comp.name || ref.name || `Item ${compId}`,
+            price,
+            quantity: compQty,
+            option: comp.option || null,
+            prepTime: comp.prepTime || ref.prepTime || 5
+          });
+        }
+        continue;
+      }
+
+      const itemId = Number(entry.id);
+      if (!Number.isFinite(itemId)) continue;
+      const ref = itemLookup.get(itemId) || {};
+      const price = entry.price != null ? Number(entry.price) : Number(ref.price || 0);
+      flatItems.push({
+        id: itemId,
+        name: entry.name || ref.name || `Item ${itemId}`,
+        price,
+        quantity,
+        option: entry.option || null,
+        prepTime: entry.prepTime || ref.prepTime || 5
+      });
+    }
+
+    if (flatItems.length === 0) {
+      return res.json({ status: 'ok', subtotalBeforeDiscount: 0, discountTotal: 0, totalPayable: 0, appliedOffers: [], extraItems: [] });
+    }
+
+    const now = new Date();
+    const evaluationDate = scheduledTime ? new Date(scheduledTime) : now;
+    const activeOffers = getOffers().filter((o) => {
+      if (String(o.shopId) !== String(shopId)) return false;
+      const start = o.start ? new Date(o.start) : null;
+      const end = o.end ? new Date(o.end) : null;
+      if (start && evaluationDate < start) return false;
+      if (end && evaluationDate > end) return false;
+      return o.active !== false;
+    });
+
+    const evaluation = evaluateOffers({
+      offers: activeOffers,
+      flatItems,
+      sectionLookup,
+      itemLookup,
+      comboCounts,
+      evaluationDate,
+      now
+    });
+
+    const subtotalBeforeDiscount = evaluation.subtotalBeforeDiscount;
+    const discountTotal = evaluation.discountTotal;
+    const totalPayable = Math.max(0, subtotalBeforeDiscount - discountTotal);
+
+    return res.json({
+      status: 'ok',
+      subtotalBeforeDiscount,
+      discountTotal,
+      totalPayable,
+      appliedOffers: evaluation.appliedOffers,
+      extraItems: evaluation.extraItems,
+      evaluationDate: evaluationDate.toISOString(),
+    });
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: 'Error previewing offers' });
   }
 });
 

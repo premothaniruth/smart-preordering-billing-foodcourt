@@ -380,6 +380,19 @@ export const updateOffers = async (offers, token) => {
 };
 
 /**
+ * Preview active offers against a hypothetical cart
+ * @param {{shopId:string|number, items:any[], scheduledTime?:string}} payload
+ */
+export const previewOffers = async ({ shopId, items, scheduledTime }) => {
+  const res = await fetch(`${API_URL}/offers/preview`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ shopId, items, scheduledTime })
+  });
+  return res.json();
+};
+
+/**
  * Fetch vendor orders (their shop only)
  * @param {string} token
  * @returns {Promise<any>}
