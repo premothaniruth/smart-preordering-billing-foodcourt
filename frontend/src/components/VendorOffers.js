@@ -25,14 +25,19 @@ const TemplateConfigFields = ({ offer, idx, updateConfigField, updateOfferField,
   const cfg = sanitizeConfig(offer.config);
 
   const selectTargetItems = (values) => {
+    const existing = new Map((Array.isArray(cfg.targetItems) ? cfg.targetItems : []).map((item) => [String(item.id), item]));
     const normalized = values.map((value) => {
-      const custom = CUSTOM_TARGET_ITEM_OPTIONS.find((opt) => opt.value === value);
-      if (custom) {
-        return { id: value, label: custom.label };
+      const key = String(value);
+      if (existing.has(key)) {
+        return { ...existing.get(key), id: key };
       }
-      const match = menuItems.find((item) => String(item.id) === value);
+      const custom = CUSTOM_TARGET_ITEM_OPTIONS.find((opt) => opt.value === key);
+      if (custom) {
+        return { id: key, label: custom.label, section: 'Custom' };
+      }
+      const match = menuItems.find((item) => String(item.id) === key);
       return {
-        id: value,
+        id: key,
         label: match?.name || '',
         section: match?.section || null
       };
@@ -52,18 +57,31 @@ const TemplateConfigFields = ({ offer, idx, updateConfigField, updateOfferField,
   };
 
   const selectFreeItems = (values) => {
-    updateConfigField(idx, 'freeItems', values.map((value) => {
-      const custom = CUSTOM_FREE_ITEM_OPTIONS.find((opt) => opt.value === value);
-      if (custom) {
-        return { id: value, label: custom.label, price: '' };
+    const existing = new Map((Array.isArray(cfg.freeItems) ? cfg.freeItems : []).map((item) => [String(item.id), item]));
+    const normalized = values.map((value) => {
+      const key = String(value);
+      if (existing.has(key)) {
+        const preserved = existing.get(key);
+        return {
+          id: key,
+          label: preserved?.label || '',
+          price: preserved?.price || '',
+          quantity: preserved?.quantity || ''
+        };
       }
-      const match = menuItems.find((item) => String(item.id) === value);
+      const custom = CUSTOM_FREE_ITEM_OPTIONS.find((opt) => opt.value === key);
+      if (custom) {
+        return { id: key, label: custom.label, price: '', quantity: '' };
+      }
+      const match = menuItems.find((item) => String(item.id) === key);
       return {
-        id: value,
+        id: key,
         label: match?.name || '',
-        price: match && match.price != null ? String(match.price) : ''
+        price: match && match.price != null ? String(match.price) : '',
+        quantity: ''
       };
-    }));
+    });
+    updateConfigField(idx, 'freeItems', normalized);
 
     const primary = values[0] || '';
     updateConfigField(idx, 'freeItemId', primary);
@@ -183,6 +201,44 @@ const TemplateConfigFields = ({ offer, idx, updateConfigField, updateOfferField,
           <span style={{ fontSize: 12, color: '#c0392b' }}>No items available.</span>
         )}
       </div>
+      {Array.isArray(cfg.freeItems) && cfg.freeItems.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
+          <div style={{ fontSize: 11, textTransform: 'uppercase', color: '#7f8c8d' }}>Selected Free Items</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {cfg.freeItems.map((item) => (
+              <div key={item.id} style={{ border: '1px solid #d1d8e0', borderRadius: 6, padding: '6px 10px', background: '#f7f9fc', display: 'flex', flexDirection: 'column', gap: 6, minWidth: 180 }}>
+                <div style={{ fontWeight: 600, fontSize: 13 }}>{item.label || item.id}</div>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 11, color: '#7f8c8d' }}>Qty</div>
+                    <input
+                      type="number"
+                      value={item.quantity || cfg.freeQuantity || '1'}
+                      onChange={(e) => updateConfigField(idx, 'freeItems', cfg.freeItems.map((fi) => fi.id === item.id ? { ...fi, quantity: e.target.value } : fi))}
+                      style={{ width: '100%' }}
+                    />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 11, color: '#7f8c8d' }}>Price</div>
+                    <input
+                      type="number"
+                      value={item.price || ''}
+                      onChange={(e) => updateConfigField(idx, 'freeItems', cfg.freeItems.map((fi) => fi.id === item.id ? { ...fi, price: e.target.value } : fi))}
+                      style={{ width: '100%' }}
+                    />
+                  </div>
+                </div>
+                <input
+                  value={item.label || ''}
+                  onChange={(e) => updateConfigField(idx, 'freeItems', cfg.freeItems.map((fi) => fi.id === item.id ? { ...fi, label: e.target.value } : fi))}
+                  placeholder="Display label"
+                  style={{ width: '100%' }}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -340,29 +396,32 @@ const sanitizeConfig = (config = {}) => {
   const rawTargetItemIds = Array.isArray(config.targetItemIds) ? config.targetItemIds : [];
   const rawTargetItems = Array.isArray(config.targetItems) ? config.targetItems : [];
   const rawFreeItems = Array.isArray(config.freeItems) ? config.freeItems : [];
-  const normalizedFreeItems = rawFreeItems
-    .map((item) => {
-      const id = item?.id != null ? String(item.id) : (item?.value != null ? String(item.value) : "");
-      if (!id) return null;
-      return {
-        id,
-        label: item?.label != null ? String(item.label) : "",
-        price: item?.price != null && item.price !== "" ? String(item.price) : ""
-      };
-    })
-    .filter(Boolean);
+  const normalizedFreeItems = [];
+  const seenFreeIds = new Set();
+  rawFreeItems.forEach((item) => {
+    const id = item?.id != null ? String(item.id) : (item?.value != null ? String(item.value) : "");
+    if (!id || seenFreeIds.has(id)) return;
+    seenFreeIds.add(id);
+    normalizedFreeItems.push({
+      id,
+      label: item?.label != null ? String(item.label) : "",
+      price: item?.price != null && item.price !== "" ? String(item.price) : "",
+      quantity: item?.quantity != null && item.quantity !== "" ? String(item.quantity) : ""
+    });
+  });
 
-  const normalizedTargetItems = rawTargetItems
-    .map((item) => {
-      const id = item?.id != null ? String(item.id) : (item?.value != null ? String(item.value) : "");
-      if (!id) return null;
-      return {
-        id,
-        label: item?.label != null ? String(item.label) : "",
-        section: item?.section != null ? String(item.section) : ""
-      };
-    })
-    .filter(Boolean);
+  const normalizedTargetItems = [];
+  const seenTargetIds = new Set();
+  rawTargetItems.forEach((item) => {
+    const id = item?.id != null ? String(item.id) : (item?.value != null ? String(item.value) : "");
+    if (!id || seenTargetIds.has(id)) return;
+    seenTargetIds.add(id);
+    normalizedTargetItems.push({
+      id,
+      label: item?.label != null ? String(item.label) : "",
+      section: item?.section != null ? String(item.section) : ""
+    });
+  });
 
   if (!normalizedTargetItems.length && rawTargetItemIds.length > 0) {
     rawTargetItemIds.forEach((id) => {
@@ -589,8 +648,24 @@ const adaptOffer = (offer = {}) => {
   const itemCond = conditions.find((c) => c.type === "item_quantity");
   if (itemCond) {
     if (itemCond.minQuantity != null) config.buyQuantity = String(itemCond.minQuantity);
-    if (Array.isArray(itemCond.itemIds) && itemCond.itemIds.length > 0) {
-      config.targetItemIds = itemCond.itemIds.map((id) => Number(id)).filter((id) => Number.isFinite(id));
+    if ((!Array.isArray(config.targetItems) || config.targetItems.length === 0) && Array.isArray(itemCond.itemIds)) {
+      const unique = new Set();
+      const mapped = [];
+      itemCond.itemIds.forEach((rawId) => {
+        const id = rawId != null ? String(rawId) : "";
+        if (!id || unique.has(id)) return;
+        unique.add(id);
+        mapped.push({ id, label: config.targetItems?.find((ti) => String(ti.id) === id)?.label || "", section: config.targetItems?.find((ti) => String(ti.id) === id)?.section || "" });
+      });
+      if (mapped.length > 0) {
+        config.targetItems = mapped;
+      }
+    }
+    if ((!Array.isArray(config.targetItemIds) || config.targetItemIds.length === 0) && Array.isArray(itemCond.itemIds)) {
+      config.targetItemIds = itemCond.itemIds.map((rawId) => {
+        const idNum = Number(rawId);
+        return Number.isFinite(idNum) ? idNum : String(rawId);
+      });
     }
   }
 
@@ -606,12 +681,33 @@ const adaptOffer = (offer = {}) => {
     config.amount = config.amount || String(fixedReward.amount);
   }
 
-  const freeReward = rewards.find((r) => r.type === "free_item");
-  if (freeReward) {
-    if (freeReward.itemId != null) config.freeItemId = String(freeReward.itemId);
-    if (freeReward.quantity != null) config.freeQuantity = String(freeReward.quantity);
-    if (freeReward.price != null) config.freeItemPrice = String(freeReward.price);
-    if (freeReward.description) config.freeItemLabel = freeReward.description;
+  const freeRewards = rewards.filter((r) => r.type === "free_item");
+  if (freeRewards.length > 0 && (!Array.isArray(config.freeItems) || config.freeItems.length === 0)) {
+    const mapped = [];
+    const seen = new Set();
+    freeRewards.forEach((reward) => {
+      const rawId = reward.itemId != null ? reward.itemId : reward.description || "";
+      const id = rawId != null ? String(rawId) : "";
+      if (!id || seen.has(id)) return;
+      seen.add(id);
+      mapped.push({
+        id,
+        label: reward.description || "",
+        price: reward.price != null ? String(reward.price) : "",
+        quantity: reward.quantity != null ? String(reward.quantity) : ""
+      });
+    });
+    if (mapped.length > 0) {
+      config.freeItems = mapped;
+    }
+  }
+  const primaryReward = freeRewards[0];
+  if (primaryReward) {
+    if (primaryReward.itemId != null) config.freeItemId = String(primaryReward.itemId);
+    else if (!config.freeItemId && primaryReward.description) config.freeItemId = primaryReward.description;
+    if (primaryReward.quantity != null) config.freeQuantity = String(primaryReward.quantity);
+    if (primaryReward.price != null) config.freeItemPrice = String(primaryReward.price);
+    if (primaryReward.description) config.freeItemLabel = primaryReward.description;
   }
 
   let template = offer.template;
