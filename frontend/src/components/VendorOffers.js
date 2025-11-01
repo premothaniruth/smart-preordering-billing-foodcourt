@@ -2,10 +2,15 @@ import React, { useEffect, useMemo, useState } from "react";
 import { fetchOffers, fetchCombos, fetchMenuSections, updateOffers } from "../api";
 import { toast } from "react-toastify";
 
+const CUSTOM_FREE_ITEM_OPTIONS = [
+  { value: "custom-1", label: "Custom 1" },
+  { value: "custom-2", label: "Custom 2" },
+  { value: "custom-3", label: "Custom 3" }
+];
+
 const TEMPLATE_OPTIONS = [
   { value: "percent_order", label: "% Off Order / Sections" },
   { value: "flat_order", label: "Flat Discount" },
-  { value: "combo_buy_x_get_y", label: "Combo – Buy X Get Free Item (legacy)" },
   { value: "combo_buy_item_free", label: "Combo – Buy Combo Get Item Free" },
   { value: "item_buy_x_get_y", label: "Menu Item – Buy X Get Y" }
 ];
@@ -18,11 +23,16 @@ const TemplateConfigFields = ({ offer, idx, updateConfigField, updateOfferField,
     updateConfigField(idx, 'targetItemIds', selected);
   };
 
-  const handleFreeItemChange = (event) => {
-    const value = event.target.value;
+  const selectFreeItem = (value) => {
     updateConfigField(idx, 'freeItemId', value);
     if (!value) {
       updateConfigField(idx, 'freeItemLabel', '');
+      updateConfigField(idx, 'freeItemPrice', '');
+      return;
+    }
+    const custom = CUSTOM_FREE_ITEM_OPTIONS.find((opt) => opt.value === value);
+    if (custom) {
+      updateConfigField(idx, 'freeItemLabel', custom.label);
       updateConfigField(idx, 'freeItemPrice', '');
       return;
     }
@@ -31,13 +41,61 @@ const TemplateConfigFields = ({ offer, idx, updateConfigField, updateOfferField,
     updateConfigField(idx, 'freeItemPrice', match && match.price != null ? String(match.price) : '');
   };
 
+  const handleFreeItemToggle = (value, checked) => {
+    if (checked) {
+      selectFreeItem(value);
+    } else if (cfg.freeItemId === value) {
+      selectFreeItem('');
+    }
+  };
+
   const handleComboSelection = (event) => {
     const selected = Array.from(event.target.selectedOptions || []).map((opt) => opt.value);
     updateOfferField(idx, 'applicableComboIds', selected);
   };
 
   const menuOptions = menuItems || [];
+  const freeItemOptions = useMemo(() => {
+    const customOpts = CUSTOM_FREE_ITEM_OPTIONS.map((opt) => ({
+      value: opt.value,
+      label: opt.label,
+      helper: 'Custom'
+    }));
+    const menuOpts = menuOptions.map((item) => ({
+      value: String(item.id),
+      label: item.name,
+      helper: item.section ? item.section : null
+    }));
+    return [...customOpts, ...menuOpts];
+  }, [menuOptions]);
   const selectedComboIds = Array.isArray(offer.applicableComboIds) ? offer.applicableComboIds.map(String) : [];
+  const selectedFreeItemId = cfg.freeItemId || '';
+
+  const renderFreeItemChoices = (label) => (
+    <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <div style={{ fontSize: 12, color: '#666', marginBottom: 0 }}>{label}</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 200, overflowY: 'auto', padding: '6px 8px', border: '1px solid #dfe4ea', borderRadius: 6 }}>
+        {freeItemOptions.map((option) => (
+          <label key={option.value} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
+            <input
+              type="checkbox"
+              checked={selectedFreeItemId === option.value}
+              onChange={(e) => handleFreeItemToggle(option.value, e.target.checked)}
+            />
+            <span>
+              {option.label}
+              {option.helper ? (
+                <span style={{ marginLeft: 6, fontSize: 11, color: '#7f8c8d' }}>({option.helper})</span>
+              ) : null}
+            </span>
+          </label>
+        ))}
+        {freeItemOptions.length === 0 && (
+          <span style={{ fontSize: 12, color: '#c0392b' }}>No items available.</span>
+        )}
+      </div>
+    </div>
+  );
 
   switch (offer.template) {
     case "percent_order":
@@ -82,63 +140,6 @@ const TemplateConfigFields = ({ offer, idx, updateConfigField, updateOfferField,
           </div>
         </>
       );
-    case "combo_buy_x_get_y":
-      return (
-        <>
-          <div>
-            <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>Minimum Combo Quantity</div>
-            <input
-              type="number"
-              value={cfg.buyQuantity}
-              onChange={(e) => updateConfigField(idx, 'buyQuantity', e.target.value)}
-            />
-          </div>
-          <div>
-            <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>Free Item ID</div>
-            <input
-              type="number"
-              value={cfg.freeItemId}
-              onChange={(e) => updateConfigField(idx, 'freeItemId', e.target.value)}
-            />
-          </div>
-          <div>
-            <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>Free Quantity</div>
-            <input
-              type="number"
-              value={cfg.freeQuantity}
-              onChange={(e) => updateConfigField(idx, 'freeQuantity', e.target.value)}
-            />
-          </div>
-          <div>
-            <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>Optional Free Item Label</div>
-            <input
-              value={cfg.freeItemLabel}
-              onChange={(e) => updateConfigField(idx, 'freeItemLabel', e.target.value)}
-            />
-          </div>
-          <div>
-            <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>Optional Free Item Price</div>
-            <input
-              type="number"
-              value={cfg.freeItemPrice}
-              onChange={(e) => updateConfigField(idx, 'freeItemPrice', e.target.value)}
-            />
-          </div>
-          <div>
-            <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>Optional Extra Discount %</div>
-            <input
-              type="number"
-              value={cfg.discountPercent}
-              onChange={(e) => updateConfigField(idx, 'discountPercent', e.target.value)}
-            />
-          </div>
-          {combos.length === 0 && (
-            <div style={{ gridColumn: '1 / -1', fontSize: 12, color: '#c0392b' }}>
-              Tip: Add combos first from the Combos tab to use this template.
-            </div>
-          )}
-        </>
-      );
     case "combo_buy_item_free":
       return (
         <>
@@ -170,17 +171,7 @@ const TemplateConfigFields = ({ offer, idx, updateConfigField, updateOfferField,
               onChange={(e) => updateConfigField(idx, 'buyQuantity', e.target.value)}
             />
           </div>
-          <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <div style={{ fontSize: 12, color: '#666', marginBottom: 0 }}>Free Item</div>
-            <select value={cfg.freeItemId} onChange={handleFreeItemChange} style={{ width: '100%', minHeight: 32 }}>
-              <option value="">-- Select Item --</option>
-              {menuOptions.map((item) => (
-                <option key={item.id} value={String(item.id)}>
-                  {item.name} {item.section ? `(${item.section})` : ''}
-                </option>
-              ))}
-            </select>
-          </div>
+          {renderFreeItemChoices('Free Item')}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             <div style={{ fontSize: 12, color: '#666', marginBottom: 0 }}>Free Quantity</div>
             <input
@@ -240,17 +231,7 @@ const TemplateConfigFields = ({ offer, idx, updateConfigField, updateOfferField,
               onChange={(e) => updateConfigField(idx, 'buyQuantity', e.target.value)}
             />
           </div>
-          <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <div style={{ fontSize: 12, color: '#666', marginBottom: 0 }}>Free Item</div>
-            <select value={cfg.freeItemId} onChange={handleFreeItemChange} style={{ width: '100%', minHeight: 32 }}>
-              <option value="">-- Select Item --</option>
-              {menuOptions.map((item) => (
-                <option key={item.id} value={String(item.id)}>
-                  {item.name} {item.section ? `(${item.section})` : ''}
-                </option>
-              ))}
-            </select>
-          </div>
+          {renderFreeItemChoices('Free Item')}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             <div style={{ fontSize: 12, color: '#666', marginBottom: 0 }}>Free Quantity</div>
             <input
@@ -483,7 +464,7 @@ const adaptOffer = (offer = {}) => {
   }
   if (!template) {
     if (comboCond || (Array.isArray(offer.applicableComboIds) && offer.applicableComboIds.length > 0)) {
-      template = "combo_buy_x_get_y";
+      template = "combo_buy_item_free";
     } else if (itemCond) {
       template = "item_buy_x_get_y";
     } else if (offer.discountAmount != null && offer.discountAmount !== "") {
@@ -602,7 +583,6 @@ const VendorOffers = ({ token }) => {
         const defaults = {
           percent_order: { template: 'percent_order', percent: current.config?.percent || current.discountPercent || "10", minTotal: current.config?.minTotal || "" },
           flat_order: { template: 'flat_order', amount: current.config?.amount || current.discountAmount || "20", minTotal: current.config?.minTotal || "" },
-          combo_buy_x_get_y: { template: 'combo_buy_x_get_y', buyQuantity: current.config?.buyQuantity || "2", freeQuantity: current.config?.freeQuantity || "1", freeItemId: current.config?.freeItemId || "", freeItemLabel: current.config?.freeItemLabel || "", freeItemPrice: current.config?.freeItemPrice || "", discountPercent: current.config?.discountPercent || "" },
           combo_buy_item_free: { template: 'combo_buy_item_free', buyQuantity: current.config?.buyQuantity || "1", freeQuantity: current.config?.freeQuantity || "1", freeItemId: current.config?.freeItemId || "", freeItemLabel: current.config?.freeItemLabel || "", freeItemPrice: current.config?.freeItemPrice || "" },
           item_buy_x_get_y: { template: 'item_buy_x_get_y', buyQuantity: current.config?.buyQuantity || "3", freeQuantity: current.config?.freeQuantity || "1", freeItemId: current.config?.freeItemId || "", freeItemLabel: current.config?.freeItemLabel || "", targetItemIds: current.config?.targetItemIds || [] }
         };
@@ -704,7 +684,11 @@ const VendorOffers = ({ token }) => {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10 }}>
             <div>
               <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>Template</div>
-              <select value={o.template || 'percent_order'} onChange={(e)=>updateField(idx,'template', e.target.value)}>
+              <select
+                value={o.template || 'percent_order'}
+                onChange={(e)=>updateField(idx,'template', e.target.value)}
+                style={{ width: '100%', maxWidth: 260 }}
+              >
                 {TEMPLATE_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>{opt.label}</option>
                 ))}
@@ -712,19 +696,37 @@ const VendorOffers = ({ token }) => {
             </div>
             <div>
               <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>Title</div>
-              <input value={o.title || ''} onChange={(e)=>updateField(idx,'title',e.target.value)} />
+              <input
+                value={o.title || ''}
+                onChange={(e)=>updateField(idx,'title',e.target.value)}
+                style={{ width: '100%', maxWidth: 260 }}
+              />
             </div>
             <div>
               <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>Banner Text</div>
-              <input value={o.bannerText || ''} onChange={(e)=>updateField(idx,'bannerText',e.target.value)} />
+              <input
+                value={o.bannerText || ''}
+                onChange={(e)=>updateField(idx,'bannerText',e.target.value)}
+                style={{ width: '100%', maxWidth: 320 }}
+              />
             </div>
             <div>
               <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>Start (ISO)</div>
-              <input placeholder="YYYY-MM-DDTHH:MM:SSZ" value={o.start || ''} onChange={(e)=>updateField(idx,'start',e.target.value)} />
+              <input
+                placeholder="YYYY-MM-DDTHH:MM:SSZ"
+                value={o.start || ''}
+                onChange={(e)=>updateField(idx,'start',e.target.value)}
+                style={{ width: '100%', maxWidth: 260 }}
+              />
             </div>
             <div>
               <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>End (ISO)</div>
-              <input placeholder="YYYY-MM-DDTHH:MM:SSZ" value={o.end || ''} onChange={(e)=>updateField(idx,'end',e.target.value)} />
+              <input
+                placeholder="YYYY-MM-DDTHH:MM:SSZ"
+                value={o.end || ''}
+                onChange={(e)=>updateField(idx,'end',e.target.value)}
+                style={{ width: '100%', maxWidth: 260 }}
+              />
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <label>

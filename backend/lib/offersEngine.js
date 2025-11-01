@@ -360,11 +360,14 @@ const evaluateReward = ({ reward, context, offer, itemLookup, summary }) => {
       break;
     }
     case 'free_item': {
-      const itemId = reward.itemId != null ? Number(reward.itemId) : null;
+      const isCustom = typeof reward.itemId === 'string' && reward.itemId.startsWith('custom-');
+      const itemId = isCustom ? null : (reward.itemId != null ? Number(reward.itemId) : null);
       const quantity = reward.quantity != null ? Number(reward.quantity) : 1;
-      if (itemId != null && quantity > 0) {
-        const lookup = itemLookup.get(itemId) || {};
-        const name = lookup.name || reward.itemName || `Item ${itemId}`;
+      if ((isCustom || itemId != null) && quantity > 0) {
+        const lookup = itemId != null ? (itemLookup.get(itemId) || {}) : {};
+        const baseName = lookup.name || reward.itemName;
+        const defaultName = isCustom ? (reward.description || reward.itemName || reward.itemId || 'Custom Item') : `Item ${itemId}`;
+        const name = baseName || defaultName;
         const section = lookup.section || null;
         const price = reward.price != null ? Number(reward.price) : 0;
         const configSource = offer.metadata?.configSnapshot || offer.metadata?.config || offer.metadata || {};
@@ -416,13 +419,31 @@ const evaluateReward = ({ reward, context, offer, itemLookup, summary }) => {
             return tiers > 0 ? tiers : 1;
           }
 
+          if (template === 'combo_buy_item_free') {
+            const comboCond = findCondition('combo_quantity');
+            const buyQuantity = toNumber(configSource.buyQuantity ?? comboCond?.minQuantity);
+            if (!buyQuantity || buyQuantity <= 0) return 1;
+            const comboIdsRaw = Array.isArray(offer.metadata?.applicableComboIds) && offer.metadata.applicableComboIds.length > 0
+              ? offer.metadata.applicableComboIds
+              : (Array.isArray(comboCond?.comboIds) ? comboCond.comboIds : []);
+            if (!comboIdsRaw.length) return 1;
+            const countsMap = context.comboCounts || new Map();
+            let qualifyingQuantity = 0;
+            for (const comboId of comboIdsRaw) {
+              qualifyingQuantity += countsMap.get(String(comboId)) || 0;
+            }
+            if (qualifyingQuantity <= 0) return 1;
+            const tiers = Math.floor(qualifyingQuantity / buyQuantity);
+            return tiers > 0 ? tiers : 1;
+          }
+
           return 1;
         };
 
         const multiplier = computeMultiplier();
         const totalQuantity = Math.max(1, multiplier) * quantity;
         extraItems.push({
-          id: itemId,
+          id: itemId != null ? itemId : reward.itemId,
           name,
           price,
           quantity: totalQuantity,
