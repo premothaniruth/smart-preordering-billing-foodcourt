@@ -562,7 +562,6 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
                 onClick={() => setShopMenuOpen((prev) => !prev)}
               >
                 <span className="shop-selector-label compact">
-                  <span className="shop-selector-dot" />
                   <span className="shop-selector-text">{currentShop ? currentShop.shopName : "Select Shop"}</span>
                 </span>
               </button>
@@ -571,26 +570,21 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
                   {availableShops.length === 0 && (
                     <div className="dropdown-empty">No shops available</div>
                   )}
-                  {availableShops.map((shop) => {
-                    const isActive = String(shop.shopId) === String(selectedShop);
-                    return (
-                      <button
-                        type="button"
-                        key={shop.shopId}
-                        className={isActive ? "active" : ""}
-                        onClick={() => {
-                          setSelectedShop(Number(shop.shopId));
-                          setShopMenuOpen(false);
-                          if (typeof onActiveSectionChange === "function") {
-                            onActiveSectionChange(null);
-                          }
-                        }}
-                      >
-                        <span className="shop-name">{shop.shopName}</span>
-                        {isActive && <span className="shop-active-pill">Active</span>}
-                      </button>
-                    );
-                  })}
+                  {availableShops.map((shop) => (
+                    <button
+                      type="button"
+                      key={shop.shopId}
+                      onClick={() => {
+                        setSelectedShop(Number(shop.shopId));
+                        setShopMenuOpen(false);
+                        if (typeof onActiveSectionChange === "function") {
+                          onActiveSectionChange(null);
+                        }
+                      }}
+                    >
+                      <span className="shop-name">{shop.shopName}</span>
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
