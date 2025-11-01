@@ -367,16 +367,78 @@ const evaluateReward = ({ reward, context, offer, itemLookup, summary }) => {
         const name = lookup.name || reward.itemName || `Item ${itemId}`;
         const section = lookup.section || null;
         const price = reward.price != null ? Number(reward.price) : 0;
+        const configSource = offer.metadata?.configSnapshot || offer.metadata?.config || offer.metadata || {};
+        const findCondition = (type) => (offer.conditions || []).find((cond) => cond.type === type);
+        const toNumber = (value) => {
+          const num = Number(value);
+          return Number.isFinite(num) ? num : null;
+        };
+
+        const computeMultiplier = () => {
+          const template = offer.metadata?.template || configSource?.template;
+          if (!template) return 1;
+          if (template === 'item_buy_x_get_y') {
+            const itemCond = findCondition('item_quantity');
+            const buyQuantity = toNumber(configSource.buyQuantity ?? itemCond?.minQuantity);
+            if (!buyQuantity || buyQuantity <= 0) return 1;
+            const targetIdsRaw = Array.isArray(configSource.targetItemIds) && configSource.targetItemIds.length > 0
+              ? configSource.targetItemIds
+              : (Array.isArray(itemCond?.itemIds) ? itemCond.itemIds : []);
+            const ids = (targetIdsRaw.length ? targetIdsRaw : [itemId])
+              .map((id) => Number(id))
+              .filter((id) => Number.isFinite(id));
+            if (!ids.length) return 1;
+            let qualifyingQuantity = 0;
+            for (const id of ids) {
+              const entry = context.itemTotals?.get(Number(id));
+              if (entry?.quantity) qualifyingQuantity += Number(entry.quantity);
+            }
+            if (qualifyingQuantity <= 0) return 1;
+            const tiers = Math.floor(qualifyingQuantity / buyQuantity);
+            return tiers > 0 ? tiers : 1;
+          }
+
+          if (template === 'combo_buy_x_get_y') {
+            const comboCond = findCondition('combo_quantity');
+            const buyQuantity = toNumber(configSource.buyQuantity ?? comboCond?.minQuantity);
+            if (!buyQuantity || buyQuantity <= 0) return 1;
+            const comboIdsRaw = Array.isArray(offer.metadata?.applicableComboIds) && offer.metadata.applicableComboIds.length > 0
+              ? offer.metadata.applicableComboIds
+              : (Array.isArray(comboCond?.comboIds) ? comboCond.comboIds : []);
+            if (!comboIdsRaw.length) return 1;
+            const countsMap = context.comboCounts || new Map();
+            let qualifyingQuantity = 0;
+            for (const comboId of comboIdsRaw) {
+              qualifyingQuantity += countsMap.get(String(comboId)) || 0;
+            }
+            if (qualifyingQuantity <= 0) return 1;
+            const tiers = Math.floor(qualifyingQuantity / buyQuantity);
+            return tiers > 0 ? tiers : 1;
+          }
+
+          return 1;
+        };
+
+        const multiplier = computeMultiplier();
+        const totalQuantity = Math.max(1, multiplier) * quantity;
         extraItems.push({
           id: itemId,
           name,
           price,
-          quantity,
+          quantity: totalQuantity,
           section,
           fromOfferId: offer.id,
           fromOfferTitle: offer.title
         });
-        rewardSummary.details = { itemId, quantity, price, name, section };
+        rewardSummary.details = {
+          itemId,
+          quantity: totalQuantity,
+          baseQuantity: quantity,
+          multiplier,
+          price,
+          name,
+          section
+        };
       }
       break;
     }

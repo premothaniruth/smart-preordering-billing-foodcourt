@@ -21,17 +21,13 @@ const TemplateConfigFields = ({ offer, idx, updateConfigField, updateOfferField,
     const value = event.target.value;
     updateConfigField(idx, 'freeItemId', value);
     if (!value) {
+      updateConfigField(idx, 'freeItemLabel', '');
+      updateConfigField(idx, 'freeItemPrice', '');
       return;
     }
     const match = menuItems.find((item) => String(item.id) === value);
-    if (match) {
-      if (!cfg.freeItemLabel) {
-        updateConfigField(idx, 'freeItemLabel', match.name || '');
-      }
-      if (!cfg.freeItemPrice && match.price != null) {
-        updateConfigField(idx, 'freeItemPrice', String(match.price));
-      }
-    }
+    updateConfigField(idx, 'freeItemLabel', match?.name || '');
+    updateConfigField(idx, 'freeItemPrice', match && match.price != null ? String(match.price) : '');
   };
 
   const handleComboSelection = (event) => {
@@ -173,9 +169,9 @@ const TemplateConfigFields = ({ offer, idx, updateConfigField, updateOfferField,
               onChange={(e) => updateConfigField(idx, 'buyQuantity', e.target.value)}
             />
           </div>
-          <div>
-            <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>Free Item</div>
-            <select value={cfg.freeItemId} onChange={handleFreeItemChange}>
+          <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ fontSize: 12, color: '#666', marginBottom: 0 }}>Free Item</div>
+            <select value={cfg.freeItemId} onChange={handleFreeItemChange} style={{ width: '100%', minHeight: 32 }}>
               <option value="">-- Select Item --</option>
               {menuOptions.map((item) => (
                 <option key={item.id} value={String(item.id)}>
@@ -184,27 +180,30 @@ const TemplateConfigFields = ({ offer, idx, updateConfigField, updateOfferField,
               ))}
             </select>
           </div>
-          <div>
-            <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>Free Quantity</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ fontSize: 12, color: '#666', marginBottom: 0 }}>Free Quantity</div>
             <input
               type="number"
               value={cfg.freeQuantity}
               onChange={(e) => updateConfigField(idx, 'freeQuantity', e.target.value)}
+              style={{ width: '100%' }}
             />
           </div>
-          <div>
-            <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>Optional Free Item Label</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ fontSize: 12, color: '#666', marginBottom: 0 }}>Optional Free Item Label</div>
             <input
               value={cfg.freeItemLabel}
               onChange={(e) => updateConfigField(idx, 'freeItemLabel', e.target.value)}
+              style={{ width: '100%' }}
             />
           </div>
-          <div>
-            <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>Optional Free Item Price</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ fontSize: 12, color: '#666', marginBottom: 0 }}>Optional Free Item Price</div>
             <input
               type="number"
               value={cfg.freeItemPrice}
               onChange={(e) => updateConfigField(idx, 'freeItemPrice', e.target.value)}
+              style={{ width: '100%' }}
             />
           </div>
         </>
@@ -654,19 +653,29 @@ const VendorOffers = ({ token }) => {
           <div style={{ marginTop: 10, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <div>
               <div style={{ fontWeight: 600, marginBottom: 6 }}>Applicable Sections</div>
-              <select
-                multiple
-                value={Array.isArray(o.applicableSections) ? o.applicableSections : []}
-                onChange={(e) => {
-                  const selected = Array.from(e.target.selectedOptions || []).map((opt) => opt.value);
-                  updateField(idx, 'applicableSections', selected);
-                }}
-                style={{ minHeight: 120 }}
-              >
-                {sections.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <select
+                  multiple
+                  value={Array.isArray(o.applicableSections) ? o.applicableSections : []}
+                  onChange={(e) => {
+                    const selected = Array.from(e.target.selectedOptions || []).map((opt) => opt.value);
+                    updateField(idx, 'applicableSections', selected);
+                  }}
+                  style={{ minHeight: 120 }}
+                >
+                  {sections.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => updateField(idx, 'applicableSections', [])}
+                  style={{ alignSelf: 'flex-start', padding: '4px 10px', fontSize: 12 }}
+                  disabled={!Array.isArray(o.applicableSections) || o.applicableSections.length === 0}
+                >
+                  Clear Selection
+                </button>
+              </div>
             </div>
             <div>
               <div style={{ fontWeight: 600, marginBottom: 6 }}>Applicable Combos</div>
