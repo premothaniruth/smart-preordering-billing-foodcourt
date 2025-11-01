@@ -91,6 +91,7 @@ function App() {
   const lastSosEventIdRef = useRef(null);
   const [offerPreview, setOfferPreview] = useState(null);
   const [offersLoading, setOffersLoading] = useState(false);
+  const [showVendorConcernForm, setShowVendorConcernForm] = useState(false);
 
   useEffect(() => {
     try {
@@ -843,8 +844,14 @@ function App() {
                 <button onClick={() => setView("grievances")}>Complaints</button>
                 <button onClick={() => setView("user")}>Switch to User View</button>
                 <VendorConcernsMenu
-                  onRaiseNew={() => setShowVendorConcernForm(true)}
-                  onViewStatus={() => setShowVendorConcernList(true)}
+                  onRaiseNew={() => {
+                    setShowVendorConcernForm(true);
+                    setShowVendorConcernList(false);
+                  }}
+                  onViewStatus={() => {
+                    setShowVendorConcernForm(false);
+                    setShowVendorConcernList(true);
+                  }}
                 />
               </div>
             </div>
@@ -885,11 +892,15 @@ function App() {
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20 }}>
               <button onClick={handleLogout} style={{ background: '#e74c3c', color: '#fff' }}>Logout</button>
             </div>
-            <SosButton
-              isActive={Boolean(sosState?.active)}
-              onTrigger={() => handleSosTrigger("vendor")}
-              onResolve={() => handleSosResolve("vendor")}
-            />
+            {showVendorConcernForm && (
+              <div style={{ marginTop: 20, display: 'flex', justifyContent: 'flex-end' }}>
+                <SosButton
+                  isActive={Boolean(sosState?.active)}
+                  onTrigger={() => handleSosTrigger("vendor")}
+                  onResolve={() => handleSosResolve("vendor")}
+                />
+              </div>
+            )}
           </>
         ) : (
           <>
