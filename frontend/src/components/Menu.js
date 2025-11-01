@@ -104,9 +104,19 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
     const withinItemWindow = itemWindow ? isHmWithinWindow(hm, itemWindow) : true;
     const isAvailableFlag = item?.available !== false;
     const allowedNow = isAvailableFlag && withinSectionWindow && withinItemWindow;
-    const canPreOrder = scheduledInFuture && (sectionWindow || itemWindow);
+
+    const sectionSameDay = hasSameDayAvailability(sectionWindow, currentHm);
+    const itemSameDay = hasSameDayAvailability(itemWindow, currentHm);
+    const sameDayAvailable = sectionSameDay && itemSameDay;
+
+    const scheduledWithinWindow = scheduledHm
+      ? (!sectionWindow || isHmWithinWindow(scheduledHm, sectionWindow)) && (!itemWindow || isHmWithinWindow(scheduledHm, itemWindow))
+      : false;
+
+    const canPreOrder = scheduledInFuture && scheduledWithinWindow && sameDayAvailable;
     const allowAction = allowedNow || canPreOrder;
-    return { hm, sectionWindow, itemWindow, allowedNow, canPreOrder, allowAction };
+    const nextDayOnly = !sameDayAvailable;
+    return { hm, sectionWindow, itemWindow, allowedNow, canPreOrder, allowAction, nextDayOnly };
   };
 
   useEffect(() => {
@@ -170,8 +180,14 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
 
   // Open modal for variant items; otherwise add immediately
   const handleAddClick = (item) => {
+    const { allowAction, nextDayOnly } = computeItemAvailability(item);
+
     if (cartShopMismatch) {
       toast.warn("Cart already has items from another shop. Please place separate orders.");
+      return;
+    }
+    if (!allowAction) {
+      toast.info(nextDayOnly ? 'Available from next day' : 'Currently unavailable');
       return;
     }
     setSelectedItem(item);
@@ -214,7 +230,7 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
       availableEnd: combo?.availableEnd,
       available: combo?.available
     });
-    const { sectionWindow, itemWindow } = comboAvail;
+    const { sectionWindow, itemWindow, nextDayOnly: comboNextDayOnly } = comboAvail;
     const comboAllowed = comboAvail.allowAction;
     // Derive combo capacity from component inventories
     const findItem = (id) => (shop && Array.isArray(shop.items)) ? shop.items.find(i => Number(i.id) === Number(id)) : null;
@@ -263,7 +279,7 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
     const handleAddCombo = () => {
       if (cartShopMismatch) { toast.warn("Cart already has items from another shop. Please place separate orders."); return; }
       if (stockLeft <= 0) { toast.error('No more combos available to order'); return; }
-      if (!comboAllowed) { toast.info('Next order is from tomorrow'); return; }
+      if (!comboAllowed) { toast.info(comboNextDayOnly ? 'Order opens next day' : 'Next order window not open yet'); return; }
       const synthetic = {
         id: 1000000 + Number(combo.id || 0),
         comboId: combo.id,
@@ -292,7 +308,7 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
             if (!comboAllowed) {
               return (
                 <div style={{ position: 'absolute', top: 8, left: 8, background: '#7f8c8d', color: '#fff', padding: '2px 8px', borderRadius: 4, fontSize: 12, fontWeight: 700 }}>
-                  NEXT WINDOW
+                  {comboNextDayOnly ? 'NEXT DAY' : 'NEXT WINDOW'}
                 </div>
               );
             }
@@ -427,7 +443,7 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
           )}
           {!allowAction && (
             <div style={{ position: 'absolute', top: 8, left: 8, background: '#7f8c8d', color: '#fff', padding: '2px 8px', borderRadius: 4, fontSize: 12, fontWeight: 700 }}>
-              NEXT WINDOW
+              {nextDayOnly ? 'NEXT DAY' : 'NEXT WINDOW'}
             </div>
           )}
           {stockLeft === 0 && allowAction && (
@@ -498,9 +514,13 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
                       toast.warn("Cart already has items from another shop. Please place separate orders.");
                       return;
                     }
+                    if (!allowAction) {
+                      toast.info(nextDayOnly ? 'Available from next day' : 'Currently unavailable');
+                      return;
+                    }
                     incItemNoOption(item, selectedShop);
                   }}
-                  disabled={cartRemaining <= 0 || cartShopMismatch}
+                  disabled={cartRemaining <= 0 || cartShopMismatch || !allowAction}
                   style={{ width: 32, height: 32, background: '#fff', color: '#111', border: '1px solid #111', borderRadius: 6 }}
                 >+</button>
               </div>
