@@ -9,15 +9,7 @@ const TEMPLATE_OPTIONS = [
   { value: "item_buy_x_get_y", label: "Menu Item – Buy X Get Y" }
 ];
 
-const parseCommaNumbers = (input) => {
-  if (!input) return [];
-  return String(input)
-    .split(",")
-    .map((p) => Number(p.trim()))
-    .filter((n) => Number.isFinite(n) && n > 0);
-};
-
-const TemplateConfigFields = ({ offer, idx, updateConfigField, updateOfferField, combos, menuItems }) => {
+const TemplateConfigFields = ({ offer, idx, updateConfigField, updateOfferField, combos, menuItems, groupedMenuItems }) => {
   const cfg = sanitizeConfig(offer.config);
 
   const handleTargetItemsChange = (event) => {
@@ -155,11 +147,20 @@ const TemplateConfigFields = ({ offer, idx, updateConfigField, updateOfferField,
         <>
           <div style={{ gridColumn: '1 / -1' }}>
             <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>Target Items (Buy)</div>
-            <select multiple value={Array.isArray(cfg.targetItemIds) ? cfg.targetItemIds.map(String) : []} onChange={handleTargetItemsChange} style={{ minHeight: 110 }}>
-              {menuOptions.map((item) => (
-                <option key={item.id} value={String(item.id)}>
-                  {item.name} {item.section ? `(${item.section})` : ''}
-                </option>
+            <select
+              multiple
+              value={Array.isArray(cfg.targetItemIds) ? cfg.targetItemIds.map(String) : []}
+              onChange={handleTargetItemsChange}
+              style={{ minHeight: 120 }}
+            >
+              {groupedMenuItems.map(({ section, items }) => (
+                <optgroup key={section || 'Ungrouped'} label={section || 'All Items'}>
+                  {items.map((item) => (
+                    <option key={item.id} value={String(item.id)}>
+                      {item.name}
+                    </option>
+                  ))}
+                </optgroup>
               ))}
             </select>
             {menuOptions.length === 0 && <div style={{ fontSize: 12, color: '#c0392b', marginTop: 4 }}>Add menu items first to configure item-based offers.</div>}
@@ -214,15 +215,15 @@ const TemplateConfigFields = ({ offer, idx, updateConfigField, updateOfferField,
 };
 
 const sanitizeConfig = (config = {}) => ({
-  minTotal: config.minTotal ?? "",
-  percent: config.percent ?? "",
-  amount: config.amount ?? "",
-  buyQuantity: config.buyQuantity ?? "",
-  freeQuantity: config.freeQuantity ?? "1",
-  freeItemId: config.freeItemId ?? "",
-  freeItemLabel: config.freeItemLabel ?? "",
-  freeItemPrice: config.freeItemPrice ?? "",
-  discountPercent: config.discountPercent ?? "",
+  minTotal: config.minTotal != null ? String(config.minTotal) : "",
+  percent: config.percent != null ? String(config.percent) : "",
+  amount: config.amount != null ? String(config.amount) : "",
+  buyQuantity: config.buyQuantity != null ? String(config.buyQuantity) : "",
+  freeQuantity: config.freeQuantity != null ? String(config.freeQuantity) : "1",
+  freeItemId: config.freeItemId != null ? String(config.freeItemId) : "",
+  freeItemLabel: config.freeItemLabel != null ? String(config.freeItemLabel) : "",
+  freeItemPrice: config.freeItemPrice != null ? String(config.freeItemPrice) : "",
+  discountPercent: config.discountPercent != null ? String(config.discountPercent) : "",
   targetItemIds: Array.isArray(config.targetItemIds)
     ? config.targetItemIds.map((id) => Number(id)).filter((id) => Number.isFinite(id))
     : [],
@@ -479,6 +480,17 @@ const VendorOffers = ({ token }) => {
     }, ...prev]));
   };
 
+  const groupedMenuItems = useMemo(() => {
+    if (!Array.isArray(menuItems) || menuItems.length === 0) return [];
+    const grouped = new Map();
+    menuItems.forEach((item) => {
+      const section = item.section || "All Items";
+      if (!grouped.has(section)) grouped.set(section, []);
+      grouped.get(section).push(item);
+    });
+    return Array.from(grouped.entries()).map(([section, items]) => ({ section, items }));
+  }, [menuItems]);
+
   const updateField = (idx, field, value) => {
     setOffers(prev => {
       const next = [...prev];
@@ -488,7 +500,7 @@ const VendorOffers = ({ token }) => {
           percent_order: { percent: current.config?.percent || current.discountPercent || "10", minTotal: current.config?.minTotal || "" },
           flat_order: { amount: current.config?.amount || current.discountAmount || "20", minTotal: current.config?.minTotal || "" },
           combo_buy_x_get_y: { buyQuantity: current.config?.buyQuantity || "2", freeQuantity: current.config?.freeQuantity || "1", freeItemId: current.config?.freeItemId || "", freeItemLabel: current.config?.freeItemLabel || "", freeItemPrice: current.config?.freeItemPrice || "", discountPercent: current.config?.discountPercent || "" },
-          item_buy_x_get_y: { buyQuantity: current.config?.buyQuantity || "3", freeQuantity: current.config?.freeQuantity || "1", freeItemId: current.config?.freeItemId || "", freeItemLabel: current.config?.freeItemLabel || "", targetItemIdsInput: current.config?.targetItemIdsInput || "" }
+          item_buy_x_get_y: { buyQuantity: current.config?.buyQuantity || "3", freeQuantity: current.config?.freeQuantity || "1", freeItemId: current.config?.freeItemId || "", freeItemLabel: current.config?.freeItemLabel || "", targetItemIds: current.config?.targetItemIds || [] }
         };
         current.template = value;
         current.config = sanitizeConfig(defaults[value] || {});
@@ -634,11 +646,12 @@ const VendorOffers = ({ token }) => {
                 updateOfferField={updateField}
                 combos={combos}
                 menuItems={menuItems}
+                groupedMenuItems={groupedMenuItems}
               />
             </div>
           </div>
 
-          <div style={{ marginTop: 10, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          <div style={{ marginTop: 10, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <div>
               <div style={{ fontWeight: 600, marginBottom: 6 }}>Applicable Sections</div>
               <select
@@ -648,7 +661,7 @@ const VendorOffers = ({ token }) => {
                   const selected = Array.from(e.target.selectedOptions || []).map((opt) => opt.value);
                   updateField(idx, 'applicableSections', selected);
                 }}
-                style={{ minHeight: 100 }}
+                style={{ minHeight: 120 }}
               >
                 {sections.map((s) => (
                   <option key={s} value={s}>{s}</option>
@@ -656,20 +669,30 @@ const VendorOffers = ({ token }) => {
               </select>
             </div>
             <div>
-              <div style={{ fontWeight: 600, marginBottom: 6 }}>Applicable Combo IDs</div>
-              <select
-                multiple
-                value={Array.isArray(o.applicableComboIds) ? o.applicableComboIds.map(String) : []}
-                onChange={(e) => {
-                  const selected = Array.from(e.target.selectedOptions || []).map((opt) => opt.value);
-                  updateField(idx, 'applicableComboIds', selected);
-                }}
-                style={{ minHeight: 100 }}
-              >
-                {combos.map((c) => (
-                  <option key={c.id} value={String(c.id)}>{c.name} ({c.id})</option>
-                ))}
-              </select>
+              <div style={{ fontWeight: 600, marginBottom: 6 }}>Applicable Combos</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <select
+                  multiple
+                  value={Array.isArray(o.applicableComboIds) ? o.applicableComboIds.map(String) : []}
+                  onChange={(e) => {
+                    const selected = Array.from(e.target.selectedOptions || []).map((opt) => opt.value);
+                    updateField(idx, 'applicableComboIds', selected);
+                  }}
+                  style={{ minHeight: 120 }}
+                >
+                  {combos.map((c) => (
+                    <option key={c.id} value={String(c.id)}>{c.name} ({c.id})</option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => updateField(idx, 'applicableComboIds', [])}
+                  style={{ alignSelf: 'flex-start', padding: '4px 10px', fontSize: 12 }}
+                  disabled={!Array.isArray(o.applicableComboIds) || o.applicableComboIds.length === 0}
+                >
+                  Clear Selection
+                </button>
+              </div>
             </div>
           </div>
 

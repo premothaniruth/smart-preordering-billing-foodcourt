@@ -190,6 +190,42 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
   if (!shop) return <p>Shop not found.</p>;
   const shopIcon = null;
 
+  const offersBySection = useMemo(() => {
+    if (!Array.isArray(offers) || offers.length === 0) return new Map();
+    const map = new Map();
+    const push = (sectionName, offer) => {
+      const key = sectionName || '__ALL__';
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(offer);
+    };
+    for (const offer of offers) {
+      const sections = Array.isArray(offer.applicableSections) ? offer.applicableSections : [];
+      if (sections.length === 0) {
+        push('__ALL__', offer);
+        continue;
+      }
+      sections.forEach((sectionName) => push(sectionName, offer));
+    }
+    return map;
+  }, [offers]);
+
+  const offersForActiveSection = useMemo(() => {
+    if (!offersBySection.size) return [];
+    const globalOffers = offersBySection.get('__ALL__') || [];
+    if (!activeSection) {
+      return globalOffers.length ? globalOffers : Array.from(offersBySection.values()).flat();
+    }
+    const scoped = offersBySection.get(activeSection) || [];
+    if (globalOffers.length === 0) return scoped;
+    const merged = [...globalOffers];
+    for (const offer of scoped) {
+      if (!merged.some((existing) => existing.id === offer.id)) {
+        merged.push(offer);
+      }
+    }
+    return merged;
+  }, [offersBySection, activeSection]);
+
   // Open modal for variant items; otherwise add immediately
   const handleAddClick = (item) => {
     const { allowAction, nextDayOnly } = computeItemAvailability(item);
@@ -582,11 +618,11 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
   return (
     <div>
       <h2>Menu</h2>
-      {offers && offers.length > 0 && (
+      {offersForActiveSection.length > 0 && (
         <div className="card" style={{ marginBottom: 12, background: '#fff8e6', border: '1px solid #f1c40f' }}>
           <div style={{ fontWeight: 700, marginBottom: 4 }}>Special Offers</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            {offers.map((o)=> (
+            {offersForActiveSection.map((o)=> (
               <span key={o.id} className="menu-item-badge" style={{ borderColor: '#f1c40f', color: '#8a6d3b' }}>{o.bannerText || o.title}</span>
             ))}
           </div>

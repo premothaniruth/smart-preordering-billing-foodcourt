@@ -2296,21 +2296,7 @@ app.put('/offers', authenticateVendor, (req, res) => {
     const incoming = Array.isArray(req.body.offers) ? req.body.offers : [];
     const all = getOffers();
     const rest = all.filter(o => String(o.shopId) !== String(req.vendor.shopId));
-    const normalized = incoming.map(o => ({
-      id: o.id || Date.now() + Math.random(),
-      shopId: req.vendor.shopId,
-      title: o.title || 'Special Offer',
-      bannerText: o.bannerText || o.title || 'Offer',
-      discountPercent: o.discountPercent ? Number(o.discountPercent) : null,
-      discountAmount: o.discountAmount ? Number(o.discountAmount) : null,
-      applicableSections: Array.isArray(o.applicableSections) ? o.applicableSections : [],
-      applicableComboIds: Array.isArray(o.applicableComboIds) ? o.applicableComboIds : [],
-      start: o.start || null,
-      end: o.end || null,
-      active: o.active !== false,
-      stackable: o.stackable !== false,
-      maxDiscountAmount: o.maxDiscountAmount ? Number(o.maxDiscountAmount) : null
-    }));
+    const normalized = incoming.map(o => normalizeOfferInputForStorage(o, req.vendor.shopId));
     saveOffers([...rest, ...normalized]);
     res.json({ status: 'success', message: 'Offers updated' });
   } catch (e) {
