@@ -386,6 +386,22 @@ function App() {
    * Add one unit of an item (optionally with variant) to the cart.
    * Merges with existing line if same item+shop+variant exists.
    */
+  const currentCartShop = cart.length > 0 ? cart[0]?.shopId : null;
+
+  const guardedSetCart = (updater, incomingShopId) => {
+    const targetShopId = incomingShopId ?? currentCartShop;
+    setCart((prev) => {
+      if (prev.length > 0) {
+        const existingShopId = prev[0]?.shopId;
+        if (existingShopId != null && targetShopId != null && String(existingShopId) !== String(targetShopId)) {
+          toast.warn("Please place separate orders for each shop.");
+          return prev;
+        }
+      }
+      return typeof updater === "function" ? updater(prev) : updater;
+    });
+  };
+
   const addToCart = (item, shopId, selectedOption = null, customization = {}) => {
     const cartItem = {
       ...item,
@@ -395,7 +411,7 @@ function App() {
       prepTime: item.prepTime || 5
     };
 
-    setCart((prev) => {
+    guardedSetCart((prev) => {
       const idx = prev.findIndex((c) => 
         c.item.id === item.id && 
         c.shopId === shopId && 
@@ -440,7 +456,7 @@ function App() {
   // Helpers for items without options: adjust by item+shop
   /** Increase qty in cart for non-variant item (by item+shop) */
   const incItemNoOption = (item, shopId) => {
-    setCart((prev) => {
+    guardedSetCart((prev) => {
       const idx = prev.findIndex((c) => c.item.id === item.id && c.shopId === shopId && !c.item.selectedOption);
       if (idx >= 0) {
         const next = [...prev];
@@ -449,7 +465,7 @@ function App() {
       }
       const cartItem = { ...item, selectedOption: null, customization: {}, finalPrice: item.price, prepTime: item.prepTime || 5 };
       return [...prev, { item: cartItem, shopId, quantity: 1 }];
-    });
+    }, shopId);
   };
 
   /** Decrease qty in cart for non-variant item (by item+shop) */
@@ -470,7 +486,7 @@ function App() {
   // Helpers for items with variants (options)
   /** Increase qty for a specific item variant (by item+shop+option) */
   const incItemVariant = (item, shopId, option) => {
-    setCart((prev) => {
+    guardedSetCart((prev) => {
       const idx = prev.findIndex((c) => c.item.id === item.id && c.shopId === shopId && c.item.selectedOption?.name === option?.name);
       if (idx >= 0) {
         const next = [...prev];
@@ -479,7 +495,7 @@ function App() {
       }
       const cartItem = { ...item, selectedOption: option, customization: {}, finalPrice: item.price + (option?.priceModifier || 0), prepTime: item.prepTime || 5 };
       return [...prev, { item: cartItem, shopId, quantity: 1 }];
-    });
+    }, shopId);
   };
 
   /** Decrease qty for a specific item variant (by item+shop+option) */
