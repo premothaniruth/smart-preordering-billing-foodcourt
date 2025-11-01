@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { toggleFavorite, fetchActiveOffers, fetchCombos, fetchMenuSections, fetchSectionsMeta } from "../api";
 import { toast } from "react-toastify";
 
@@ -145,6 +145,18 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
 
   const availableShops = useMemo(() => menu || [], [menu]);
   const [shopMenuOpen, setShopMenuOpen] = useState(false);
+  const shopMenuRef = useRef(null);
+
+  useEffect(() => {
+    if (!shopMenuOpen) return;
+    const handleClickOutside = (event) => {
+      if (shopMenuRef.current && !shopMenuRef.current.contains(event.target)) {
+        setShopMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [shopMenuOpen]);
 
   const currentShop = useMemo(() => {
     return availableShops.find((shop) => String(shop.shopId) === String(selectedShop)) || null;
@@ -543,7 +555,7 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
         {!hideShopSelector && (
           <div className="menu-shop-selector">
             <label>Choose Shop:</label>
-            <div className="shop-dropdown" onBlur={() => setShopMenuOpen(false)} tabIndex={0}>
+            <div className="shop-dropdown" ref={shopMenuRef}>
               <button
                 type="button"
                 className="secondary-button"
@@ -558,7 +570,7 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
                       type="button"
                       key={shop.shopId}
                       onClick={() => {
-                        setSelectedShop(shop.shopId);
+                        setSelectedShop(Number(shop.shopId));
                         setShopMenuOpen(false);
                       }}
                     >
