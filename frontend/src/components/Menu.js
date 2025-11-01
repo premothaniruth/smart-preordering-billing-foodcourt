@@ -97,31 +97,16 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
   };
 
   const computeItemAvailability = (item) => {
-    const baseHM = scheduledHm || currentHm;
+    const hm = scheduledHm || currentHm;
     const sectionWindow = resolveSectionWindow(item);
+    const withinSectionWindow = isHmWithinWindow(hm, sectionWindow);
     const itemWindow = item?.availableStart && item?.availableEnd ? { start: item.availableStart, end: item.availableEnd } : null;
+    const withinItemWindow = itemWindow ? isHmWithinWindow(hm, itemWindow) : true;
     const isAvailableFlag = item?.available !== false;
-
-    const withinSectionAtSelected = sectionWindow ? isHmWithinWindow(baseHM, sectionWindow) : true;
-    const withinItemAtSelected = itemWindow ? isHmWithinWindow(baseHM, itemWindow) : true;
-
-    const allowedAtSelectedTime = isAvailableFlag && withinSectionAtSelected && withinItemAtSelected;
-
-    const scheduleWithinWindow = scheduledHm
-      ? (!sectionWindow || isHmWithinWindow(scheduledHm, sectionWindow)) && (!itemWindow || isHmWithinWindow(scheduledHm, itemWindow))
-      : false;
-
-    const canPreOrder = scheduledInFuture && scheduleWithinWindow;
-    const allowAction = allowedAtSelectedTime || canPreOrder;
-
-    return {
-      hm: baseHM,
-      sectionWindow,
-      itemWindow,
-      allowedNow: allowedAtSelectedTime,
-      canPreOrder,
-      allowAction
-    };
+    const allowedNow = isAvailableFlag && withinSectionWindow && withinItemWindow;
+    const canPreOrder = scheduledInFuture && (sectionWindow || itemWindow);
+    const allowAction = allowedNow || canPreOrder;
+    return { hm, sectionWindow, itemWindow, allowedNow, canPreOrder, allowAction };
   };
 
   useEffect(() => {
@@ -307,7 +292,7 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
             if (!comboAllowed) {
               return (
                 <div style={{ position: 'absolute', top: 8, left: 8, background: '#7f8c8d', color: '#fff', padding: '2px 8px', borderRadius: 4, fontSize: 12, fontWeight: 700 }}>
-                  NEXT DAY
+                  NEXT WINDOW
                 </div>
               );
             }
@@ -442,7 +427,7 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
           )}
           {!allowAction && (
             <div style={{ position: 'absolute', top: 8, left: 8, background: '#7f8c8d', color: '#fff', padding: '2px 8px', borderRadius: 4, fontSize: 12, fontWeight: 700 }}>
-              NEXT DAY
+              NEXT WINDOW
             </div>
           )}
           {stockLeft === 0 && allowAction && (
