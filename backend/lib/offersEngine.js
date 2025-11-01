@@ -360,17 +360,21 @@ const evaluateReward = ({ reward, context, offer, itemLookup, summary }) => {
       break;
     }
     case 'free_item': {
-      const isCustom = typeof reward.itemId === 'string' && reward.itemId.startsWith('custom-');
-      const itemId = isCustom ? null : (reward.itemId != null ? Number(reward.itemId) : null);
+      const rewardItemIdRaw = reward.itemId;
+      const isCustom = typeof rewardItemIdRaw === 'string' && rewardItemIdRaw.startsWith('custom-');
+      const numericItemId = !isCustom && rewardItemIdRaw != null ? Number(rewardItemIdRaw) : null;
+      const itemId = isCustom ? rewardItemIdRaw : (Number.isFinite(numericItemId) ? numericItemId : null);
       const quantity = reward.quantity != null ? Number(reward.quantity) : 1;
       if ((isCustom || itemId != null) && quantity > 0) {
-        const lookup = itemId != null ? (itemLookup.get(itemId) || {}) : {};
-        const baseName = lookup.name || reward.itemName;
-        const defaultName = isCustom ? (reward.description || reward.itemName || reward.itemId || 'Custom Item') : `Item ${itemId}`;
+        const lookup = itemId != null && !isCustom ? (itemLookup.get(itemId) || {}) : {};
+        const configSource = offer.metadata?.configSnapshot || offer.metadata?.config || offer.metadata || {};
+        const freeItemsList = Array.isArray(configSource.freeItems) ? configSource.freeItems : [];
+        const matchedEntry = freeItemsList.find((entry) => String(entry?.id) === String(rewardItemIdRaw));
+        const baseName = lookup.name || reward.itemName || matchedEntry?.label;
+        const defaultName = isCustom ? (matchedEntry?.label || reward.description || reward.itemName || rewardItemIdRaw || 'Custom Item') : `Item ${itemId}`;
         const name = baseName || defaultName;
         const section = lookup.section || null;
         const price = reward.price != null ? Number(reward.price) : 0;
-        const configSource = offer.metadata?.configSnapshot || offer.metadata?.config || offer.metadata || {};
         const findCondition = (type) => (offer.conditions || []).find((cond) => cond.type === type);
         const toNumber = (value) => {
           const num = Number(value);
@@ -443,7 +447,7 @@ const evaluateReward = ({ reward, context, offer, itemLookup, summary }) => {
         const multiplier = computeMultiplier();
         const totalQuantity = Math.max(1, multiplier) * quantity;
         extraItems.push({
-          id: itemId != null ? itemId : reward.itemId,
+          id: itemId != null ? itemId : rewardItemIdRaw,
           name,
           price,
           quantity: totalQuantity,

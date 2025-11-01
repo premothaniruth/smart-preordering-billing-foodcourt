@@ -8,6 +8,12 @@ const CUSTOM_FREE_ITEM_OPTIONS = [
   { value: "custom-3", label: "Custom 3" }
 ];
 
+const CUSTOM_TARGET_ITEM_OPTIONS = [
+  { value: "custom-target-1", label: "Custom Target 1" },
+  { value: "custom-target-2", label: "Custom Target 2" },
+  { value: "custom-target-3", label: "Custom Target 3" }
+];
+
 const TEMPLATE_OPTIONS = [
   { value: "percent_order", label: "% Off Order / Sections" },
   { value: "flat_order", label: "Flat Discount" },
@@ -18,34 +24,77 @@ const TEMPLATE_OPTIONS = [
 const TemplateConfigFields = ({ offer, idx, updateConfigField, updateOfferField, combos, menuItems, groupedMenuItems }) => {
   const cfg = sanitizeConfig(offer.config);
 
-  const handleTargetItemsChange = (event) => {
-    const selected = Array.from(event.target.selectedOptions || []).map((opt) => Number(opt.value));
-    updateConfigField(idx, 'targetItemIds', selected);
+  const selectTargetItems = (values) => {
+    const normalized = values.map((value) => {
+      const custom = CUSTOM_TARGET_ITEM_OPTIONS.find((opt) => opt.value === value);
+      if (custom) {
+        return { id: value, label: custom.label };
+      }
+      const match = menuItems.find((item) => String(item.id) === value);
+      return {
+        id: value,
+        label: match?.name || '',
+        section: match?.section || null
+      };
+    });
+    updateConfigField(idx, 'targetItems', normalized);
   };
 
-  const selectFreeItem = (value) => {
-    updateConfigField(idx, 'freeItemId', value);
-    if (!value) {
+  const handleTargetItemToggle = (value, checked) => {
+    const current = Array.isArray(cfg.targetItems) ? cfg.targetItems.map((item) => item.id) : [];
+    let next;
+    if (checked) {
+      next = [...new Set([...current, value])];
+    } else {
+      next = current.filter((id) => id !== value);
+    }
+    selectTargetItems(next);
+  };
+
+  const selectFreeItems = (values) => {
+    updateConfigField(idx, 'freeItems', values.map((value) => {
+      const custom = CUSTOM_FREE_ITEM_OPTIONS.find((opt) => opt.value === value);
+      if (custom) {
+        return { id: value, label: custom.label, price: '' };
+      }
+      const match = menuItems.find((item) => String(item.id) === value);
+      return {
+        id: value,
+        label: match?.name || '',
+        price: match && match.price != null ? String(match.price) : ''
+      };
+    }));
+
+    const primary = values[0] || '';
+    updateConfigField(idx, 'freeItemId', primary);
+    if (!primary) {
       updateConfigField(idx, 'freeItemLabel', '');
       updateConfigField(idx, 'freeItemPrice', '');
       return;
     }
-    const custom = CUSTOM_FREE_ITEM_OPTIONS.find((opt) => opt.value === value);
-    if (custom) {
-      updateConfigField(idx, 'freeItemLabel', custom.label);
+    const primaryEntry = CUSTOM_FREE_ITEM_OPTIONS.find((opt) => opt.value === primary);
+    if (primaryEntry) {
+      updateConfigField(idx, 'freeItemLabel', primaryEntry.label);
       updateConfigField(idx, 'freeItemPrice', '');
       return;
     }
-    const match = menuItems.find((item) => String(item.id) === value);
+    const match = menuItems.find((item) => String(item.id) === primary);
     updateConfigField(idx, 'freeItemLabel', match?.name || '');
     updateConfigField(idx, 'freeItemPrice', match && match.price != null ? String(match.price) : '');
   };
 
   const handleFreeItemToggle = (value, checked) => {
+    const current = Array.isArray(cfg.freeItems) ? cfg.freeItems.map((item) => item.id) : [];
+    let next;
     if (checked) {
-      selectFreeItem(value);
-    } else if (cfg.freeItemId === value) {
-      selectFreeItem('');
+      next = [...new Set([...current, value])];
+    } else {
+      next = current.filter((id) => id !== value);
+    }
+    selectFreeItems(next);
+    if (next.length === 0) {
+      updateConfigField(idx, 'freeItemLabel', '');
+      updateConfigField(idx, 'freeItemPrice', '');
     }
   };
 
@@ -55,6 +104,19 @@ const TemplateConfigFields = ({ offer, idx, updateConfigField, updateOfferField,
   };
 
   const menuOptions = menuItems || [];
+  const targetItemOptions = useMemo(() => {
+    const customOpts = CUSTOM_TARGET_ITEM_OPTIONS.map((opt) => ({
+      value: opt.value,
+      label: opt.label,
+      helper: 'Custom'
+    }));
+    const menuOpts = menuOptions.map((item) => ({
+      value: String(item.id),
+      label: item.name,
+      helper: item.section ? item.section : null
+    }));
+    return [...customOpts, ...menuOpts];
+  }, [menuOptions]);
   const freeItemOptions = useMemo(() => {
     const customOpts = CUSTOM_FREE_ITEM_OPTIONS.map((opt) => ({
       value: opt.value,
@@ -69,7 +131,34 @@ const TemplateConfigFields = ({ offer, idx, updateConfigField, updateOfferField,
     return [...customOpts, ...menuOpts];
   }, [menuOptions]);
   const selectedComboIds = Array.isArray(offer.applicableComboIds) ? offer.applicableComboIds.map(String) : [];
-  const selectedFreeItemId = cfg.freeItemId || '';
+  const selectedTargetItemIds = Array.isArray(cfg.targetItems) ? cfg.targetItems.map((item) => item.id) : (Array.isArray(cfg.targetItemIds) ? cfg.targetItemIds.map((id) => String(id)) : []);
+  const selectedFreeItemIds = Array.isArray(cfg.freeItems) ? cfg.freeItems.map((item) => item.id) : (cfg.freeItemId ? [cfg.freeItemId] : []);
+
+  const renderTargetItemChoices = (label) => (
+    <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <div style={{ fontSize: 12, color: '#666', marginBottom: 0 }}>{label}</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 200, overflowY: 'auto', padding: '6px 8px', border: '1px solid #dfe4ea', borderRadius: 6 }}>
+        {targetItemOptions.map((option) => (
+          <label key={option.value} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
+            <input
+              type="checkbox"
+              checked={selectedTargetItemIds.includes(option.value)}
+              onChange={(e) => handleTargetItemToggle(option.value, e.target.checked)}
+            />
+            <span>
+              {option.label}
+              {option.helper ? (
+                <span style={{ marginLeft: 6, fontSize: 11, color: '#7f8c8d' }}>({option.helper})</span>
+              ) : null}
+            </span>
+          </label>
+        ))}
+        {targetItemOptions.length === 0 && (
+          <span style={{ fontSize: 12, color: '#c0392b' }}>No items available.</span>
+        )}
+      </div>
+    </div>
+  );
 
   const renderFreeItemChoices = (label) => (
     <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -79,7 +168,7 @@ const TemplateConfigFields = ({ offer, idx, updateConfigField, updateOfferField,
           <label key={option.value} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
             <input
               type="checkbox"
-              checked={selectedFreeItemId === option.value}
+              checked={selectedFreeItemIds.includes(option.value)}
               onChange={(e) => handleFreeItemToggle(option.value, e.target.checked)}
             />
             <span>
@@ -203,26 +292,7 @@ const TemplateConfigFields = ({ offer, idx, updateConfigField, updateOfferField,
     case "item_buy_x_get_y":
       return (
         <>
-          <div style={{ gridColumn: '1 / -1' }}>
-            <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>Target Items (Buy)</div>
-            <select
-              multiple
-              value={Array.isArray(cfg.targetItemIds) ? cfg.targetItemIds.map(String) : []}
-              onChange={handleTargetItemsChange}
-              style={{ minHeight: 120 }}
-            >
-              {groupedMenuItems.map(({ section, items }) => (
-                <optgroup key={section || 'Ungrouped'} label={section || 'All Items'}>
-                  {items.map((item) => (
-                    <option key={item.id} value={String(item.id)}>
-                      {item.name}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
-            {menuOptions.length === 0 && <div style={{ fontSize: 12, color: '#c0392b', marginTop: 4 }}>Add menu items first to configure item-based offers.</div>}
-          </div>
+          {renderTargetItemChoices('Target Items (Buy)')}
           <div>
             <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>Buy Quantity</div>
             <input
@@ -267,9 +337,62 @@ const TemplateConfigFields = ({ offer, idx, updateConfigField, updateOfferField,
 
 const sanitizeConfig = (config = {}) => {
   const template = config.template != null ? String(config.template) : "";
-  const targetItemIds = Array.isArray(config.targetItemIds)
-    ? config.targetItemIds.map((id) => Number(id)).filter((id) => Number.isFinite(id))
-    : [];
+  const rawTargetItemIds = Array.isArray(config.targetItemIds) ? config.targetItemIds : [];
+  const rawTargetItems = Array.isArray(config.targetItems) ? config.targetItems : [];
+  const rawFreeItems = Array.isArray(config.freeItems) ? config.freeItems : [];
+  const normalizedFreeItems = rawFreeItems
+    .map((item) => {
+      const id = item?.id != null ? String(item.id) : (item?.value != null ? String(item.value) : "");
+      if (!id) return null;
+      return {
+        id,
+        label: item?.label != null ? String(item.label) : "",
+        price: item?.price != null && item.price !== "" ? String(item.price) : ""
+      };
+    })
+    .filter(Boolean);
+
+  const normalizedTargetItems = rawTargetItems
+    .map((item) => {
+      const id = item?.id != null ? String(item.id) : (item?.value != null ? String(item.value) : "");
+      if (!id) return null;
+      return {
+        id,
+        label: item?.label != null ? String(item.label) : "",
+        section: item?.section != null ? String(item.section) : ""
+      };
+    })
+    .filter(Boolean);
+
+  if (!normalizedTargetItems.length && rawTargetItemIds.length > 0) {
+    rawTargetItemIds.forEach((id) => {
+      const strId = String(id);
+      if (!strId) return;
+      normalizedTargetItems.push({ id: strId, label: "", section: "" });
+    });
+  }
+
+  let legacyFreeItemId = config.freeItemId != null ? String(config.freeItemId) : "";
+  let legacyFreeItemLabel = config.freeItemLabel != null ? String(config.freeItemLabel) : "";
+  let legacyFreeItemPrice = config.freeItemPrice != null ? String(config.freeItemPrice) : "";
+
+  if (!normalizedFreeItems.length && legacyFreeItemId) {
+    normalizedFreeItems.push({
+      id: legacyFreeItemId,
+      label: legacyFreeItemLabel,
+      price: legacyFreeItemPrice
+    });
+  }
+
+  const primaryFreeItem = normalizedFreeItems[0];
+  legacyFreeItemId = primaryFreeItem?.id || legacyFreeItemId;
+  legacyFreeItemLabel = primaryFreeItem?.label || legacyFreeItemLabel;
+  legacyFreeItemPrice = primaryFreeItem?.price || legacyFreeItemPrice;
+
+  const targetItemIds = normalizedTargetItems.map((item) => {
+    const num = Number(item.id);
+    return Number.isFinite(num) ? num : item.id;
+  });
 
   return {
     template,
@@ -278,9 +401,12 @@ const sanitizeConfig = (config = {}) => {
     amount: config.amount != null ? String(config.amount) : "",
     buyQuantity: config.buyQuantity != null ? String(config.buyQuantity) : "",
     freeQuantity: config.freeQuantity != null ? String(config.freeQuantity) : "1",
-    freeItemId: config.freeItemId != null ? String(config.freeItemId) : "",
-    freeItemLabel: config.freeItemLabel != null ? String(config.freeItemLabel) : "",
-    freeItemPrice: config.freeItemPrice != null ? String(config.freeItemPrice) : "",
+    freeItemId: legacyFreeItemId,
+    freeItemLabel: legacyFreeItemLabel,
+    freeItemPrice: legacyFreeItemPrice,
+    freeItems: normalizedFreeItems,
+    targetItems: normalizedTargetItems,
+    targetItemIds,
     discountPercent: config.discountPercent != null ? String(config.discountPercent) : "",
     targetItemIds
   };
@@ -367,19 +493,32 @@ const buildConditionsAndRewards = (offer) => {
           minQuantity: buyQty
         });
       }
-      const freeItemId = Number(cfg.freeItemId || 0);
-      const freeQty = Number(cfg.freeQuantity || 1);
-      const freePrice = Number(cfg.freeItemPrice || 0);
-      if (freeItemId > 0 && freeQty > 0) {
+      const freeItems = Array.isArray(cfg.freeItems) && cfg.freeItems.length > 0
+        ? cfg.freeItems
+        : (cfg.freeItemId
+            ? [{ id: cfg.freeItemId, label: cfg.freeItemLabel, price: cfg.freeItemPrice, quantity: cfg.freeQuantity }]
+            : []);
+      freeItems.forEach((entry) => {
+        if (!entry || entry.id == null) return;
+        const idString = String(entry.id);
+        const isCustom = idString.startsWith('custom-');
+        const numericId = Number(idString);
+        const itemId = !isCustom && Number.isFinite(numericId) ? numericId : idString;
+        if (!itemId) return;
+        const quantityRaw = entry.quantity != null ? entry.quantity : cfg.freeQuantity;
+        const quantityNum = Number(quantityRaw || 1);
+        const quantity = Number.isFinite(quantityNum) && quantityNum > 0 ? quantityNum : 1;
+        const priceNum = Number(entry.price || 0);
         const reward = {
           type: "free_item",
-          itemId: freeItemId,
-          quantity: freeQty
+          itemId,
+          quantity
         };
-        if (!Number.isNaN(freePrice) && freePrice > 0) reward.price = freePrice;
-        if (cfg.freeItemLabel) reward.description = cfg.freeItemLabel;
+        if (!Number.isNaN(priceNum) && priceNum > 0) reward.price = priceNum;
+        const description = entry.label || (isCustom ? idString.replace('custom-', 'Custom ') : '');
+        if (description) reward.description = description;
         rewards.push(reward);
-      }
+      });
       break;
     }
     case "item_buy_x_get_y": {
@@ -392,19 +531,32 @@ const buildConditionsAndRewards = (offer) => {
           minQuantity: buyQty
         });
       }
-      const freeItemId = Number(cfg.freeItemId || 0);
-      const freeQty = Number(cfg.freeQuantity || 1);
-      const freePrice = Number(cfg.freeItemPrice || 0);
-      if (freeItemId > 0 && freeQty > 0) {
+      const freeItems = Array.isArray(cfg.freeItems) && cfg.freeItems.length > 0
+        ? cfg.freeItems
+        : (cfg.freeItemId
+            ? [{ id: cfg.freeItemId, label: cfg.freeItemLabel, price: cfg.freeItemPrice, quantity: cfg.freeQuantity }]
+            : []);
+      freeItems.forEach((entry) => {
+        if (!entry || entry.id == null) return;
+        const idString = String(entry.id);
+        const isCustom = idString.startsWith('custom-');
+        const numericId = Number(idString);
+        const itemId = !isCustom && Number.isFinite(numericId) ? numericId : idString;
+        if (!itemId) return;
+        const quantityRaw = entry.quantity != null ? entry.quantity : cfg.freeQuantity;
+        const quantityNum = Number(quantityRaw || 1);
+        const quantity = Number.isFinite(quantityNum) && quantityNum > 0 ? quantityNum : 1;
+        const priceNum = Number(entry.price || 0);
         const reward = {
           type: "free_item",
-          itemId: freeItemId,
-          quantity: freeQty,
+          itemId,
+          quantity,
         };
-        if (!Number.isNaN(freePrice) && freePrice > 0) reward.price = freePrice;
-        if (cfg.freeItemLabel) reward.description = cfg.freeItemLabel;
+        if (!Number.isNaN(priceNum) && priceNum > 0) reward.price = priceNum;
+        const description = entry.label || (isCustom ? idString.replace('custom-', 'Custom ') : '');
+        if (description) reward.description = description;
         rewards.push(reward);
-      }
+      });
       break;
     }
     default:
@@ -560,7 +712,7 @@ const VendorOffers = ({ token }) => {
       stackable: true,
       maxDiscountAmount: null,
       template: "percent_order",
-      config: sanitizeConfig({ template: "percent_order", percent: "5" })
+      config: sanitizeConfig({ template: "percent_order", percent: "5", freeItems: [] })
     }, ...prev]));
   };
 
@@ -581,10 +733,10 @@ const VendorOffers = ({ token }) => {
       const current = { ...next[idx] };
       if (field === 'template') {
         const defaults = {
-          percent_order: { template: 'percent_order', percent: current.config?.percent || current.discountPercent || "10", minTotal: current.config?.minTotal || "" },
-          flat_order: { template: 'flat_order', amount: current.config?.amount || current.discountAmount || "20", minTotal: current.config?.minTotal || "" },
-          combo_buy_item_free: { template: 'combo_buy_item_free', buyQuantity: current.config?.buyQuantity || "1", freeQuantity: current.config?.freeQuantity || "1", freeItemId: current.config?.freeItemId || "", freeItemLabel: current.config?.freeItemLabel || "", freeItemPrice: current.config?.freeItemPrice || "" },
-          item_buy_x_get_y: { template: 'item_buy_x_get_y', buyQuantity: current.config?.buyQuantity || "3", freeQuantity: current.config?.freeQuantity || "1", freeItemId: current.config?.freeItemId || "", freeItemLabel: current.config?.freeItemLabel || "", targetItemIds: current.config?.targetItemIds || [] }
+          percent_order: { template: 'percent_order', percent: current.config?.percent || current.discountPercent || "10", minTotal: current.config?.minTotal || "", freeItems: current.config?.freeItems || [] },
+          flat_order: { template: 'flat_order', amount: current.config?.amount || current.discountAmount || "20", minTotal: current.config?.minTotal || "", freeItems: current.config?.freeItems || [] },
+          combo_buy_item_free: { template: 'combo_buy_item_free', buyQuantity: current.config?.buyQuantity || "1", freeQuantity: current.config?.freeQuantity || "1", freeItems: current.config?.freeItems || (current.config?.freeItemId ? [{ id: current.config.freeItemId, label: current.config.freeItemLabel, price: current.config.freeItemPrice }] : []) },
+          item_buy_x_get_y: { template: 'item_buy_x_get_y', buyQuantity: current.config?.buyQuantity || "3", freeQuantity: current.config?.freeQuantity || "1", freeItems: current.config?.freeItems || (current.config?.freeItemId ? [{ id: current.config.freeItemId, label: current.config.freeItemLabel, price: current.config.freeItemPrice }] : []), targetItemIds: current.config?.targetItemIds || [] }
         };
         current.template = value;
         const baseConfig = sanitizeConfig(defaults[value] || {});
@@ -604,6 +756,31 @@ const VendorOffers = ({ token }) => {
       const config = sanitizeConfig(current.config);
       if (field === 'targetItemIds') {
         config.targetItemIds = Array.isArray(value) ? value.map((id) => Number(id)).filter((id) => Number.isFinite(id)) : [];
+      } else if (field === 'targetItems') {
+        const items = Array.isArray(value) ? value : [];
+        const normalizedItems = [];
+        const seen = new Set();
+        items.forEach((item) => {
+          const id = item?.id != null ? String(item.id) : (item?.value != null ? String(item.value) : '');
+          if (!id || seen.has(id)) return;
+          seen.add(id);
+          normalizedItems.push({
+            id,
+            label: item?.label != null ? String(item.label) : '',
+            section: item?.section != null ? String(item.section) : ''
+          });
+        });
+        config.targetItems = normalizedItems;
+        config.targetItemIds = normalizedItems.map((entry) => {
+          const num = Number(entry.id);
+          return Number.isFinite(num) ? num : entry.id;
+        });
+      } else if (field === 'freeItems') {
+        config.freeItems = Array.isArray(value) ? value.map((item) => ({
+          id: String(item?.id ?? item?.value ?? ''),
+          label: item?.label != null ? String(item.label) : '',
+          price: item?.price != null && item.price !== '' ? String(item.price) : ''
+        })).filter((item) => item.id) : [];
       } else {
         config[field] = value;
       }
