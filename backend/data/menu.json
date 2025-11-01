@@ -1005,7 +1005,11 @@
               "isVeg": true,
               "image": "/images/idli.jpg",
               "prepTime": 7,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": [],
+              "sectionOrder": 7
             },
             {
               "id": 102,
@@ -1014,7 +1018,10 @@
               "isVeg": true,
               "image": "/images/dosa.jpg",
               "prepTime": 10,
-              "inventory": 99
+              "inventory": 99,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 103,
@@ -1023,7 +1030,10 @@
               "isVeg": true,
               "image": "/images/upma_south.jpg",
               "prepTime": 8,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 104,
@@ -1032,7 +1042,10 @@
               "isVeg": true,
               "image": "/images/pongal.jpg",
               "prepTime": 12,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 105,
@@ -1041,7 +1054,10 @@
               "isVeg": true,
               "image": "/images/medu-vada.jpg",
               "prepTime": 8,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 106,
@@ -1050,7 +1066,10 @@
               "isVeg": true,
               "image": "/images/puttu.jpg",
               "prepTime": 13,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 107,
@@ -1059,7 +1078,10 @@
               "isVeg": true,
               "image": "/images/idiyappam.jpg",
               "prepTime": 13,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 108,
@@ -1068,7 +1090,10 @@
               "isVeg": true,
               "image": "/images/appam.jpg",
               "prepTime": 14,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 109,
@@ -1077,7 +1102,10 @@
               "isVeg": true,
               "image": "/images/pesarattu.jpg",
               "prepTime": 12,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 110,
@@ -1086,7 +1114,10 @@
               "isVeg": true,
               "image": "/images/uttapam.jpg",
               "prepTime": 12,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 111,
@@ -1095,7 +1126,10 @@
               "isVeg": true,
               "image": "/images/paniyaram.jpg",
               "prepTime": 10,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 112,
@@ -1104,7 +1138,10 @@
               "isVeg": true,
               "image": "/images/adai.jpg",
               "prepTime": 11,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 113,
@@ -1113,7 +1150,10 @@
               "isVeg": true,
               "image": "/images/neer-dosa.jpg",
               "prepTime": 9,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 114,
@@ -1122,7 +1162,10 @@
               "isVeg": true,
               "image": "/images/rava-idli.jpg",
               "prepTime": 9,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 115,
@@ -1131,7 +1174,10 @@
               "isVeg": true,
               "image": "/images/akki-roti.jpg",
               "prepTime": 7,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 116,
@@ -1140,7 +1186,10 @@
               "isVeg": true,
               "image": "/images/set-dosa.jpg",
               "prepTime": 10,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 117,
@@ -1149,7 +1198,10 @@
               "isVeg": true,
               "image": "/images/masala-dosa.jpg",
               "prepTime": 11,
-              "inventory": 99
+              "inventory": 99,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 118,
@@ -1158,7 +1210,10 @@
               "isVeg": true,
               "image": "/images/ragi-dosa.jpg",
               "prepTime": 10,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 119,
@@ -1167,7 +1222,10 @@
               "isVeg": true,
               "image": "/images/poori_south.jpg",
               "prepTime": 12,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 120,
@@ -1176,7 +1234,10 @@
               "isVeg": true,
               "image": "/images/semiya-upma.jpg",
               "prepTime": 9,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": []
             }
           ]
         },
@@ -1190,7 +1251,10 @@
               "isVeg": true,
               "image": "/images/curd-rice.jpg",
               "prepTime": 12,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 122,
@@ -1199,7 +1263,10 @@
               "isVeg": true,
               "image": "/images/lemon-rice.jpg",
               "prepTime": 12,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 123,
@@ -1208,7 +1275,10 @@
               "isVeg": true,
               "image": "/images/bisi-bele-bath.jpg",
               "prepTime": 15,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 124,
@@ -1217,7 +1287,10 @@
               "isVeg": true,
               "image": "/images/vazhakkai-fry.jpg",
               "prepTime": 10,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 125,
@@ -1226,7 +1299,10 @@
               "isVeg": true,
               "image": "/images/paruppu-vadai.jpg",
               "prepTime": 8,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 126,
@@ -1235,7 +1311,10 @@
               "isVeg": true,
               "image": "/images/rasam.jpg",
               "prepTime": 10,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 127,
@@ -1244,7 +1323,10 @@
               "isVeg": true,
               "image": "/images/appalam.jpg",
               "prepTime": 5,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 128,
@@ -1253,7 +1335,10 @@
               "isVeg": true,
               "image": "/images/aviyal.jpg",
               "prepTime": 14,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 129,
@@ -1262,7 +1347,10 @@
               "isVeg": true,
               "image": "/images/poriyal.jpg",
               "prepTime": 8,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 130,
@@ -1271,7 +1359,10 @@
               "isVeg": true,
               "image": "/images/ghee-rice.jpg",
               "prepTime": 10,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 131,
@@ -1280,7 +1371,10 @@
               "isVeg": true,
               "image": "/images/tomato-rice.jpg",
               "prepTime": 12,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 132,
@@ -1289,7 +1383,10 @@
               "isVeg": false,
               "image": "/images/chicken-biryani.jpg",
               "prepTime": 20,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 133,
@@ -1298,7 +1395,10 @@
               "isVeg": false,
               "image": "/images/fish-fry.jpg",
               "prepTime": 15,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 134,
@@ -1307,7 +1407,10 @@
               "isVeg": true,
               "image": "/images/pesarattu.jpg",
               "prepTime": 12,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 135,
@@ -1316,7 +1419,10 @@
               "isVeg": true,
               "image": "/images/rava-idli.jpg",
               "prepTime": 10,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 136,
@@ -1325,7 +1431,10 @@
               "isVeg": true,
               "image": "/images/payasam.jpg",
               "prepTime": 15,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 137,
@@ -1334,7 +1443,10 @@
               "isVeg": true,
               "image": "/images/tamarind-rice.jpg",
               "prepTime": 14,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 138,
@@ -1343,7 +1455,10 @@
               "isVeg": true,
               "image": "/images/coconut-rice.jpg",
               "prepTime": 12,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 139,
@@ -1352,7 +1467,10 @@
               "isVeg": true,
               "image": "/images/mor-kuzhambu.jpg",
               "prepTime": 15,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 140,
@@ -1361,7 +1479,10 @@
               "isVeg": true,
               "image": "/images/avial.jpg",
               "prepTime": 14,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": []
             }
           ]
         },
@@ -1375,7 +1496,10 @@
               "isVeg": true,
               "image": "/images/plain-dosa.jpg",
               "prepTime": 12,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 142,
@@ -1384,7 +1508,10 @@
               "isVeg": true,
               "image": "/images/masala-dosa.jpg",
               "prepTime": 13,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 143,
@@ -1393,7 +1520,10 @@
               "isVeg": true,
               "image": "/images/pesarattu.jpg",
               "prepTime": 12,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 144,
@@ -1402,7 +1532,10 @@
               "isVeg": true,
               "image": "/images/appam.jpg",
               "prepTime": 14,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 145,
@@ -1411,7 +1544,10 @@
               "isVeg": true,
               "image": "/images/adai.jpg",
               "prepTime": 11,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 146,
@@ -1420,7 +1556,10 @@
               "isVeg": true,
               "image": "/images/utthappam.jpg",
               "prepTime": 13,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 147,
@@ -1429,7 +1568,10 @@
               "isVeg": true,
               "image": "/images/idli.jpg",
               "prepTime": 10,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 148,
@@ -1438,7 +1580,10 @@
               "isVeg": true,
               "image": "/images/rava-idli.jpg",
               "prepTime": 11,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 149,
@@ -1447,7 +1592,10 @@
               "isVeg": true,
               "image": "/images/puttu.jpg",
               "prepTime": 15,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 150,
@@ -1456,7 +1604,10 @@
               "isVeg": true,
               "image": "/images/idiyappam.jpg",
               "prepTime": 13,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 151,
@@ -1465,7 +1616,10 @@
               "isVeg": true,
               "image": "/images/set-dosa.jpg",
               "prepTime": 12,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 152,
@@ -1474,7 +1628,10 @@
               "isVeg": false,
               "image": "/images/keema-curry.jpg",
               "prepTime": 20,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 153,
@@ -1483,7 +1640,10 @@
               "isVeg": false,
               "image": "/images/chicken-chettinad.jpg",
               "prepTime": 25,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 154,
@@ -1492,7 +1652,10 @@
               "isVeg": false,
               "image": "/images/fish-curry-kerala.jpg",
               "prepTime": 22,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 155,
@@ -1501,7 +1664,10 @@
               "isVeg": true,
               "image": "/images/kara-kuzhambu.jpg",
               "prepTime": 15,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 156,
@@ -1510,7 +1676,10 @@
               "isVeg": true,
               "image": "/images/kadala-curry.jpg",
               "prepTime": 14,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 157,
@@ -1519,7 +1688,10 @@
               "isVeg": true,
               "image": "/images/kootu.jpg",
               "prepTime": 12,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 158,
@@ -1528,7 +1700,10 @@
               "isVeg": true,
               "image": "/images/mor-kuzhambu.jpg",
               "prepTime": 15,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 159,
@@ -1537,7 +1712,10 @@
               "isVeg": true,
               "image": "/images/avial-kerala.jpg",
               "prepTime": 14,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 160,
@@ -1546,7 +1724,10 @@
               "isVeg": false,
               "image": "/images/fish-fry.jpg",
               "prepTime": 15,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": []
             }
           ]
         },
@@ -1560,7 +1741,10 @@
               "isVeg": true,
               "image": "/images/medu-vada.jpg",
               "prepTime": 8,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 162,
@@ -1569,7 +1753,10 @@
               "isVeg": true,
               "image": "/images/masala-vada.jpg",
               "prepTime": 8,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 163,
@@ -1578,7 +1765,10 @@
               "isVeg": true,
               "image": "/images/bonda.jpg",
               "prepTime": 9,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 164,
@@ -1587,7 +1777,10 @@
               "isVeg": true,
               "image": "/images/mysore-bonda.jpg",
               "prepTime": 9,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 165,
@@ -1596,7 +1789,10 @@
               "isVeg": true,
               "image": "/images/pazhampori.jpg",
               "prepTime": 7,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 166,
@@ -1605,7 +1801,10 @@
               "isVeg": true,
               "image": "/images/bajji.jpg",
               "prepTime": 8,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 167,
@@ -1614,7 +1813,10 @@
               "isVeg": true,
               "image": "/images/ulli-vada.jpg",
               "prepTime": 9,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 168,
@@ -1623,7 +1825,10 @@
               "isVeg": true,
               "image": "/images/murukku.jpg",
               "prepTime": 8,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 169,
@@ -1632,7 +1837,10 @@
               "isVeg": true,
               "image": "/images/ribbon-pakoda.jpg",
               "prepTime": 7,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 170,
@@ -1641,7 +1849,10 @@
               "isVeg": true,
               "image": "/images/omapodi.jpg",
               "prepTime": 6,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 171,
@@ -1650,7 +1861,10 @@
               "isVeg": true,
               "image": "/images/thattai.jpg",
               "prepTime": 7,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 172,
@@ -1659,7 +1873,10 @@
               "isVeg": true,
               "image": "/images/seedai.jpg",
               "prepTime": 6,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 173,
@@ -1668,7 +1885,10 @@
               "isVeg": true,
               "image": "/images/kara-boondi.jpg",
               "prepTime": 7,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 174,
@@ -1677,7 +1897,10 @@
               "isVeg": true,
               "image": "/images/aloo-bonda.jpg",
               "prepTime": 8,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 175,
@@ -1686,7 +1909,10 @@
               "isVeg": true,
               "image": "/images/punugulu.jpg",
               "prepTime": 8,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 176,
@@ -1695,7 +1921,10 @@
               "isVeg": true,
               "image": "/images/appam.jpg",
               "prepTime": 12,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 177,
@@ -1704,7 +1933,10 @@
               "isVeg": true,
               "image": "/images/kuzhi-paniyaram.jpg",
               "prepTime": 10,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 178,
@@ -1713,7 +1945,10 @@
               "isVeg": true,
               "image": "/images/maddur-vada.jpg",
               "prepTime": 10,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 179,
@@ -1722,7 +1957,10 @@
               "isVeg": true,
               "image": "/images/goli-baje.jpg",
               "prepTime": 9,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 180,
@@ -1731,7 +1969,10 @@
               "isVeg": true,
               "image": "/images/banana-chips.jpg",
               "prepTime": 5,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": []
             }
           ]
         }

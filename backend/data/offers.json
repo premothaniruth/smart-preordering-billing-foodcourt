@@ -1,20 +1,5 @@
 [
   {
-    "id": "diwali-sections-10",
-    "shopId": 2,
-    "title": "🎉 Diwali 10% Off",
-    "bannerText": "Diwali Offer: 10% off Breakfast & Lunch",
-    "discountPercent": 10,
-    "discountAmount": null,
-    "applicableSections": ["Breakfast", "Lunch"],
-    "applicableComboIds": [],
-    "start": "2025-10-01T00:00:00Z",
-    "end": "2025-11-30T23:59:59Z",
-    "active": true,
-    "stackable": true,
-    "maxDiscountAmount": 100
-  },
-  {
     "id": "bev-combo-30",
     "shopId": 3,
     "title": "🥤 Beverages Combo Deal ₹30 Off",
@@ -22,11 +7,61 @@
     "discountPercent": null,
     "discountAmount": 30,
     "applicableSections": [],
-    "applicableComboIds": ["bev-happy-hour-1"],
+    "applicableComboIds": [
+      "bev-happy-hour-1"
+    ],
     "start": "2025-10-01T00:00:00Z",
     "end": "2025-12-31T23:59:59Z",
     "active": true,
     "stackable": false,
     "maxDiscountAmount": 30
+  },
+  {
+    "id": 1761994129813,
+    "shopId": 2,
+    "title": "test Offer",
+    "bannerText": "buy 3 get 3 Offer",
+    "discountPercent": null,
+    "discountAmount": null,
+    "applicableSections": [],
+    "applicableComboIds": [],
+    "start": null,
+    "end": null,
+    "active": true,
+    "stackable": true,
+    "maxDiscountAmount": null
+  },
+  {
+    "id": 1761994119879,
+    "shopId": 2,
+    "title": "New Offer",
+    "bannerText": "New Offer",
+    "discountPercent": 5,
+    "discountAmount": null,
+    "applicableSections": [],
+    "applicableComboIds": [],
+    "start": null,
+    "end": null,
+    "active": true,
+    "stackable": true,
+    "maxDiscountAmount": null
+  },
+  {
+    "id": "diwali-sections-10",
+    "shopId": 2,
+    "title": "🎉 Diwali 10% Off",
+    "bannerText": "Diwali Offer: 10% off Breakfast & Lunch",
+    "discountPercent": 10,
+    "discountAmount": null,
+    "applicableSections": [
+      "Breakfast",
+      "Lunch"
+    ],
+    "applicableComboIds": [],
+    "start": "2025-10-01T00:00:00Z",
+    "end": "2025-11-30T23:59:59Z",
+    "active": true,
+    "stackable": true,
+    "maxDiscountAmount": 100
   }
 ]
