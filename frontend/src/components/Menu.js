@@ -96,6 +96,18 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
     return null;
   };
 
+  const hasSameDayAvailability = (windowInfo, nowHm) => {
+    if (!windowInfo || !windowInfo.start || !windowInfo.end) return true;
+    const { start, end } = windowInfo;
+    if (!start || !end) return true;
+    if (start === end) return true;
+    if (start < end) {
+      return nowHm <= end;
+    }
+    // window spans midnight (e.g., 22:00 - 02:00)
+    return true;
+  };
+
   const computeItemAvailability = (item) => {
     const hm = scheduledHm || currentHm;
     const sectionWindow = resolveSectionWindow(item);
