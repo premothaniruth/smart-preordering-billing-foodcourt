@@ -42,7 +42,9 @@ const TemplateConfigFields = ({ offer, idx, updateConfigField, updateOfferField,
         section: match?.section || null
       };
     });
-    updateConfigField(idx, 'targetItems', normalized);
+    const hasCustom = normalized.some((item) => typeof item.id === 'string' && item.id.startsWith('custom-target-'));
+    const finalList = hasCustom ? normalized.filter((item) => typeof item.id === 'string' && item.id.startsWith('custom-target-')) : normalized;
+    updateConfigField(idx, 'targetItems', finalList);
   };
 
   const handleTargetItemToggle = (value, checked) => {
@@ -81,13 +83,15 @@ const TemplateConfigFields = ({ offer, idx, updateConfigField, updateOfferField,
         quantity: ''
       };
     });
-    updateConfigField(idx, 'freeItems', normalized);
+    const hasCustom = normalized.some((item) => typeof item.id === 'string' && item.id.startsWith('custom-'));
+    const finalList = hasCustom ? normalized.filter((item) => typeof item.id === 'string' && item.id.startsWith('custom-')) : normalized;
+    updateConfigField(idx, 'freeItems', finalList);
 
-    const primary = values[0] || '';
+    const primary = finalList[0]?.id || '';
     updateConfigField(idx, 'freeItemId', primary);
-    if (!primary) {
-      updateConfigField(idx, 'freeItemLabel', '');
-      updateConfigField(idx, 'freeItemPrice', '');
+    if (!primary || (typeof primary === 'string' && primary.startsWith('custom-'))) {
+      updateConfigField(idx, 'freeItemLabel', finalList[0]?.label || '');
+      updateConfigField(idx, 'freeItemPrice', finalList[0]?.price || '');
       return;
     }
     const primaryEntry = CUSTOM_FREE_ITEM_OPTIONS.find((opt) => opt.value === primary);

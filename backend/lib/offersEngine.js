@@ -383,8 +383,8 @@ const evaluateReward = ({ reward, context, offer, itemLookup, summary }) => {
         const baseName = lookup.name || reward.itemName || matchedEntry?.label;
         const defaultName = isCustom ? (matchedEntry?.label || reward.description || reward.itemName || rewardItemIdRaw || 'Custom Item') : `Item ${itemId}`;
         const name = baseName || defaultName;
-        const section = lookup.section || null;
-        const price = reward.price != null ? Number(reward.price) : 0;
+        const section = lookup.section || matchedEntry?.section || null;
+        const price = reward.price != null ? Number(reward.price) : (matchedEntry?.price != null ? Number(matchedEntry.price) : 0);
         const findCondition = (type) => (offer.conditions || []).find((cond) => cond.type === type);
         const toNumber = (value) => {
           const num = Number(value);
