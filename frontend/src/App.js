@@ -394,8 +394,12 @@ function App() {
       if (prev.length > 0) {
         const existingShopId = prev[0]?.shopId;
         if (existingShopId != null && targetShopId != null && String(existingShopId) !== String(targetShopId)) {
-          toast.warn("Please place separate orders for each shop.");
-          return prev;
+          const confirmClear = window.confirm("Your cart already has items from another shop. Clear cart to switch shops?");
+          if (!confirmClear) {
+            toast.warn("Please place separate orders for each shop.");
+            return prev;
+          }
+          return typeof updater === "function" ? updater([]) : updater;
         }
       }
       return typeof updater === "function" ? updater(prev) : updater;

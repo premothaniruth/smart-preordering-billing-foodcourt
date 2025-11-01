@@ -192,7 +192,7 @@ const Cart = ({
   const totalPrepTime = cart.reduce((sum, c) => sum + (c.item.prepTime || 5) * c.quantity, 0);
   const walletDisabledReason = (() => {
     if (!walletEnabled) return 'Login to use wallet';
-    if (walletBalance < total) return 'Insufficient balance';
+    if (walletBalance < total) return 'Top up required!';
     return null;
   })();
 
@@ -215,7 +215,7 @@ const Cart = ({
 
       {cart.length === 0 ? (
         <div className="empty-cart">
-          <p>Your cart is empty. Let's add some delicious food!</p>
+          <p>Your cart is Hungry too!. Let's add some delicious treats!</p>
         </div>
       ) : (
         <div className="cart-items">
