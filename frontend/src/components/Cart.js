@@ -212,252 +212,157 @@ const Cart = ({
   return (
     <div>
       <h2>Cart ({cart.length})</h2>
-      {cart.length === 0 && <p className="empty-state">This cart is hungry...add some tasty treats!</p>}
-      <div>
-        {cart.map((c, i) => {
-          const isCombo = !!c.item?.comboId && Array.isArray(c.item?.comboComponents);
-          let remaining = 0;
-          if (isCombo) {
-            // Build consumed per item id across cart
-            const consumed = new Map();
-            for (const line of cart) {
-              if (line.item?.comboId && Array.isArray(line.item?.comboComponents)) {
-                for (const comp of line.item.comboComponents) {
-                  const need = Math.max(1, Number(comp.quantity || 1));
-                  consumed.set(comp.itemId, (consumed.get(comp.itemId) || 0) + need * Number(line.quantity || 0));
+
+      {cart.length === 0 ? (
+        <div className="empty-cart">
+          <p>Your cart is empty. Let's add some delicious food!</p>
+        </div>
+      ) : (
+        <div className="cart-items">
+          {cart.map((c, i) => {
+            const isCombo = !!c.item?.comboId && Array.isArray(c.item?.comboComponents);
+            let remaining = 0;
+            if (isCombo) {
+              // Build consumed per item id across cart
+              const consumed = new Map();
+              for (const line of cart) {
+                if (line.item?.comboId && Array.isArray(line.item?.comboComponents)) {
+                  for (const comp of line.item.comboComponents) {
+                    const need = Math.max(1, Number(comp.quantity || 1));
+                    consumed.set(comp.itemId, (consumed.get(comp.itemId) || 0) + need * Number(line.quantity || 0));
+                  }
+                } else if (line.item && line.item.id != null) {
+                  consumed.set(Number(line.item.id), (consumed.get(Number(line.item.id)) || 0) + Number(line.quantity || 0));
                 }
-              } else if (line.item && line.item.id != null) {
-                consumed.set(Number(line.item.id), (consumed.get(Number(line.item.id)) || 0) + Number(line.quantity || 0));
               }
+              // Compute combo capacity from current inventories
+              let cap = Infinity;
+              for (const comp of c.item.comboComponents) {
+                const inv = getInventoryFor(comp.itemId, 0);
+                const used = Number(consumed.get(Number(comp.itemId)) || 0);
+                const avail = Math.max(0, inv - used);
+                const need = Math.max(1, Number(comp.quantity || 1));
+                const possible = Math.floor(avail / need);
+                cap = Math.min(cap, possible);
+              }
+              const totalThisCombo = cart.filter(d => d.shopId === c.shopId && d.item?.comboId === c.item.comboId).reduce((s, d) => s + d.quantity, 0);
+              remaining = Math.max(0, cap - totalThisCombo);
+            } else {
+              const baseInventory = getInventoryFor(c.item.id, c.item.inventory ?? 100);
+              const totalForThis = cart
+                .filter(d => d.shopId === c.shopId && d.item.id === c.item.id && (d.item.selectedOption?.name || null) === (c.item.selectedOption?.name || null))
+                .reduce((sum, d) => sum + d.quantity, 0);
+              remaining = Math.max(0, baseInventory - totalForThis);
             }
-            // Compute combo capacity from current inventories
-            let cap = Infinity;
-            for (const comp of c.item.comboComponents) {
-              const inv = getInventoryFor(comp.itemId, 0);
-              const used = Number(consumed.get(Number(comp.itemId)) || 0);
-              const avail = Math.max(0, inv - used);
-              const need = Math.max(1, Number(comp.quantity || 1));
-              const possible = Math.floor(avail / need);
-              cap = Math.min(cap, possible);
-            }
-            const totalThisCombo = cart.filter(d => d.shopId === c.shopId && d.item?.comboId === c.item.comboId).reduce((s, d) => s + d.quantity, 0);
-            remaining = Math.max(0, cap - totalThisCombo);
-          } else {
-            const baseInventory = getInventoryFor(c.item.id, c.item.inventory ?? 100);
-            const totalForThis = cart
-              .filter(d => d.shopId === c.shopId && d.item.id === c.item.id && (d.item.selectedOption?.name || null) === (c.item.selectedOption?.name || null))
-              .reduce((sum, d) => sum + d.quantity, 0);
-            remaining = Math.max(0, baseInventory - totalForThis);
-          }
-          const secName = c.item.section || 'All Items';
-          const w = sectionWindows[secName];
-          const availableNow = inWindow(secName, effectiveHM);
-          return (
-          <div key={i} className="cart-item">
-            <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: "bold", fontSize: 14, display:'flex', alignItems:'center', gap:6 }}>
-                {c.item.name}
+            const secName = c.item.section || 'All Items';
+            const w = sectionWindows[secName];
+            const availableNow = inWindow(secName, effectiveHM);
+            return (
+            <div key={i} className="cart-item">
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: "bold", fontSize: 14, display:'flex', alignItems:'center', gap:6 }}>
+                  {c.item.name}
+                  {!availableNow && (
+                    <span title={w ? `Available ${w.start}-${w.end}` : 'Available in configured window'} style={{ fontSize: 12, color: '#e67e22', display:'inline-flex', alignItems:'center', gap:4 }}>
+                      <span role="img" aria-label="time">⏰</span>
+                      <span style={{ fontSize: 11 }}>{w ? `${w.start}-${w.end}` : ''}</span>
+                    </span>
+                  )}
+                </div>
+                {c.item.selectedOption && (
+                  <div style={{ fontSize: 11, color: "#666" }}>
+                    Variant: {c.item.selectedOption.name}
+                  </div>
+                )}
+                <div style={{ fontSize: 12, color: "#666", marginTop: 4 }}>
+                  {c.quantity} x ₹{c.item.finalPrice} = ₹{c.item.finalPrice * c.quantity}
+                </div>
                 {!availableNow && (
-                  <span title={w ? `Available ${w.start}-${w.end}` : 'Available in configured window'} style={{ fontSize: 12, color: '#e67e22', display:'inline-flex', alignItems:'center', gap:4 }}>
-                    <span role="img" aria-label="time">⏰</span>
-                    <span style={{ fontSize: 11 }}>{w ? `${w.start}-${w.end}` : ''}</span>
-                  </span>
+                  <div style={{ marginTop: 4, fontSize: 12, color: '#e67e22' }}>
+                    {scheduledHM
+                      ? `Not available at ${scheduledHM}. Choose a time within ${w?.start || '--:--'}-${w?.end || '--:--'}`
+                      : `Currently unavailable. Available ${w?.start || '--:--'}-${w?.end || '--:--'}`}
+                  </div>
+                )}
+                {remaining <= 0 && (
+                  <div style={{ marginTop: 4, fontSize: 12, color: '#e74c3c' }}>No more items available to order</div>
                 )}
               </div>
-              {c.item.selectedOption && (
-                <div style={{ fontSize: 11, color: "#666" }}>
-                  Variant: {c.item.selectedOption.name}
-                </div>
-              )}
-              <div style={{ fontSize: 12, color: "#666", marginTop: 4 }}>
-                {c.quantity} x ₹{c.item.finalPrice} = ₹{c.item.finalPrice * c.quantity}
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <button 
+                  className="icon-btn" 
+                  onClick={() => decrementFromCart(i)}
+                  style={{ width: 28, height: 28, fontSize: 16, background: '#fff', color: '#111', border: '1px solid #111', borderRadius: 6 }}
+                >
+                  −
+                </button>
+                <span style={{ fontWeight: "bold", minWidth: 25, textAlign: "center", fontSize: 14 }}>{c.quantity}</span>
+                <button 
+                  className="icon-btn" 
+                  onClick={() => { if (remaining <= 0) return; incrementFromCart(i); }}
+                  disabled={remaining <= 0}
+                  style={{ width: 28, height: 28, fontSize: 16, background: '#fff', color: '#111', border: '1px solid #111', borderRadius: 6 }}
+                >
+                  +
+                </button>
+                <button 
+                  onClick={() => removeFromCart(i)} 
+                  style={{ background: '#fff', color: '#111', border: '1px solid #111', padding: "6px 10px", fontSize: "14px", marginLeft: 6, borderRadius: 6 }}
+                >
+                  Remove
+                </button>
               </div>
-              {!availableNow && (
-                <div style={{ marginTop: 4, fontSize: 12, color: '#e67e22' }}>
-                  {scheduledHM
-                    ? `Not available at ${scheduledHM}. Choose a time within ${w?.start || '--:--'}-${w?.end || '--:--'}`
-                    : `Currently unavailable. Available ${w?.start || '--:--'}-${w?.end || '--:--'}`}
-                </div>
-              )}
-              {remaining <= 0 && (
-                <div style={{ marginTop: 4, fontSize: 12, color: '#e74c3c' }}>No more items available to order</div>
-              )}
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <button 
-                className="icon-btn" 
-                onClick={() => decrementFromCart(i)}
-                style={{ width: 28, height: 28, fontSize: 16, background: '#fff', color: '#111', border: '1px solid #111', borderRadius: 6 }}
-              >
-                −
-              </button>
-              <span style={{ fontWeight: "bold", minWidth: 25, textAlign: "center", fontSize: 14 }}>{c.quantity}</span>
-              <button 
-                className="icon-btn" 
-                onClick={() => { if (remaining <= 0) return; incrementFromCart(i); }}
-                disabled={remaining <= 0}
-                style={{ width: 28, height: 28, fontSize: 16, background: '#fff', color: '#111', border: '1px solid #111', borderRadius: 6 }}
-              >
-                +
-              </button>
-              <button 
-                onClick={() => removeFromCart(i)} 
-                style={{ background: '#fff', color: '#111', border: '1px solid #111', padding: "6px 10px", fontSize: "14px", marginLeft: 6, borderRadius: 6 }}
-              >
-                Remove
-              </button>
-            </div>
-          </div>
-        );
-        })}
-
-        {cart.length > 0 && (
+          );
+          })}
+        </div>
+      )}
+      <div className="cart-scheduler">
+        <label className="cart-scheduler-toggle">
+          <input
+            type="checkbox"
+            checked={scheduleEnabled}
+            onChange={handleToggleSchedule}
+          />
+          <span>Schedule this order for later today</span>
+        </label>
+        {scheduleEnabled ? (
           <>
-            <div style={{ marginTop: 15, paddingTop: 15, borderTop: "2px solid #ddd" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                <span>Subtotal:</span>
-                <span>₹{total.toFixed(2)}</span>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                <span>Prep Time:</span>
-                <span>{totalPrepTime} mins</span>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "18px", fontWeight: "bold", marginTop: 10, paddingTop: 10, borderTop: "1px solid #ddd" }}>
-                <span>Total:</span>
-                <span>₹{total.toFixed(2)}</span>
-              </div>
-            </div>
-
-            <div style={{ marginTop: 15, border: '1px solid #e1e6eb', borderRadius: 8, padding: 16 }}>
-              <div style={{ fontWeight: 600, marginBottom: 10 }}>Select Payment Method</div>
-              <div style={{ display: 'grid', gap: 10 }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <input
-                    type="radio"
-                    name="payment-method"
-                    value="wallet"
-                    checked={paymentMethod === 'wallet'}
-                    onChange={() => setPaymentMethod('wallet')}
-                    disabled={Boolean(walletDisabledReason)}
-                  />
-                  <span>
-                    Wallet ({walletEnabled ? `₹${Number(walletBalance || 0).toFixed(2)} available` : 'Login required'})
-                    {walletDisabledReason && (
-                      <span style={{ color: '#c0392b', fontSize: 12, marginLeft: 6 }}>• {walletDisabledReason}</span>
-                    )}
-                  </span>
-                </label>
-
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <input
-                    type="radio"
-                    name="payment-method"
-                    value="gateway"
-                    checked={paymentMethod === 'gateway'}
-                    onChange={() => setPaymentMethod('gateway')}
-                  />
-                  <span>Google Pay (Online)</span>
-                </label>
-
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <input
-                    type="radio"
-                    name="payment-method"
-                    value="cash"
-                    checked={paymentMethod === 'cash'}
-                    onChange={() => setPaymentMethod('cash')}
-                  />
-                  <span>Cash on Pickup</span>
-                </label>
-              </div>
-              {paymentMethod === 'cash' && (
-                <div style={{ marginTop: 8, fontSize: 12, color: '#7f8c8d' }}>
-                  Please carry the exact amount for faster handover at pickup counter.
-                </div>
-              )}
-              {paymentMethod === 'gateway' && (
-                <div style={{ marginTop: 8, fontSize: 12, color: '#7f8c8d' }}>
-                  You will be redirected to Google Pay demo gateway to complete the payment.
-                </div>
-              )}
-            </div>
-
-            <div style={{ marginTop: 15 }}>
-              <label style={{ fontSize: "12px", fontWeight: "bold", display: "block", marginBottom: 5 }}>
-                Special Instructions for All Items (Optional):
-              </label>
-              <textarea
-                value={customNotes}
-                onChange={(e) => {
-                  const input = e.target.value;
-                  const words = input.trim().split(/\s+/).filter(Boolean);
-                  const limited = words.length > 100 ? words.slice(0, 100).join(' ') : input;
-                  setCustomNotes(limited);
-                }}
-                placeholder="E.g., Less spicy, no onions, extra garnish, less oil..."
-                rows={4}
-                style={{
-                  width: "100%",
-                  padding: 8,
-                  minHeight: 70,
-                  fontFamily: "inherit",
-                  fontSize: 13,
-                  borderRadius: 6,
-                  border: "1px solid #ddd",
-                  resize: 'none'
-                }}
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8 }}>
+              <input
+                type="text"
+                value={todayDisplay}
+                readOnly
+                aria-label="Scheduled date"
+                style={{ flex: 1, background: '#f8f9fa', border: '1px solid #ddd', padding: '8px 10px', borderRadius: 6 }}
               />
+              <select
+                value={scheduledHM || findNextSlot(currentHM)}
+                onChange={(e) => syncScheduled(scheduledDate, e.target.value)}
+                style={{ width: 160 }}
+              >
+                {slots.map((t) => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
             </div>
-
-            <div style={{ marginTop: 15 }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600 }}>
-                <input
-                  type="checkbox"
-                  checked={scheduleEnabled}
-                  onChange={handleToggleSchedule}
-                />
-                <span>Schedule this order for later today</span>
-              </label>
-              {scheduleEnabled ? (
-                <>
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8 }}>
-                    <input
-                      type="text"
-                      value={todayDisplay}
-                      readOnly
-                      aria-label="Scheduled date"
-                      style={{ flex: 1, background: '#f8f9fa', border: '1px solid #ddd', padding: '8px 10px', borderRadius: 6 }}
-                    />
-                    <select
-                      value={scheduledHM || findNextSlot(currentHM)}
-                      onChange={(e) => syncScheduled(scheduledDate, e.target.value)}
-                      style={{ width: 160 }}
-                    >
-                      {slots.map((t) => (
-                        <option key={t} value={t}>{t}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <small style={{ display: 'block', marginTop: 6, color: '#7f8c8d' }}>
-                    Slots run every 5 minutes between 08:00 and 22:30 today.
-                  </small>
-                </>
-              ) : (
-                <small style={{ display: 'block', marginTop: 6, color: '#7f8c8d' }}>
-                  Leave unchecked to prepare this order immediately.
-                </small>
-              )}
-            </div>
-
-            <button
-              onClick={handlePayment}
-              style={{ width: "100%", marginTop: 15, background: "#27ae60", padding: "14px", fontSize: "16px", fontWeight: "bold", color: '#fff', border: 'none', borderRadius: 6 }}
-            >
-              Place Order (₹{total.toFixed(2)})
-            </button>
+            <small style={{ display: 'block', marginTop: 6, color: '#7f8c8d' }}>
+              Slots run every 5 minutes between 08:00 and 22:30 today.
+            </small>
           </>
+        ) : (
+          <small style={{ display: 'block', marginTop: 6, color: '#7f8c8d' }}>
+            Leave unchecked to prepare this order immediately.
+          </small>
         )}
       </div>
+
+      <button
+        onClick={handlePayment}
+        style={{ width: "100%", marginTop: 15, background: "#27ae60", padding: "14px", fontSize: "16px", fontWeight: "bold", color: '#fff', border: 'none', borderRadius: 6 }}
+      >
+        Place Order (₹{total.toFixed(2)})
+      </button>
     </div>
   );
 };

@@ -1003,16 +1003,37 @@ function App() {
 
             {view === "admin" && (
               <div className="admin-panel">
-                <AdminControl
-                  adminSession={adminSession}
-                  onAdminLogin={handleAdminLogin}
-                  onAdminLogout={handleAdminLogout}
-                  onCreateVendor={handleCreateVendor}
-                  onUpdateVendor={handleUpdateVendor}
-                  vendors={adminManagedVendors}
-                />
+                <div className="admin-panel-main">
+                  <AdminControl
+                    adminSession={adminSession}
+                    onAdminLogin={handleAdminLogin}
+                    onAdminLogout={handleAdminLogout}
+                    onCreateVendor={handleCreateVendor}
+                    onUpdateVendor={handleUpdateVendor}
+                    vendors={adminManagedVendors}
+                    sosState={sosState}
+                    onTriggerSos={() => handleSosTrigger("admin")}
+                    onResolveSos={() => handleSosResolve("admin")}
+                  />
+                  {adminSession && (
+                    <AdminVendorGrievances adminSession={adminSession} />
+                  )}
+                </div>
                 {adminSession && (
-                  <AdminVendorGrievances adminSession={adminSession} />
+                  <div className="admin-sos-footer">
+                    <SosButton
+                      isActive={Boolean(sosState?.active)}
+                      onTrigger={() => handleSosTrigger("admin")}
+                      onResolve={() => handleSosResolve("admin")}
+                    />
+                    <button
+                      onClick={handleAdminLogout}
+                      className="logout-button"
+                      style={{ background: "#e74c3c", color: "#fff", minWidth: 160 }}
+                    >
+                      Logout
+                    </button>
+                  </div>
                 )}
               </div>
             )}

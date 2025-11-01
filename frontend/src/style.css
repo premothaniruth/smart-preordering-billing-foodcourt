@@ -269,6 +269,52 @@ ul {
   background: #f0f3f7;
 }
 
+.sos-button-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.sos-button {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: none;
+  background: #e74c3c;
+  color: #fff;
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 8px 20px rgba(231, 76, 60, 0.35);
+}
+
+.sos-button:hover:not(:disabled) {
+  transform: scale(1.05);
+  box-shadow: 0 10px 24px rgba(231, 76, 60, 0.45);
+}
+
+.sos-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.sos-button.active {
+  background: #c0392b;
+  box-shadow: 0 8px 20px rgba(192, 57, 43, 0.35);
+}
+
+.sos-button-caption {
+  font-size: 12px;
+  color: #7f8c8d;
+  text-align: center;
+}
+
 /* Responsive grid */
 @media (max-width: 1400px) {
   .menu-grid {
@@ -1268,8 +1314,7 @@ textarea:focus-visible {
   background: none;
   border: none;
   padding: 0;
-  color: #1e88e5;
-  font-size: 14px;
+  color: #2980b9;
   cursor: pointer;
   font-weight: 600;
 }
@@ -1278,14 +1323,9 @@ textarea:focus-visible {
   text-decoration: underline;
 }
 
-.employee-login-card button:focus,
-.employee-login-card button:focus-visible,
 .link-button:focus,
-.link-button:focus-visible,
-.employee-auth-method:focus,
-.employee-auth-method:focus-visible {
+.link-button:focus-visible {
   outline: none;
-  box-shadow: none;
 }
 
 .password-field {

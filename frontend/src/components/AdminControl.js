@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from "react";
 import PropTypes from "prop-types";
-import SosButton from "./SosButton";
 
 const initialCreateState = {
   shopName: "",
@@ -12,13 +11,9 @@ const initialCreateState = {
 function AdminControl({
   adminSession,
   onAdminLogin,
-  onAdminLogout,
   onCreateVendor,
   onUpdateVendor,
-  vendors = [],
-  sosState,
-  onTriggerSos,
-  onResolveSos
+  vendors
 }) {
   const [loginForm, setLoginForm] = useState({ username: "", password: "" });
   const [createForm, setCreateForm] = useState(initialCreateState);
@@ -207,19 +202,23 @@ function AdminControl({
           )}
         </div>
       </div>
-
-      <div style={{ marginTop: 32, display: "flex", justifyContent: "flex-end" }}>
-        <button onClick={onAdminLogout} style={{ background: '#e74c3c', color: '#fff', minWidth: 160 }}>
-          Logout
-        </button>
-      </div>
-      <SosButton
-        isActive={Boolean(sosState?.active)}
-        onTrigger={onTriggerSos}
-        onResolve={onResolveSos}
-      />
     </div>
   );
 }
+
+AdminControl.propTypes = {
+  adminSession: PropTypes.shape({
+    username: PropTypes.string
+  }),
+  onAdminLogin: PropTypes.func.isRequired,
+  onCreateVendor: PropTypes.func.isRequired,
+  onUpdateVendor: PropTypes.func.isRequired,
+  vendors: PropTypes.arrayOf(PropTypes.object)
+};
+
+AdminControl.defaultProps = {
+  adminSession: null,
+  vendors: []
+};
 
 export default AdminControl;

@@ -143,6 +143,13 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
     setShowOptionsModal(false);
   }, [cart.length]);
 
+  const availableShops = useMemo(() => menu || [], [menu]);
+  const [shopMenuOpen, setShopMenuOpen] = useState(false);
+
+  const currentShop = useMemo(() => {
+    return availableShops.find((shop) => String(shop.shopId) === String(selectedShop)) || null;
+  }, [availableShops, selectedShop]);
+
   if (!menu.length) return <p>Loading menu...</p>;
 
   const shop = menu.find((s) => s.shopId === selectedShop);
@@ -534,20 +541,32 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
       )}
       <div className="filter-section" style={{ display:'flex', gap:12, flexWrap:'wrap', alignItems:'center', marginBottom: 12 }}>
         {!hideShopSelector && (
-          <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
-            <div style={{ position:'relative', display:'inline-flex', alignItems:'center', gap:8, background:'#fff', border:'none', borderRadius:12, padding:'6px 12px', boxShadow:'0 2px 8px rgba(0,0,0,0.08)' }}>
-              <select
-                value={selectedShop}
-                onChange={(e) => setSelectedShop(Number(e.target.value))}
-                style={{
-                  appearance:'none', WebkitAppearance:'none', MozAppearance:'none',
-                  border:'none', outline:'none', background:'transparent',
-                  paddingRight:20, fontSize:14, cursor:'pointer'
-                }}
+          <div className="menu-shop-selector">
+            <label>Choose Shop:</label>
+            <div className="shop-dropdown" onBlur={() => setShopMenuOpen(false)} tabIndex={0}>
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() => setShopMenuOpen((prev) => !prev)}
               >
-                {menu.map(shop => (<option key={shop.shopId} value={shop.shopId}>{shop.shopName}</option>))}
-              </select>
-              <span aria-hidden style={{ position:'absolute', right:8, pointerEvents:'none', color:'#111' }}>▾</span>
+                {currentShop ? currentShop.shopName : "Select Shop"}
+              </button>
+              {shopMenuOpen && (
+                <div className="concern-dropdown">
+                  {availableShops.map((shop) => (
+                    <button
+                      type="button"
+                      key={shop.shopId}
+                      onClick={() => {
+                        setSelectedShop(shop.shopId);
+                        setShopMenuOpen(false);
+                      }}
+                    >
+                      {shop.shopName}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
