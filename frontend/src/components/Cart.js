@@ -481,7 +481,7 @@ const Cart = ({
             )}
             {paymentMethod === 'gateway' && (
               <div style={{ marginTop: 8, fontSize: 12, color: '#7f8c8d' }}>
-                You will be redirected to Google Pay demo gateway to complete the payment.
+                You will be redirected to Google Pay gateway to complete the payment.
               </div>
             )}
           </div>
