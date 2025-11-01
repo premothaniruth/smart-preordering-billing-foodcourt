@@ -1345,7 +1345,7 @@ textarea:focus-visible {
 
 .link-button:hover,
 .link-button:active {
-  color: #2980b9;
+  color: inherit;
   text-decoration: none;
 }
 
