@@ -748,39 +748,72 @@ const buildConditionsAndRewards = (offer) => {
     case "item_buy_x_get_y": {
       const targetIds = Array.isArray(cfg.targetItemIds) ? cfg.targetItemIds : [];
       const buyQty = Number(cfg.buyQuantity || 0);
-      if (targetIds.length > 0 && buyQty > 0) {
+      if (buyQty > 0 && targetIds.length > 0) {
         conditions.push({
           type: "item_quantity",
           itemIds: targetIds,
           minQuantity: buyQty
         });
       }
-      const freeItems = Array.isArray(cfg.freeItems) && cfg.freeItems.length > 0
-        ? cfg.freeItems
-        : (cfg.freeItemId
-            ? [{ id: cfg.freeItemId, label: cfg.freeItemLabel, price: cfg.freeItemPrice, quantity: cfg.freeQuantity }]
-            : []);
-      freeItems.forEach((entry) => {
-        if (!entry || entry.id == null) return;
-        const idString = String(entry.id);
-        const isCustom = idString.startsWith('custom-');
-        const numericId = Number(idString);
-        const itemId = !isCustom && Number.isFinite(numericId) ? numericId : idString;
-        if (!itemId) return;
-        const quantityRaw = entry.quantity != null ? entry.quantity : cfg.freeQuantity;
-        const quantityNum = Number(quantityRaw || 1);
-        const quantity = Number.isFinite(quantityNum) && quantityNum > 0 ? quantityNum : 1;
-        const priceNum = Number(entry.price || 0);
+      const selection = cfg.selection || buildSelectionDefaults();
+      const freeQty = Number(cfg.freeQuantity || 0);
+
+      const isCustomSelection = selection.buy.mode === 'custom' || selection.free.mode === 'custom' || selection.free.allowAny || selection.buy.allowAny;
+      if (isCustomSelection && freeQty > 0) {
         const reward = {
-          type: "free_item",
-          itemId,
-          quantity,
+          type: "custom_free_selection",
+          quantity: freeQty,
+          selection: {
+            buy: {
+              mode: selection.buy.mode,
+              allowAny: Boolean(selection.buy.allowAny),
+              priceCap: selection.buy.priceCap,
+              items: Array.isArray(selection.buy.items) ? selection.buy.items : []
+            },
+            free: {
+              mode: selection.free.mode,
+              allowAny: Boolean(selection.free.allowAny),
+              priceCap: selection.free.priceCap,
+              items: Array.isArray(selection.free.items) ? selection.free.items : []
+            }
+          },
+          description: cfg.summaryText
         };
-        if (!Number.isNaN(priceNum) && priceNum > 0) reward.price = priceNum;
-        const description = entry.label || (isCustom ? idString.replace('custom-', 'Custom ') : '');
-        if (description) reward.description = description;
+        if (selection.free.priceCap != null && selection.free.priceCap !== "") {
+          const capNum = Number(selection.free.priceCap);
+          if (Number.isFinite(capNum) && capNum >= 0) {
+            reward.maxPrice = capNum;
+          }
+        }
         rewards.push(reward);
-      });
+      } else {
+        const freeItems = Array.isArray(cfg.freeItems) && cfg.freeItems.length > 0
+          ? cfg.freeItems
+          : (cfg.freeItemId
+              ? [{ id: cfg.freeItemId, label: cfg.freeItemLabel, price: cfg.freeItemPrice, quantity: cfg.freeQuantity }]
+              : []);
+        freeItems.forEach((entry) => {
+          if (!entry || entry.id == null) return;
+          const idString = String(entry.id);
+          const isCustom = idString.startsWith('custom-');
+          const numericId = Number(idString);
+          const itemId = !isCustom && Number.isFinite(numericId) ? numericId : idString;
+          if (!itemId) return;
+          const quantityRaw = entry.quantity != null ? entry.quantity : cfg.freeQuantity;
+          const quantityNum = Number(quantityRaw || 1);
+          const quantity = Number.isFinite(quantityNum) && quantityNum > 0 ? quantityNum : 1;
+          const priceNum = Number(entry.price || 0);
+          const reward = {
+            type: "free_item",
+            itemId,
+            quantity
+          };
+          if (!Number.isNaN(priceNum) && priceNum > 0) reward.price = priceNum;
+          const description = entry.label || (isCustom ? idString.replace('custom-', 'Custom ') : '');
+          if (description) reward.description = description;
+          rewards.push(reward);
+        });
+      }
       break;
     }
     default:

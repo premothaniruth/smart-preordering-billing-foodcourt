@@ -370,36 +370,43 @@ const computeCustomFreeSelection = ({
     return { discount: 0, tiers: 0, payItems: [], freeItems: [] };
   }
 
-  const sorted = eligibleForBuy.sort((a, b) => b.price - a.price);
+  const sorted = eligibleForBuy.sort((a, b) => {
+    if (b.price === a.price) {
+      return String(a.unitKey || '').localeCompare(String(b.unitKey || ''));
+    }
+    return b.price - a.price;
+  });
   const tiers = Math.floor(sorted.length / groupSize);
   if (tiers <= 0) {
     return { discount: 0, tiers: 0, payItems: [], freeItems: [] };
   }
 
-  const payItems = [];
-  const freeItems = [];
+  const qualifyingCount = tiers * groupSize;
+  const qualifyingItems = sorted.slice(0, qualifyingCount);
 
-  for (let tier = 0; tier < tiers; tier += 1) {
-    const start = tier * groupSize;
-    const end = start + groupSize;
-    const group = sorted.slice(start, end);
-    if (group.length < groupSize) break;
-    const payGroup = group.slice(0, buyQuantity);
-    payItems.push(...payGroup);
+  const paidCount = tiers * buyQuantity;
+  const freeCount = tiers * freeQuantity;
 
-    let freeGroup = group.slice(buyQuantity);
-    if (freeSelection.mode === 'fixed' && freeSet.size > 0) {
-      freeGroup = freeGroup.filter((unit) => freeSet.has(String(unit.itemId)));
-    } else if (!freeSelection.allowAny && freeSet.size > 0) {
-      freeGroup = freeGroup.filter((unit) => freeSet.has(String(unit.itemId)));
-    }
-    if (freeSelection.priceCap != null) {
-      freeGroup = freeGroup.filter((unit) => unit.price <= freeSelection.priceCap);
-    }
-    if (freeGroup.length === 0) continue;
-    freeGroup.sort((a, b) => a.price - b.price);
-    freeItems.push(...freeGroup.slice(0, freeQuantity));
+  const payItems = qualifyingItems.slice(0, paidCount);
+
+  let freeCandidates = qualifyingItems.slice(paidCount);
+  if (freeSelection.mode === 'fixed' && freeSet.size > 0) {
+    freeCandidates = freeCandidates.filter((unit) => freeSet.has(String(unit.itemId)));
+  } else if (!freeSelection.allowAny && freeSet.size > 0) {
+    freeCandidates = freeCandidates.filter((unit) => freeSet.has(String(unit.itemId)));
   }
+  if (freeSelection.priceCap != null) {
+    freeCandidates = freeCandidates.filter((unit) => unit.price <= freeSelection.priceCap);
+  }
+
+  freeCandidates.sort((a, b) => {
+    if (a.price === b.price) {
+      return String(a.unitKey || '').localeCompare(String(b.unitKey || ''));
+    }
+    return a.price - b.price;
+  });
+
+  const freeItems = freeCandidates.slice(0, freeCount);
 
   const discount = freeItems.reduce((sum, unit) => sum + (unit.price || 0), 0);
   return {
