@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import PropTypes from "prop-types";
 import { fetchVendorGrievances } from "../api";
 import { toast } from "react-toastify";
@@ -29,7 +29,7 @@ const VendorGrievanceList = ({ token, onClose }) => {
   const [grievances, setGrievances] = useState([]);
   const [filter, setFilter] = useState("all");
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const data = await fetchVendorGrievances(token);
@@ -43,13 +43,13 @@ const VendorGrievanceList = ({ token, onClose }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
 
   useEffect(() => {
     loadData();
     const id = setInterval(loadData, 20000);
     return () => clearInterval(id);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [loadData]);
 
   const filteredList = useMemo(() => {
     if (filter === "all") return grievances;

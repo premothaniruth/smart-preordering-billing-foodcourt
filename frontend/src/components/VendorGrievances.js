@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import PropTypes from "prop-types";
 import { fetchGrievances } from "../api";
 
@@ -10,22 +10,21 @@ import { fetchGrievances } from "../api";
 const VendorGrievances = ({ token, onClose, isModal }) => {
   const [grievances, setGrievances] = useState([]);
 
+  const loadGrievances = useCallback(() => {
+    fetchGrievances(token).then(setGrievances);
+  }, [token]);
+
   // auto-refresh grievances periodically
   useEffect(() => {
     loadGrievances();
     const interval = setInterval(loadGrievances, 10000);
     return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
+  }, [loadGrievances]);
 
   const handleOverlayClick = (event) => {
     if (event.target === event.currentTarget && onClose) {
       onClose();
     }
-  };
-
-  const loadGrievances = () => {
-    fetchGrievances(token).then(setGrievances);
   };
 
   // resolve by calling endpoint and reloading
