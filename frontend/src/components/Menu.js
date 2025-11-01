@@ -558,25 +558,47 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
             <div className="shop-dropdown" ref={shopMenuRef}>
               <button
                 type="button"
-                className="secondary-button"
+                className="secondary-button shop-selector-trigger"
                 onClick={() => setShopMenuOpen((prev) => !prev)}
               >
-                {currentShop ? currentShop.shopName : "Select Shop"}
+                <span className="shop-selector-label">
+                  <span className="shop-selector-dot" />
+                  <span className="shop-selector-text">{currentShop ? currentShop.shopName : "Select Shop"}</span>
+                </span>
+                <svg
+                  className={`chevron ${shopMenuOpen ? "open" : ""}`}
+                  viewBox="0 0 20 20"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden
+                >
+                  <path d="M6 8l4 4 4-4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                </svg>
               </button>
               {shopMenuOpen && (
-                <div className="concern-dropdown">
-                  {availableShops.map((shop) => (
-                    <button
-                      type="button"
-                      key={shop.shopId}
-                      onClick={() => {
-                        setSelectedShop(Number(shop.shopId));
-                        setShopMenuOpen(false);
-                      }}
-                    >
-                      {shop.shopName}
-                    </button>
-                  ))}
+                <div className="concern-dropdown" style={{ minWidth: 220 }}>
+                  {availableShops.length === 0 && (
+                    <div className="dropdown-empty">No shops available</div>
+                  )}
+                  {availableShops.map((shop) => {
+                    const isActive = String(shop.shopId) === String(selectedShop);
+                    return (
+                      <button
+                        type="button"
+                        key={shop.shopId}
+                        className={isActive ? "active" : ""}
+                        onClick={() => {
+                          setSelectedShop(Number(shop.shopId));
+                          setShopMenuOpen(false);
+                          if (typeof onActiveSectionChange === "function") {
+                            onActiveSectionChange(null);
+                          }
+                        }}
+                      >
+                        <span className="shop-name">{shop.shopName}</span>
+                        {isActive && <span className="shop-active-pill">Active</span>}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
