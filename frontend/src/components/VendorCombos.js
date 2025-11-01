@@ -52,6 +52,7 @@ const VendorCombos = ({ token }) => {
       name: "New Combo",
       price: 0,
       active: true,
+      hidden: false,
       components: []
     }, ...prev]));
   };
@@ -136,7 +137,7 @@ const VendorCombos = ({ token }) => {
       {combos.map((c, idx) => (
         <div key={c.id} className="card" style={{ marginBottom: 12 }}>
           <div className="card-header">{c.name || 'Combo'}</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: 10 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto auto', gap: 10, alignItems: 'center' }}>
             <div>
               <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>Name</div>
               <input value={c.name || ''} onChange={(e)=>updateField(idx,'name',e.target.value)} />
@@ -145,12 +146,18 @@ const VendorCombos = ({ token }) => {
               <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>Price</div>
               <input type="number" value={c.price || 0} onChange={(e)=>updateField(idx,'price', Number(e.target.value)||0)} />
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <label>
                 <input type="checkbox" checked={c.active !== false} onChange={(e)=>updateField(idx,'active', e.target.checked)} /> Active
               </label>
+              <label>
+                <input type="checkbox" checked={c.hidden === true} onChange={(e)=>updateField(idx,'hidden', e.target.checked)} /> Hide from menu
+              </label>
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              {c.hidden === true && (
+                <span className="menu-item-badge" style={{ background: '#f9f3d2', color: '#8a6d3b', borderColor: '#f1c40f', fontSize: 11, marginRight: 8 }}>Hidden</span>
+              )}
               <button onClick={()=>removeCombo(idx)} style={{ background: '#e74c3c' }}>Remove</button>
             </div>
           </div>

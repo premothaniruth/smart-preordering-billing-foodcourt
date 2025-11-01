@@ -2232,7 +2232,7 @@ app.get('/combos', (req, res) => {
     const activeOnly = String(req.query.activeOnly || '').toLowerCase() === '1' || String(req.query.activeOnly || '').toLowerCase() === 'true';
     let combos = getCombos();
     if (shopId) combos = combos.filter(c => String(c.shopId) === shopId);
-    if (activeOnly) combos = combos.filter(c => c.active !== false);
+    if (activeOnly) combos = combos.filter(c => c.active !== false && c.hidden !== true);
     res.json(combos);
   } catch (e) {
     res.status(500).json({ message: 'Error fetching combos' });
@@ -2254,6 +2254,7 @@ app.put('/combos', authenticateVendor, (req, res) => {
       name: c.name || 'Combo',
       price: Number(c.price || 0),
       active: c.active !== false,
+      hidden: c.hidden === true,
       availableStart: c.availableStart || null,
       availableEnd: c.availableEnd || null,
       components: Array.isArray(c.components) ? c.components : []

@@ -91,7 +91,6 @@ function App() {
   const lastSosEventIdRef = useRef(null);
   const [offerPreview, setOfferPreview] = useState(null);
   const [offersLoading, setOffersLoading] = useState(false);
-  const [showVendorConcernForm, setShowVendorConcernForm] = useState(false);
 
   useEffect(() => {
     try {
