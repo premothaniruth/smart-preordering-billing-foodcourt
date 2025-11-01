@@ -17,40 +17,89 @@
     "maxDiscountAmount": 30
   },
   {
-    "id": 1761994129813,
+    "id": 1761996699527,
     "shopId": 2,
-    "title": "test Offer",
-    "bannerText": "buy 3 get 3 Offer",
-    "discountPercent": null,
+    "title": "snack offer",
+    "bannerText": "buy 3 paniyaram set and get 1 maddur vada free",
+    "description": "",
+    "active": true,
+    "stackable": false,
+    "priority": 0,
+    "maxDiscountAmount": null,
+    "discountPercent": 0,
     "discountAmount": null,
-    "applicableSections": [],
+    "applicableSections": [
+      "Quick Bites"
+    ],
     "applicableComboIds": [],
     "start": null,
     "end": null,
-    "active": true,
-    "stackable": true,
-    "maxDiscountAmount": null
+    "timeStart": null,
+    "timeEnd": null,
+    "daysOfWeek": null,
+    "schedule": null,
+    "conditions": [
+      {
+        "type": "item_quantity",
+        "itemIds": [
+          177
+        ],
+        "minQuantity": 3
+      }
+    ],
+    "rewards": [
+      {
+        "type": "free_item",
+        "itemId": 178,
+        "quantity": 1
+      }
+    ],
+    "metadata": null,
+    "createdAt": "2025-11-01T11:34:56.581Z",
+    "updatedAt": "2025-11-01T11:34:56.581Z"
   },
   {
     "id": 1761994119879,
     "shopId": 2,
     "title": "New Offer",
     "bannerText": "New Offer",
+    "description": "",
+    "active": true,
+    "stackable": true,
+    "priority": 0,
+    "maxDiscountAmount": null,
     "discountPercent": 5,
     "discountAmount": null,
     "applicableSections": [],
     "applicableComboIds": [],
     "start": null,
     "end": null,
-    "active": true,
-    "stackable": true,
-    "maxDiscountAmount": null
+    "timeStart": null,
+    "timeEnd": null,
+    "daysOfWeek": null,
+    "schedule": null,
+    "conditions": [],
+    "rewards": [
+      {
+        "type": "percentage_discount",
+        "percent": 5,
+        "appliesTo": "order"
+      }
+    ],
+    "metadata": null,
+    "createdAt": "2025-11-01T11:34:56.581Z",
+    "updatedAt": "2025-11-01T11:34:56.581Z"
   },
   {
     "id": "diwali-sections-10",
     "shopId": 2,
     "title": "🎉 Diwali 10% Off",
     "bannerText": "Diwali Offer: 10% off Breakfast & Lunch",
+    "description": "",
+    "active": true,
+    "stackable": true,
+    "priority": 0,
+    "maxDiscountAmount": 100,
     "discountPercent": 10,
     "discountAmount": null,
     "applicableSections": [
@@ -60,8 +109,24 @@
     "applicableComboIds": [],
     "start": "2025-10-01T00:00:00Z",
     "end": "2025-11-30T23:59:59Z",
-    "active": true,
-    "stackable": true,
-    "maxDiscountAmount": 100
+    "timeStart": null,
+    "timeEnd": null,
+    "daysOfWeek": null,
+    "schedule": null,
+    "conditions": [],
+    "rewards": [
+      {
+        "type": "percentage_discount",
+        "percent": 10,
+        "appliesTo": "sections",
+        "sections": [
+          "Breakfast",
+          "Lunch"
+        ]
+      }
+    ],
+    "metadata": null,
+    "createdAt": "2025-11-01T11:34:56.581Z",
+    "updatedAt": "2025-11-01T11:34:56.581Z"
   }
 ]
