@@ -561,18 +561,10 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
                 className="secondary-button shop-selector-trigger"
                 onClick={() => setShopMenuOpen((prev) => !prev)}
               >
-                <span className="shop-selector-label">
+                <span className="shop-selector-label compact">
                   <span className="shop-selector-dot" />
                   <span className="shop-selector-text">{currentShop ? currentShop.shopName : "Select Shop"}</span>
                 </span>
-                <svg
-                  className={`chevron ${shopMenuOpen ? "open" : ""}`}
-                  viewBox="0 0 20 20"
-                  xmlns="http://www.w3.org/2000/svg"
-                  aria-hidden
-                >
-                  <path d="M6 8l4 4 4-4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-                </svg>
               </button>
               {shopMenuOpen && (
                 <div className="concern-dropdown" style={{ minWidth: 220 }}>
