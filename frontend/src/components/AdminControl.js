@@ -1,4 +1,6 @@
 import React, { useState, useMemo } from "react";
+import PropTypes from "prop-types";
+import SosButton from "./SosButton";
 
 const initialCreateState = {
   shopName: "",
@@ -13,7 +15,10 @@ function AdminControl({
   onAdminLogout,
   onCreateVendor,
   onUpdateVendor,
-  vendors = []
+  vendors = [],
+  sosState,
+  onTriggerSos,
+  onResolveSos
 }) {
   const [loginForm, setLoginForm] = useState({ username: "", password: "" });
   const [createForm, setCreateForm] = useState(initialCreateState);
@@ -208,6 +213,11 @@ function AdminControl({
           Logout
         </button>
       </div>
+      <SosButton
+        isActive={Boolean(sosState?.active)}
+        onTrigger={onTriggerSos}
+        onResolve={onResolveSos}
+      />
     </div>
   );
 }

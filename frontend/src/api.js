@@ -450,6 +450,40 @@ export const markOrderPicked = async (orderId, token) => {
 };
 
 /**
+ * Trigger an SOS alert
+ * @param {{ role:string, actorName:string, message?:string }} payload
+ */
+export const triggerSosAlert = async (payload = {}) => {
+  const res = await fetch(`${API_URL}/sos/trigger`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  return res.json();
+};
+
+/**
+ * Resolve SOS alert
+ * @param {{ actorName:string, note?:string }} payload
+ */
+export const resolveSosAlert = async (payload = {}) => {
+  const res = await fetch(`${API_URL}/sos/resolve`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  return res.json();
+};
+
+/**
+ * Fetch current SOS status
+ */
+export const fetchSosStatus = async () => {
+  const res = await fetch(`${API_URL}/sos/status`);
+  return res.json();
+};
+
+/**
  * Fetch analytics
  * @param {string} token
  * @param {('daily'|'monthly'|'quarterly'|'yearly'|'')} period

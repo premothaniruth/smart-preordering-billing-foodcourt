@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
-import { fetchMenu, placeOrder, fetchUserOrders, fetchFavorites, vendorLogin, updateMenu, markOrderReady, fetchAnalytics, submitRating, cancelOrder, employeeProfile } from "./api";
+import { fetchMenu, placeOrder, fetchUserOrders, fetchFavorites, vendorLogin, updateMenu, markOrderReady, fetchAnalytics, submitRating, cancelOrder, employeeProfile, triggerSosAlert, resolveSosAlert, fetchSosStatus } from "./api";
 import Menu from "./components/Menu";
 import Cart from "./components/Cart";
 import Payment from "./components/Payment";
@@ -19,12 +19,15 @@ import VendorGrievances from "./components/VendorGrievances";
 import AdminControl from "./components/AdminControl";
 import VendorGrievanceForm from "./components/VendorGrievanceForm";
 import VendorGrievanceList from "./components/VendorGrievanceList";
+import VendorConcernsMenu from "./components/VendorConcernsMenu";
+import SosButton from "./components/SosButton";
 import AdminVendorGrievances from "./components/AdminVendorGrievances";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 const ORDER_PLACED_SOUND = "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBDWM0/K/gC4EH29+3WgyBCk4XoCWJhcBTnLcWswB";
 const READY_SOUND = "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBDWM0/K/gC4EH29+3WgyBCk4XoCWJhcBTnLcWswB";
+const SOS_ALERT_SOUND = "data:audio/wav;base64,UklGRmYGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YT4GAACAgICAf4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gn+Df4V/h3+Kf45/lH+Wf5x/oH+sf7J/tH+7f8R/x3/Iv8x/0H/Uf9m/33/hv+Q/5n/o/+x/7b/vv/H/8f/x//H/8f/x//H/8f/x//H/8f/x//H/8f/x//H/8f/x//H/8f/x//H/8f/x//H/8f/x/8=\n";
 const ADMIN_CREDENTIALS = {
   username: "infybhojans",
   password: "infybhojans"
@@ -82,6 +85,9 @@ function App() {
   const [recentOrdersTodayCount, setRecentOrdersTodayCount] = useState(0);
   const [adminSession, setAdminSession] = useState(null);
   const [adminManagedVendors, setAdminManagedVendors] = useState([]);
+  const [sosState, setSosState] = useState({ active: false, message: null, lastTriggeredAt: null, currentEventId: null });
+  const sosPollRef = useRef(null);
+  const lastSosEventIdRef = useRef(null);
 
   useEffect(() => {
     try {
@@ -95,6 +101,39 @@ function App() {
       console.warn("Failed to load admin vendors from storage", error);
     }
   }, []);
+
+  useEffect(() => {
+    const fetchStatus = async () => {
+      try {
+        const status = await fetchSosStatus();
+        if (status) {
+          setSosState(status);
+        }
+      } catch (error) {
+        console.warn("Failed to fetch SOS status", error);
+      }
+    };
+    fetchStatus();
+    sosPollRef.current = setInterval(fetchStatus, 5000);
+    return () => {
+      if (sosPollRef.current) {
+        clearInterval(sosPollRef.current);
+        sosPollRef.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (sosState?.active && sosState.currentEventId && lastSosEventIdRef.current !== sosState.currentEventId) {
+      lastSosEventIdRef.current = sosState.currentEventId;
+      playSound(SOS_ALERT_SOUND);
+      toast.error("🚨 Emergency SOS activated. Evacuate to the nearest safe point!", { autoClose: 10000 });
+    }
+    if (!sosState?.active && lastSosEventIdRef.current && sosState?.currentEventId === null) {
+      toast.success("✅ SOS alert resolved. Await further instructions.");
+      lastSosEventIdRef.current = null;
+    }
+  }, [sosState]);
 
   useEffect(() => {
     try {
@@ -307,6 +346,41 @@ function App() {
     const audio = new Audio(soundUrl);
     audio.play().catch(err => console.log("Audio play failed:", err));
   };
+
+  const vendorIdentity = useMemo(() => {
+    if (!vendorToken) return null;
+    try {
+      const payload = JSON.parse(atob(vendorToken.split('.')[1]));
+      return {
+        username: payload.username || payload.vendorName || "Vendor",
+        shopId: payload.shopId || null
+      };
+    } catch (error) {
+      return null;
+    }
+  }, [vendorToken]);
+
+  const handleSosTrigger = useCallback(async (role) => {
+    const actorName = role === "admin" ? (adminSession?.username || "Admin") : (vendorIdentity?.username || "Vendor");
+    try {
+      const response = await triggerSosAlert({ role, actorName, message: `Emergency reported by ${actorName}` });
+      if (response?.state) setSosState(response.state);
+      toast.warn("🚨 SOS alert triggered. Evacuate immediately!", { autoClose: 8000 });
+    } catch (error) {
+      toast.error("Failed to trigger SOS alert");
+    }
+  }, [adminSession, vendorIdentity]);
+
+  const handleSosResolve = useCallback(async (role) => {
+    const actorName = role === "admin" ? (adminSession?.username || "Admin") : (vendorIdentity?.username || "Vendor");
+    try {
+      const response = await resolveSosAlert({ actorName, note: "Cleared by control" });
+      if (response?.state) setSosState(response.state);
+      toast.info("SOS alert resolved. Follow standard procedures.", { autoClose: 6000 });
+    } catch (error) {
+      toast.error("Failed to resolve SOS alert");
+    }
+  }, [adminSession, vendorIdentity]);
 
   /**
    * Add one unit of an item (optionally with variant) to the cart.
@@ -680,14 +754,10 @@ function App() {
                 <button onClick={() => setView("feedbacks")}>Feedbacks</button>
                 <button onClick={() => setView("grievances")}>Complaints</button>
                 <button onClick={() => setView("user")}>Switch to User View</button>
-              </div>
-              <div className="vendor-toolbar-right">
-                <button className="secondary-button" onClick={() => setShowVendorConcernForm(true)}>
-                  Raise Concern to Admin
-                </button>
-                <button className="secondary-button" onClick={() => setShowVendorConcernList(true)}>
-                  View My Concerns
-                </button>
+                <VendorConcernsMenu
+                  onRaiseNew={() => setShowVendorConcernForm(true)}
+                  onViewStatus={() => setShowVendorConcernList(true)}
+                />
               </div>
             </div>
 
@@ -727,6 +797,11 @@ function App() {
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20 }}>
               <button onClick={handleLogout} style={{ background: '#e74c3c', color: '#fff' }}>Logout</button>
             </div>
+            <SosButton
+              isActive={Boolean(sosState?.active)}
+              onTrigger={() => handleSosTrigger("vendor")}
+              onResolve={() => handleSosResolve("vendor")}
+            />
           </>
         ) : (
           <>

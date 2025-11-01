@@ -25,6 +25,7 @@ const favoritesFile = __dirname + "/data/favorites.json";
 const ratingsFile = __dirname + "/data/ratings.json";
 const grievancesFile = __dirname + "/data/grievances.json";
 const vendorGrievancesFile = __dirname + "/data/vendor_grievances.json";
+const sosStateFile = __dirname + "/data/sos_state.json";
 const employeesFile = __dirname + "/data/employees.json";
 const combosFile = __dirname + "/data/combos.json";
 const offersFile = __dirname + "/data/offers.json";
@@ -867,6 +868,12 @@ const getRatings = () => {
 const saveRatings = (ratings) => fs.writeFileSync(ratingsFile, JSON.stringify(ratings, null, 2));
 
 /**
+ * Persist section windows to disk.
+ * @param {Array} data
+ */
+const saveSectionWindows = (data) => fs.writeFileSync(sectionWindowsFile, JSON.stringify(data, null, 2));
+
+/**
  * Read grievances from disk.
  * @returns {Array}
  */
@@ -901,6 +908,41 @@ const getVendorGrievances = () => {
  * @param {Array} grievances
  */
 const saveVendorGrievances = (grievances) => fs.writeFileSync(vendorGrievancesFile, JSON.stringify(grievances, null, 2));
+
+const getSosState = () => {
+  try {
+    const raw = fs.readFileSync(sosStateFile, "utf8");
+    return JSON.parse(raw);
+  } catch (error) {
+    const fallback = {
+      active: false,
+      lastTriggeredAt: null,
+      lastTriggeredBy: null,
+      message: null,
+      currentEventId: null,
+      events: []
+    };
+    try {
+      fs.writeFileSync(sosStateFile, JSON.stringify(fallback, null, 2));
+    } catch {}
+    return fallback;
+  }
+};
+
+const saveSosState = (state) => {
+  fs.writeFileSync(sosStateFile, JSON.stringify(state, null, 2));
+};
+
+const broadcastSosAlert = (state) => {
+  // Placeholder for future integrations (e.g., push notifications, SMS gateway, email).
+  console.log("\n==== SOS ALERT BROADCAST ====");
+  console.log(`Active: ${state.active}`);
+  console.log(`Triggered By: ${state.lastTriggeredBy || "Unknown"}`);
+  console.log(`Triggered At: ${state.lastTriggeredAt || "Unknown"}`);
+  if (state.message) console.log(`Message: ${state.message}`);
+  console.log(`Event ID: ${state.currentEventId || "n/a"}`);
+  console.log("==============================\n");
+};
 
 // Combos
 /** @returns {Array} */
@@ -2272,6 +2314,90 @@ app.post("/order/picked/:id", authenticateVendor, (req, res) => {
     res.json({ status: "success", message: `Order ${orderId} marked completed` });
   } catch (error) {
     res.status(500).json({ message: "Error marking order picked" });
+  }
+});
+
+// ========== SOS ALERT ROUTES ==========
+
+/**
+ * POST /sos/trigger
+ * Vendor/Admin: Trigger a global SOS alert.
+ */
+app.post("/sos/trigger", (req, res) => {
+  try {
+    const { role = "unknown", actorName = "Unknown", message = "Emergency alert triggered" } = req.body || {};
+    const state = getSosState();
+    const now = new Date().toISOString();
+    const eventId = `sos-${Date.now()}`;
+
+    const entry = {
+      id: eventId,
+      triggeredAt: now,
+      triggeredBy: actorName,
+      role,
+      message,
+    };
+
+    state.active = true;
+    state.lastTriggeredAt = now;
+    state.lastTriggeredBy = actorName;
+    state.message = message;
+    state.currentEventId = eventId;
+    state.events = [entry, ...(Array.isArray(state.events) ? state.events : [])].slice(0, 50);
+
+    saveSosState(state);
+    broadcastSosAlert(state);
+
+    res.json({ status: "success", message: "SOS alert triggered", state });
+  } catch (error) {
+    res.status(500).json({ message: "Error triggering SOS alert" });
+  }
+});
+
+/**
+ * POST /sos/resolve
+ * Vendor/Admin: Resolve the current SOS alert.
+ */
+app.post("/sos/resolve", (req, res) => {
+  try {
+    const state = getSosState();
+    if (!state.active) {
+      return res.json({ status: "success", message: "No active SOS to resolve", state });
+    }
+
+    const { actorName = "Unknown", note = "" } = req.body || {};
+    const now = new Date().toISOString();
+    const entry = {
+      id: state.currentEventId,
+      resolvedAt: now,
+      resolvedBy: actorName,
+      note,
+    };
+
+    state.active = false;
+    state.lastResolvedAt = now;
+    state.lastResolvedBy = actorName;
+    state.message = null;
+    state.currentEventId = null;
+    state.events = [entry, ...(Array.isArray(state.events) ? state.events : [])].slice(0, 50);
+
+    saveSosState(state);
+    res.json({ status: "success", message: "SOS alert resolved", state });
+  } catch (error) {
+    res.status(500).json({ message: "Error resolving SOS alert" });
+  }
+});
+
+/**
+ * GET /sos/status
+ * Public: Fetch current SOS status for clients to react.
+ */
+app.get("/sos/status", (req, res) => {
+  try {
+    const state = getSosState();
+    res.json(state);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching SOS status" });
   }
 });
 
