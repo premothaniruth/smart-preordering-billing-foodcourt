@@ -1343,6 +1343,12 @@ textarea:focus-visible {
   font-weight: 600;
 }
 
+.link-button:hover,
+.link-button:active {
+  color: #2980b9;
+  text-decoration: none;
+}
+
 .link-button:focus,
 .link-button:focus-visible {
   outline: none;
