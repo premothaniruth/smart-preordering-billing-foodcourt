@@ -21,6 +21,110 @@ const TEMPLATE_OPTIONS = [
   { value: "item_buy_x_get_y", label: "Menu Item – Buy X Get Y" }
 ];
 
+const CUSTOM_ANY_TOKEN = "__custom_any__";
+
+const buildSelectionDefaults = () => ({
+  buy: {
+    mode: "fixed",
+    allowAny: false,
+    priceCap: "",
+    items: []
+  },
+  free: {
+    mode: "fixed",
+    allowAny: false,
+    priceCap: "",
+    items: []
+  }
+});
+
+const normalizeSelectionItems = (items) => {
+  if (!Array.isArray(items)) return [];
+  const unique = new Set();
+  const normalized = [];
+  items.forEach((entry) => {
+    if (entry == null) return;
+    let value = null;
+    if (typeof entry === "object") {
+      if (entry.id != null) value = entry.id;
+      else if (entry.value != null) value = entry.value;
+    } else {
+      value = entry;
+    }
+    if (value == null) return;
+    const str = String(value);
+    if (!str || unique.has(str)) return;
+    unique.add(str);
+    normalized.push(str);
+  });
+  return normalized;
+};
+
+const hydrateSelection = (rawSelection = {}, fallbackBuyItems = [], fallbackFreeItems = []) => {
+  const defaults = buildSelectionDefaults();
+  const buyRaw = rawSelection.buy || {};
+  const freeRaw = rawSelection.free || {};
+
+  const hydrateSide = (sideRaw, fallbackItems, defaultsForSide) => {
+    const rawMode = sideRaw.mode === "custom" ? "custom" : sideRaw.mode === "fixed" ? "fixed" : defaultsForSide.mode;
+    const itemsSource = Array.isArray(sideRaw.items) && sideRaw.items.length > 0 ? sideRaw.items : fallbackItems;
+    const items = normalizeSelectionItems(itemsSource);
+    const priceCap = sideRaw.priceCap != null && sideRaw.priceCap !== "" ? String(sideRaw.priceCap) : "";
+    const allowAny = rawMode === "custom"
+      ? (sideRaw.allowAny != null ? Boolean(sideRaw.allowAny) : items.length === 0)
+      : false;
+    return {
+      mode: rawMode,
+      allowAny,
+      priceCap,
+      items
+    };
+  };
+
+  return {
+    buy: hydrateSide(buyRaw, fallbackBuyItems, defaults.buy),
+    free: hydrateSide(freeRaw, fallbackFreeItems, defaults.free)
+  };
+};
+
+const buildSelectionSummary = (cfg) => {
+  const selection = cfg.selection || buildSelectionDefaults();
+  const buyQty = Number(cfg.buyQuantity || 0);
+  const freeQty = Number(cfg.freeQuantity || 0);
+
+  const pluralize = (qty, noun) => {
+    const safeQty = Number.isFinite(qty) ? qty : 0;
+    if (safeQty === 1) return `1 ${noun}`;
+    return `${safeQty || 0} ${noun}s`;
+  };
+
+  const describeSide = (side, qty, noun) => {
+    if (qty <= 0) return `0 ${noun}s`;
+    if (side.mode === "fixed") {
+      if (side.items.length === 0) return `${pluralize(qty, noun)} (selected manually)`;
+      if (side.items.length === 1) return `${pluralize(qty, noun)} of ${side.items.length} selected item`;
+      return `${pluralize(qty, noun)} from ${side.items.length} selected items`;
+    }
+    if (side.allowAny) {
+      return `any ${pluralize(qty, noun)}`;
+    }
+    if (side.items.length > 0) {
+      return `${pluralize(qty, noun)} from selected items`;
+    }
+    return `any ${pluralize(qty, noun)}`;
+  };
+
+  const buyText = describeSide(selection.buy, buyQty, "item");
+  const freeText = describeSide(selection.free, freeQty, "item");
+  const priceCapText = selection.free.priceCap
+    ? ` (up to ₹${selection.free.priceCap} each)`
+    : "";
+
+  const baseSummary = `Customer buys ${buyText}, gets ${freeText} free${priceCapText}.`;
+  const priceLogic = " Paid items are charged on higher-priced selections, free items apply to the lowest-priced eligible items.";
+  return `${baseSummary}${priceLogic}`;
+};
+
 const TemplateConfigFields = ({ offer, idx, updateConfigField, updateOfferField, combos, menuItems, groupedMenuItems }) => {
   const cfg = sanitizeConfig(offer.config);
 
@@ -400,42 +504,72 @@ const sanitizeConfig = (config = {}) => {
   const rawTargetItemIds = Array.isArray(config.targetItemIds) ? config.targetItemIds : [];
   const rawTargetItems = Array.isArray(config.targetItems) ? config.targetItems : [];
   const rawFreeItems = Array.isArray(config.freeItems) ? config.freeItems : [];
-  const normalizedFreeItems = [];
-  const seenFreeIds = new Set();
-  rawFreeItems.forEach((item) => {
-    const id = item?.id != null ? String(item.id) : (item?.value != null ? String(item.value) : "");
-    if (!id || seenFreeIds.has(id)) return;
-    seenFreeIds.add(id);
-    normalizedFreeItems.push({
-      id,
-      label: item?.label != null ? String(item.label) : "",
-      price: item?.price != null && item.price !== "" ? String(item.price) : "",
-      quantity: item?.quantity != null && item.quantity !== "" ? String(item.quantity) : ""
-    });
-  });
 
-  const normalizedTargetItems = [];
-  const seenTargetIds = new Set();
+  const targetLookup = new Map();
   rawTargetItems.forEach((item) => {
     const id = item?.id != null ? String(item.id) : (item?.value != null ? String(item.value) : "");
-    if (!id || seenTargetIds.has(id)) return;
-    seenTargetIds.add(id);
-    normalizedTargetItems.push({
-      id,
-      label: item?.label != null ? String(item.label) : "",
-      section: item?.section != null ? String(item.section) : ""
-    });
+    if (!id) return;
+    if (!targetLookup.has(id)) {
+      targetLookup.set(id, {
+        id,
+        label: item?.label != null ? String(item.label) : "",
+        section: item?.section != null ? String(item.section) : ""
+      });
+    }
   });
 
+  const freeLookup = new Map();
+  rawFreeItems.forEach((item) => {
+    const id = item?.id != null ? String(item.id) : (item?.value != null ? String(item.value) : "");
+    if (!id) return;
+    if (!freeLookup.has(id)) {
+      freeLookup.set(id, {
+        id,
+        label: item?.label != null ? String(item.label) : "",
+        price: item?.price != null && item.price !== "" ? String(item.price) : "",
+        quantity: item?.quantity != null && item.quantity !== "" ? String(item.quantity) : ""
+      });
+    }
+  });
+
+  let normalizedTargetItems = Array.from(targetLookup.values());
   if (!normalizedTargetItems.length && rawTargetItemIds.length > 0) {
     rawTargetItemIds.forEach((id) => {
       const strId = String(id);
-      if (!strId) return;
+      if (!strId || targetLookup.has(strId)) return;
       normalizedTargetItems.push({ id: strId, label: "", section: "" });
     });
   }
 
-  const hasWildcardTargets = normalizedTargetItems.some((item) => typeof item.id === 'string' && item.id.startsWith('custom-target-'));
+  let normalizedFreeItems = Array.from(freeLookup.values());
+
+  const selection = hydrateSelection(
+    config.selection,
+    normalizedTargetItems,
+    normalizedFreeItems
+  );
+
+  if (selection.buy.mode === "custom") {
+    if (selection.buy.allowAny) {
+      normalizedTargetItems = [];
+    } else if (selection.buy.items.length > 0) {
+      normalizedTargetItems = selection.buy.items.map((id) => {
+        const key = String(id);
+        return targetLookup.get(key) || { id: key, label: "", section: "" };
+      });
+    }
+  }
+
+  if (selection.free.mode === "custom") {
+    if (selection.free.allowAny) {
+      normalizedFreeItems = [];
+    } else if (selection.free.items.length > 0 && normalizedFreeItems.length === 0) {
+      normalizedFreeItems = selection.free.items.map((id) => {
+        const key = String(id);
+        return freeLookup.get(key) || { id: key, label: "", price: "", quantity: "" };
+      });
+    }
+  }
 
   let legacyFreeItemId = config.freeItemId != null ? String(config.freeItemId) : "";
   let legacyFreeItemLabel = config.freeItemLabel != null ? String(config.freeItemLabel) : "";
@@ -445,7 +579,8 @@ const sanitizeConfig = (config = {}) => {
     normalizedFreeItems.push({
       id: legacyFreeItemId,
       label: legacyFreeItemLabel,
-      price: legacyFreeItemPrice
+      price: legacyFreeItemPrice,
+      quantity: config.freeQuantity != null ? String(config.freeQuantity) : ""
     });
   }
 
@@ -454,9 +589,29 @@ const sanitizeConfig = (config = {}) => {
   legacyFreeItemLabel = primaryFreeItem?.label || legacyFreeItemLabel;
   legacyFreeItemPrice = primaryFreeItem?.price || legacyFreeItemPrice;
 
-  const targetItemIds = normalizedTargetItems.map((item) => {
+  let targetItemIds = normalizedTargetItems.map((item) => {
     const num = Number(item.id);
     return Number.isFinite(num) ? num : item.id;
+  });
+
+  if (selection.buy.mode === "custom") {
+    if (selection.buy.allowAny) {
+      targetItemIds = [CUSTOM_ANY_TOKEN];
+    } else if (selection.buy.items.length > 0) {
+      targetItemIds = selection.buy.items.map((value) => {
+        const num = Number(value);
+        return Number.isFinite(num) ? num : String(value);
+      });
+    }
+  }
+
+  const hasWildcardTargets = targetItemIds.some((id) => typeof id === "string" && (id.startsWith("custom-target-") || id === CUSTOM_ANY_TOKEN));
+
+  const summaryText = buildSelectionSummary({
+    ...config,
+    selection,
+    buyQuantity: config.buyQuantity,
+    freeQuantity: config.freeQuantity
   });
 
   return {
@@ -472,10 +627,12 @@ const sanitizeConfig = (config = {}) => {
     freeItems: normalizedFreeItems,
     targetItems: normalizedTargetItems,
     targetItemIds,
-    targetMatchMode: hasWildcardTargets && normalizedTargetItems.length > 0
-      ? (normalizedTargetItems.some((item) => Number.isFinite(Number(item.id))) ? 'mixed' : 'any')
-      : 'specific',
-    discountPercent: config.discountPercent != null ? String(config.discountPercent) : ""
+    targetMatchMode: hasWildcardTargets
+      ? (targetItemIds.some((id) => Number.isFinite(Number(id))) ? "mixed" : "any")
+      : "specific",
+    discountPercent: config.discountPercent != null ? String(config.discountPercent) : "",
+    selection,
+    summaryText
   };
 };
 

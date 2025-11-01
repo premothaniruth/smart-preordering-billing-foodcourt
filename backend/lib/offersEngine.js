@@ -45,11 +45,22 @@ const normalizeCondition = (condition = {}) => {
       if (condition.minSubtotal != null) base.minSubtotal = Number(condition.minSubtotal);
       if (condition.minQuantity != null) base.minQuantity = Number(condition.minQuantity);
       break;
-    case 'item_quantity':
-      base.itemIds = normalizeArray(condition.itemIds).map((id) => Number(id));
+    case 'item_quantity': {
+      const normalizedIds = normalizeArray(condition.itemIds).map((id) => {
+        if (typeof id === 'string') {
+          const trimmed = id.trim();
+          if (!trimmed) return null;
+          const maybeNumber = Number(trimmed);
+          return Number.isFinite(maybeNumber) ? maybeNumber : trimmed;
+        }
+        const numeric = Number(id);
+        return Number.isFinite(numeric) ? numeric : null;
+      }).filter((value) => value != null);
+      base.itemIds = normalizedIds;
       if (condition.minQuantity != null) base.minQuantity = Number(condition.minQuantity);
       if (condition.minSubtotal != null) base.minSubtotal = Number(condition.minSubtotal);
       break;
+    }
     case 'combo_quantity':
       base.comboIds = normalizeArray(condition.comboIds).map(String);
       if (condition.minQuantity != null) base.minQuantity = Number(condition.minQuantity);
@@ -92,10 +103,30 @@ const normalizeReward = (reward = {}) => {
       if (reward.sections) base.sections = normalizeArray(reward.sections).map(String);
       if (reward.itemIds) base.itemIds = normalizeArray(reward.itemIds).map((id) => Number(id));
       break;
-    case 'free_item':
-      base.itemId = reward.itemId != null ? Number(reward.itemId) : null;
+    case 'free_item': {
+      const rawId = reward.itemId;
+      if (rawId == null) {
+        base.itemId = null;
+      } else if (typeof rawId === 'string') {
+        const trimmed = rawId.trim();
+        if (!trimmed) {
+          base.itemId = null;
+        } else {
+          const maybeNumber = Number(trimmed);
+          base.itemId = Number.isFinite(maybeNumber) ? maybeNumber : trimmed;
+        }
+      } else {
+        const maybeNumber = Number(rawId);
+        base.itemId = Number.isFinite(maybeNumber) ? maybeNumber : rawId;
+      }
       base.quantity = reward.quantity != null ? Number(reward.quantity) : 1;
       base.price = reward.price != null ? Number(reward.price) : 0;
+      break;
+    }
+    case 'custom_free_selection':
+      base.quantity = reward.quantity != null ? Number(reward.quantity) : 1;
+      base.maxPrice = reward.maxPrice != null ? Number(reward.maxPrice) : null;
+      if (reward.selection) base.selection = clone(reward.selection);
       break;
     case 'informational':
       base.message = reward.message || '';
@@ -182,6 +213,8 @@ const buildCartContext = ({ flatItems = [], sectionLookup = new Map(), itemLooku
   let totalAmount = 0;
   let totalQuantity = 0;
 
+  const lineItems = [];
+
   for (const line of flatItems) {
     const quantity = Number(line.quantity || 0);
     const price = Number(line.price || 0);
@@ -204,6 +237,14 @@ const buildCartContext = ({ flatItems = [], sectionLookup = new Map(), itemLooku
     const sectionEntry = sectionTotals.get(section);
     sectionEntry.quantity += quantity;
     sectionEntry.amount += amount;
+
+    lineItems.push({
+      id: itemId,
+      name: line.name || `Item ${itemId}`,
+      price,
+      quantity,
+      option: line.option || null
+    });
   }
 
   return {
@@ -213,7 +254,159 @@ const buildCartContext = ({ flatItems = [], sectionLookup = new Map(), itemLooku
     itemTotals,
     comboCounts,
     sectionLookup,
-    itemLookup
+    itemLookup,
+    lineItems
+  };
+};
+
+const CUSTOM_ANY_TOKEN = '__custom_any__';
+
+const toPositiveInteger = (value, fallback = 0) => {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return fallback;
+  if (num <= 0) return fallback;
+  return Math.floor(num);
+};
+
+const toNullableNumber = (value) => {
+  if (value == null || value === '') return null;
+  const num = Number(value);
+  return Number.isFinite(num) && num >= 0 ? num : null;
+};
+
+const expandLineItems = (lineItems = []) => {
+  const expanded = [];
+  lineItems.forEach((line, lineIndex) => {
+    const quantity = toPositiveInteger(line.quantity, 0);
+    if (quantity === 0) return;
+    const price = Number(line.price || 0);
+    for (let i = 0; i < quantity; i += 1) {
+      expanded.push({
+        unitKey: `${lineIndex}:${i}`,
+        lineIndex,
+        itemId: line.id,
+        name: line.name || `Item ${line.id}`,
+        price,
+        option: line.option || null
+      });
+    }
+  });
+  return expanded;
+};
+
+const buildSelectionConfig = (configSource = {}) => {
+  const selection = configSource.selection || {};
+  const buy = selection.buy || {};
+  const free = selection.free || {};
+  const normalizeItems = (items) => {
+    if (!Array.isArray(items)) return [];
+    return items
+      .map((entry) => {
+        if (entry == null) return null;
+        if (typeof entry === 'object') {
+          const id = entry.id != null ? entry.id : entry.value;
+          if (id == null) return null;
+          return String(id);
+        }
+        return String(entry);
+      })
+      .filter(Boolean);
+  };
+
+  return {
+    buy: {
+      mode: buy.mode === 'fixed' ? 'fixed' : 'custom',
+      allowAny: buy.allowAny !== false,
+      priceCap: toNullableNumber(buy.priceCap),
+      items: normalizeItems(buy.items)
+    },
+    free: {
+      mode: free.mode === 'fixed' ? 'fixed' : 'custom',
+      allowAny: free.allowAny !== false,
+      priceCap: toNullableNumber(free.priceCap),
+      items: normalizeItems(free.items)
+    }
+  };
+};
+
+const computeCustomFreeSelection = ({
+  context,
+  configSource,
+  reward
+}) => {
+  const buyQuantity = toPositiveInteger(configSource.buyQuantity, 0);
+  const freeQuantity = toPositiveInteger(configSource.freeQuantity || reward.quantity, 0);
+  if (buyQuantity <= 0 || freeQuantity <= 0) {
+    return { discount: 0, tiers: 0, payItems: [], freeItems: [] };
+  }
+
+  const selection = buildSelectionConfig(configSource);
+  const buySelection = selection.buy;
+  const freeSelection = selection.free;
+  const expanded = expandLineItems(context.lineItems);
+  if (expanded.length === 0) {
+    return { discount: 0, tiers: 0, payItems: [], freeItems: [] };
+  }
+
+  const buySet = new Set(buySelection.items);
+  const freeSet = new Set(freeSelection.items);
+
+  const eligibleForBuy = expanded.filter((unit) => {
+    if (buySelection.mode === 'fixed') {
+      if (buySet.size === 0) return false;
+      return buySet.has(String(unit.itemId));
+    }
+    if (!buySelection.allowAny && buySet.size > 0) {
+      return buySet.has(String(unit.itemId));
+    }
+    if (buySelection.priceCap != null && unit.price > buySelection.priceCap) {
+      return false;
+    }
+    return true;
+  });
+
+  const groupSize = buyQuantity + freeQuantity;
+  if (groupSize === 0) {
+    return { discount: 0, tiers: 0, payItems: [], freeItems: [] };
+  }
+
+  const sorted = eligibleForBuy.sort((a, b) => b.price - a.price);
+  const tiers = Math.floor(sorted.length / groupSize);
+  if (tiers <= 0) {
+    return { discount: 0, tiers: 0, payItems: [], freeItems: [] };
+  }
+
+  const payItems = [];
+  const freeItems = [];
+
+  for (let tier = 0; tier < tiers; tier += 1) {
+    const start = tier * groupSize;
+    const end = start + groupSize;
+    const group = sorted.slice(start, end);
+    if (group.length < groupSize) break;
+    const payGroup = group.slice(0, buyQuantity);
+    payItems.push(...payGroup);
+
+    let freeGroup = group.slice(buyQuantity);
+    if (freeSelection.mode === 'fixed' && freeSet.size > 0) {
+      freeGroup = freeGroup.filter((unit) => freeSet.has(String(unit.itemId)));
+    } else if (!freeSelection.allowAny && freeSet.size > 0) {
+      freeGroup = freeGroup.filter((unit) => freeSet.has(String(unit.itemId)));
+    }
+    if (freeSelection.priceCap != null) {
+      freeGroup = freeGroup.filter((unit) => unit.price <= freeSelection.priceCap);
+    }
+    if (freeGroup.length === 0) continue;
+    freeGroup.sort((a, b) => a.price - b.price);
+    freeItems.push(...freeGroup.slice(0, freeQuantity));
+  }
+
+  const discount = freeItems.reduce((sum, unit) => sum + (unit.price || 0), 0);
+  return {
+    discount,
+    tiers,
+    payItems,
+    freeItems
   };
 };
 
@@ -242,7 +435,7 @@ const evaluateCondition = (condition, context, evaluationTimeHM, evaluationDate)
     }
     case 'item_quantity': {
       const ids = Array.isArray(condition.itemIds) ? condition.itemIds : [];
-      const hasWildcard = ids.some((id) => typeof id === 'string' && id.startsWith('custom-target-'));
+      const hasWildcard = ids.some((id) => typeof id === 'string' && (id.startsWith('custom-target-') || id === CUSTOM_ANY_TOKEN));
       if (!hasWildcard && ids.length === 0) return false;
       let subtotal = 0;
       let quantity = 0;
@@ -253,6 +446,7 @@ const evaluateCondition = (condition, context, evaluationTimeHM, evaluationDate)
       }
 
       for (const id of ids) {
+        if (typeof id === 'string' && (id.startsWith('custom-target-') || id === CUSTOM_ANY_TOKEN)) continue;
         const numericId = Number(id);
         if (!Number.isFinite(numericId)) continue;
         const entry = context.itemTotals.get(numericId);
@@ -485,6 +679,32 @@ const evaluateReward = ({ reward, context, offer, itemLookup, summary }) => {
           section
         };
       }
+      break;
+    }
+    case 'custom_free_selection': {
+      const configSource = offer.metadata?.configSnapshot || offer.metadata?.config || offer.metadata || {};
+      const selectionResult = computeCustomFreeSelection({ context, configSource, reward });
+      const discountAmount = selectionResult.discount || 0;
+      if (discountAmount > 0) {
+        discount += discountAmount;
+      }
+      rewardSummary.details = {
+        discount: discountAmount,
+        tiersApplied: selectionResult.tiers,
+        freeItems: selectionResult.freeItems.map((unit) => ({
+          itemId: unit.itemId,
+          name: unit.name,
+          price: unit.price,
+          lineIndex: unit.lineIndex
+        })),
+        payItems: selectionResult.payItems.map((unit) => ({
+          itemId: unit.itemId,
+          name: unit.name,
+          price: unit.price,
+          lineIndex: unit.lineIndex
+        })),
+        summary: configSource.summaryText || ''
+      };
       break;
     }
     case 'informational': {
