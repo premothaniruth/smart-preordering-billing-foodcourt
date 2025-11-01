@@ -2216,7 +2216,6 @@ app.get('/offers', (req, res) => {
   }
 });
 
-// Mark order as ready
 /**
  * POST /order/ready/:id
  * Vendor: Mark an order as ready; records readyAt timestamp.
@@ -2238,6 +2237,41 @@ app.post("/order/ready/:id", authenticateVendor, (req, res) => {
     res.json({ status: "success", message: `Order ${orderId} marked ready` });
   } catch (error) {
     res.status(500).json({ message: "Error marking order ready" });
+  }
+});
+
+// Mark order as picked/completed
+/**
+ * POST /order/picked/:id
+ * Vendor: Mark a ready order as picked; moves it to completed tab.
+ */
+app.post("/order/picked/:id", authenticateVendor, (req, res) => {
+  try {
+    const orders = getOrders();
+    const orderId = parseInt(req.params.id);
+    const vendorShopId = req.vendor.shopId;
+
+    const order = orders.find((o) => o.id === orderId && o.shopId === vendorShopId);
+    if (!order) {
+      return res.status(404).json({ message: "Order not found for your shop" });
+    }
+
+    if (order.status !== "ready") {
+      return res.status(400).json({ message: "Only ready orders can be marked as picked" });
+    }
+
+    const now = new Date().toISOString();
+    order.status = "completed";
+    order.pickedAt = now;
+    order.completedAt = now;
+    if (!order.readyAt) {
+      order.readyAt = now;
+    }
+
+    saveOrders(orders);
+    res.json({ status: "success", message: `Order ${orderId} marked completed` });
+  } catch (error) {
+    res.status(500).json({ message: "Error marking order picked" });
   }
 });
 
