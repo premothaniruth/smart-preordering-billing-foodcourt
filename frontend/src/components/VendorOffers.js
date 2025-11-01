@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { fetchOffers, fetchSectionsMeta, fetchCombos, updateOffers } from "../api";
+import { fetchOffers, fetchCombos, fetchMenuSections, updateOffers } from "../api";
 import { toast } from "react-toastify";
 
 const TEMPLATE_OPTIONS = [
@@ -17,8 +17,38 @@ const parseCommaNumbers = (input) => {
     .filter((n) => Number.isFinite(n) && n > 0);
 };
 
-const TemplateConfigFields = ({ offer, idx, updateConfigField, combos }) => {
+const TemplateConfigFields = ({ offer, idx, updateConfigField, updateOfferField, combos, menuItems }) => {
   const cfg = sanitizeConfig(offer.config);
+
+  const handleTargetItemsChange = (event) => {
+    const selected = Array.from(event.target.selectedOptions || []).map((opt) => Number(opt.value));
+    updateConfigField(idx, 'targetItemIds', selected);
+  };
+
+  const handleFreeItemChange = (event) => {
+    const value = event.target.value;
+    updateConfigField(idx, 'freeItemId', value);
+    if (!value) {
+      return;
+    }
+    const match = menuItems.find((item) => String(item.id) === value);
+    if (match) {
+      if (!cfg.freeItemLabel) {
+        updateConfigField(idx, 'freeItemLabel', match.name || '');
+      }
+      if (!cfg.freeItemPrice && match.price != null) {
+        updateConfigField(idx, 'freeItemPrice', String(match.price));
+      }
+    }
+  };
+
+  const handleComboSelection = (event) => {
+    const selected = Array.from(event.target.selectedOptions || []).map((opt) => opt.value);
+    updateOfferField(idx, 'applicableComboIds', selected);
+  };
+
+  const menuOptions = menuItems || [];
+  const selectedComboIds = Array.isArray(offer.applicableComboIds) ? offer.applicableComboIds.map(String) : [];
 
   switch (offer.template) {
     case "percent_order":
@@ -123,12 +153,16 @@ const TemplateConfigFields = ({ offer, idx, updateConfigField, combos }) => {
     case "item_buy_x_get_y":
       return (
         <>
-          <div>
-            <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>Target Item IDs (comma separated)</div>
-            <input
-              value={cfg.targetItemIdsInput}
-              onChange={(e) => updateConfigField(idx, 'targetItemIdsInput', e.target.value)}
-            />
+          <div style={{ gridColumn: '1 / -1' }}>
+            <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>Target Items (Buy)</div>
+            <select multiple value={Array.isArray(cfg.targetItemIds) ? cfg.targetItemIds.map(String) : []} onChange={handleTargetItemsChange} style={{ minHeight: 110 }}>
+              {menuOptions.map((item) => (
+                <option key={item.id} value={String(item.id)}>
+                  {item.name} {item.section ? `(${item.section})` : ''}
+                </option>
+              ))}
+            </select>
+            {menuOptions.length === 0 && <div style={{ fontSize: 12, color: '#c0392b', marginTop: 4 }}>Add menu items first to configure item-based offers.</div>}
           </div>
           <div>
             <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>Buy Quantity</div>
@@ -139,12 +173,15 @@ const TemplateConfigFields = ({ offer, idx, updateConfigField, combos }) => {
             />
           </div>
           <div>
-            <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>Free Item ID</div>
-            <input
-              type="number"
-              value={cfg.freeItemId}
-              onChange={(e) => updateConfigField(idx, 'freeItemId', e.target.value)}
-            />
+            <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>Free Item</div>
+            <select value={cfg.freeItemId} onChange={handleFreeItemChange}>
+              <option value="">-- Select Item --</option>
+              {menuOptions.map((item) => (
+                <option key={item.id} value={String(item.id)}>
+                  {item.name} {item.section ? `(${item.section})` : ''}
+                </option>
+              ))}
+            </select>
           </div>
           <div>
             <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>Free Quantity</div>
@@ -186,7 +223,9 @@ const sanitizeConfig = (config = {}) => ({
   freeItemLabel: config.freeItemLabel ?? "",
   freeItemPrice: config.freeItemPrice ?? "",
   discountPercent: config.discountPercent ?? "",
-  targetItemIdsInput: config.targetItemIdsInput ?? (Array.isArray(config.targetItemIds) ? config.targetItemIds.join(", ") : "")
+  targetItemIds: Array.isArray(config.targetItemIds)
+    ? config.targetItemIds.map((id) => Number(id)).filter((id) => Number.isFinite(id))
+    : [],
 });
 
 const buildConditionsAndRewards = (offer) => {
@@ -262,7 +301,7 @@ const buildConditionsAndRewards = (offer) => {
       break;
     }
     case "item_buy_x_get_y": {
-      const targetIds = parseCommaNumbers(cfg.targetItemIdsInput);
+      const targetIds = Array.isArray(cfg.targetItemIds) ? cfg.targetItemIds : [];
       const buyQty = Number(cfg.buyQuantity || 0);
       if (targetIds.length > 0 && buyQty > 0) {
         conditions.push({
@@ -291,9 +330,6 @@ const buildConditionsAndRewards = (offer) => {
   }
 
   const snapshot = { ...cfg };
-  if (snapshot.targetItemIdsInput) {
-    snapshot.targetItemIds = parseCommaNumbers(snapshot.targetItemIdsInput);
-  }
   return { conditions, rewards, configSnapshot: snapshot };
 };
 
@@ -316,7 +352,7 @@ const adaptOffer = (offer = {}) => {
   if (itemCond) {
     if (itemCond.minQuantity != null) config.buyQuantity = String(itemCond.minQuantity);
     if (Array.isArray(itemCond.itemIds) && itemCond.itemIds.length > 0) {
-      config.targetItemIdsInput = itemCond.itemIds.join(", ");
+      config.targetItemIds = itemCond.itemIds.map((id) => Number(id)).filter((id) => Number.isFinite(id));
     }
   }
 
@@ -381,6 +417,7 @@ const VendorOffers = ({ token }) => {
 
   const [offers, setOffers] = useState([]);
   const [sections, setSections] = useState([]);
+  const [menuItems, setMenuItems] = useState([]);
   const [combos, setCombos] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -389,14 +426,33 @@ const VendorOffers = ({ token }) => {
     try {
       const [off, sec, cmb] = await Promise.all([
         fetchOffers(vendorShopId),
-        fetchSectionsMeta(),
+        fetchMenuSections(vendorShopId),
         fetchCombos(vendorShopId, false)
       ]);
       setOffers(Array.isArray(off) ? off.map(adaptOffer) : []);
-      setSections(Array.isArray(sec?.names) ? sec.names : []);
+      const sectionNames = Array.isArray(sec?.sections) ? sec.sections.map((s) => s.name) : [];
+      setSections(sectionNames);
+      if (Array.isArray(sec?.sections)) {
+        const itemsFlat = [];
+        sec.sections.forEach((section) => {
+          if (!Array.isArray(section.items)) return;
+          section.items.forEach((item) => {
+            itemsFlat.push({
+              id: item.id,
+              name: item.name,
+              price: item.price,
+              section: section.name,
+            });
+          });
+        });
+        setMenuItems(itemsFlat);
+      } else {
+        setMenuItems([]);
+      }
       setCombos(Array.isArray(cmb) ? cmb : []);
     } catch {
       setOffers([]); setSections([]); setCombos([]);
+      setMenuItems([]);
     }
     setLoading(false);
   };
@@ -449,7 +505,11 @@ const VendorOffers = ({ token }) => {
       const next = [...prev];
       const current = { ...next[idx] };
       const config = sanitizeConfig(current.config);
-      config[field] = value;
+      if (field === 'targetItemIds') {
+        config.targetItemIds = Array.isArray(value) ? value.map((id) => Number(id)).filter((id) => Number.isFinite(id)) : [];
+      } else {
+        config[field] = value;
+      }
       if (field === 'percent' || field === 'discountPercent') {
         current.discountPercent = value;
       }
@@ -571,7 +631,9 @@ const VendorOffers = ({ token }) => {
                 offer={o}
                 idx={idx}
                 updateConfigField={updateConfigField}
+                updateOfferField={updateField}
                 combos={combos}
+                menuItems={menuItems}
               />
             </div>
           </div>
@@ -579,25 +641,35 @@ const VendorOffers = ({ token }) => {
           <div style={{ marginTop: 10, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             <div>
               <div style={{ fontWeight: 600, marginBottom: 6 }}>Applicable Sections</div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              <select
+                multiple
+                value={Array.isArray(o.applicableSections) ? o.applicableSections : []}
+                onChange={(e) => {
+                  const selected = Array.from(e.target.selectedOptions || []).map((opt) => opt.value);
+                  updateField(idx, 'applicableSections', selected);
+                }}
+                style={{ minHeight: 100 }}
+              >
                 {sections.map((s) => (
-                  <label key={s} className="menu-item-badge" style={{ cursor: 'pointer' }}>
-                    <input type="checkbox" style={{ display: 'none' }} checked={Array.isArray(o.applicableSections) && o.applicableSections.includes(s)} onChange={()=>toggleArrayValue(idx,'applicableSections', s)} />
-                    {s}
-                  </label>
+                  <option key={s} value={s}>{s}</option>
                 ))}
-              </div>
+              </select>
             </div>
             <div>
               <div style={{ fontWeight: 600, marginBottom: 6 }}>Applicable Combo IDs</div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              <select
+                multiple
+                value={Array.isArray(o.applicableComboIds) ? o.applicableComboIds.map(String) : []}
+                onChange={(e) => {
+                  const selected = Array.from(e.target.selectedOptions || []).map((opt) => opt.value);
+                  updateField(idx, 'applicableComboIds', selected);
+                }}
+                style={{ minHeight: 100 }}
+              >
                 {combos.map((c) => (
-                  <label key={c.id} className="menu-item-badge" style={{ cursor: 'pointer' }}>
-                    <input type="checkbox" style={{ display: 'none' }} checked={Array.isArray(o.applicableComboIds) && o.applicableComboIds.map(String).includes(String(c.id))} onChange={()=>toggleArrayValue(idx,'applicableComboIds', c.id)} />
-                    {c.name} ({c.id})
-                  </label>
+                  <option key={c.id} value={String(c.id)}>{c.name} ({c.id})</option>
                 ))}
-              </div>
+              </select>
             </div>
           </div>
 
