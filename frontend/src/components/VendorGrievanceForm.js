@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
 import { submitVendorGrievance } from "../api";
 import { toast } from "react-toastify";
+import SosButton from "./SosButton";
 
 const priorityOptions = [
   { value: "low", label: "Low" },
@@ -9,7 +10,7 @@ const priorityOptions = [
   { value: "high", label: "High" }
 ];
 
-const VendorGrievanceForm = ({ token, onClose }) => {
+const VendorGrievanceForm = ({ token, onClose, sosState, onTriggerSos, onResolveSos }) => {
   const [subject, setSubject] = useState("");
   const [priority, setPriority] = useState("medium");
   const [description, setDescription] = useState("");
@@ -125,13 +126,25 @@ const VendorGrievanceForm = ({ token, onClose }) => {
               required
             />
           </div>
-          <div className="modal-actions">
-            <button type="button" className="secondary-button" onClick={onClose} disabled={submitting}>
-              Cancel
-            </button>
-            <button type="submit" className="primary-button" disabled={submitting}>
-              {submitting ? "Submitting..." : "Submit Concern"}
-            </button>
+          <div className="modal-actions" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+              <SosButton
+                isActive={Boolean(sosState?.active)}
+                onTrigger={onTriggerSos}
+                onResolve={onResolveSos}
+              />
+              <div style={{ display: "flex", gap: 10 }}>
+                <button type="button" className="secondary-button" onClick={onClose} disabled={submitting}>
+                  Cancel
+                </button>
+                <button type="submit" className="primary-button" disabled={submitting}>
+                  {submitting ? "Submitting..." : "Submit Concern"}
+                </button>
+              </div>
+            </div>
+            <p style={{ fontSize: 12, color: "#7f8c8d", margin: 0 }}>
+              SOS alerts should be used only for safety emergencies. For operational issues, please submit the concern above.
+            </p>
           </div>
         </form>
       </div>
@@ -141,11 +154,21 @@ const VendorGrievanceForm = ({ token, onClose }) => {
 
 VendorGrievanceForm.propTypes = {
   token: PropTypes.string.isRequired,
-  onClose: PropTypes.func
+  onClose: PropTypes.func,
+  sosState: PropTypes.shape({
+    active: PropTypes.bool,
+    currentEventId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    message: PropTypes.string
+  }),
+  onTriggerSos: PropTypes.func,
+  onResolveSos: PropTypes.func
 };
 
 VendorGrievanceForm.defaultProps = {
-  onClose: () => {}
+  onClose: () => {},
+  sosState: null,
+  onTriggerSos: null,
+  onResolveSos: null
 };
 
 export default VendorGrievanceForm;

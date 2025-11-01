@@ -5,7 +5,8 @@ import { toast } from "react-toastify";
 const TEMPLATE_OPTIONS = [
   { value: "percent_order", label: "% Off Order / Sections" },
   { value: "flat_order", label: "Flat Discount" },
-  { value: "combo_buy_x_get_y", label: "Combo – Buy X Get Free Item" },
+  { value: "combo_buy_x_get_y", label: "Combo – Buy X Get Free Item (legacy)" },
+  { value: "combo_buy_item_free", label: "Combo – Buy Combo Get Item Free" },
   { value: "item_buy_x_get_y", label: "Menu Item – Buy X Get Y" }
 ];
 
@@ -138,6 +139,76 @@ const TemplateConfigFields = ({ offer, idx, updateConfigField, updateOfferField,
           )}
         </>
       );
+    case "combo_buy_item_free":
+      return (
+        <>
+          <div style={{ gridColumn: '1 / -1' }}>
+            <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>Eligible Combos</div>
+            <select
+              multiple
+              value={selectedComboIds}
+              onChange={handleComboSelection}
+              style={{ minHeight: 120 }}
+            >
+              {combos.map((combo) => (
+                <option key={combo.id} value={String(combo.id)}>
+                  {combo.name} ({combo.id})
+                </option>
+              ))}
+            </select>
+            {combos.length === 0 && (
+              <div style={{ fontSize: 12, color: '#c0392b', marginTop: 4 }}>
+                No combos available. Add combos first to use this template.
+              </div>
+            )}
+          </div>
+          <div>
+            <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>Buy Quantity</div>
+            <input
+              type="number"
+              value={cfg.buyQuantity || '1'}
+              onChange={(e) => updateConfigField(idx, 'buyQuantity', e.target.value)}
+            />
+          </div>
+          <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ fontSize: 12, color: '#666', marginBottom: 0 }}>Free Item</div>
+            <select value={cfg.freeItemId} onChange={handleFreeItemChange} style={{ width: '100%', minHeight: 32 }}>
+              <option value="">-- Select Item --</option>
+              {menuOptions.map((item) => (
+                <option key={item.id} value={String(item.id)}>
+                  {item.name} {item.section ? `(${item.section})` : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ fontSize: 12, color: '#666', marginBottom: 0 }}>Free Quantity</div>
+            <input
+              type="number"
+              value={cfg.freeQuantity}
+              onChange={(e) => updateConfigField(idx, 'freeQuantity', e.target.value)}
+              style={{ width: '100%' }}
+            />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ fontSize: 12, color: '#666', marginBottom: 0 }}>Optional Free Item Label</div>
+            <input
+              value={cfg.freeItemLabel}
+              onChange={(e) => updateConfigField(idx, 'freeItemLabel', e.target.value)}
+              style={{ width: '100%' }}
+            />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ fontSize: 12, color: '#666', marginBottom: 0 }}>Optional Free Item Price</div>
+            <input
+              type="number"
+              value={cfg.freeItemPrice}
+              onChange={(e) => updateConfigField(idx, 'freeItemPrice', e.target.value)}
+              style={{ width: '100%' }}
+            />
+          </div>
+        </>
+      );
     case "item_buy_x_get_y":
       return (
         <>
@@ -213,20 +284,26 @@ const TemplateConfigFields = ({ offer, idx, updateConfigField, updateOfferField,
   }
 };
 
-const sanitizeConfig = (config = {}) => ({
-  minTotal: config.minTotal != null ? String(config.minTotal) : "",
-  percent: config.percent != null ? String(config.percent) : "",
-  amount: config.amount != null ? String(config.amount) : "",
-  buyQuantity: config.buyQuantity != null ? String(config.buyQuantity) : "",
-  freeQuantity: config.freeQuantity != null ? String(config.freeQuantity) : "1",
-  freeItemId: config.freeItemId != null ? String(config.freeItemId) : "",
-  freeItemLabel: config.freeItemLabel != null ? String(config.freeItemLabel) : "",
-  freeItemPrice: config.freeItemPrice != null ? String(config.freeItemPrice) : "",
-  discountPercent: config.discountPercent != null ? String(config.discountPercent) : "",
-  targetItemIds: Array.isArray(config.targetItemIds)
+const sanitizeConfig = (config = {}) => {
+  const template = config.template != null ? String(config.template) : "";
+  const targetItemIds = Array.isArray(config.targetItemIds)
     ? config.targetItemIds.map((id) => Number(id)).filter((id) => Number.isFinite(id))
-    : [],
-});
+    : [];
+
+  return {
+    template,
+    minTotal: config.minTotal != null ? String(config.minTotal) : "",
+    percent: config.percent != null ? String(config.percent) : "",
+    amount: config.amount != null ? String(config.amount) : "",
+    buyQuantity: config.buyQuantity != null ? String(config.buyQuantity) : "",
+    freeQuantity: config.freeQuantity != null ? String(config.freeQuantity) : "1",
+    freeItemId: config.freeItemId != null ? String(config.freeItemId) : "",
+    freeItemLabel: config.freeItemLabel != null ? String(config.freeItemLabel) : "",
+    freeItemPrice: config.freeItemPrice != null ? String(config.freeItemPrice) : "",
+    discountPercent: config.discountPercent != null ? String(config.discountPercent) : "",
+    targetItemIds
+  };
+};
 
 const buildConditionsAndRewards = (offer) => {
   const cfg = sanitizeConfig(offer.config);
@@ -300,6 +377,30 @@ const buildConditionsAndRewards = (offer) => {
       }
       break;
     }
+    case "combo_buy_item_free": {
+      const buyQty = Number(cfg.buyQuantity || 1);
+      if (combos.length > 0 && buyQty > 0) {
+        conditions.push({
+          type: "combo_quantity",
+          comboIds: combos,
+          minQuantity: buyQty
+        });
+      }
+      const freeItemId = Number(cfg.freeItemId || 0);
+      const freeQty = Number(cfg.freeQuantity || 1);
+      const freePrice = Number(cfg.freeItemPrice || 0);
+      if (freeItemId > 0 && freeQty > 0) {
+        const reward = {
+          type: "free_item",
+          itemId: freeItemId,
+          quantity: freeQty
+        };
+        if (!Number.isNaN(freePrice) && freePrice > 0) reward.price = freePrice;
+        if (cfg.freeItemLabel) reward.description = cfg.freeItemLabel;
+        rewards.push(reward);
+      }
+      break;
+    }
     case "item_buy_x_get_y": {
       const targetIds = Array.isArray(cfg.targetItemIds) ? cfg.targetItemIds : [];
       const buyQty = Number(cfg.buyQuantity || 0);
@@ -329,7 +430,7 @@ const buildConditionsAndRewards = (offer) => {
       break;
   }
 
-  const snapshot = { ...cfg };
+  const snapshot = { ...cfg, template: offer.template };
   return { conditions, rewards, configSnapshot: snapshot };
 };
 
@@ -377,6 +478,9 @@ const adaptOffer = (offer = {}) => {
   }
 
   let template = offer.template;
+  if (!template && offer.metadata?.configSnapshot?.template) {
+    template = offer.metadata.configSnapshot.template;
+  }
   if (!template) {
     if (comboCond || (Array.isArray(offer.applicableComboIds) && offer.applicableComboIds.length > 0)) {
       template = "combo_buy_x_get_y";
@@ -399,7 +503,7 @@ const adaptOffer = (offer = {}) => {
   return {
     ...offer,
     template,
-    config,
+    config: { ...config, template },
     applicableSections: Array.isArray(offer.applicableSections) ? offer.applicableSections : [],
     applicableComboIds: Array.isArray(offer.applicableComboIds) ? offer.applicableComboIds : [],
   };
@@ -475,7 +579,7 @@ const VendorOffers = ({ token }) => {
       stackable: true,
       maxDiscountAmount: null,
       template: "percent_order",
-      config: sanitizeConfig({ percent: "5" })
+      config: sanitizeConfig({ template: "percent_order", percent: "5" })
     }, ...prev]));
   };
 
@@ -496,13 +600,15 @@ const VendorOffers = ({ token }) => {
       const current = { ...next[idx] };
       if (field === 'template') {
         const defaults = {
-          percent_order: { percent: current.config?.percent || current.discountPercent || "10", minTotal: current.config?.minTotal || "" },
-          flat_order: { amount: current.config?.amount || current.discountAmount || "20", minTotal: current.config?.minTotal || "" },
-          combo_buy_x_get_y: { buyQuantity: current.config?.buyQuantity || "2", freeQuantity: current.config?.freeQuantity || "1", freeItemId: current.config?.freeItemId || "", freeItemLabel: current.config?.freeItemLabel || "", freeItemPrice: current.config?.freeItemPrice || "", discountPercent: current.config?.discountPercent || "" },
-          item_buy_x_get_y: { buyQuantity: current.config?.buyQuantity || "3", freeQuantity: current.config?.freeQuantity || "1", freeItemId: current.config?.freeItemId || "", freeItemLabel: current.config?.freeItemLabel || "", targetItemIds: current.config?.targetItemIds || [] }
+          percent_order: { template: 'percent_order', percent: current.config?.percent || current.discountPercent || "10", minTotal: current.config?.minTotal || "" },
+          flat_order: { template: 'flat_order', amount: current.config?.amount || current.discountAmount || "20", minTotal: current.config?.minTotal || "" },
+          combo_buy_x_get_y: { template: 'combo_buy_x_get_y', buyQuantity: current.config?.buyQuantity || "2", freeQuantity: current.config?.freeQuantity || "1", freeItemId: current.config?.freeItemId || "", freeItemLabel: current.config?.freeItemLabel || "", freeItemPrice: current.config?.freeItemPrice || "", discountPercent: current.config?.discountPercent || "" },
+          combo_buy_item_free: { template: 'combo_buy_item_free', buyQuantity: current.config?.buyQuantity || "1", freeQuantity: current.config?.freeQuantity || "1", freeItemId: current.config?.freeItemId || "", freeItemLabel: current.config?.freeItemLabel || "", freeItemPrice: current.config?.freeItemPrice || "" },
+          item_buy_x_get_y: { template: 'item_buy_x_get_y', buyQuantity: current.config?.buyQuantity || "3", freeQuantity: current.config?.freeQuantity || "1", freeItemId: current.config?.freeItemId || "", freeItemLabel: current.config?.freeItemLabel || "", targetItemIds: current.config?.targetItemIds || [] }
         };
         current.template = value;
-        current.config = sanitizeConfig(defaults[value] || {});
+        const baseConfig = sanitizeConfig(defaults[value] || {});
+        current.config = { ...baseConfig, template: value };
       } else {
         current[field] = value;
       }
@@ -521,6 +627,7 @@ const VendorOffers = ({ token }) => {
       } else {
         config[field] = value;
       }
+      config.template = current.template || config.template || "";
       if (field === 'percent' || field === 'discountPercent') {
         current.discountPercent = value;
       }

@@ -891,15 +891,6 @@ function App() {
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20 }}>
               <button onClick={handleLogout} style={{ background: '#e74c3c', color: '#fff' }}>Logout</button>
             </div>
-            {showVendorConcernForm && (
-              <div style={{ marginTop: 20, display: 'flex', justifyContent: 'flex-end' }}>
-                <SosButton
-                  isActive={Boolean(sosState?.active)}
-                  onTrigger={() => handleSosTrigger("vendor")}
-                  onResolve={() => handleSosResolve("vendor")}
-                />
-              </div>
-            )}
           </>
         ) : (
           <>
@@ -1160,6 +1151,9 @@ function App() {
         <VendorGrievanceForm
           token={vendorToken}
           onClose={() => setShowVendorConcernForm(false)}
+          sosState={sosState}
+          onTriggerSos={() => handleSosTrigger("vendor")}
+          onResolveSos={() => handleSosResolve("vendor")}
         />
       )}
 
