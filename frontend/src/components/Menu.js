@@ -432,7 +432,7 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
     const stockLeft = Math.max(0, inventory);
     const thisQty = qtyNoOption(item);
     const itemAvail = computeItemAvailability(item);
-    const { allowAction, allowedNow, sectionWindow, itemWindow } = itemAvail;
+    const { allowAction, allowedNow, sectionWindow, itemWindow, nextDayOnly } = itemAvail;
     return (
       <div key={item.id} className="menu-item-card" style={totalQty > 0 ? { border: '2px solid #111', boxShadow: '0 0 0 3px rgba(0,0,0,0.05)' } : {}}>
         <div style={{ position: "relative" }}>
