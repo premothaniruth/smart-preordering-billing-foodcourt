@@ -231,10 +231,13 @@ function AdminControl({
     } else {
       setSendVendorShopId("");
     }
-  }, [selectedBulkOrderId]);
+  }, [selectedBulkOrder]);
 
   const previousState = selectedBulkOrder?.adminReview?.previousState || null;
   const previousUpdatedAt = selectedBulkOrder?.adminReview?.previousUpdatedAt || null;
+  const previousRevisionDisplay = previousUpdatedAt
+    ? new Date(previousUpdatedAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })
+    : null;
 
   const formatValue = (value) => {
     if (value == null || value === "") return "—";
@@ -504,6 +507,77 @@ function AdminControl({
                       Send to Vendor
                     </button>
                   </div>
+                  {vendorDirectoryLoading && (
+                    <div style={{ fontSize: 12, color: "#7f8c8d", marginTop: 8 }}>Loading vendor directory…</div>
+                  )}
+                  {vendorDirectoryError && (
+                    <div style={{ fontSize: 12, color: "#c0392b", marginTop: 8 }}>{vendorDirectoryError}</div>
+                  )}
+                  {assignedVendorDetails && (
+                    <div style={{ fontSize: 12, color: "#2c3e50", marginTop: 8 }}>
+                      <strong>Current assignment:</strong> {assignedVendorDetails.shopName}
+                      {assignedVendorDetails.contactEmail ? ` · ${assignedVendorDetails.contactEmail}` : ""}
+                      {assignedVendorDetails.contactPhone ? ` · ${assignedVendorDetails.contactPhone}` : ""}
+                    </div>
+                  )}
+                  {selectedVendorDetails && (!assignedVendorDetails || assignedVendorDetails.shopId !== selectedVendorDetails.shopId) && (
+                    <div style={{ fontSize: 12, color: "#2c3e50", marginTop: 4 }}>
+                      <strong>Selected vendor:</strong> {selectedVendorDetails.shopName}
+                      {selectedVendorDetails.contactEmail ? ` · ${selectedVendorDetails.contactEmail}` : ""}
+                      {selectedVendorDetails.contactPhone ? ` · ${selectedVendorDetails.contactPhone}` : ""}
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ marginTop: 24 }}>
+                  <h4>Request Details</h4>
+                  {previousRevisionDisplay && (
+                    <div style={{ fontSize: 12, color: "#7f8c8d", marginBottom: 8 }}>
+                      Previous revision captured on {previousRevisionDisplay}
+                    </div>
+                  )}
+                  <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
+                    {renderDiffCard("Event name", selectedBulkOrder.eventName, previousState?.eventName)}
+                    {renderDiffCard("Event type", selectedBulkOrder.eventType, previousState?.eventType)}
+                    {renderDiffCard("Theme", selectedBulkOrder.eventTheme, previousState?.eventTheme)}
+                    {renderDiffCard("Expected headcount", selectedBulkOrder.expectedHeadcount, previousState?.expectedHeadcount)}
+                  </div>
+
+                  <h5 style={{ marginTop: 16 }}>Schedule &amp; logistics</h5>
+                  <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
+                    {renderDiffCard("Event date", selectedBulkOrder.eventDate, previousState?.eventDate)}
+                    {renderDiffCard("Start time", selectedBulkOrder.eventStartTime, previousState?.eventStartTime)}
+                    {renderDiffCard("End time", selectedBulkOrder.eventEndTime, previousState?.eventEndTime)}
+                    {renderDiffCard("Campus", selectedBulkOrder.campus, previousState?.campus)}
+                    {renderDiffCard("Building", selectedBulkOrder.building, previousState?.building)}
+                    {renderDiffCard("Floor", selectedBulkOrder.floor, previousState?.floor)}
+                    {renderDiffCard("Location", selectedBulkOrder.location, previousState?.location)}
+                  </div>
+
+                  <div style={{ display: "grid", gap: 12, marginTop: 16 }}>
+                    {renderDiffCard("Menu plan", selectedBulkOrder.itemGroups, previousState?.itemGroups, { multiline: true, formatter: formatItemGroups })}
+                    {renderDiffCard("Delivery slots", selectedBulkOrder.deliverySlots, previousState?.deliverySlots, { multiline: true, formatter: formatDeliverySlots })}
+                    {renderDiffCard("Attendee groups", selectedBulkOrder.attendeeGroups, previousState?.attendeeGroups, { multiline: true, formatter: formatAttendeeGroups })}
+                  </div>
+
+                  <h5 style={{ marginTop: 16 }}>Organizer &amp; notes</h5>
+                  <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
+                    {renderDiffCard("Organizer name", selectedBulkOrder.organizer?.name || selectedBulkOrder.organizerName, previousState?.organizer?.name || previousState?.organizerName)}
+                    {renderDiffCard("Organizer email", selectedBulkOrder.organizer?.email || selectedBulkOrder.organizerEmail, previousState?.organizer?.email || previousState?.organizerEmail)}
+                    {renderDiffCard("Organizer mobile", selectedBulkOrder.organizer?.mobile || selectedBulkOrder.organizerMobile, previousState?.organizer?.mobile || previousState?.organizerMobile)}
+                    {renderDiffCard("Requested vendors", selectedBulkOrder.requestedVendors, previousState?.requestedVendors, {
+                      multiline: true,
+                      formatter: (value) => {
+                        if (!Array.isArray(value) || value.length === 0) return "—";
+                        return value.join("\n");
+                      }
+                    })}
+                  </div>
+
+                  <div style={{ display: "grid", gap: 12, marginTop: 16 }}>
+                    {renderDiffCard("Special instructions", selectedBulkOrder.specialInstructions, previousState?.specialInstructions, { multiline: true })}
+                    {renderDiffCard("Notes", selectedBulkOrder.notes, previousState?.notes, { multiline: true })}
+                  </div>
                 </div>
 
                 <div style={{ marginTop: 20 }}>
@@ -519,6 +593,58 @@ function AdminControl({
                         </li>
                       ))}
                     </ul>
+                  )}
+                </div>
+
+                <div style={{ marginTop: 20 }}>
+                  <h4>Vendor Messages</h4>
+                  {Array.isArray(selectedBulkOrder.vendorMessages) && selectedBulkOrder.vendorMessages.length > 0 ? (
+                    <ul style={{ fontSize: 13, color: "#2c3e50" }}>
+                      {selectedBulkOrder.vendorMessages.map((message) => (
+                        <li key={message.id}>
+                          {message.timestamp ? `${new Date(message.timestamp).toLocaleString()}: ` : ""}
+                          {message.message}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div style={{ fontSize: 13, color: "#7f8c8d" }}>No messages yet.</div>
+                  )}
+                </div>
+
+                <div style={{ marginTop: 20 }}>
+                  <h4>Vendor Responses</h4>
+                  {Array.isArray(selectedBulkOrder.vendorResponses) && selectedBulkOrder.vendorResponses.length > 0 ? (
+                    <ul style={{ fontSize: 13, color: "#2c3e50" }}>
+                      {selectedBulkOrder.vendorResponses.map((response) => (
+                        <li key={response.id}>
+                          <strong>{response.status?.toUpperCase() || "STATUS"}</strong>
+                          {response.timestamp ? ` · ${new Date(response.timestamp).toLocaleString()}` : ""}
+                          {response.capacity != null ? ` · capacity ${response.capacity}` : ""}
+                          {response.slotId ? ` · slot ${response.slotId}` : ""}
+                          {response.message ? ` – ${response.message}` : ""}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div style={{ fontSize: 13, color: "#7f8c8d" }}>No responses yet.</div>
+                  )}
+                </div>
+
+                <div style={{ marginTop: 20 }}>
+                  <h4>Attachments</h4>
+                  {Array.isArray(selectedBulkOrder.attachments) && selectedBulkOrder.attachments.length > 0 ? (
+                    <ul style={{ fontSize: 13 }}>
+                      {selectedBulkOrder.attachments.map((attachment) => (
+                        <li key={attachment.id || attachment.url}>
+                          <a href={attachment.url} target="_blank" rel="noopener noreferrer">
+                            {attachment.name || attachment.url}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div style={{ fontSize: 13, color: "#7f8c8d" }}>No attachments provided.</div>
                   )}
                 </div>
               </div>
