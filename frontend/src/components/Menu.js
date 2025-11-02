@@ -184,11 +184,10 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
     return availableShops.find((shop) => String(shop.shopId) === String(selectedShop)) || null;
   }, [availableShops, selectedShop]);
 
-  if (!menu.length) return <p>Loading menu...</p>;
-
-  const shop = menu.find((s) => s.shopId === selectedShop);
-  if (!shop) return <p>Shop not found.</p>;
-  const shopIcon = null;
+  const shop = useMemo(() => {
+    if (!Array.isArray(menu) || menu.length === 0) return null;
+    return menu.find((s) => s.shopId === selectedShop) || null;
+  }, [menu, selectedShop]);
 
   const offersBySection = useMemo(() => {
     if (!Array.isArray(offers) || offers.length === 0) return new Map();
@@ -225,6 +224,10 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
     }
     return merged;
   }, [offersBySection, activeSection]);
+
+  if (!Array.isArray(menu) || menu.length === 0) return <p>Loading menu...</p>;
+  if (!shop) return <p>Shop not found.</p>;
+  const shopIcon = null;
 
   // Open modal for variant items; otherwise add immediately
   const handleAddClick = (item) => {
