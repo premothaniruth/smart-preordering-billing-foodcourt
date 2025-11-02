@@ -47,7 +47,8 @@ function AdminControl({
     try {
       setBulkLoading(true);
       setBulkError(null);
-      const res = await fetchAdminBulkOrders(session, { status });
+      const requestParams = status === "all" || !status ? {} : { status };
+      const res = await fetchAdminBulkOrders(session, requestParams);
       if (res?.status === "ok" && Array.isArray(res.orders)) {
         setBulkOrders(res.orders);
         if (res.orders.length > 0 && !res.orders.find((order) => Number(order.id) === Number(selectedBulkId))) {
@@ -356,6 +357,7 @@ function AdminControl({
   };
 
   const bulkStatusOptions = [
+    { value: "all", label: "All" },
     { value: "submitted_admin", label: "Submitted" },
     { value: "needs_revision", label: "Needs Revision" },
     { value: "approved_admin", label: "Approved" },

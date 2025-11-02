@@ -261,6 +261,7 @@ const AdminDashboard = ({ token }) => {
   const [bulkOrders, setBulkOrders] = useState([]);
   const [bulkLoading, setBulkLoading] = useState(false);
   const [bulkError, setBulkError] = useState(null);
+  const [bulkStatusFilter, setBulkStatusFilter] = useState('pending_vendor');
   const OVERDUE_SOUND = "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBDWM0/K/gC4EH29+3WgyBCk4XoCWJhcBTnLcWswB";
   // Low stock toggle
   const [showLowStock, setShowLowStock] = useState(false);
@@ -275,7 +276,7 @@ const AdminDashboard = ({ token }) => {
 
   const loadOrders = useCallback(() => {
     fetchOrders(token).then(setOrders);
-  }, [token]);
+  }, [token, bulkStatusFilter]);
 
   useEffect(() => {
     loadOrders();
@@ -388,12 +389,13 @@ const AdminDashboard = ({ token }) => {
     }
   }, [orders, tab, remainingTime]);
 
-  const loadBulkOrders = useCallback(async () => {
+  const loadBulkOrders = useCallback(async (statusOverride = bulkStatusFilter) => {
     if (!token) return;
     try {
       setBulkLoading(true);
       setBulkError(null);
-      const res = await fetchBulkOrders(token, { status: 'pending_vendor' });
+      const params = statusOverride === 'all' ? {} : { status: statusOverride };
+      const res = await fetchBulkOrders(token, params);
       if (res?.status === "ok" && Array.isArray(res.orders)) {
         setBulkOrders(res.orders);
       } else {
@@ -408,8 +410,19 @@ const AdminDashboard = ({ token }) => {
   }, [token]);
 
   useEffect(() => {
-    loadBulkOrders();
-  }, [loadBulkOrders]);
+    loadBulkOrders(bulkStatusFilter);
+  }, [loadBulkOrders, bulkStatusFilter]);
+
+  const bulkStatusOptions = useMemo(() => ([
+    { value: 'pending_vendor', label: 'Pending vendor' },
+    { value: 'sent_to_vendor', label: 'Sent to vendor' },
+    { value: 'approved_admin', label: 'Approved by admin' },
+    { value: 'confirmed', label: 'Vendor confirmed' },
+    { value: 'completed', label: 'Completed' },
+    { value: 'needs_revision', label: 'Needs revision' },
+    { value: 'admin_rejected', label: 'Admin rejected' },
+    { value: 'all', label: 'All statuses' }
+  ]), []);
 
   const bulkOrdersByStatus = useMemo(() => {
     const grouped = new Map();
@@ -712,9 +725,28 @@ const BulkOrderCard = ({ order, onPostMessage, onConfirm }) => {
   const [capacity, setCapacity] = useState("");
 
   const slots = Array.isArray(order.deliverySlots) ? order.deliverySlots : [];
+  const itemGroups = Array.isArray(order.itemGroups) ? order.itemGroups : [];
   const attendees = Array.isArray(order.attendeeGroups) ? order.attendeeGroups : [];
   const vendorResponses = Array.isArray(order.vendorResponses) ? order.vendorResponses : [];
   const vendorMessages = Array.isArray(order.vendorMessages) ? order.vendorMessages : [];
+  const requestedVendors = Array.isArray(order.requestedVendors)
+    ? order.requestedVendors
+    : typeof order.requestedVendorsText === "string" && order.requestedVendorsText.trim().length > 0
+      ? order.requestedVendorsText.split(/[,\n]/).map((v) => v.trim()).filter(Boolean)
+      : [];
+
+  const formatDateTime = (value, { withTime = true } = {}) => {
+    if (!value) return "—";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "—";
+    return date.toLocaleString("en-IN", withTime ? { dateStyle: "medium", timeStyle: "short" } : { dateStyle: "medium" });
+  };
+
+  const formatCurrency = (value) => {
+    if (value == null || value === "") return "—";
+    const num = Number(value);
+    return Number.isNaN(num) ? String(value) : `₹${num.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
+  };
 
   const handleSendMessage = () => {
     if (!message.trim()) return;
@@ -747,8 +779,57 @@ const BulkOrderCard = ({ order, onPostMessage, onConfirm }) => {
           <div>Organizer: {order.organizerContact?.name || order.organizer?.name || '—'}</div>
           <div>Guests: {order.expectedHeadcount || order.expectedGuests || 'n/a'}</div>
           <div>Location: {order.location || '—'}</div>
+          <div>Event type: {order.eventType || '—'}</div>
+          <div>Theme: {order.eventTheme || '—'}</div>
+          <div>Event date: {formatDateTime(order.eventDate, { withTime: false })}</div>
+          <div>Start: {formatDateTime(order.eventStartTime)}</div>
+          <div>End: {formatDateTime(order.eventEndTime)}</div>
+          <div>Campus / Building / Floor: {[order.campus, order.building, order.floor].filter(Boolean).join(' · ') || '—'}</div>
+          <div>Pricing mode: {order.pricing?.pricingType || order.pricing?.pricing_type || order.pricingType || 'vendor_rate'}</div>
+          <div>Bulk discount: {order.pricing?.bulkDiscountPercent != null ? `${order.pricing.bulkDiscountPercent}%` : '—'}</div>
+          <div>Flat rate: {order.pricing?.bulkFlatRate != null ? formatCurrency(order.pricing.bulkFlatRate) : '—'}</div>
           <div>Notes: {order.specialInstructions || order.notes || 'None'}</div>
         </div>
+        <div className="bulk-section" style={{ marginTop: 12 }}>
+          <h4>Organizer Contact</h4>
+          <div>Email: {order.organizerContact?.email || order.organizer?.email || '—'}</div>
+          <div>Mobile: {order.organizerContact?.mobile || order.organizer?.mobile || '—'}</div>
+          {requestedVendors.length > 0 && (
+            <div style={{ marginTop: 6 }}>
+              Preferred vendors:
+              <ul>
+                {requestedVendors.map((vendor) => (
+                  <li key={vendor}>{vendor}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+        {itemGroups.length > 0 && (
+          <div className="bulk-section" style={{ marginTop: 16 }}>
+            <h4>Menu Plan</h4>
+            <table className="bulk-items" style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr>
+                  <th style={{ textAlign: "left" }}>Item / Group</th>
+                  <th style={{ textAlign: "center" }}>Quantity</th>
+                  <th style={{ textAlign: "center" }}>Unit price</th>
+                  <th style={{ textAlign: "left" }}>Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                {itemGroups.map((item) => (
+                  <tr key={item.id || item.name}>
+                    <td>{item.name || item.itemName || item.category || "—"}</td>
+                    <td style={{ textAlign: "center" }}>{item.quantity ?? "—"}</td>
+                    <td style={{ textAlign: "center" }}>{formatCurrency(item.unitPrice ?? item.price)}</td>
+                    <td>{item.notes || ""}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
         <div className="bulk-slots">
           <h4>Delivery Slots</h4>
           {slots.length === 0 ? (
