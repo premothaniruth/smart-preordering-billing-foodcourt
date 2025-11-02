@@ -355,12 +355,14 @@
     "status": "pending",
     "createdAt": "2025-10-29T14:12:51.195Z",
     "billingId": "00001",
-    "estimatedReadyTime": "2025-10-29T14:22:51.194Z",
-    "prepTime": 10,
+    "estimatedReadyTime": "2025-11-02T17:00:41.124Z",
+    "prepTime": 15,
     "baseEstimatedReadyTime": "2025-10-29T14:22:51.194Z",
     "basePrepTime": 10,
     "rating": null,
-    "feedback": null
+    "feedback": null,
+    "etaExtendedAt": "2025-11-02T16:55:41.124Z",
+    "etaExtensionMinutes": 5
   },
   {
     "id": 15,

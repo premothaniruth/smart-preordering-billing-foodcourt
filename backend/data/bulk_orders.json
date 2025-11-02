@@ -140,7 +140,7 @@
   },
   {
     "id": 2,
-    "status": "pending_vendor",
+    "status": "completed",
     "organizer": {
       "employeeId": 3,
       "name": "premtg",
@@ -249,6 +249,23 @@
     "assignedVendors": [],
     "vendorResponses": [
       {
+        "id": "1762102653252-10tqyf",
+        "actor": {
+          "employeeId": 3,
+          "name": "premtg",
+          "mobile": "+919952911560",
+          "email": "premtg@gmail.com",
+          "role": "Employee",
+          "roleSlug": "employee",
+          "department": ""
+        },
+        "slotId": "1762083987213-f6cs",
+        "status": "confirmed",
+        "capacity": 55,
+        "message": "",
+        "timestamp": "2025-11-02T16:57:33.252Z"
+      },
+      {
         "id": "1762101078470-3egz4v",
         "actor": {
           "employeeId": 3,
@@ -300,6 +317,20 @@
     ],
     "vendorMessages": [
       {
+        "id": "1762102617506-zsngc0",
+        "timestamp": "2025-11-02T16:56:57.506Z",
+        "actor": {
+          "employeeId": 3,
+          "name": "premtg",
+          "mobile": "+919952911560",
+          "email": "premtg@gmail.com",
+          "role": "Employee",
+          "roleSlug": "employee",
+          "department": ""
+        },
+        "message": "received"
+      },
+      {
         "id": "1762098981311-hd71vb",
         "timestamp": "2025-11-02T15:56:21.311Z",
         "actor": {
@@ -315,9 +346,83 @@
     ],
     "linkedOrders": [],
     "createdAt": "2025-11-02T11:48:46.129Z",
-    "updatedAt": "2025-11-02T16:31:18.470Z",
-    "lastStatusChangeAt": "2025-11-02T15:55:08.962Z",
+    "updatedAt": "2025-11-02T16:58:06.592Z",
+    "lastStatusChangeAt": "2025-11-02T16:58:06.592Z",
     "history": [
+      {
+        "id": "1762102686592-k1m9t0",
+        "timestamp": "2025-11-02T16:58:06.592Z",
+        "type": "status_changed",
+        "actor": {
+          "employeeId": 3,
+          "name": "premtg",
+          "mobile": "+919952911560",
+          "email": "premtg@gmail.com",
+          "role": "Employee",
+          "roleSlug": "employee",
+          "department": ""
+        },
+        "details": {
+          "from": "confirmed",
+          "to": "completed"
+        }
+      },
+      {
+        "id": "1762102653253-dh986r",
+        "timestamp": "2025-11-02T16:57:33.253Z",
+        "type": "status_change",
+        "actor": {
+          "employeeId": 3,
+          "name": "premtg",
+          "mobile": "+919952911560",
+          "email": "premtg@gmail.com",
+          "role": "Employee",
+          "roleSlug": "employee",
+          "department": ""
+        },
+        "details": {
+          "from": "pending_vendor",
+          "to": "confirmed",
+          "slotId": "1762083987213-f6cs"
+        }
+      },
+      {
+        "id": "1762102653252-10f5wn",
+        "timestamp": "2025-11-02T16:57:33.252Z",
+        "type": "vendor_confirmation",
+        "actor": {
+          "employeeId": 3,
+          "name": "premtg",
+          "mobile": "+919952911560",
+          "email": "premtg@gmail.com",
+          "role": "Employee",
+          "roleSlug": "employee",
+          "department": ""
+        },
+        "details": {
+          "slotId": "1762083987213-f6cs",
+          "status": "confirmed",
+          "capacity": 55,
+          "message": ""
+        }
+      },
+      {
+        "id": "1762102617506-cf0pur",
+        "timestamp": "2025-11-02T16:56:57.506Z",
+        "type": "vendor_message",
+        "actor": {
+          "employeeId": 3,
+          "name": "premtg",
+          "mobile": "+919952911560",
+          "email": "premtg@gmail.com",
+          "role": "Employee",
+          "roleSlug": "employee",
+          "department": ""
+        },
+        "details": {
+          "message": "received"
+        }
+      },
       {
         "id": "1762101078470-cglscf",
         "timestamp": "2025-11-02T16:31:18.470Z",
@@ -492,6 +597,15 @@
     },
     "subtotal": 18150,
     "discountAmount": 0,
-    "totalAmount": 18150
+    "totalAmount": 18150,
+    "vendorContact": {
+      "vendorId": 2,
+      "shopId": 2,
+      "shopName": "South Indian Delights",
+      "email": null,
+      "contactEmail": null,
+      "phone": null,
+      "contactPhone": null
+    }
   }
 ]
