@@ -214,6 +214,17 @@ function AdminControl({
     return map;
   }, [vendorDirectory]);
 
+  const vendorDirectoryOptions = useMemo(() => {
+    return vendorDirectory
+      .filter((vendor) => vendor && vendor.shopId != null)
+      .map((vendor) => ({
+        value: String(vendor.shopId),
+        label: vendor.shopName || `Shop ${vendor.shopId}`,
+        subtitle: vendor.contactEmail || vendor.email || "",
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [vendorDirectory]);
+
   const selectedVendorDetails = useMemo(() => {
     if (!sendVendorShopId) return null;
     return vendorDirectoryByShopId.get(String(sendVendorShopId)) || null;
@@ -494,13 +505,32 @@ function AdminControl({
                     </button>
                   </div>
                   <div style={{ marginTop: 16, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                    <input
-                      type="text"
-                      placeholder="Vendor shop ID (optional)"
-                      value={sendVendorShopId}
-                      onChange={(e) => setSendVendorShopId(e.target.value)}
-                    />
-                    <button className="primary-button" onClick={handleSendToVendor} disabled={bulkLoading || !["approved_admin", "sent_to_vendor", "pending_vendor"].includes(selectedBulkOrder.status)}>
+                    <label style={{ fontSize: 13, color: "#34495e" }}>
+                      Choose vendor
+                      <select
+                        value={sendVendorShopId}
+                        onChange={(e) => setSendVendorShopId(e.target.value)}
+                        disabled={bulkLoading || vendorDirectoryLoading || vendorDirectoryOptions.length === 0}
+                        style={{ display: "block", minWidth: 220, marginTop: 4 }}
+                      >
+                        <option value="">-- Select a vendor --</option>
+                        {vendorDirectoryOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}{option.subtitle ? ` · ${option.subtitle}` : ""}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <button
+                      className="primary-button"
+                      onClick={handleSendToVendor}
+                      disabled={
+                        bulkLoading
+                        || !vendorDirectoryOptions.length
+                        || !sendVendorShopId
+                        || !["approved_admin", "sent_to_vendor", "pending_vendor"].includes(selectedBulkOrder.status)
+                      }
+                    >
                       Send to Vendor
                     </button>
                   </div>
