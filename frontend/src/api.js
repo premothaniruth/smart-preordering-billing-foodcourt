@@ -105,6 +105,13 @@ export const fetchAdminBulkOrders = async (session, params = {}) => {
   return res.json();
 };
 
+export const fetchAdminVendors = async (session) => {
+  const res = await fetch(`${API_URL}/admin/vendors`, {
+    headers: buildAdminHeaders(session),
+  });
+  return res.json();
+};
+
 export const submitAdminBulkDecision = async (session, orderId, { action, comment }) => {
   const res = await fetch(`${API_URL}/admin/bulk-orders/${orderId}/decision`, {
     method: 'POST',

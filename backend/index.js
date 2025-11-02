@@ -740,8 +740,45 @@ app.put('/bulk-orders/:id', (req, res) => {
       return res.status(403).json({ message: 'You do not have permission to modify this bulk order' });
     }
 
-    const updated = applyBulkOrderUpdates(currentOrder, req.body?.updates || req.body, employee);
+    const updates = req.body?.updates || req.body;
+    const snapshotSource = {
+      eventName: currentOrder.eventName,
+      eventType: currentOrder.eventType,
+      eventTheme: currentOrder.eventTheme,
+      eventDate: currentOrder.eventDate,
+      eventStartTime: currentOrder.eventStartTime,
+      eventEndTime: currentOrder.eventEndTime,
+      location: currentOrder.location,
+      building: currentOrder.building,
+      floor: currentOrder.floor,
+      campus: currentOrder.campus,
+      notes: currentOrder.notes,
+      specialInstructions: currentOrder.specialInstructions,
+      expectedHeadcount: currentOrder.expectedHeadcount,
+      organizerName: currentOrder.organizerName,
+      organizerEmail: currentOrder.organizerEmail,
+      organizerMobile: currentOrder.organizerMobile,
+      organizerContact: currentOrder.organizerContact,
+      organizer: currentOrder.organizer,
+      requestedVendors: currentOrder.requestedVendors,
+      pricing: currentOrder.pricing,
+      deliverySlots: currentOrder.deliverySlots,
+      itemGroups: currentOrder.itemGroups,
+      attendeeGroups: currentOrder.attendeeGroups,
+      metadata: currentOrder.metadata,
+      attachments: currentOrder.attachments,
+    };
+    const previousSnapshot = JSON.parse(JSON.stringify(snapshotSource));
+
+    const updated = applyBulkOrderUpdates(currentOrder, updates, employee);
     ensureBulkOrderReviewFields(updated);
+
+    if (String(currentOrder.status) === 'needs_revision') {
+      updated.adminReview = updated.adminReview || {};
+      updated.adminReview.previousState = previousSnapshot;
+      updated.adminReview.previousUpdatedAt = currentOrder.updatedAt || currentOrder.lastStatusChangeAt || currentOrder.createdAt;
+    }
+
     orders[index] = updated;
     saveBulkOrders(orders);
 
@@ -869,6 +906,16 @@ app.get('/admin/bulk-orders', authenticateAdmin, (req, res) => {
   } catch (error) {
     console.error('Error listing admin bulk orders', error);
     res.status(500).json({ message: 'Failed to load bulk orders' });
+  }
+});
+
+app.get('/admin/vendors', authenticateAdmin, (req, res) => {
+  try {
+    const vendors = buildVendorDirectory();
+    res.json({ status: 'ok', vendors });
+  } catch (error) {
+    console.error('Error listing admin vendors', error);
+    res.status(500).json({ message: 'Failed to load vendors' });
   }
 });
 
@@ -1652,6 +1699,38 @@ const sanitizeBulkOrder = (order) => {
     totalAmount,
     pricing,
   };
+};
+
+const buildVendorDirectory = () => {
+  const vendors = getVendors();
+  const menu = getMenu();
+  const shops = Array.isArray(menu)
+    ? menu
+    : (menu && Array.isArray(menu.shops) ? menu.shops : []);
+  const shopLookup = new Map();
+  shops.forEach((shop) => {
+    const key = shop?.shopId ?? shop?.id;
+    if (key == null) return;
+    shopLookup.set(String(key), {
+      shopId: shop.shopId ?? shop.id,
+      shopName: shop.shopName || shop.name || `Shop ${key}`,
+      contactEmail: shop.contactEmail || shop.email || null,
+      contactPhone: shop.contactPhone || shop.phone || null,
+    });
+  });
+
+  return vendors.map((vendor) => {
+    const key = vendor?.shopId != null ? String(vendor.shopId) : null;
+    const meta = key ? shopLookup.get(key) : null;
+    return {
+      vendorId: vendor.vendorId ?? vendor.id ?? null,
+      shopId: vendor.shopId ?? null,
+      username: vendor.username || '',
+      shopName: meta?.shopName || (key ? `Shop ${key}` : 'Unknown shop'),
+      contactEmail: meta?.contactEmail || null,
+      contactPhone: meta?.contactPhone || null,
+    };
+  });
 };
 
 const validateIsoString = (value) => {

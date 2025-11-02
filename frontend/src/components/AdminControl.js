@@ -3,6 +3,7 @@ import PropTypes from "prop-types";
 import { toast } from "react-toastify";
 import {
   fetchAdminBulkOrders,
+  fetchAdminVendors,
   submitAdminBulkDecision,
   sendBulkOrderToVendor,
 } from "../api";
@@ -33,6 +34,9 @@ function AdminControl({
   const [selectedBulkId, setSelectedBulkId] = useState(null);
   const [decisionComment, setDecisionComment] = useState("");
   const [sendVendorShopId, setSendVendorShopId] = useState("");
+  const [vendorDirectory, setVendorDirectory] = useState([]);
+  const [vendorDirectoryLoading, setVendorDirectoryLoading] = useState(false);
+  const [vendorDirectoryError, setVendorDirectoryError] = useState(null);
 
   const sortedVendors = useMemo(() => {
     return [...vendors].sort((a, b) => a.shopName.localeCompare(b.shopName));
@@ -71,6 +75,47 @@ function AdminControl({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [adminSession, bulkStatus]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!adminSession) {
+      setVendorDirectory([]);
+      setVendorDirectoryError(null);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const loadVendorDirectory = async () => {
+      try {
+        setVendorDirectoryLoading(true);
+        setVendorDirectoryError(null);
+        const res = await fetchAdminVendors(adminSession);
+        if (cancelled) return;
+        if (res?.status === "ok" && Array.isArray(res.vendors)) {
+          setVendorDirectory(res.vendors);
+        } else {
+          setVendorDirectory([]);
+          setVendorDirectoryError(res?.message || "Failed to load vendor directory");
+        }
+      } catch (error) {
+        if (cancelled) return;
+        console.error("Admin vendor directory error", error);
+        setVendorDirectory([]);
+        setVendorDirectoryError("Unable to load vendor directory");
+      } finally {
+        if (!cancelled) {
+          setVendorDirectoryLoading(false);
+        }
+      }
+    };
+
+    loadVendorDirectory();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [adminSession]);
 
   const handleLoginSubmit = (e) => {
     e.preventDefault();
@@ -157,6 +202,155 @@ function AdminControl({
     if (!Array.isArray(decisions)) return [];
     return decisions.slice(0, 5);
   }, [selectedBulkOrder]);
+
+  const vendorDirectoryByShopId = useMemo(() => {
+    const map = new Map();
+    vendorDirectory.forEach((vendor) => {
+      if (vendor && vendor.shopId != null) {
+        map.set(String(vendor.shopId), vendor);
+      }
+    });
+    return map;
+  }, [vendorDirectory]);
+
+  const selectedVendorDetails = useMemo(() => {
+    if (!sendVendorShopId) return null;
+    return vendorDirectoryByShopId.get(String(sendVendorShopId)) || null;
+  }, [sendVendorShopId, vendorDirectoryByShopId]);
+
+  const assignedVendorDetails = useMemo(() => {
+    if (!selectedBulkOrder || selectedBulkOrder.vendorShopId == null) return null;
+    return vendorDirectoryByShopId.get(String(selectedBulkOrder.vendorShopId)) || null;
+  }, [selectedBulkOrder, vendorDirectoryByShopId]);
+
+  const selectedBulkOrderId = selectedBulkOrder?.id;
+
+  useEffect(() => {
+    if (selectedBulkOrder && selectedBulkOrder.vendorShopId != null) {
+      setSendVendorShopId(String(selectedBulkOrder.vendorShopId));
+    } else {
+      setSendVendorShopId("");
+    }
+  }, [selectedBulkOrderId]);
+
+  const previousState = selectedBulkOrder?.adminReview?.previousState || null;
+  const previousUpdatedAt = selectedBulkOrder?.adminReview?.previousUpdatedAt || null;
+
+  const formatValue = (value) => {
+    if (value == null || value === "") return "—";
+    if (Array.isArray(value)) {
+      if (value.length === 0) return "—";
+      return value
+        .map((item) => {
+          if (item == null) return "—";
+          if (typeof item === "string" || typeof item === "number") return String(item);
+          try {
+            return JSON.stringify(item);
+          } catch (error) {
+            return String(item);
+          }
+        })
+        .join(", ");
+    }
+    if (typeof value === "object") {
+      try {
+        return JSON.stringify(value, null, 2);
+      } catch (error) {
+        return String(value);
+      }
+    }
+    if (value === true) return "Yes";
+    if (value === false) return "No";
+    return String(value);
+  };
+
+  const renderDiffCard = (label, currentValue, previousValue, { multiline = false, formatter } = {}) => {
+    const formattedCurrent = formatter ? formatter(currentValue) : formatValue(currentValue);
+    const formattedPrevious = formatter ? formatter(previousValue) : formatValue(previousValue);
+    const changed = previousState
+      ? JSON.stringify(currentValue ?? null) !== JSON.stringify(previousValue ?? null)
+      : false;
+
+    return (
+      <div
+        key={label}
+        style={{
+          padding: 12,
+          borderRadius: 8,
+          border: `1px solid ${changed ? "#f5b041" : "#ecf0f1"}`,
+          background: changed ? "#fff8e6" : "#f9fbfd",
+        }}
+      >
+        <div style={{ fontSize: 12, fontWeight: 600, color: "#2c3e50", marginBottom: 6 }}>
+          {label}
+          {changed ? " • updated" : ""}
+        </div>
+        {multiline ? (
+          <pre style={{ fontSize: 13, color: "#2c3e50", margin: 0, whiteSpace: "pre-wrap" }}>{formattedCurrent}</pre>
+        ) : (
+          <div style={{ fontSize: 13, color: "#2c3e50" }}>{formattedCurrent}</div>
+        )}
+        {changed && (
+          <div style={{ fontSize: 11, color: "#d35400", marginTop: 6 }}>
+            Previous:
+            {multiline ? (
+              <pre style={{ fontSize: 11, color: "#d35400", margin: "4px 0 0 0", whiteSpace: "pre-wrap" }}>{formattedPrevious}</pre>
+            ) : (
+              <span style={{ marginLeft: 4 }}>{formattedPrevious}</span>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const formatItemGroups = (groups) => {
+    if (!Array.isArray(groups) || groups.length === 0) return "—";
+    return groups
+      .map((group, index) => {
+        if (!group) return `Item ${index + 1}`;
+        const parts = [];
+        const title = group.name || group.itemName || group.category || `Item ${index + 1}`;
+        parts.push(title);
+        if (group.quantity != null) parts.push(`Qty: ${group.quantity}`);
+        if (group.unitPrice != null) parts.push(`Unit: ₹${Number(group.unitPrice).toFixed(2)}`);
+        if (group.price != null && group.unitPrice == null) parts.push(`Price: ₹${Number(group.price).toFixed(2)}`);
+        if (group.notes) parts.push(`Notes: ${group.notes}`);
+        return parts.join(" | ");
+      })
+      .join("\n");
+  };
+
+  const formatDeliverySlots = (slots) => {
+    if (!Array.isArray(slots) || slots.length === 0) return "—";
+    return slots
+      .map((slot, index) => {
+        if (!slot) return `Slot ${index + 1}`;
+        const parts = [];
+        if (slot.deliveryDate) parts.push(new Date(slot.deliveryDate).toLocaleString());
+        if (slot.windowStart || slot.windowEnd) {
+          parts.push(`${slot.windowStart || ""} - ${slot.windowEnd || ""}`.trim());
+        }
+        if (slot.capacity != null) parts.push(`Capacity: ${slot.capacity}`);
+        if (slot.notes) parts.push(`Notes: ${slot.notes}`);
+        return parts.join(" | ");
+      })
+      .join("\n");
+  };
+
+  const formatAttendeeGroups = (groups) => {
+    if (!Array.isArray(groups) || groups.length === 0) return "—";
+    return groups
+      .map((group, index) => {
+        if (!group) return `Group ${index + 1}`;
+        const parts = [];
+        parts.push(group.label || group.name || `Group ${index + 1}`);
+        if (group.count != null) parts.push(`Count: ${group.count}`);
+        if (group.notes) parts.push(`Notes: ${group.notes}`);
+        return parts.join(" | ");
+      })
+      .join("\n");
+  };
 
   const bulkStatusOptions = [
     { value: "submitted_admin", label: "Submitted" },
