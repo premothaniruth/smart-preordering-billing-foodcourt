@@ -168,7 +168,7 @@ const computeOrderCountdown = (order, { now, pendingOrdersCount, prepTimesByShop
 
   const timeUntilReady = targetTime - now;
   const timeUntilStart = startTime - now;
-  const displayCountdownMs = timeUntilStart > 0 ? timeUntilStart : timeUntilReady;
+  const displayCountdownMs = Math.min(timeUntilStart, timeUntilReady);
 
   let status = "in-progress";
   let prefix = "Ready in";
@@ -268,6 +268,7 @@ const AdminDashboard = ({ token }) => {
   const [bulkLoading, setBulkLoading] = useState(false);
   const [bulkError, setBulkError] = useState(null);
   const [bulkLastFetchedAt, setBulkLastFetchedAt] = useState(null);
+  const [muted, setMuted] = useState(false);
   const OVERDUE_SOUND = "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBDWM0/K/gC4EH29+3WgyBCk4XoCWJhcBTnLcWswB";
   // Low stock toggle
   const [showLowStock, setShowLowStock] = useState(false);
@@ -324,7 +325,7 @@ const AdminDashboard = ({ token }) => {
 
   const remainingTime = useCallback(
     (order) => {
-      const info = countdownMap.get(order.id);
+      const info = countdownMap?.get(order.id);
       return info ? info.countdownMs : null;
     },
     [countdownMap]
