@@ -259,6 +259,8 @@ const BULK_STATUS_OPTIONS = [
   { value: 'all', label: 'All' }
 ];
 
+const normalizeBulkStatusClient = (value) => (typeof value === 'string' ? value.toLowerCase() : '');
+
 const AdminDashboard = ({ token }) => {
   const [orders, setOrders] = useState([]);
   const [menu, setMenu] = useState([]);
@@ -401,7 +403,10 @@ const AdminDashboard = ({ token }) => {
     try {
       setBulkLoading(true);
       setBulkError(null);
-      const params = statusOverride === 'all' ? {} : { status: statusOverride };
+      const params = {};
+      if (statusOverride === 'pending_vendor') {
+        params.status = 'pending_vendor';
+      }
       const res = await fetchBulkOrders(token, params);
       if (res?.status === "ok" && Array.isArray(res.orders)) {
         setBulkOrders(res.orders);
@@ -439,9 +444,24 @@ const AdminDashboard = ({ token }) => {
     loadBulkOrders(nextStatus);
   }, [loadBulkOrders]);
 
+  const filteredBulkOrders = useMemo(() => {
+    if (!Array.isArray(bulkOrders)) return [];
+    if (bulkStatusFilter === 'all') {
+      return bulkOrders;
+    }
+    if (bulkStatusFilter === 'pending_vendor') {
+      return bulkOrders.filter((order) => normalizeBulkStatusClient(order?.status) === 'pending_vendor');
+    }
+    if (bulkStatusFilter === 'completed') {
+      const allowed = new Set(['completed', 'confirmed']);
+      return bulkOrders.filter((order) => allowed.has(normalizeBulkStatusClient(order?.status)));
+    }
+    return bulkOrders;
+  }, [bulkOrders, bulkStatusFilter]);
+
   const bulkOrdersByStatus = useMemo(() => {
     const grouped = new Map();
-    bulkOrders.forEach((order) => {
+    filteredBulkOrders.forEach((order) => {
       const status = order?.status || "unknown";
       if (!grouped.has(status)) {
         grouped.set(status, []);
@@ -449,7 +469,7 @@ const AdminDashboard = ({ token }) => {
       grouped.get(status).push(order);
     });
     return grouped;
-  }, [bulkOrders]);
+  }, [filteredBulkOrders]);
 
   const handleBulkMessage = useCallback(
     async (orderId, message) => {

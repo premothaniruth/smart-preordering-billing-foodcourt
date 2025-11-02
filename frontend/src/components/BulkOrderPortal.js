@@ -48,8 +48,8 @@ const STATUS_COLORS = {
 
 const STATUS_LABELS = {
   draft: "Draft",
-  submitted_admin: "Submitted to Admin",
-  needs_revision: "Needs Revision",
+  submitted_admin: "Submitted to admin",
+  needs_revision: "Needs revision",
   approved_admin: "Approved by Admin",
   sent_to_vendor: "Sent to Vendor",
   pending_vendor: "Vendor Pending",
@@ -59,6 +59,8 @@ const STATUS_LABELS = {
   cancelled: "Cancelled",
   admin_rejected: "Rejected",
 };
+
+const normalizeOrderStatus = (value) => (typeof value === "string" ? value.toLowerCase() : "");
 
 const pricingModes = [
   { value: "vendor_rate", label: "Vendor Rate" },
@@ -219,54 +221,13 @@ const BulkOrderPortal = ({ token, employeeRole, onClose }) => {
   }, [token, loadOrders]);
 
   const upcomingOrders = useMemo(() => {
-    const now = Date.now();
-    const activeStatuses = new Set([
-      "draft",
-      "submitted_admin",
-      "needs_revision",
-      "approved_admin",
-      "sent_to_vendor",
-      "pending_vendor",
-      "confirmed",
-      "in_progress",
-    ]);
-    return orders.filter((order) => {
-      if (activeStatuses.has(order.status)) return true;
-      const slots = Array.isArray(order.deliverySlots) ? order.deliverySlots : [];
-      const nextSlot = slots.reduce((acc, slot) => {
-        const start = slot?.startTime ? Date.parse(slot.startTime) : NaN;
-        if (Number.isNaN(start)) return acc;
-        if (acc == null || start < acc) return start;
-        return acc;
-      }, null);
-      if (nextSlot != null) return nextSlot >= now;
-      if (order.eventDate) {
-        const date = Date.parse(order.eventDate);
-        return !Number.isNaN(date) && date >= now;
-      }
-      return false;
-    });
+    if (!Array.isArray(orders)) return [];
+    return orders.filter((order) => normalizeOrderStatus(order?.status) === "pending_vendor");
   }, [orders]);
 
   const pastOrders = useMemo(() => {
-    const now = Date.now();
-    const pastStatuses = new Set(["completed", "cancelled", "admin_rejected"]);
-    return orders.filter((order) => {
-      if (pastStatuses.has(order.status)) return true;
-      const slots = Array.isArray(order.deliverySlots) ? order.deliverySlots : [];
-      const lastSlot = slots.reduce((acc, slot) => {
-        const end = slot?.endTime ? Date.parse(slot.endTime) : NaN;
-        if (Number.isNaN(end)) return acc;
-        if (acc == null || end > acc) return end;
-        return acc;
-      }, null);
-      if (lastSlot != null) return lastSlot < now;
-      if (order.eventDate) {
-        const date = Date.parse(order.eventDate);
-        return !Number.isNaN(date) && date < now;
-      }
-      return false;
-    });
+    if (!Array.isArray(orders)) return [];
+    return orders.filter((order) => normalizeOrderStatus(order?.status) === "completed");
   }, [orders]);
 
   const selectedOrders = selectedStatus === "upcoming" ? upcomingOrders : pastOrders;
@@ -899,6 +860,16 @@ const BulkOrderPortal = ({ token, employeeRole, onClose }) => {
 
   const upcomingCount = upcomingOrders.length;
   const pastCount = pastOrders.length;
+  const vendorLockedCount = useMemo(() => {
+    if (!Array.isArray(orders)) return 0;
+    return orders.filter((order) => {
+      if (!order) return false;
+      if (order.status === "completed") return true;
+      if (order.status === "confirmed") return true;
+      const responses = Array.isArray(order.vendorResponses) ? order.vendorResponses : [];
+      return responses.some((response) => String(response?.status || "").toLowerCase() === "confirmed");
+    }).length;
+  }, [orders]);
 
   return (
     <div className="bulk-portal" style={{ padding: 24 }}>
@@ -944,7 +915,7 @@ const BulkOrderPortal = ({ token, employeeRole, onClose }) => {
         </div>
         <div style={{ flex: "1 1 200px", background: "#fff7ec", padding: 16, borderRadius: 12 }}>
           <h3 style={{ margin: 0 }}>Vendor confirmed</h3>
-          <p style={{ fontSize: 30, margin: "4px 0" }}>{orders.filter((o) => o.status === "confirmed").length}</p>
+          <p style={{ fontSize: 30, margin: "4px 0" }}>{vendorLockedCount}</p>
           <small>Events with vendor capacity locked.</small>
         </div>
       </div>
