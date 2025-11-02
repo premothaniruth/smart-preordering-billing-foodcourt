@@ -710,13 +710,11 @@ app.post('/bulk-orders', (req, res) => {
     const resolved = resolveEmployeeFromRequest(req);
     if (!resolved) return res.status(401).json({ message: 'Invalid or expired session' });
     const { employee } = resolved;
-    if (!hasBulkOrderPrivileges(employee.roleSlug)) {
-      return res.status(403).json({ message: 'You do not have permission to create bulk orders' });
-    }
 
     const payload = req.body || {};
     const orders = getBulkOrders();
     const record = normalizeBulkOrderForCreate(payload, employee, orders);
+    ensureBulkOrderReviewFields(record);
     orders.push(record);
     saveBulkOrders(orders);
 
@@ -743,6 +741,7 @@ app.put('/bulk-orders/:id', (req, res) => {
     }
 
     const updated = applyBulkOrderUpdates(currentOrder, req.body?.updates || req.body, employee);
+    ensureBulkOrderReviewFields(updated);
     orders[index] = updated;
     saveBulkOrders(orders);
 
@@ -858,6 +857,116 @@ app.post('/bulk-orders/:id/vendor-confirm', (req, res) => {
   }
 });
 
+app.get('/admin/bulk-orders', authenticateAdmin, (req, res) => {
+  try {
+    const statusFilter = req.query.status ? String(req.query.status).toLowerCase() : null;
+    const orders = getBulkOrders();
+    const filtered = orders.filter((order) => {
+      if (!statusFilter) return true;
+      return normalizeBulkStatus(order.status) === normalizeBulkStatus(statusFilter);
+    }).map((order) => sanitizeBulkOrder(ensureBulkOrderReviewFields(order)));
+    res.json({ status: 'ok', orders: filtered });
+  } catch (error) {
+    console.error('Error listing admin bulk orders', error);
+    res.status(500).json({ message: 'Failed to load bulk orders' });
+  }
+});
+
+app.post('/admin/bulk-orders/:id/decision', authenticateAdmin, (req, res) => {
+  try {
+    const orders = getBulkOrders();
+    const id = Number(req.params.id);
+    const index = orders.findIndex((order) => Number(order.id) === id);
+    if (index === -1) return res.status(404).json({ message: 'Bulk order not found' });
+
+    const order = ensureBulkOrderReviewFields(orders[index]);
+    const action = String(req.body?.action || '').toLowerCase();
+    const comment = clampString(req.body?.comment || '', 600);
+    const adminActor = buildBulkActorFromAdmin(req.admin);
+
+    let statusTarget = null;
+    let notificationSubject = '';
+    let notificationBody = comment;
+
+    switch (action) {
+      case 'approve':
+      case 'approved':
+        statusTarget = 'approved_admin';
+        notificationSubject = `Bulk order #${order.id} approved`;
+        if (!notificationBody) {
+          notificationBody = 'Your bulk order has been approved by admin.';
+        }
+        break;
+      case 'request_changes':
+      case 'needs_revision':
+        statusTarget = 'needs_revision';
+        notificationSubject = `Updates requested for bulk order #${order.id}`;
+        if (!notificationBody) {
+          notificationBody = 'Admin requested changes to your bulk order request.';
+        }
+        break;
+      case 'reject':
+      case 'rejected':
+        statusTarget = 'admin_rejected';
+        notificationSubject = `Bulk order #${order.id} rejected`;
+        if (!notificationBody) {
+          notificationBody = 'Your bulk order request was rejected by admin.';
+        }
+        break;
+      default:
+        return res.status(400).json({ message: 'Unknown admin action' });
+    }
+
+    setBulkOrderStatus(order, statusTarget, adminActor, { comment });
+    appendAdminDecision(order, { action, comment, actor: adminActor });
+    order.updatedAt = new Date().toISOString();
+    orders[index] = order;
+    saveBulkOrders(orders);
+
+    notifyBulkOrderOrganizer(order, notificationSubject, notificationBody);
+
+    res.json({ status: 'ok', order: sanitizeBulkOrder(order) });
+  } catch (error) {
+    console.error('Error recording admin decision', error);
+    res.status(400).json({ message: error?.message || 'Failed to record admin decision' });
+  }
+});
+
+app.post('/admin/bulk-orders/:id/send-to-vendor', authenticateAdmin, (req, res) => {
+  try {
+    const orders = getBulkOrders();
+    const id = Number(req.params.id);
+    const index = orders.findIndex((order) => Number(order.id) === id);
+    if (index === -1) return res.status(404).json({ message: 'Bulk order not found' });
+
+    const order = ensureBulkOrderReviewFields(orders[index]);
+    if (!['approved_admin', 'sent_to_vendor', 'pending_vendor'].includes(normalizeBulkStatus(order.status))) {
+      return res.status(400).json({ message: 'Bulk order must be approved before sending to vendor' });
+    }
+
+    const adminActor = buildBulkActorFromAdmin(req.admin);
+    const vendorShopId = req.body?.vendorShopId != null ? String(req.body.vendorShopId) : order.vendorShopId;
+    if (vendorShopId) {
+      order.vendorShopId = vendorShopId;
+    }
+
+    setBulkOrderStatus(order, 'pending_vendor', adminActor, { vendorShopId });
+    order.history = Array.isArray(order.history)
+      ? [buildBulkHistoryEntry('admin_sent_to_vendor', adminActor, { vendorShopId }), ...order.history]
+      : [buildBulkHistoryEntry('admin_sent_to_vendor', adminActor, { vendorShopId })];
+    order.updatedAt = new Date().toISOString();
+    orders[index] = order;
+    saveBulkOrders(orders);
+
+    notifyBulkOrderOrganizer(order, `Bulk order #${order.id} sent to vendors`, 'Your request has been shared with the vendor for confirmation.');
+
+    res.json({ status: 'ok', order: sanitizeBulkOrder(order) });
+  } catch (error) {
+    console.error('Error sending bulk order to vendor', error);
+    res.status(400).json({ message: error?.message || 'Failed to send to vendor' });
+  }
+});
+
 // Username availability
 app.get('/employee/check-username', (req, res) => {
   try {
@@ -874,7 +983,7 @@ app.get('/employee/check-username', (req, res) => {
 // Registration
 app.post('/employee/register', async (req, res) => {
   try {
-    let { username, password, pin, mobile, email, role, department } = req.body || {};
+    let { username, password, pin, mobile, email } = req.body || {};
     username = String(username || '').trim();
     if (!username) return res.status(400).json({ message: 'Username is required' });
     if (!validatePin(pin)) return res.status(400).json({ message: 'PIN must be 4 digits' });
@@ -895,9 +1004,9 @@ app.post('/employee/register', async (req, res) => {
     const id = (employees.reduce((m, e) => Math.max(m, Number(e.id)||0), 0) + 1) || 1;
     const passwordHash = await bcrypt.hash(String(password), 10);
     const pinHash = await bcrypt.hash(String(pin), 10);
-    const { label: roleLabel, slug: roleSlug } = normalizeEmployeeRoleInput(role);
-    const departmentLabel = normalizeDepartmentInput(department);
-    const bulkOrderEligible = hasBulkOrderPrivileges(roleSlug);
+    const roleLabel = DEFAULT_EMPLOYEE_ROLE_LABEL;
+    const roleSlug = DEFAULT_EMPLOYEE_ROLE_SLUG;
+    const departmentLabel = '';
     const newEmp = {
       id,
       username,
@@ -908,7 +1017,7 @@ app.post('/employee/register', async (req, res) => {
       role: roleLabel,
       roleSlug,
       department: departmentLabel,
-      bulkOrderEligible
+      bulkOrderEligible: false
     };
     employees.push(newEmp);
     saveEmployees(employees);
@@ -1355,11 +1464,48 @@ const clampString = (value, max = 120) => {
 
 const BULK_DEFAULT_PRICE_MODE = 'vendor_rate';
 
-const BULK_ORDER_STATUSES = new Set(['draft', 'pending_vendor', 'confirmed', 'in_progress', 'completed', 'cancelled']);
+const BULK_ORDER_STATUSES = new Set([
+  'draft',
+  'submitted_admin',
+  'needs_revision',
+  'approved_admin',
+  'sent_to_vendor',
+  'pending_vendor',
+  'confirmed',
+  'in_progress',
+  'completed',
+  'cancelled',
+  'admin_rejected'
+]);
+
 const normalizeBulkStatus = (value, fallback = 'draft') => {
   const slug = clampString(value || '', 60).toLowerCase();
   if (!slug) return fallback;
   return BULK_ORDER_STATUSES.has(slug) ? slug : fallback;
+};
+
+const deriveAdminReviewState = (status) => {
+  const normalized = normalizeBulkStatus(status, 'draft');
+  switch (normalized) {
+    case 'draft':
+      return 'draft';
+    case 'submitted_admin':
+      return 'under_review';
+    case 'needs_revision':
+      return 'needs_revision';
+    case 'approved_admin':
+    case 'sent_to_vendor':
+    case 'pending_vendor':
+    case 'confirmed':
+    case 'in_progress':
+    case 'completed':
+      return 'approved';
+    case 'admin_rejected':
+    case 'cancelled':
+      return 'closed';
+    default:
+      return 'draft';
+  }
 };
 
 const buildBulkActorFromEmployee = (employee) => {
@@ -1375,6 +1521,11 @@ const buildBulkActorFromEmployee = (employee) => {
   };
 };
 
+const buildBulkActorFromAdmin = (admin) => ({
+  adminUsername: admin?.username || 'admin',
+  role: 'admin',
+});
+
 const buildBulkHistoryEntry = (type, actor = {}, details = {}) => ({
   id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
   timestamp: new Date().toISOString(),
@@ -1383,12 +1534,74 @@ const buildBulkHistoryEntry = (type, actor = {}, details = {}) => ({
   details,
 });
 
+const ensureBulkOrderReviewFields = (order) => {
+  if (!order) return order;
+  if (!order.adminReview || typeof order.adminReview !== 'object') {
+    order.adminReview = {
+      status: deriveAdminReviewState(order.status),
+      decisions: [],
+    };
+  } else {
+    if (!Array.isArray(order.adminReview.decisions)) {
+      order.adminReview.decisions = [];
+    }
+    order.adminReview.status = order.adminReview.status || deriveAdminReviewState(order.status);
+  }
+  return order;
+};
+
+const appendAdminDecision = (order, entry) => {
+  ensureBulkOrderReviewFields(order);
+  const review = order.adminReview;
+  const decision = {
+    id: entry.id || `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    timestamp: entry.timestamp || new Date().toISOString(),
+    action: String(entry.action || 'note'),
+    comment: clampString(entry.comment || '', 600),
+    actor: entry.actor || {},
+  };
+  review.decisions = [decision, ...(Array.isArray(review.decisions) ? review.decisions : [])].slice(0, 200);
+  review.status = deriveAdminReviewState(order.status);
+  return decision;
+};
+
+const setBulkOrderStatus = (order, nextStatus, actor = {}, details = {}) => {
+  if (!order) return { changed: false, status: null };
+  const target = normalizeBulkStatus(nextStatus, order.status);
+  if (target === order.status) {
+    return { changed: false, status: target };
+  }
+  const previous = order.status;
+  order.status = target;
+  const now = new Date().toISOString();
+  order.lastStatusChangeAt = now;
+  order.updatedAt = now;
+  const entryDetails = { from: previous, to: target, ...details };
+  const historyEntry = buildBulkHistoryEntry('status_change', actor, entryDetails);
+  order.history = Array.isArray(order.history) ? [historyEntry, ...order.history] : [historyEntry];
+  ensureBulkOrderReviewFields(order);
+  order.adminReview.status = deriveAdminReviewState(order.status);
+  return { changed: true, status: target };
+};
+
+const logEmailNotification = (to, subject, body) => {
+  if (!to) return;
+  console.log(`[Email] to ${to} | ${subject}\n${body}`);
+};
+
+const notifyBulkOrderOrganizer = (order, subject, body) => {
+  if (!order) return;
+  const contact = order.organizerContact || {};
+  const targetEmail = contact.email || order.organizer?.email || null;
+  logEmailNotification(targetEmail, subject, body);
+};
+
 const employeeCanManageBulkOrder = (employee, order) => {
   if (!employee || !order) return false;
   if (order.organizer && Number(order.organizer.employeeId) === Number(employee.id)) {
     return true;
   }
-  return hasBulkOrderPrivileges(employee.roleSlug);
+  return hasBulkOrderPrivileges(employee?.roleSlug);
 };
 
 const normalizeBulkPricing = (payload = {}) => {
@@ -1598,11 +1811,11 @@ const normalizeBulkOrderForCreate = (input, employee, existingOrders = []) => {
   const expectedHeadcount = computeBulkOrderHeadcount(attendeeGroups, itemGroups, input.expectedHeadcount);
   const now = new Date().toISOString();
   const id = generateBulkOrderId(existingOrders);
-  const status = normalizeBulkStatus(input.status || 'pending_vendor');
+  const initialStatus = normalizeBulkStatus(input.status || 'submitted_admin');
 
   const baseRecord = {
     id,
-    status,
+    status: initialStatus,
     organizer: buildBulkActorFromEmployee(employee),
     organizerContact: {
       name: clampString(input.organizerName || input.organizer?.name || employee?.username || '', 120),
@@ -1639,11 +1852,12 @@ const normalizeBulkOrderForCreate = (input, employee, existingOrders = []) => {
     createdAt: now,
     updatedAt: now,
     lastStatusChangeAt: now,
-    history: [buildBulkHistoryEntry('created', buildBulkActorFromEmployee(employee), { status })],
+    history: [buildBulkHistoryEntry('created', buildBulkActorFromEmployee(employee), { status: initialStatus })],
     metadataVersion: 1,
   };
 
   validateBulkOrderStructure(baseRecord);
+  ensureBulkOrderReviewFields(baseRecord);
   const sanitized = sanitizeBulkOrder(baseRecord);
   sanitized.deliverySlots = sortSlotsByStartTime(sanitized.deliverySlots);
   sanitized.expectedHeadcount = computeBulkOrderHeadcount(sanitized.attendeeGroups, sanitized.itemGroups, expectedHeadcount);
@@ -1668,12 +1882,17 @@ const applyBulkOrderUpdates = (existingOrder, updates, employee) => {
   const changedFields = new Set();
 
   if (updates.status) {
-    const newStatus = normalizeBulkStatus(updates.status, existingOrder.status);
-    if (newStatus !== existingOrder.status) {
-      next.status = newStatus;
-      statusChanged = true;
-      next.lastStatusChangeAt = now;
-      changedFields.add('status');
+    const desiredStatus = normalizeBulkStatus(updates.status, existingOrder.status);
+    const isOrganizer = employee && existingOrder.organizer && Number(existingOrder.organizer.employeeId) === Number(employee.id);
+    const employeeAllowedStatuses = new Set(['draft', 'submitted_admin']);
+    const canOverrideStatus = isOrganizer && employeeAllowedStatuses.has(desiredStatus);
+    const privilegedOverride = !isOrganizer && hasBulkOrderPrivileges(employee?.roleSlug);
+    if (canOverrideStatus || privilegedOverride) {
+      const result = setBulkOrderStatus(next, desiredStatus, actor, {});
+      if (result.changed) {
+        statusChanged = true;
+        changedFields.add('status');
+      }
     }
   }
 

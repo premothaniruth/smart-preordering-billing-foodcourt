@@ -65,8 +65,6 @@ const EmployeeLogin = ({ onSuccess, onBack }) => {
     mobile: "",
     password: "",
     pin: "",
-    role: "",
-    department: "",
   });
 
   useEffect(() => {
@@ -241,7 +239,7 @@ const EmployeeLogin = ({ onSuccess, onBack }) => {
   };
 
   const validateSignup = () => {
-    const { username, email, mobile, password, pin, role, department } = signupData;
+    const { username, email, mobile, password, pin } = signupData;
     if (!username.trim()) {
       toast.error("Username is required");
       return false;
@@ -268,17 +266,15 @@ const EmployeeLogin = ({ onSuccess, onBack }) => {
   const handleSignup = async (event) => {
     event.preventDefault();
     if (!validateSignup()) return;
+    const payload = {
+      username: signupData.username.trim(),
+      email: signupData.email.trim(),
+      mobile: formatMobileDigits(signupData.mobile),
+      password: signupData.password,
+      pin: signupData.pin,
+    };
     try {
       setSignupLoading(true);
-      const payload = {
-        username: signupData.username.trim(),
-        email: signupData.email.trim(),
-        mobile: formatMobileDigits(signupData.mobile),
-        password: signupData.password,
-        pin: signupData.pin,
-        role: signupData.role.trim(),
-        department: signupData.department.trim(),
-      };
       const res = await employeeRegister(payload);
       if (res && res.status === "ok") {
         toast.success("Registration successful. You can now sign in.");
@@ -667,22 +663,6 @@ const EmployeeLogin = ({ onSuccess, onBack }) => {
                   onChange={(e) => setSignupData((prev) => ({ ...prev, pin: e.target.value.replace(/[^0-9]/g, "").slice(0, 4) }))}
                   maxLength={4}
                   required
-                />
-              </div>
-              <div>
-                <label className="label">Role / Team</label>
-                <input
-                  placeholder="e.g. HR, Onboarding"
-                  value={signupData.role}
-                  onChange={(e) => setSignupData((prev) => ({ ...prev, role: e.target.value }))}
-                />
-              </div>
-              <div>
-                <label className="label">Department (optional)</label>
-                <input
-                  placeholder="Department"
-                  value={signupData.department}
-                  onChange={(e) => setSignupData((prev) => ({ ...prev, department: e.target.value }))}
                 />
               </div>
               <button type="submit" disabled={signupLoading}>

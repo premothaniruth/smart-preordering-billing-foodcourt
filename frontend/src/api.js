@@ -15,11 +15,11 @@ export const employeeCheckUsername = async (username) => {
   return res.json();
 };
 
-export const employeeRegister = async ({ username, password, pin, mobile, email, role, department }) => {
+export const employeeRegister = async ({ username, password, pin, mobile, email }) => {
   const res = await fetch(`${API_URL}/employee/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, password, pin, mobile, email, role, department })
+    body: JSON.stringify({ username, password, pin, mobile, email })
   });
   return res.json();
 };
@@ -81,6 +81,48 @@ export const confirmBulkOrderSlot = async (token, orderId, payload) => {
     headers: {
       'Content-Type': 'application/json',
       Authorization: token,
+    },
+    body: JSON.stringify(payload),
+  });
+  return res.json();
+};
+
+const buildAdminHeaders = (session) => {
+  if (!session || !session.username || !session.password) return {};
+  return {
+    'x-admin-username': session.username,
+    'x-admin-password': session.password,
+  };
+};
+
+export const fetchAdminBulkOrders = async (session, params = {}) => {
+  const search = new URLSearchParams();
+  if (params.status) search.set('status', params.status);
+  const qs = search.toString();
+  const res = await fetch(`${API_URL}/admin/bulk-orders${qs ? `?${qs}` : ''}`, {
+    headers: buildAdminHeaders(session),
+  });
+  return res.json();
+};
+
+export const submitAdminBulkDecision = async (session, orderId, { action, comment }) => {
+  const res = await fetch(`${API_URL}/admin/bulk-orders/${orderId}/decision`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...buildAdminHeaders(session),
+    },
+    body: JSON.stringify({ action, comment }),
+  });
+  return res.json();
+};
+
+export const sendBulkOrderToVendor = async (session, orderId, payload = {}) => {
+  const res = await fetch(`${API_URL}/admin/bulk-orders/${orderId}/send-to-vendor`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...buildAdminHeaders(session),
     },
     body: JSON.stringify(payload),
   });
@@ -718,14 +760,6 @@ export const fetchVendorGrievances = async (token) => {
     headers: { Authorization: `Bearer ${token}` },
   });
   return res.json();
-};
-
-const buildAdminHeaders = (session) => {
-  if (!session || !session.username || !session.password) return {};
-  return {
-    "x-admin-username": session.username,
-    "x-admin-password": session.password,
-  };
 };
 
 /**

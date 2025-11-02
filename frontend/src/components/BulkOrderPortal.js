@@ -9,11 +9,30 @@ import { toast } from "react-toastify";
 
 const STATUS_COLORS = {
   draft: "#95a5a6",
+  submitted_admin: "#8e44ad",
+  needs_revision: "#d35400",
+  approved_admin: "#2980b9",
+  sent_to_vendor: "#27ae60",
   pending_vendor: "#f39c12",
   confirmed: "#27ae60",
   in_progress: "#2980b9",
   completed: "#16a085",
   cancelled: "#c0392b",
+  admin_rejected: "#c0392b",
+};
+
+const STATUS_LABELS = {
+  draft: "Draft",
+  submitted_admin: "Submitted to Admin",
+  needs_revision: "Needs Revision",
+  approved_admin: "Approved by Admin",
+  sent_to_vendor: "Sent to Vendor",
+  pending_vendor: "Vendor Pending",
+  confirmed: "Vendor Confirmed",
+  in_progress: "In Progress",
+  completed: "Completed",
+  cancelled: "Cancelled",
+  admin_rejected: "Rejected",
 };
 
 const pricingModes = [
@@ -98,7 +117,18 @@ const BulkOrderPortal = ({ token, employeeRole, onClose }) => {
 
   const upcomingOrders = useMemo(() => {
     const now = Date.now();
+    const activeStatuses = new Set([
+      "draft",
+      "submitted_admin",
+      "needs_revision",
+      "approved_admin",
+      "sent_to_vendor",
+      "pending_vendor",
+      "confirmed",
+      "in_progress",
+    ]);
     return orders.filter((order) => {
+      if (activeStatuses.has(order.status)) return true;
       const slots = Array.isArray(order.deliverySlots) ? order.deliverySlots : [];
       const nextSlot = slots.reduce((acc, slot) => {
         const start = slot?.startTime ? Date.parse(slot.startTime) : NaN;
@@ -106,20 +136,20 @@ const BulkOrderPortal = ({ token, employeeRole, onClose }) => {
         if (acc == null || start < acc) return start;
         return acc;
       }, null);
-      if (nextSlot != null) {
-        return nextSlot >= now;
-      }
+      if (nextSlot != null) return nextSlot >= now;
       if (order.eventDate) {
         const date = Date.parse(order.eventDate);
         return !Number.isNaN(date) && date >= now;
       }
-      return ["pending_vendor", "confirmed", "in_progress"].includes(order.status);
+      return false;
     });
   }, [orders]);
 
   const pastOrders = useMemo(() => {
     const now = Date.now();
+    const pastStatuses = new Set(["completed", "cancelled", "admin_rejected"]);
     return orders.filter((order) => {
+      if (pastStatuses.has(order.status)) return true;
       const slots = Array.isArray(order.deliverySlots) ? order.deliverySlots : [];
       const lastSlot = slots.reduce((acc, slot) => {
         const end = slot?.endTime ? Date.parse(slot.endTime) : NaN;
@@ -127,14 +157,12 @@ const BulkOrderPortal = ({ token, employeeRole, onClose }) => {
         if (acc == null || end > acc) return end;
         return acc;
       }, null);
-      if (lastSlot != null) {
-        return lastSlot < now;
-      }
+      if (lastSlot != null) return lastSlot < now;
       if (order.eventDate) {
         const date = Date.parse(order.eventDate);
         return !Number.isNaN(date) && date < now;
       }
-      return ["completed", "cancelled"].includes(order.status);
+      return false;
     });
   }, [orders]);
 
@@ -326,6 +354,7 @@ const BulkOrderPortal = ({ token, employeeRole, onClose }) => {
     const slots = Array.isArray(order.deliverySlots) ? order.deliverySlots : [];
     const attendees = Array.isArray(order.attendeeGroups) ? order.attendeeGroups : [];
     const color = STATUS_COLORS[order.status] || "#34495e";
+    const statusLabel = STATUS_LABELS[order.status] || order.status;
     return (
       <div
         key={order.id}
@@ -347,7 +376,7 @@ const BulkOrderPortal = ({ token, employeeRole, onClose }) => {
             background: color,
             color: "#fff",
             fontSize: 12,
-          }}>{(order.status || "").replace(/_/g, " ")}</span>
+          }}>{statusLabel}</span>
         </div>
         <p style={{ marginTop: 6, marginBottom: 6 }}>{order.specialInstructions || order.notes || "No special notes."}</p>
         <div style={{ fontSize: 13, color: "#555" }}>
@@ -369,23 +398,36 @@ const BulkOrderPortal = ({ token, employeeRole, onClose }) => {
     const attendees = Array.isArray(selectedOrder.attendeeGroups) ? selectedOrder.attendeeGroups : [];
     const vendorMessages = Array.isArray(selectedOrder.vendorMessages) ? selectedOrder.vendorMessages : [];
     const vendorResponses = Array.isArray(selectedOrder.vendorResponses) ? selectedOrder.vendorResponses : [];
+    const adminReview = selectedOrder.adminReview || {};
+    const decisions = Array.isArray(adminReview.decisions) ? adminReview.decisions : [];
+    const canSubmitToAdmin = ["draft", "needs_revision"].includes(selectedOrder.status);
+    const isEditable = ["draft", "needs_revision", "submitted_admin"].includes(selectedOrder.status);
+    const statusLabel = STATUS_LABELS[selectedOrder.status] || selectedOrder.status;
 
     return (
       <div className="bulk-order-details" style={{ marginTop: 24, padding: 20, background: "#f9fbfd", borderRadius: 12 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <h2 style={{ margin: 0 }}>Bulk Order #{selectedOrder.id}</h2>
           <div style={{ display: "flex", gap: 8 }}>
+            {canSubmitToAdmin && (
+              <button onClick={() => handleUpdateStatus(selectedOrder.id, "submitted_admin")} className="primary-button">
+                Submit to Admin
+              </button>
+            )}
             {selectedOrder.status && ["pending_vendor", "confirmed", "in_progress"].includes(selectedOrder.status) && (
               <button onClick={() => handleUpdateStatus(selectedOrder.id, "cancelled")} className="secondary-button" style={{ background: "#e74c3c", color: "#fff" }}>
                 Cancel Order
               </button>
             )}
-            <button onClick={() => handleUpdateStatus(selectedOrder.id, "completed")} className="secondary-button">
+            <button onClick={() => handleUpdateStatus(selectedOrder.id, "completed")} className="secondary-button" disabled={!["in_progress", "pending_vendor", "confirmed"].includes(selectedOrder.status)}>
               Mark Completed
             </button>
           </div>
         </div>
         <p style={{ color: "#555" }}>{selectedOrder.specialInstructions || selectedOrder.notes || "No notes shared."}</p>
+        <div style={{ marginTop: 8, fontSize: 13, color: "#7f8c8d" }}>
+          <strong>Status:</strong> {statusLabel} · <strong>Admin Review:</strong> {adminReview.status || "—"}
+        </div>
 
         <section style={{ marginTop: 16 }}>
           <h3>Schedule</h3>
@@ -441,6 +483,22 @@ const BulkOrderPortal = ({ token, employeeRole, onClose }) => {
               {attendees.map((group) => (
                 <li key={group.id}>
                   {group.label}: {group.count || "—"}{group.notes ? ` – ${group.notes}` : ""}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section style={{ marginTop: 16 }}>
+          <h3>Admin Decisions</h3>
+          {decisions.length === 0 ? (
+            <div>No admin feedback yet.</div>
+          ) : (
+            <ul>
+              {decisions.slice(0, 5).map((decision) => (
+                <li key={decision.id}>
+                  <strong>{(decision.action || '').replace(/_/g, ' ')}</strong> · {decision.timestamp ? new Date(decision.timestamp).toLocaleString() : ''}
+                  {decision.comment ? ` – ${decision.comment}` : ''}
                 </li>
               ))}
             </ul>

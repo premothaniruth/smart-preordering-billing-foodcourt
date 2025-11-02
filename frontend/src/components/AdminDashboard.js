@@ -124,6 +124,7 @@ const computeVendorLoadMultiplier = ({ order, pendingOrdersCount, now }) => {
 
 const computeOrderCountdown = (order, { now, pendingOrdersCount, prepTimesByShop }) => {
   if (!order) return null;
+
   const items = Array.isArray(order.items) ? order.items : [];
   let maxItemPrepMinutes = 0;
   items.forEach((item) => {
@@ -131,58 +132,67 @@ const computeOrderCountdown = (order, { now, pendingOrdersCount, prepTimesByShop
   });
 
   const derivedPrep = Math.max(maxItemPrepMinutes, DEFAULT_PREP_MINUTES);
-  const orderPrepOverride = coerceNumber(order.prepTime, 0);
-  const basePrepMinutes = Math.max(derivedPrep, orderPrepOverride);
+  const basePrepMinutes = order?.basePrepTime != null
+    ? Math.max(coerceNumber(order.basePrepTime, DEFAULT_PREP_MINUTES), DEFAULT_PREP_MINUTES)
+    : derivedPrep;
+  const effectivePrepMinutes = order?.prepTime != null
+    ? Math.max(coerceNumber(order.prepTime, basePrepMinutes), basePrepMinutes)
+    : basePrepMinutes;
+
   const vendorLoadMultiplier = computeVendorLoadMultiplier({ order, pendingOrdersCount, now });
-  const adjustedPrepMinutes = basePrepMinutes * vendorLoadMultiplier;
-  const adjustedPrepMs = adjustedPrepMinutes * 60000;
+  const estimatedReady = order?.estimatedReadyTime ? Date.parse(order.estimatedReadyTime) : NaN;
+  const scheduledTimeValue = order?.scheduledTime ? Date.parse(order.scheduledTime) : NaN;
+  const createdAtValue = order?.createdAt ? Date.parse(order.createdAt) : NaN;
 
   const orderTypeRaw = order?.orderType ? String(order.orderType).toLowerCase() : null;
-  const scheduledTimeValue = order?.scheduledTime ? Date.parse(order.scheduledTime) : NaN;
   const inferredType = orderTypeRaw || (!Number.isNaN(scheduledTimeValue) ? "pre-order" : "live");
   const orderType = inferredType === "pre-order" ? "pre-order" : "live";
 
-  let startTime = now;
-  let targetTime = now + adjustedPrepMs;
-  let countdownMs = adjustedPrepMs;
-  let status = "in-progress";
-  let prefix = "Ready in";
-  let message = "";
+  let targetTime = !Number.isNaN(estimatedReady)
+    ? estimatedReady
+    : (() => {
+        const baseStart = !Number.isNaN(createdAtValue) ? createdAtValue : now;
+        const adjustedPrepMinutes = effectivePrepMinutes * vendorLoadMultiplier;
+        return baseStart + adjustedPrepMinutes * 60000;
+      })();
 
   if (orderType === "pre-order" && !Number.isNaN(scheduledTimeValue)) {
-    targetTime = scheduledTimeValue;
-    startTime = scheduledTimeValue - adjustedPrepMs;
-    countdownMs = startTime - now;
-    if (countdownMs > 0) {
-      status = "waiting";
-      prefix = "Prep starts in";
-    } else {
-      status = "due";
-      prefix = "Start preparing now";
-      message = "Serve by";
-    }
-  } else {
-    const createdAt = order?.createdAt ? Date.parse(order.createdAt) : NaN;
-    startTime = Number.isNaN(createdAt) ? now : createdAt;
-    targetTime = startTime + adjustedPrepMs;
-    countdownMs = targetTime - now;
-    if (countdownMs > 0) {
-      status = "in-progress";
-      prefix = "Ready in";
-    } else {
-      status = "overdue";
-      prefix = "Prep window elapsed";
-      message = "Expected ready";
-    }
+    targetTime = Math.max(targetTime, scheduledTimeValue);
   }
 
-  const label = formatCountdown(Math.max(countdownMs, 0));
+  const prepDurationMs = effectivePrepMinutes * 60000;
+  let startTime = targetTime - prepDurationMs;
+  if (Number.isNaN(startTime) || !Number.isFinite(startTime)) {
+    startTime = !Number.isNaN(createdAtValue) ? createdAtValue : now;
+  }
+
+  const timeUntilReady = targetTime - now;
+  const timeUntilStart = startTime - now;
+  const displayCountdownMs = timeUntilStart > 0 ? timeUntilStart : timeUntilReady;
+
+  let status = "in-progress";
+  let prefix = "Ready in";
+  let message = "Serve by";
+
+  if (timeUntilStart > 0) {
+    status = "waiting";
+    prefix = "Prep starts in";
+  } else if (timeUntilReady <= 0) {
+    status = "overdue";
+    prefix = "Prep window elapsed";
+    message = "Expected ready";
+  }
+
   const helperParts = [];
-  helperParts.push(`Base ${formatMinutes(basePrepMinutes)}`);
-  helperParts.push(`Adj ${formatMinutes(adjustedPrepMinutes)} (×${vendorLoadMultiplier.toFixed(2)})`);
-  if (orderType === "pre-order" && !Number.isNaN(targetTime)) {
-    helperParts.push(`Serve ${new Date(targetTime).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}`);
-  } else if (!Number.isNaN(targetTime)) {
+  helperParts.push(`Prep ${formatMinutes(effectivePrepMinutes)}`);
+  const extensionMinutes = coerceNumber(order?.etaExtensionMinutes, 0);
+  if (extensionMinutes > 0) {
+    helperParts.push(`Extended +${extensionMinutes}m`);
+  }
+  if (Number.isFinite(vendorLoadMultiplier) && !Number.isNaN(vendorLoadMultiplier) && vendorLoadMultiplier !== 1 && Number.isNaN(estimatedReady)) {
+    helperParts.push(`Load ×${vendorLoadMultiplier.toFixed(2)}`);
+  }
+  if (!Number.isNaN(targetTime)) {
     helperParts.push(`ETA ${new Date(targetTime).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}`);
   }
 
@@ -190,13 +200,14 @@ const computeOrderCountdown = (order, { now, pendingOrdersCount, prepTimesByShop
     orderId: order.id,
     orderType,
     basePrepMinutes,
-    adjustedPrepMinutes,
+    adjustedPrepMinutes: effectivePrepMinutes,
     vendorLoadMultiplier,
-    countdownMs,
+    countdownMs: timeUntilReady,
+    displayCountdownMs,
     startTime,
     targetTime,
     status,
-    label,
+    label: formatCountdown(Math.max(displayCountdownMs, 0)),
     prefix,
     message,
     helperText: helperParts.join(" · "),
@@ -209,18 +220,26 @@ const CountdownDisplay = ({ info }) => {
     return <span style={{ color: "#999" }}>—</span>;
   }
 
-  const isPositive = info.countdownMs > 0;
-  const color = info.status === "overdue" ? "#e74c3c" : info.status === "due" ? "#e67e22" : "#2c3e50";
-  const primaryText = isPositive ? `${info.prefix}: ${info.label}` : info.prefix;
-  const secondaryPrefix = !isPositive && info.message ? `${info.message}: ` : "";
-  const secondaryValue = !isPositive && !Number.isNaN(info.targetTime)
+  const color = info.status === "overdue" ? "#e74c3c" : info.status === "waiting" ? "#2980b9" : "#2c3e50";
+  const timerStyle = {
+    fontFamily: "'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace",
+    fontSize: 18,
+    letterSpacing: 1,
+    color,
+  };
+  const primaryText = `${info.prefix}:`;
+  const secondaryPrefix = info.status === "overdue" && info.message ? `${info.message}: ` : "ETA: ";
+  const secondaryValue = !Number.isNaN(info.targetTime)
     ? new Date(info.targetTime).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })
     : "";
 
   return (
     <div id={info.domId} style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 4 }} aria-live="polite">
-      <span style={{ fontWeight: 700, color }}>{primaryText}</span>
-      {(!isPositive && secondaryValue) && (
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <span style={{ fontWeight: 700, color }}>{primaryText}</span>
+        <span style={timerStyle}>{info.label}</span>
+      </div>
+      {secondaryValue && (
         <span style={{ fontSize: 11, color: "#8e44ad" }}>{secondaryPrefix}{secondaryValue}</span>
       )}
       <span style={{ fontSize: 11, color: "#7f8c8d" }}>{info.helperText}</span>
@@ -249,6 +268,7 @@ const AdminDashboard = ({ token }) => {
   // Low stock toggle
   const [showLowStock, setShowLowStock] = useState(false);
   const [lowStockThreshold, setLowStockThreshold] = useState(10);
+  const overdueNotifiedRef = useRef(new Set());
   const vendorShopId = (() => {
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
@@ -393,7 +413,7 @@ const AdminDashboard = ({ token }) => {
     try {
       setBulkLoading(true);
       setBulkError(null);
-      const res = await fetchBulkOrders(token);
+      const res = await fetchBulkOrders(token, { status: 'pending_vendor' });
       if (res?.status === "ok" && Array.isArray(res.orders)) {
         setBulkOrders(res.orders);
       } else {

@@ -206,16 +206,10 @@ function App() {
   }, [userId]);
 
   useEffect(() => {
-    if (!employeeToken && ["orders", "profile", "bulk-portal"].includes(view)) {
+    if (!employeeToken && ["orders", "profile"].includes(view)) {
       setView("user");
     }
   }, [employeeToken, view]);
-
-  useEffect(() => {
-    if (view === "bulk-portal" && (!employeeToken || !employeeRole?.bulkOrderEligible)) {
-      setView("user");
-    }
-  }, [view, employeeToken, employeeRole]);
 
   // Employee ready notification: poll orders and alert when status becomes ready
   useEffect(() => {
@@ -962,15 +956,13 @@ function App() {
                       marginBottom: 20
                     }}
                   >
-                    {employeeRole?.bulkOrderEligible && (
-                      <button
-                        onClick={() => setView("bulk-portal")}
-                        className="primary-button"
-                        style={{ minWidth: 150, width: 150 }}
-                      >
-                        Bulk Orders
-                      </button>
-                    )}
+                    <button
+                      onClick={() => setView("bulk-portal")}
+                      className="primary-button"
+                      style={{ minWidth: 150, width: 150 }}
+                    >
+                      Bulk Orders
+                    </button>
                     <button
                       onClick={() => setView("profile")}
                       className="secondary-button"
