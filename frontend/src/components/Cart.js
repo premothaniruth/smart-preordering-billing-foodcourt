@@ -91,7 +91,7 @@ const Cart = ({
     } catch {
       setScheduledDate(""); setScheduledHM("");
     }
-  }, [scheduledTime, todayStr]);
+  }, [scheduledTime, todayStr, setScheduledTime]);
 
   // scheduling helpers are defined after current time calculations
   const clampHM = (hm) => {
@@ -191,7 +191,7 @@ const Cart = ({
     if (!scheduledHM || scheduledHM <= currentHM || !availableSlots.includes(scheduledHM)) {
       syncScheduled(todayStr, availableSlots[0]);
     }
-  }, [scheduleEnabled, availableSlots, scheduledHM, currentHM, todayStr]);
+  }, [scheduleEnabled, availableSlots, scheduledHM, currentHM, todayStr, syncScheduled, setScheduledTime]);
   const inWindow = (secName, hm) => {
     const w = sectionWindows[secName];
     if (!w || !w.start || !w.end) return true;

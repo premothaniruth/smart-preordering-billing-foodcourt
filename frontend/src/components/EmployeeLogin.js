@@ -10,24 +10,11 @@ import {
 import { toast } from "react-toastify";
 
 const PIN_IDENTITY_KEY = "employeePinIdentity";
-const OTP_IDENTITY_KEY = "employeeOtpIdentity";
 const LAST_SIGNIN_METHOD_KEY = "employeeLastSignInMethod";
 
 const readPinIdentity = () => {
   try {
     const raw = localStorage.getItem(PIN_IDENTITY_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (parsed && parsed.username && (parsed.mobile || parsed.email)) {
-      return parsed;
-    }
-  } catch {}
-  return null;
-};
-
-const readOtpIdentity = () => {
-  try {
-    const raw = localStorage.getItem(OTP_IDENTITY_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (parsed && parsed.username && (parsed.mobile || parsed.email)) {
@@ -145,7 +132,6 @@ const EmployeeLogin = ({ onSuccess, onBack }) => {
         };
         if (identity.username) {
           persistPinIdentity(identity);
-          persistOtpIdentity(identity);
         }
       } else {
         toast.error(res?.message || "Login failed");

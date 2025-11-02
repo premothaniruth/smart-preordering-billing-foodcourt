@@ -515,6 +515,16 @@ const AdminDashboard = ({ token }) => {
     fetchOrders(token).then(setOrders);
   }, [token]);
 
+  const getShopName = useCallback(
+    (shopId) => menu.find((s) => s.shopId === shopId)?.shopName || shopId,
+    [menu]
+  );
+
+  const vendorShopName = useMemo(
+    () => (vendorShopId != null ? getShopName(vendorShopId) : null),
+    [getShopName, vendorShopId]
+  );
+
   const handlePrintOrder = useCallback(
     async (order, { previewFallback = false } = {}) => {
       if (!order) return;
@@ -551,16 +561,6 @@ const AdminDashboard = ({ token }) => {
   const pendingOrdersCount = useMemo(
     () => orders.filter((o) => o.status === 'pending').length,
     [orders]
-  );
-
-  const getShopName = useCallback(
-    (shopId) => menu.find((s) => s.shopId === shopId)?.shopName || shopId,
-    [menu]
-  );
-
-  const vendorShopName = useMemo(
-    () => (vendorShopId != null ? getShopName(vendorShopId) : null),
-    [getShopName, vendorShopId]
   );
 
   const countdownMap = useMemo(() => {
