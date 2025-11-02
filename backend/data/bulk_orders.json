@@ -137,5 +137,173 @@
     "subtotal": 18150,
     "discountAmount": 0,
     "totalAmount": 18150
+  },
+  {
+    "id": 2,
+    "status": "needs_revision",
+    "organizer": {
+      "employeeId": 3,
+      "name": "premtg",
+      "mobile": "+919952911560",
+      "email": "premtg@gmail.com",
+      "role": "Employee",
+      "roleSlug": "employee",
+      "department": ""
+    },
+    "organizerContact": {
+      "name": "Employee name",
+      "email": "premtg@gmail.com",
+      "mobile": "8489196891"
+    },
+    "eventName": "induction",
+    "eventType": "onboarding",
+    "eventTheme": "",
+    "eventDate": "2025-11-03T00:00:00.000Z",
+    "eventStartTime": "2025-11-03T02:45:00.000Z",
+    "eventEndTime": "2025-11-02T12:45:00.000Z",
+    "location": "seminar hall",
+    "building": "sdb5",
+    "floor": "ground floor",
+    "campus": "tower 5",
+    "notes": "",
+    "specialInstructions": "",
+    "deliverySlots": [
+      {
+        "id": "1762083987213-f6cs",
+        "label": "breakfast",
+        "startTime": "2025-11-03T03:30:00.000Z",
+        "endTime": "2025-11-03T04:30:00.000Z",
+        "confirmed": false,
+        "notes": "",
+        "vendorConfirmation": null
+      },
+      {
+        "id": "1762084029152-cb6e",
+        "label": "lunch",
+        "startTime": "2025-11-03T07:30:00.000Z",
+        "endTime": "2025-11-03T08:30:00.000Z",
+        "confirmed": false,
+        "notes": "",
+        "vendorConfirmation": null
+      }
+    ],
+    "itemGroups": [
+      {
+        "id": "1762084051460-m4kc",
+        "name": "breakfast combo-1",
+        "itemId": null,
+        "quantity": 55,
+        "unitPrice": 150,
+        "options": [],
+        "notes": "",
+        "slotId": null
+      },
+      {
+        "id": "1762084064936-2bsj",
+        "name": "lunch combo",
+        "itemId": null,
+        "quantity": 55,
+        "unitPrice": 180,
+        "options": [],
+        "notes": "",
+        "slotId": null
+      }
+    ],
+    "attendeeGroups": [
+      {
+        "id": "1762084078671-8vz3",
+        "label": "new joinees",
+        "count": 50,
+        "notes": ""
+      },
+      {
+        "id": "1762084083318-ez9m",
+        "label": "host",
+        "count": 2,
+        "notes": ""
+      },
+      {
+        "id": "1762084091578-oi1e",
+        "label": "presenters",
+        "count": 3,
+        "notes": ""
+      }
+    ],
+    "subOrders": [],
+    "requestedVendors": [
+      "South indian delights"
+    ],
+    "attachments": [],
+    "metadata": {
+      "submittedByDepartment": null,
+      "organizerRole": "employee"
+    },
+    "expectedHeadcount": 55,
+    "expectedGuests": 55,
+    "pricing": {
+      "pricingType": "custom_quote",
+      "bulkDiscountPercent": 5,
+      "bulkFlatRate": 0
+    },
+    "vendorShopId": null,
+    "assignedVendors": [],
+    "vendorResponses": [],
+    "vendorMessages": [],
+    "linkedOrders": [],
+    "createdAt": "2025-11-02T11:48:46.129Z",
+    "updatedAt": "2025-11-02T11:50:00.244Z",
+    "lastStatusChangeAt": "2025-11-02T11:50:00.243Z",
+    "history": [
+      {
+        "id": "1762084200244-atu0t6",
+        "timestamp": "2025-11-02T11:50:00.244Z",
+        "type": "status_change",
+        "actor": {
+          "adminUsername": "infybhojans",
+          "role": "admin"
+        },
+        "details": {
+          "from": "submitted_admin",
+          "to": "needs_revision",
+          "comment": "revise menu"
+        }
+      },
+      {
+        "id": "1762084126129-7ab3gw",
+        "timestamp": "2025-11-02T11:48:46.129Z",
+        "type": "created",
+        "actor": {
+          "employeeId": 3,
+          "name": "premtg",
+          "mobile": "+919952911560",
+          "email": "premtg@gmail.com",
+          "role": "Employee",
+          "roleSlug": "employee",
+          "department": ""
+        },
+        "details": {
+          "status": "submitted_admin"
+        }
+      }
+    ],
+    "metadataVersion": 1,
+    "adminReview": {
+      "status": "needs_revision",
+      "decisions": [
+        {
+          "id": "1762084200244-ik1xws",
+          "timestamp": "2025-11-02T11:50:00.244Z",
+          "action": "request_changes",
+          "comment": "revise menu",
+          "actor": {
+            "adminUsername": "infybhojans",
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "subtotal": 18150,
+    "discountAmount": 0,
+    "totalAmount": 18150
   }
 ]

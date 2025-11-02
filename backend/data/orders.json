@@ -47,8 +47,15 @@
     "shopId": 1,
     "user": "Employee XYZ",
     "scheduledTime": null,
-    "status": "pending",
-    "createdAt": "2025-10-24T17:32:27.340Z"
+    "status": "completed",
+    "createdAt": "2025-10-24T17:32:27.340Z",
+    "prepTime": 10,
+    "estimatedReadyTime": "2025-11-02T12:00:53.115Z",
+    "etaExtendedAt": "2025-11-02T11:51:03.851Z",
+    "etaExtensionMinutes": 10,
+    "readyAt": "2025-11-02T11:51:29.564Z",
+    "pickedAt": "2025-11-02T11:51:38.962Z",
+    "completedAt": "2025-11-02T11:51:38.962Z"
   },
   {
     "id": 4,
@@ -64,8 +71,15 @@
     "shopId": 1,
     "user": "Employee XYZ",
     "scheduledTime": null,
-    "status": "pending",
-    "createdAt": "2025-10-24T17:34:04.462Z"
+    "status": "completed",
+    "createdAt": "2025-10-24T17:34:04.462Z",
+    "prepTime": 10,
+    "estimatedReadyTime": "2025-11-02T12:00:51.101Z",
+    "etaExtendedAt": "2025-11-02T11:51:03.859Z",
+    "etaExtensionMinutes": 10,
+    "readyAt": "2025-11-02T11:51:28.177Z",
+    "pickedAt": "2025-11-02T11:51:38.548Z",
+    "completedAt": "2025-11-02T11:51:38.548Z"
   },
   {
     "id": 5,
@@ -81,8 +95,15 @@
     "shopId": 1,
     "user": "Employee XYZ",
     "scheduledTime": "2025-10-24T23:04",
-    "status": "pending",
-    "createdAt": "2025-10-24T17:34:24.528Z"
+    "status": "completed",
+    "createdAt": "2025-10-24T17:34:24.528Z",
+    "prepTime": 10,
+    "estimatedReadyTime": "2025-11-02T12:00:52.013Z",
+    "etaExtendedAt": "2025-11-02T11:51:03.865Z",
+    "etaExtensionMinutes": 10,
+    "readyAt": "2025-11-02T11:51:28.371Z",
+    "pickedAt": "2025-11-02T11:51:37.416Z",
+    "completedAt": "2025-11-02T11:51:37.416Z"
   },
   {
     "id": 6,
@@ -98,8 +119,15 @@
     "shopId": 1,
     "user": "Employee XYZ",
     "scheduledTime": null,
-    "status": "pending",
-    "createdAt": "2025-10-25T02:25:18.713Z"
+    "status": "completed",
+    "createdAt": "2025-10-25T02:25:18.713Z",
+    "prepTime": 5,
+    "estimatedReadyTime": "2025-11-02T11:56:03.883Z",
+    "etaExtendedAt": "2025-11-02T11:51:03.883Z",
+    "etaExtensionMinutes": 5,
+    "readyAt": "2025-11-02T11:51:26.559Z",
+    "pickedAt": "2025-11-02T11:51:37.240Z",
+    "completedAt": "2025-11-02T11:51:37.240Z"
   },
   {
     "id": 7,
@@ -120,7 +148,11 @@
     "scheduledTime": null,
     "status": "pending",
     "createdAt": "2025-10-25T02:59:41.146Z",
-    "billingId": "BILL-MH5OYXGA-486"
+    "billingId": "BILL-MH5OYXGA-486",
+    "prepTime": 10,
+    "estimatedReadyTime": "2025-11-02T12:00:54.627Z",
+    "etaExtendedAt": "2025-11-02T11:51:03.892Z",
+    "etaExtensionMinutes": 10
   },
   {
     "id": 8,
@@ -136,10 +168,16 @@
     "shopId": 1,
     "user": "Employee XYZ",
     "scheduledTime": null,
-    "status": "pending",
+    "status": "completed",
     "createdAt": "2025-10-25T05:22:10.792Z",
     "billingId": "00001",
-    "estimatedReadyTime": "2025-10-25T05:23:10.792Z"
+    "estimatedReadyTime": "2025-11-02T11:56:03.878Z",
+    "prepTime": 5,
+    "etaExtendedAt": "2025-11-02T11:51:03.878Z",
+    "etaExtensionMinutes": 5,
+    "readyAt": "2025-11-02T11:51:25.779Z",
+    "pickedAt": "2025-11-02T11:51:37.064Z",
+    "completedAt": "2025-11-02T11:51:37.064Z"
   },
   {
     "id": 9,
@@ -155,10 +193,16 @@
     "shopId": 1,
     "user": "Employee XYZ",
     "scheduledTime": null,
-    "status": "pending",
+    "status": "completed",
     "createdAt": "2025-10-25T05:22:33.882Z",
     "billingId": "00002",
-    "estimatedReadyTime": "2025-10-25T05:23:33.882Z"
+    "estimatedReadyTime": "2025-11-02T11:56:03.900Z",
+    "prepTime": 5,
+    "etaExtendedAt": "2025-11-02T11:51:03.900Z",
+    "etaExtensionMinutes": 5,
+    "readyAt": "2025-11-02T11:51:26.782Z",
+    "pickedAt": "2025-11-02T11:51:36.912Z",
+    "completedAt": "2025-11-02T11:51:36.912Z"
   },
   {
     "id": 10,
@@ -174,10 +218,16 @@
     "shopId": 1,
     "user": "Employee XYZ",
     "scheduledTime": null,
-    "status": "pending",
+    "status": "completed",
     "createdAt": "2025-10-25T05:25:36.109Z",
     "billingId": "00003",
-    "estimatedReadyTime": "2025-10-25T05:26:36.109Z"
+    "estimatedReadyTime": "2025-11-02T11:56:03.911Z",
+    "prepTime": 5,
+    "etaExtendedAt": "2025-11-02T11:51:03.911Z",
+    "etaExtensionMinutes": 5,
+    "readyAt": "2025-11-02T11:51:27.253Z",
+    "pickedAt": "2025-11-02T11:51:36.742Z",
+    "completedAt": "2025-11-02T11:51:36.742Z"
   },
   {
     "id": 11,
@@ -199,13 +249,18 @@
     "shopId": 1,
     "user": "Employee XYZ",
     "scheduledTime": null,
-    "status": "pending",
+    "status": "completed",
     "createdAt": "2025-10-25T06:13:16.885Z",
     "billingId": "00004",
-    "estimatedReadyTime": "2025-10-25T06:49:16.885Z",
-    "prepTime": 36,
+    "estimatedReadyTime": "2025-11-02T11:56:03.917Z",
+    "prepTime": 41,
     "rating": null,
-    "feedback": null
+    "feedback": null,
+    "etaExtendedAt": "2025-11-02T11:51:03.917Z",
+    "etaExtensionMinutes": 5,
+    "readyAt": "2025-11-02T11:51:27.440Z",
+    "pickedAt": "2025-11-02T11:51:36.584Z",
+    "completedAt": "2025-11-02T11:51:36.584Z"
   },
   {
     "id": 12,
@@ -232,13 +287,18 @@
     "shopId": 1,
     "user": "Employee XYZ",
     "scheduledTime": null,
-    "status": "pending",
+    "status": "completed",
     "createdAt": "2025-10-25T06:38:27.644Z",
     "billingId": "00005",
-    "estimatedReadyTime": "2025-10-25T07:17:27.644Z",
-    "prepTime": 39,
+    "estimatedReadyTime": "2025-11-02T11:56:03.924Z",
+    "prepTime": 44,
     "rating": null,
-    "feedback": null
+    "feedback": null,
+    "etaExtendedAt": "2025-11-02T11:51:03.924Z",
+    "etaExtensionMinutes": 5,
+    "readyAt": "2025-11-02T11:51:27.640Z",
+    "pickedAt": "2025-11-02T11:51:36.414Z",
+    "completedAt": "2025-11-02T11:51:36.414Z"
   },
   {
     "id": 13,
@@ -256,13 +316,18 @@
     "shopId": 1,
     "user": "Employee XYZ",
     "scheduledTime": null,
-    "status": "pending",
+    "status": "completed",
     "createdAt": "2025-10-25T06:45:26.261Z",
     "billingId": "00006",
-    "estimatedReadyTime": "2025-10-25T07:30:26.261Z",
-    "prepTime": 45,
+    "estimatedReadyTime": "2025-11-02T11:56:03.929Z",
+    "prepTime": 50,
     "rating": null,
-    "feedback": null
+    "feedback": null,
+    "etaExtendedAt": "2025-11-02T11:51:03.929Z",
+    "etaExtensionMinutes": 5,
+    "readyAt": "2025-11-02T11:51:27.827Z",
+    "pickedAt": "2025-11-02T11:51:36.259Z",
+    "completedAt": "2025-11-02T11:51:36.259Z"
   },
   {
     "id": 14,
@@ -312,11 +377,11 @@
     "shopId": 1,
     "user": "+919952911560",
     "scheduledTime": null,
-    "status": "pending",
+    "status": "completed",
     "createdAt": "2025-10-31T13:32:09.227Z",
     "billingId": "00001",
-    "estimatedReadyTime": "2025-10-31T14:14:09.227Z",
-    "prepTime": 42,
+    "estimatedReadyTime": "2025-11-02T11:56:03.974Z",
+    "prepTime": 47,
     "baseEstimatedReadyTime": "2025-10-31T14:14:09.227Z",
     "basePrepTime": 42,
     "rating": null,
@@ -327,7 +392,12 @@
       "amount": 180,
       "provider": "google-pay",
       "reference": "PG-1761917529227"
-    }
+    },
+    "etaExtendedAt": "2025-11-02T11:51:03.974Z",
+    "etaExtensionMinutes": 5,
+    "readyAt": "2025-11-02T11:51:28.011Z",
+    "pickedAt": "2025-11-02T11:51:35.616Z",
+    "completedAt": "2025-11-02T11:51:35.616Z"
   },
   {
     "id": 16,
