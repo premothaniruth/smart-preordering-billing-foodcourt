@@ -1,3 +1,5 @@
+  const normalizedStatus = normalizeBulkStatusClient(order?.status);
+  const isClosed = ["completed", "cancelled", "admin_rejected"].includes(normalizedStatus);
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   fetchOrders,
@@ -785,15 +787,10 @@ const BulkOrderCard = ({ order, onPostMessage, onConfirm }) => {
   const requestedVendors = Array.isArray(order.requestedVendors)
     ? order.requestedVendors
     : typeof order.requestedVendorsText === "string" && order.requestedVendorsText.trim().length > 0
-      ? order.requestedVendorsText.split(/[,\n]/).map((v) => v.trim()).filter(Boolean)
+      ? order.requestedVendorsText.split(/[\n,]/).map((v) => v.trim()).filter(Boolean)
       : [];
-
-  const formatDateTime = (value, { withTime = true } = {}) => {
-    if (!value) return "—";
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return "—";
-    return date.toLocaleString("en-IN", withTime ? { dateStyle: "medium", timeStyle: "short" } : { dateStyle: "medium" });
-  };
+  const normalizedStatus = normalizeBulkStatusClient(order?.status);
+  const isClosed = ["completed", "cancelled", "admin_rejected"].includes(normalizedStatus);
 
   const formatCurrency = (value) => {
     if (value == null || value === "") return "—";
@@ -923,9 +920,10 @@ const BulkOrderCard = ({ order, onPostMessage, onConfirm }) => {
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             placeholder="Share updates or ask questions"
+            disabled={isClosed}
           />
           <div className="bulk-action-row">
-            <select value={responseStatus} onChange={(e) => setResponseStatus(e.target.value)}>
+            <select value={responseStatus} onChange={(e) => setResponseStatus(e.target.value)} disabled={isClosed}>
               <option value="confirmed">Confirm slot</option>
               <option value="pending">Need clarification</option>
               <option value="rejected">Cannot fulfill</option>
@@ -937,11 +935,12 @@ const BulkOrderCard = ({ order, onPostMessage, onConfirm }) => {
               onChange={(e) => setCapacity(e.target.value)}
               placeholder="Capacity"
               style={{ width: 120 }}
+              disabled={isClosed}
             />
           </div>
           <div className="bulk-button-row">
-            <button onClick={handleConfirm} className="primary-button">Submit Response</button>
-            <button onClick={handleSendMessage} className="secondary-button">Post Message</button>
+            <button onClick={handleConfirm} className="primary-button" disabled={isClosed}>Submit Response</button>
+            <button onClick={handleSendMessage} className="secondary-button" disabled={isClosed || !message.trim()}>Post Message</button>
           </div>
         </div>
         <div className="bulk-history">

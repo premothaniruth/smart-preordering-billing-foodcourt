@@ -516,13 +516,15 @@ const BulkOrderPortal = ({ token, employeeRole, onClose }) => {
     const canSubmitToAdmin = ["draft", "needs_revision"].includes(selectedOrder.status);
     const statusLabel = STATUS_LABELS[selectedOrder.status] || selectedOrder.status;
     const vendorContact = selectedOrder.vendorContact || {};
+    const normalizedStatus = normalizeOrderStatus(selectedOrder.status);
+    const isOrderClosed = ["completed", "cancelled", "admin_rejected"].includes(normalizedStatus);
     const vendorEmail = vendorContact.email || vendorContact.contactEmail || null;
     const vendorPhone = vendorContact.phone || vendorContact.contactPhone || vendorContact.mobile || null;
     const vendorShopId = selectedOrder.vendorShopId != null ? String(selectedOrder.vendorShopId) : null;
     const messageDraft = messageDrafts[selectedOrder.id] ?? "";
     const confirmDraft = confirmDrafts[selectedOrder.id] || { slotId: null, capacity: "", status: "confirmed", note: "" };
-    const canSubmitVendorResponse = Boolean(vendorShopId) && ["pending_vendor", "confirmed", "in_progress"].includes(selectedOrder.status);
-    const canMessageVendor = Boolean(vendorShopId);
+    const canSubmitVendorResponse = Boolean(vendorShopId) && !isOrderClosed && ["pending_vendor", "confirmed", "in_progress"].includes(selectedOrder.status);
+    const canMessageVendor = Boolean(vendorShopId) && !isOrderClosed;
 
     return (
       <div className="bulk-order-details" style={{ marginTop: 24, padding: 20, background: "#f9fbfd", borderRadius: 12 }}>
@@ -828,6 +830,11 @@ const BulkOrderPortal = ({ token, employeeRole, onClose }) => {
                   Submit Vendor Confirmation
                 </button>
               </div>
+            </div>
+          )}
+          {isOrderClosed && (
+            <div style={{ marginTop: 12, padding: 12, background: "#fdf6e3", borderRadius: 8, border: "1px solid #f1c40f", color: "#7d6608" }}>
+              Messaging is unavailable because this order has been closed.
             </div>
           )}
         </section>
