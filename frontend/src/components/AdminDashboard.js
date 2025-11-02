@@ -276,7 +276,7 @@ const AdminDashboard = ({ token }) => {
 
   const loadOrders = useCallback(() => {
     fetchOrders(token).then(setOrders);
-  }, [token, bulkStatusFilter]);
+  }, [token]);
 
   useEffect(() => {
     loadOrders();
@@ -407,22 +407,11 @@ const AdminDashboard = ({ token }) => {
     } finally {
       setBulkLoading(false);
     }
-  }, [token]);
+  }, [token, bulkStatusFilter]);
 
   useEffect(() => {
-    loadBulkOrders(bulkStatusFilter);
-  }, [loadBulkOrders, bulkStatusFilter]);
-
-  const bulkStatusOptions = useMemo(() => ([
-    { value: 'pending_vendor', label: 'Pending vendor' },
-    { value: 'sent_to_vendor', label: 'Sent to vendor' },
-    { value: 'approved_admin', label: 'Approved by admin' },
-    { value: 'confirmed', label: 'Vendor confirmed' },
-    { value: 'completed', label: 'Completed' },
-    { value: 'needs_revision', label: 'Needs revision' },
-    { value: 'admin_rejected', label: 'Admin rejected' },
-    { value: 'all', label: 'All statuses' }
-  ]), []);
+    loadBulkOrders();
+  }, [loadBulkOrders]);
 
   const bulkOrdersByStatus = useMemo(() => {
     const grouped = new Map();

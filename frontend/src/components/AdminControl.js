@@ -224,8 +224,6 @@ function AdminControl({
     return vendorDirectoryByShopId.get(String(selectedBulkOrder.vendorShopId)) || null;
   }, [selectedBulkOrder, vendorDirectoryByShopId]);
 
-  const selectedBulkOrderId = selectedBulkOrder?.id;
-
   useEffect(() => {
     if (selectedBulkOrder && selectedBulkOrder.vendorShopId != null) {
       setSendVendorShopId(String(selectedBulkOrder.vendorShopId));
