@@ -2319,7 +2319,7 @@ const authenticateVendor = (req, res, next) => {
 };
 
 // Middleware: Authenticate admin via headers
-const authenticateAdmin = (req, res, next) => {
+function authenticateAdmin(req, res, next) {
   const username = String(req.headers["x-admin-username"] || "").trim();
   const password = String(req.headers["x-admin-password"] || "").trim();
   if (!username || !password) {
@@ -2330,7 +2330,7 @@ const authenticateAdmin = (req, res, next) => {
   }
   req.admin = { username };
   next();
-};
+}
 
 // Get menu
 /**
