@@ -5,9 +5,13 @@
     "email": "prem@gmail.com",
     "mobile": "9952911560",
     "passwordHash": "$2b$10$u97ZqkZsVn5cRkC1V5LxJey8tM1oKkJ7b3SAb9cCwJ0F1e9f2mJMi",
-    "pinHash": "$2b$10$iaiH7DW94VnJBYq2ve.AFO/KcRc3ExW6MgabB/kRpU.N0QjulPcdC",
+    "pinHash": "$2b$10$vYqL0LaVx7ipfmO1zCTote3cEGDwOI0tX6./cZ5sI1eEY9yO.vuy.",
     "walletBalance": 0,
-    "walletTransactions": []
+    "walletTransactions": [],
+    "role": "Employee",
+    "roleSlug": "employee",
+    "department": "",
+    "bulkOrderEligible": false
   },
   {
     "id": 2,
@@ -15,9 +19,13 @@
     "email": "anir@gmail.com",
     "mobile": "8489196891",
     "passwordHash": "$2b$10$u97ZqkZsVn5cRkC1V5LxJey8tM1oKkJ7b3SAb9cCwJ0F1e9f2mJMi",
-    "pinHash": "$2b$10$zdN3edENFFXWB5et1YOhses/pOHSR3R3IDxI9H8JdEPh43zi.Yma2",
+    "pinHash": "$2b$10$.fRsC7ztaIvQomdLQ7YtHuBAFo.qfWr7abXzL0acvtMbQ1kuwxfTC",
     "walletBalance": 0,
-    "walletTransactions": []
+    "walletTransactions": [],
+    "role": "Employee",
+    "roleSlug": "employee",
+    "department": "",
+    "bulkOrderEligible": false
   },
   {
     "id": 3,
@@ -27,6 +35,24 @@
     "passwordHash": "$2b$10$GwTgBChdV9IXXJadYwj1tu/BHHnkhK30Mj46XWP7yM/eIzpaiI8eu",
     "pinHash": "$2b$10$3KTLArWPGTgnJW853jOhNOErojlxyZrDxq9i0hYHnDbU9wuj7y.zG",
     "birthday": "2025-10-31",
+    "walletBalance": 0,
+    "walletTransactions": [],
+    "role": "Employee",
+    "roleSlug": "employee",
+    "department": "",
+    "bulkOrderEligible": false
+  },
+  {
+    "id": 4,
+    "username": "hrdemo",
+    "email": "hr@gmail.com",
+    "mobile": "+918489196891",
+    "passwordHash": "$2b$10$qNoq73dqMoKUjhlSIkZKY.11QE6acr7iJI62Ure0yWIk1oHXbnDS2",
+    "pinHash": "$2b$10$kLEQ254r2uow4KPmNuyJDei3cvXieFopjbIf0sM./9tIrMperF1Gi",
+    "role": "HR",
+    "roleSlug": "hr",
+    "department": "HR",
+    "bulkOrderEligible": true,
     "walletBalance": 0,
     "walletTransactions": []
   }

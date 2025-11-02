@@ -1,1 +1,141 @@
-[]
+[
+  {
+    "id": 1,
+    "status": "pending_vendor",
+    "organizer": {
+      "employeeId": 4,
+      "name": "hrdemo",
+      "mobile": "+918489196891",
+      "email": "hr@gmail.com",
+      "role": "HR",
+      "roleSlug": "hr",
+      "department": "HR"
+    },
+    "organizerContact": {
+      "name": "HR team lead",
+      "email": "hr@gmail.com",
+      "mobile": "8489196891"
+    },
+    "eventName": "Induction",
+    "eventType": "onboarding",
+    "eventTheme": "onboarding event",
+    "eventDate": "2025-11-26T00:00:00.000Z",
+    "eventStartTime": "2025-11-26T02:30:00.000Z",
+    "eventEndTime": "2025-11-26T13:30:00.000Z",
+    "location": "Induction block",
+    "building": "SDB 5",
+    "floor": "ground floor",
+    "campus": "tower 5",
+    "notes": "",
+    "specialInstructions": "",
+    "deliverySlots": [
+      {
+        "id": "1762075726186-q41r",
+        "label": "Breakfast",
+        "startTime": "2025-11-26T03:30:00.000Z",
+        "endTime": "2025-11-26T04:00:00.000Z",
+        "confirmed": false,
+        "notes": "",
+        "vendorConfirmation": null
+      },
+      {
+        "id": "1762075755829-he9a",
+        "label": "Lunch",
+        "startTime": "2025-11-26T07:30:00.000Z",
+        "endTime": "2025-11-26T08:30:00.000Z",
+        "confirmed": false,
+        "notes": "",
+        "vendorConfirmation": null
+      }
+    ],
+    "itemGroups": [
+      {
+        "id": "1762075795947-08rh",
+        "name": "Bulk combo 1",
+        "itemId": null,
+        "quantity": 55,
+        "unitPrice": 150,
+        "options": [],
+        "notes": "",
+        "slotId": null
+      },
+      {
+        "id": "1762075816468-adbc",
+        "name": "lunch combo 2",
+        "itemId": null,
+        "quantity": 55,
+        "unitPrice": 180,
+        "options": [],
+        "notes": "",
+        "slotId": null
+      }
+    ],
+    "attendeeGroups": [
+      {
+        "id": "1762075833255-cgla",
+        "label": "Employee",
+        "count": 50,
+        "notes": ""
+      },
+      {
+        "id": "1762075844004-n2ij",
+        "label": "host",
+        "count": 2,
+        "notes": ""
+      },
+      {
+        "id": "1762075851185-8b1r",
+        "label": "presenters",
+        "count": 3,
+        "notes": ""
+      }
+    ],
+    "subOrders": [],
+    "requestedVendors": [
+      "South Indian delights"
+    ],
+    "attachments": [],
+    "metadata": {
+      "submittedByDepartment": "HR",
+      "organizerRole": "hr"
+    },
+    "expectedHeadcount": 55,
+    "expectedGuests": 55,
+    "pricing": {
+      "pricingType": "vendor_rate",
+      "bulkDiscountPercent": 5,
+      "bulkFlatRate": 0
+    },
+    "vendorShopId": null,
+    "assignedVendors": [],
+    "vendorResponses": [],
+    "vendorMessages": [],
+    "linkedOrders": [],
+    "createdAt": "2025-11-02T09:32:23.473Z",
+    "updatedAt": "2025-11-02T09:32:23.473Z",
+    "lastStatusChangeAt": "2025-11-02T09:32:23.473Z",
+    "history": [
+      {
+        "id": "1762075943473-3dg1we",
+        "timestamp": "2025-11-02T09:32:23.473Z",
+        "type": "created",
+        "actor": {
+          "employeeId": 4,
+          "name": "hrdemo",
+          "mobile": "+918489196891",
+          "email": "hr@gmail.com",
+          "role": "HR",
+          "roleSlug": "hr",
+          "department": "HR"
+        },
+        "details": {
+          "status": "pending_vendor"
+        }
+      }
+    ],
+    "metadataVersion": 1,
+    "subtotal": 18150,
+    "discountAmount": 0,
+    "totalAmount": 18150
+  }
+]
