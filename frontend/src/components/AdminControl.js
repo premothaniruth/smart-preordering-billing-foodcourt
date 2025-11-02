@@ -416,9 +416,6 @@ function AdminControl({
           <button className="secondary-button" onClick={() => loadBulkOrders(adminSession, bulkStatus)} disabled={bulkLoading}>
             Refresh
           </button>
-          <button className="link-button" style={{ marginLeft: 12 }} onClick={onAdminLogout}>
-            Logout
-          </button>
         </div>
       </div>
 

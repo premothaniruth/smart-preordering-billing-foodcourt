@@ -253,6 +253,17 @@ const CountdownDisplay = ({ info }) => {
  * @param {{ token: string }} props
  */
 
+const BULK_STATUS_OPTIONS = [
+  { value: 'pending_vendor', label: 'Pending vendor' },
+  { value: 'sent_to_vendor', label: 'Sent to vendor' },
+  { value: 'approved_admin', label: 'Approved by admin' },
+  { value: 'confirmed', label: 'Vendor confirmed' },
+  { value: 'completed', label: 'Completed' },
+  { value: 'needs_revision', label: 'Needs revision' },
+  { value: 'admin_rejected', label: 'Admin rejected' },
+  { value: 'all', label: 'All statuses' }
+];
+
 const AdminDashboard = ({ token }) => {
   const [orders, setOrders] = useState([]);
   const [menu, setMenu] = useState([]);
@@ -411,6 +422,12 @@ const AdminDashboard = ({ token }) => {
 
   useEffect(() => {
     loadBulkOrders();
+  }, [loadBulkOrders]);
+
+  const handleBulkStatusChange = useCallback((event) => {
+    const nextStatus = event.target.value;
+    setBulkStatusFilter(nextStatus);
+    loadBulkOrders(nextStatus);
   }, [loadBulkOrders]);
 
   const bulkOrdersByStatus = useMemo(() => {
@@ -635,6 +652,21 @@ const AdminDashboard = ({ token }) => {
       </div>
       {tab === "bulk" && (
         <div className="bulk-orders-wrapper">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+            <div>
+              <label style={{ fontSize: 13, color: '#555', marginRight: 8 }}>Filter bulk orders</label>
+              <select value={bulkStatusFilter} onChange={handleBulkStatusChange}>
+                {BULK_STATUS_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button className="secondary-button" onClick={() => loadBulkOrders()} disabled={bulkLoading}>
+              Refresh
+            </button>
+          </div>
           {bulkLoading ? (
             <div style={{ padding: 16 }}>Loading bulk orders…</div>
           ) : bulkError ? (
