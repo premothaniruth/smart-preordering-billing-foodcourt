@@ -479,7 +479,6 @@ const BulkOrderPortal = ({ token, employeeRole, onClose }) => {
     const adminReview = selectedOrder.adminReview || {};
     const decisions = Array.isArray(adminReview.decisions) ? adminReview.decisions : [];
     const canSubmitToAdmin = ["draft", "needs_revision"].includes(selectedOrder.status);
-    const isEditable = ["draft", "needs_revision", "submitted_admin"].includes(selectedOrder.status);
     const statusLabel = STATUS_LABELS[selectedOrder.status] || selectedOrder.status;
 
     return (

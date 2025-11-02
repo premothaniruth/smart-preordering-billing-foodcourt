@@ -258,18 +258,15 @@ const CountdownDisplay = ({ info }) => {
 const AdminDashboard = ({ token }) => {
   const [orders, setOrders] = useState([]);
   const [menu, setMenu] = useState([]);
-  const [selectedOrderId, setSelectedOrderId] = useState(null);
-  const [loading, setLoading] = useState(false);
   const [tab, setTab] = useState("current");
   const [muted, setMuted] = useState(false);
   const [bulkOrders, setBulkOrders] = useState([]);
   const [bulkLoading, setBulkLoading] = useState(false);
   const [bulkError, setBulkError] = useState(null);
-  const [filter, setFilter] = useState("all");
   const OVERDUE_SOUND = "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBDWM0/K/gC4EH29+3WgyBCk4XoCWJhcBTnLcWswB";
   // Low stock toggle
   const [showLowStock, setShowLowStock] = useState(false);
-  const [lowStockThreshold, setLowStockThreshold] = useState(10);
+  const [lowStockThreshold] = useState(10);
   const overdueNotifiedRef = useRef(new Set());
   const vendorShopId = (() => {
     try {
@@ -431,7 +428,7 @@ const AdminDashboard = ({ token }) => {
 
   useEffect(() => {
     loadBulkOrders();
-  }, [loadBulkOrders]);
+  }, [token]);
 
   const bulkOrdersByStatus = useMemo(() => {
     const grouped = new Map();

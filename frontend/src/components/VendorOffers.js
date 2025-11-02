@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { fetchOffers, fetchCombos, fetchMenuSections, updateOffers } from "../api";
 import { toast } from "react-toastify";
 
@@ -229,7 +229,7 @@ const TemplateConfigFields = ({ offer, idx, updateConfigField, updateOfferField,
     updateOfferField(idx, 'applicableComboIds', selected);
   };
 
-  const menuOptions = menuItems || [];
+  const menuOptions = useMemo(() => Array.isArray(menuItems) ? menuItems : [], [menuItems]);
   const targetItemOptions = useMemo(() => {
     const customOpts = CUSTOM_TARGET_ITEM_OPTIONS.map((opt) => ({
       value: opt.value,
@@ -952,7 +952,7 @@ const VendorOffers = ({ token }) => {
   const [combos, setCombos] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const [off, sec, cmb] = await Promise.all([
@@ -986,9 +986,9 @@ const VendorOffers = ({ token }) => {
       setMenuItems([]);
     }
     setLoading(false);
-  };
+  }, [vendorShopId]);
 
-  useEffect(() => { load(); }, [vendorShopId]);
+  useEffect(() => { load(); }, [load]);
 
   const addOffer = () => {
     setOffers(prev => ([{
@@ -1087,17 +1087,6 @@ const VendorOffers = ({ token }) => {
       }
       current.config = config;
       next[idx] = current;
-      return next;
-    });
-  };
-
-  const toggleArrayValue = (idx, field, value) => {
-    setOffers(prev => {
-      const next = [...prev];
-      const arr = Array.isArray(next[idx][field]) ? [...next[idx][field]] : [];
-      const i = arr.findIndex(v => String(v) === String(value));
-      if (i >= 0) arr.splice(i, 1); else arr.push(value);
-      next[idx] = { ...next[idx], [field]: arr };
       return next;
     });
   };

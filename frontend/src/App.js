@@ -1,13 +1,11 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
-import { fetchMenu, placeOrder, fetchUserOrders, fetchFavorites, vendorLogin, updateMenu, markOrderReady, fetchAnalytics, submitRating, cancelOrder, employeeProfile, triggerSosAlert, resolveSosAlert, fetchSosStatus, previewOffers } from "./api";
+import { fetchMenu, placeOrder, fetchUserOrders, fetchFavorites, submitRating, cancelOrder, employeeProfile, triggerSosAlert, resolveSosAlert, fetchSosStatus, previewOffers } from "./api";
 import Menu from "./components/Menu";
 import Cart from "./components/Cart";
-import Payment from "./components/Payment";
 import Login from "./components/Login";
 import EmployeeLogin from "./components/EmployeeLogin";
 import EmployeeProfile from "./components/EmployeeProfile";
 import MenuEditor from "./components/MenuEditor";
-import AdminDashboard from "./components/AdminDashboard";
 import VendorCombos from "./components/VendorCombos";
 import VendorOffers from "./components/VendorOffers";
 import VendorFeedbacks from "./components/VendorFeedbacks";
@@ -164,17 +162,24 @@ function App() {
     }
   })();
 
+  const loadMenu = useCallback(() => {
+    fetchMenu().then((data) => {
+      setMenu(data);
+      if (data.length > 0 && !selectedShop) setSelectedShop(data[0].shopId);
+    });
+  }, [selectedShop]);
+
   useEffect(() => {
     document.title = "Infy Bhojans";
     loadMenu();
-  }, []);
+  }, [loadMenu]);
 
   // Refresh menu when other parts of app (e.g., AdminDashboard) update inventory
   useEffect(() => {
     const handler = () => loadMenu();
     window.addEventListener('menu:updated', handler);
     return () => window.removeEventListener('menu:updated', handler);
-  }, []);
+  }, [loadMenu]);
 
   // Global navigation events from child components (e.g., AdminDashboard)
   useEffect(() => {
@@ -340,18 +345,11 @@ function App() {
   }, [shopInventoryMap, selectedShop]);
 
   /** Load all shops and their items */
-  const loadMenu = () => {
-    fetchMenu().then((data) => {
-      setMenu(data);
-      if (data.length > 0 && !selectedShop) setSelectedShop(data[0].shopId);
-    });
-  };
-
   /** Load favorites for current user (employee) */
-  const loadFavorites = () => {
+  const loadFavorites = useCallback(() => {
     if (!userId) return;
     fetchFavorites(userId).then(setFavorites);
-  };
+  }, [userId]);
 
   const applyWalletPayload = useCallback((payload = {}) => {
     const balance = Number(payload.balance || 0);
