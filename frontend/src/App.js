@@ -6,6 +6,7 @@ import Login from "./components/Login";
 import EmployeeLogin from "./components/EmployeeLogin";
 import EmployeeProfile from "./components/EmployeeProfile";
 import MenuEditor from "./components/MenuEditor";
+import AdminDashboard from "./components/AdminDashboard";
 import VendorCombos from "./components/VendorCombos";
 import VendorOffers from "./components/VendorOffers";
 import VendorFeedbacks from "./components/VendorFeedbacks";

@@ -83,6 +83,29 @@ import {
 } from "../api";
 import { toast } from "react-toastify";
 
+const buildInitialFormState = (employeeRole) => ({
+  eventName: "",
+  eventType: "",
+  eventTheme: "",
+  eventDate: "",
+  eventStart: "",
+  eventEnd: "",
+  location: "",
+  building: "",
+  floor: "",
+  campus: employeeRole?.department || "",
+  expectedHeadcount: "",
+  specialInstructions: "",
+  notes: "",
+  organizerName: "",
+  organizerEmail: "",
+  organizerMobile: "",
+  requestedVendorsText: "",
+  pricingType: "vendor_rate",
+  bulkDiscountPercent: "",
+  bulkFlatRate: "",
+});
+
 const STATUS_COLORS = {
   draft: "#95a5a6",
   submitted_admin: "#8e44ad",
@@ -170,6 +193,58 @@ const BulkOrderPortal = ({ token, employeeRole, onClose }) => {
   const [wizardMode, setWizardMode] = useState("create");
   const [editingOrderId, setEditingOrderId] = useState(null);
 
+  const loadOrderIntoWizard = useCallback((order) => {
+    if (!order) return;
+    const base = buildInitialFormState(employeeRole);
+    setForm({
+      ...base,
+      eventName: order.eventName || "",
+      eventType: order.eventType || "",
+      eventTheme: order.eventTheme || "",
+      eventDate: order.eventDate ? order.eventDate.slice(0, 10) : "",
+      eventStart: order.eventStartTime ? new Date(order.eventStartTime).toISOString().slice(0, 16) : "",
+      eventEnd: order.eventEndTime ? new Date(order.eventEndTime).toISOString().slice(0, 16) : "",
+      location: order.location || "",
+      building: order.building || "",
+      floor: order.floor || "",
+      campus: order.campus || "",
+      notes: order.notes || "",
+      specialInstructions: order.specialInstructions || "",
+      expectedHeadcount: order.expectedHeadcount != null ? String(order.expectedHeadcount) : "",
+      organizerName: order.organizerContact?.name || "",
+      organizerEmail: order.organizerContact?.email || "",
+      organizerMobile: order.organizerContact?.mobile || "",
+      requestedVendorsText: Array.isArray(order.requestedVendors) ? order.requestedVendors.join("\n") : "",
+      pricingType: order.pricing?.pricingType || order.pricing?.pricing_type || "vendor_rate",
+      bulkDiscountPercent: order.pricing?.bulkDiscountPercent != null ? String(order.pricing.bulkDiscountPercent) : "",
+      bulkFlatRate: order.pricing?.bulkFlatRate != null ? String(order.pricing.bulkFlatRate) : "",
+    });
+    setDeliverySlots(Array.isArray(order.deliverySlots) ? order.deliverySlots.map((slot) => ({
+      id: slot.id || `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      label: slot.label || "",
+      startTime: slot.startTime,
+      endTime: slot.endTime,
+      notes: slot.notes || ""
+    })) : []);
+    setItemGroups(Array.isArray(order.itemGroups) ? order.itemGroups.map((item) => ({
+      id: item.id || `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      name: item.name || "",
+      quantity: item.quantity || 0,
+      unitPrice: item.unitPrice || 0,
+      notes: item.notes || "",
+    })) : []);
+    setAttendeeGroups(Array.isArray(order.attendeeGroups) ? order.attendeeGroups.map((group) => ({
+      id: group.id || `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      label: group.label || "",
+      count: group.count || 0,
+      notes: group.notes || "",
+    })) : []);
+    setSelectedOrderId(order.id);
+    setEditingOrderId(order.id);
+    setWizardMode("edit");
+    setWizardOpen(true);
+  }, [employeeRole]);
+
   const loadOrders = useCallback(async () => {
     if (!token) return;
     try {
@@ -247,7 +322,7 @@ const BulkOrderPortal = ({ token, employeeRole, onClose }) => {
   const selectedOrders = selectedStatus === "upcoming" ? upcomingOrders : pastOrders;
   const selectedOrder = orders.find((order) => Number(order.id) === Number(selectedOrderId));
 
-  const resetWizard = () => {
+  const resetWizard = useCallback(() => {
     setForm({
       eventName: "",
       eventType: "",
@@ -278,7 +353,9 @@ const BulkOrderPortal = ({ token, employeeRole, onClose }) => {
     setAttendeeDraft({ label: "", count: "", notes: "" });
     setWizardOpen(false);
     setSelectedOrderId(null);
-  };
+    setEditingOrderId(null);
+    setWizardMode("create");
+  }, [employeeRole?.department, employeeRole?.role]);
 
   const handleAddSlot = () => {
     if (!slotDraft.label || !slotDraft.start || !slotDraft.end) {
@@ -646,7 +723,7 @@ const BulkOrderPortal = ({ token, employeeRole, onClose }) => {
         </div>
         <div style={{ display: "flex", gap: 12 }}>
           <button onClick={onClose} className="secondary-button">Back to ordering</button>
-          <button onClick={() => { resetWizard(); setWizardOpen(true); }} className="primary-button">
+          <button onClick={() => { resetWizard(); setWizardMode("create"); setWizardOpen(true); }} className="primary-button">
             New Bulk Order
           </button>
         </div>
@@ -677,7 +754,7 @@ const BulkOrderPortal = ({ token, employeeRole, onClose }) => {
             <button onClick={resetWizard} className="secondary-button">Close</button>
           </div>
           <form
-            onSubmit={wizardMode === "edit" ? handleResubmitOrder : handleSubmitOrder}
+            onSubmit={wizardMode === "edit" ? handleResubmitOrderFactory({ editingOrderId, buildPayload, setSubmitting, token, setOrders, resetWizard }) : handleSubmitOrder}
             style={{ marginTop: 16 }}
           >
             <section style={{ marginBottom: 24 }}>
