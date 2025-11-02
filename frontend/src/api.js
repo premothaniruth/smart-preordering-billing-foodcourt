@@ -24,18 +24,23 @@ export const employeeRegister = async ({ username, password, pin, mobile, email 
   return res.json();
 };
 
-export const fetchBulkOrders = async (token, { status, vendorShopId } = {}) => {
-  const params = new URLSearchParams();
-  if (status) params.set('status', status);
-  if (vendorShopId) params.set('vendorShopId', vendorShopId);
-  const qs = params.toString();
-  const res = await fetch(`${API_URL}/bulk-orders${qs ? `?${qs}` : ''}`, {
+export const fetchBulkOrders = async (token, params = {}) => {
+  const url = new URL(`${API_URL}/bulk-orders`);
+  Object.entries(params).forEach(([key, value]) => {
+    if (value != null && value !== "") {
+      url.searchParams.append(key, value);
+    }
+  });
+
+  const res = await fetch(url.toString(), {
     headers: {
-      'Content-Type': 'application/json',
       Authorization: token,
     },
-    method: 'GET',
   });
+
+  if (!res.ok) {
+    return { status: "error", message: "Failed to fetch bulk orders" };
+  }
   return res.json();
 };
 

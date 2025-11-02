@@ -4,6 +4,8 @@ import {
   fetchBulkOrders,
   createBulkOrder,
   updateBulkOrder,
+  postBulkOrderVendorMessage,
+  confirmBulkOrderSlot,
 } from "../api";
 import { toast } from "react-toastify";
 
@@ -116,6 +118,8 @@ const BulkOrderPortal = ({ token, employeeRole, onClose }) => {
   const [selectedOrderId, setSelectedOrderId] = useState(null);
   const [wizardMode, setWizardMode] = useState("create");
   const [editingOrderId, setEditingOrderId] = useState(null);
+  const [messageDrafts, setMessageDrafts] = useState({});
+  const [confirmDrafts, setConfirmDrafts] = useState({});
 
   const loadOrderIntoWizard = useCallback((order) => {
     if (!order) return;
@@ -245,6 +249,28 @@ const BulkOrderPortal = ({ token, employeeRole, onClose }) => {
 
   const selectedOrders = selectedStatus === "upcoming" ? upcomingOrders : pastOrders;
   const selectedOrder = orders.find((order) => Number(order.id) === Number(selectedOrderId));
+
+  useEffect(() => {
+    if (!selectedOrder) return;
+    setMessageDrafts((prev) => {
+      if (prev[selectedOrder.id] !== undefined) return prev;
+      return { ...prev, [selectedOrder.id]: "" };
+    });
+    setConfirmDrafts((prev) => {
+      if (prev[selectedOrder.id]) return prev;
+      const slots = Array.isArray(selectedOrder.deliverySlots) ? selectedOrder.deliverySlots : [];
+      const defaultSlotId = slots.find((slot) => slot.vendorConfirmation !== "confirmed")?.id || (slots[0] && slots[0].id) || null;
+      return {
+        ...prev,
+        [selectedOrder.id]: {
+          slotId: defaultSlotId,
+          capacity: selectedOrder.expectedHeadcount || "",
+          status: "confirmed",
+          note: "",
+        },
+      };
+    });
+  }, [selectedOrder]);
 
   const resetWizard = useCallback(() => {
     setForm({
@@ -505,6 +531,14 @@ const BulkOrderPortal = ({ token, employeeRole, onClose }) => {
     const decisions = Array.isArray(adminReview.decisions) ? adminReview.decisions : [];
     const canSubmitToAdmin = ["draft", "needs_revision"].includes(selectedOrder.status);
     const statusLabel = STATUS_LABELS[selectedOrder.status] || selectedOrder.status;
+    const vendorContact = selectedOrder.vendorContact || {};
+    const vendorEmail = vendorContact.email || vendorContact.contactEmail || null;
+    const vendorPhone = vendorContact.phone || vendorContact.contactPhone || vendorContact.mobile || null;
+    const vendorShopId = selectedOrder.vendorShopId != null ? String(selectedOrder.vendorShopId) : null;
+    const messageDraft = messageDrafts[selectedOrder.id] ?? "";
+    const confirmDraft = confirmDrafts[selectedOrder.id] || { slotId: null, capacity: "", status: "confirmed", note: "" };
+    const canSubmitVendorResponse = Boolean(vendorShopId) && ["pending_vendor", "confirmed", "in_progress"].includes(selectedOrder.status);
+    const canMessageVendor = Boolean(vendorShopId);
 
     return (
       <div className="bulk-order-details" style={{ marginTop: 24, padding: 20, background: "#f9fbfd", borderRadius: 12 }}>
@@ -649,7 +683,193 @@ const BulkOrderPortal = ({ token, employeeRole, onClose }) => {
               </div>
             </div>
           )}
+          {canMessageVendor && (
+            <div style={{ marginTop: 12, padding: 12, background: "#fff", borderRadius: 8, border: "1px solid #dce6f5" }}>
+              <h4 style={{ marginTop: 0 }}>Send message to vendor</h4>
+              <p style={{ fontSize: 13, color: "#566573" }}>Use this box to share updates or questions. Messages appear instantly in the vendor dashboard.</p>
+              <textarea
+                value={messageDraft}
+                onChange={(e) =>
+                  setMessageDrafts((prev) => ({ ...prev, [selectedOrder.id]: e.target.value }))
+                }
+                placeholder="Type your message for the vendor..."
+                rows={3}
+                style={{ width: "100%", resize: "vertical", padding: 8 }}
+              />
+              <div style={{ marginTop: 8, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                <button
+                  className="primary-button"
+                  onClick={async () => {
+                    if (!messageDraft.trim()) {
+                      toast.error("Message cannot be empty");
+                      return;
+                    }
+                    try {
+                      const res = await postBulkOrderVendorMessage(token, selectedOrder.id, messageDraft.trim());
+                      if (res?.status === "ok" && res.order) {
+                        toast.success("Message sent to vendor");
+                        setOrders((prev) => prev.map((order) => (order.id === selectedOrder.id ? res.order : order)));
+                        setMessageDrafts((prev) => ({ ...prev, [selectedOrder.id]: "" }));
+                      } else {
+                        toast.error(res?.message || "Unable to send message");
+                      }
+                    } catch (error) {
+                      console.error("Failed to post message", error);
+                      toast.error("Unable to send message to vendor");
+                    }
+                  }}
+                >
+                  Send Message
+                </button>
+                <button
+                  className="secondary-button"
+                  type="button"
+                  onClick={() => setMessageDrafts((prev) => ({ ...prev, [selectedOrder.id]: "" }))}
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+          )}
+          {canSubmitVendorResponse && (
+            <div style={{ marginTop: 16, padding: 12, background: "#fff", borderRadius: 8, border: "1px solid #dce6f5" }}>
+              <h4 style={{ marginTop: 0 }}>Confirm delivery with vendor</h4>
+              <p style={{ fontSize: 13, color: "#566573" }}>Share the vendor0s response back to the record. This keeps the organizer, admin, and vendor aligned.</p>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+                <label style={{ flex: "1 1 180px" }}>
+                  Slot
+                  <select
+                    value={confirmDraft.slotId || ""}
+                    onChange={(e) =>
+                      setConfirmDrafts((prev) => ({
+                        ...prev,
+                        [selectedOrder.id]: {
+                          ...prev[selectedOrder.id],
+                          slotId: e.target.value,
+                        },
+                      }))
+                    }
+                    style={{ display: "block", width: "100%", marginTop: 4 }}
+                  >
+                    {slots.map((slot) => (
+                      <option key={slot.id} value={slot.id}>{slot.label || slot.id}</option>
+                    ))}
+                  </select>
+                </label>
+                <label style={{ flex: "1 1 140px" }}>
+                  Capacity
+                  <input
+                    value={confirmDraft.capacity}
+                    onChange={(e) =>
+                      setConfirmDrafts((prev) => ({
+                        ...prev,
+                        [selectedOrder.id]: {
+                          ...prev[selectedOrder.id],
+                          capacity: e.target.value,
+                        },
+                      }))
+                    }
+                    type="number"
+                    style={{ display: "block", width: "100%", marginTop: 4 }}
+                  />
+                </label>
+                <label style={{ flex: "1 1 160px" }}>
+                  Status
+                  <select
+                    value={confirmDraft.status}
+                    onChange={(e) =>
+                      setConfirmDrafts((prev) => ({
+                        ...prev,
+                        [selectedOrder.id]: {
+                          ...prev[selectedOrder.id],
+                          status: e.target.value,
+                        },
+                      }))
+                    }
+                    style={{ display: "block", width: "100%", marginTop: 4 }}
+                  >
+                    <option value="confirmed">Confirmed</option>
+                    <option value="pending">Pending</option>
+                    <option value="rejected">Rejected</option>
+                  </select>
+                </label>
+              </div>
+              <div style={{ marginTop: 12, display: "flex", gap: 8, alignItems: "flex-start", flexWrap: "wrap" }}>
+                <textarea
+                  value={confirmDraft.note}
+                  onChange={(e) =>
+                    setConfirmDrafts((prev) => ({
+                      ...prev,
+                      [selectedOrder.id]: {
+                        ...prev[selectedOrder.id],
+                        note: e.target.value,
+                      },
+                    }))
+                  }
+                  placeholder="Add an optional note (visible to vendor and admin)"
+                  rows={3}
+                  style={{ width: "100%", resize: "vertical", padding: 8 }}
+                />
+                <button
+                  className="primary-button"
+                  onClick={async () => {
+                    try {
+                      const payload = {
+                        slotId: confirmDraft.slotId,
+                        status: confirmDraft.status,
+                        capacity: confirmDraft.capacity ? Number(confirmDraft.capacity) : undefined,
+                        message: confirmDraft.note || undefined,
+                      };
+                      const res = await confirmBulkOrderSlot(token, selectedOrder.id, payload);
+                      if (res?.status === "ok" && res.order) {
+                        toast.success("Vendor response recorded");
+                        setOrders((prev) => prev.map((order) => (order.id === selectedOrder.id ? res.order : order)));
+                        setConfirmDrafts((prev) => ({
+                          ...prev,
+                          [selectedOrder.id]: {
+                            ...prev[selectedOrder.id],
+                            note: "",
+                          },
+                        }));
+                      } else {
+                        toast.error(res?.message || "Unable to record confirmation");
+                      }
+                    } catch (error) {
+                      console.error("Failed to submit confirmation", error);
+                      toast.error("Unable to confirm with vendor");
+                    }
+                  }}
+                  disabled={!confirmDraft.slotId}
+                >
+                  Submit Vendor Confirmation
+                </button>
+              </div>
+            </div>
+          )}
         </section>
+
+        {(vendorEmail || vendorPhone) && (
+          <section style={{ marginTop: 16 }}>
+            <h3>Contact Vendor</h3>
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+              {vendorEmail && (
+                <a className="secondary-button" href={`mailto:${vendorEmail}`} target="_blank" rel="noreferrer">
+                  Email Vendor
+                </a>
+              )}
+              {vendorPhone && (
+                <>
+                  <a className="secondary-button" href={`tel:${vendorPhone}`}>
+                    Call Vendor
+                  </a>
+                  <a className="secondary-button" href={`sms:${vendorPhone}`}>
+                    Text Vendor
+                  </a>
+                </>
+              )}
+            </div>
+          </section>
+        )}
       </div>
     );
   };
