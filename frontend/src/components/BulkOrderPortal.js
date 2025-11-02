@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import PropTypes from "prop-types";
 import {
   fetchBulkOrders,
@@ -74,12 +74,7 @@ const BulkOrderPortal = ({ token, employeeRole, onClose }) => {
   const [selectedOrderId, setSelectedOrderId] = useState(null);
   const [viewMode, setViewMode] = useState("grid");
 
-  useEffect(() => {
-    loadOrders();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
-
-  const loadOrders = async () => {
+  const loadOrders = useCallback(async () => {
     if (!token) return;
     try {
       setLoading(true);
@@ -96,7 +91,11 @@ const BulkOrderPortal = ({ token, employeeRole, onClose }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
+
+  useEffect(() => {
+    loadOrders();
+  }, [loadOrders]);
 
   const upcomingOrders = useMemo(() => {
     const now = Date.now();
