@@ -120,6 +120,7 @@ const BulkOrderPortal = ({ token, employeeRole, onClose }) => {
   const [editingOrderId, setEditingOrderId] = useState(null);
   const [messageDrafts, setMessageDrafts] = useState({});
   const [confirmDrafts, setConfirmDrafts] = useState({});
+  const [lastFetchedAt, setLastFetchedAt] = useState(null);
 
   const loadOrderIntoWizard = useCallback((order) => {
     if (!order) return;
@@ -181,12 +182,25 @@ const BulkOrderPortal = ({ token, employeeRole, onClose }) => {
       const res = await fetchBulkOrders(token);
       if (res?.status === "ok" && Array.isArray(res.orders)) {
         setOrders(res.orders);
+        setLastFetchedAt(new Date());
+        setSelectedOrderId((prev) => {
+          if (prev != null && res.orders.some((order) => Number(order.id) === Number(prev))) {
+            return prev;
+          }
+          if (res.orders.length > 0) {
+            return res.orders[0].id;
+          }
+          return null;
+        });
       } else {
         setError(res?.message || "Failed to load bulk orders");
+        setOrders([]);
+        setLastFetchedAt(new Date());
       }
     } catch (err) {
       console.error("Bulk order fetch error", err);
       setError("Unable to load bulk orders");
+      setLastFetchedAt(new Date());
     } finally {
       setLoading(false);
     }
@@ -195,6 +209,14 @@ const BulkOrderPortal = ({ token, employeeRole, onClose }) => {
   useEffect(() => {
     loadOrders();
   }, [loadOrders]);
+
+  useEffect(() => {
+    if (!token) return undefined;
+    const interval = setInterval(() => {
+      loadOrders();
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [token, loadOrders]);
 
   const upcomingOrders = useMemo(() => {
     const now = Date.now();
@@ -891,10 +913,21 @@ const BulkOrderPortal = ({ token, employeeRole, onClose }) => {
         </div>
         <div style={{ display: "flex", gap: 12 }}>
           <button onClick={onClose} className="secondary-button">Back to ordering</button>
+          <button
+            onClick={loadOrders}
+            className="secondary-button"
+            disabled={loading}
+          >
+            Refresh
+          </button>
           <button onClick={() => { resetWizard(); setWizardMode("create"); setWizardOpen(true); }} className="primary-button">
             New Bulk Order
           </button>
         </div>
+      </div>
+
+      <div style={{ marginTop: 8, fontSize: 12, color: "#5f6f7d" }}>
+        Last updated: {lastFetchedAt ? new Date(lastFetchedAt).toLocaleTimeString() : "--"}
       </div>
 
       <div style={{ marginTop: 24, display: "flex", gap: 16, flexWrap: "wrap" }}>
