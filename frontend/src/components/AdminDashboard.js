@@ -1,5 +1,3 @@
-  const normalizedStatus = normalizeBulkStatusClient(order?.status);
-  const isClosed = ["completed", "cancelled", "admin_rejected"].includes(normalizedStatus);
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   fetchOrders,
@@ -768,6 +766,15 @@ const ExtendControl = ({ order, token, onExtended }) => {
       </button>
     </div>
   );
+};
+
+const formatDateTime = (value, options = {}) => {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  const { withTime = true } = options;
+  const config = withTime ? { dateStyle: "medium", timeStyle: "short" } : { dateStyle: "medium" };
+  return date.toLocaleString("en-IN", config);
 };
 
 const BulkOrderCard = ({ order, onPostMessage, onConfirm }) => {
