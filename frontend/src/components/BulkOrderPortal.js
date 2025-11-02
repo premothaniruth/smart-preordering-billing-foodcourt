@@ -1,3 +1,79 @@
+  const loadOrderIntoWizard = useCallback((order) => {
+  if (!order) return;
+  const base = buildInitialFormState(employeeRole);
+  setForm({
+    ...base,
+    eventName: order.eventName || "",
+    eventType: order.eventType || "",
+    eventTheme: order.eventTheme || "",
+    eventDate: order.eventDate ? order.eventDate.slice(0, 10) : "",
+    eventStart: order.eventStartTime ? new Date(order.eventStartTime).toISOString().slice(0, 16) : "",
+    eventEnd: order.eventEndTime ? new Date(order.eventEndTime).toISOString().slice(0, 16) : "",
+    location: order.location || "",
+    building: order.building || "",
+    floor: order.floor || "",
+    campus: order.campus || "",
+    notes: order.notes || "",
+    specialInstructions: order.specialInstructions || "",
+    expectedHeadcount: order.expectedHeadcount != null ? String(order.expectedHeadcount) : "",
+    organizerName: order.organizerContact?.name || "",
+    organizerEmail: order.organizerContact?.email || "",
+    organizerMobile: order.organizerContact?.mobile || "",
+    requestedVendorsText: Array.isArray(order.requestedVendors) ? order.requestedVendors.join("\n") : "",
+    pricingType: order.pricing?.pricingType || order.pricing?.pricing_type || "vendor_rate",
+    bulkDiscountPercent: order.pricing?.bulkDiscountPercent != null ? String(order.pricing.bulkDiscountPercent) : "",
+    bulkFlatRate: order.pricing?.bulkFlatRate != null ? String(order.pricing.bulkFlatRate) : "",
+  });
+  setDeliverySlots(Array.isArray(order.deliverySlots) ? order.deliverySlots.map((slot) => ({
+    id: slot.id || `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    label: slot.label || "",
+    startTime: slot.startTime,
+    endTime: slot.endTime,
+    notes: slot.notes || ""
+  })) : []);
+  setItemGroups(Array.isArray(order.itemGroups) ? order.itemGroups.map((item) => ({
+    id: item.id || `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    name: item.name || "",
+    quantity: item.quantity || 0,
+    unitPrice: item.unitPrice || 0,
+    notes: item.notes || "",
+  })) : []);
+  setAttendeeGroups(Array.isArray(order.attendeeGroups) ? order.attendeeGroups.map((group) => ({
+    id: group.id || `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    label: group.label || "",
+    count: group.count || 0,
+    notes: group.notes || "",
+  })) : []);
+  setSelectedOrderId(order.id);
+  setEditingOrderId(order.id);
+  setWizardMode("edit");
+  setWizardOpen(true);
+}, [employeeRole]);
+
+const handleResubmitOrder = async (evt) => {
+  evt.preventDefault();
+  if (!editingOrderId) return;
+  const payload = buildPayload();
+  if (!payload) return;
+  try {
+    setSubmitting(true);
+    const res = await updateBulkOrder(token, editingOrderId, payload);
+    if (res?.status === "ok" && res.order) {
+      toast.success(`Bulk order #${editingOrderId} updated`);
+      setOrders((prev) => prev.map((order) => (Number(order.id) === Number(editingOrderId) ? res.order : order)));
+      resetWizard();
+    } else {
+      const message = res?.message || "Failed to update bulk order";
+      toast.error(message);
+    }
+  } catch (err) {
+    console.error("Update bulk order error", err);
+    toast.error("Unable to update bulk order");
+  } finally {
+    setSubmitting(false);
+  }
+};
+
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import PropTypes from "prop-types";
 import {
@@ -91,6 +167,8 @@ const BulkOrderPortal = ({ token, employeeRole, onClose }) => {
     notes: "",
   });
   const [selectedOrderId, setSelectedOrderId] = useState(null);
+  const [wizardMode, setWizardMode] = useState("create");
+  const [editingOrderId, setEditingOrderId] = useState(null);
 
   const loadOrders = useCallback(async () => {
     if (!token) return;
@@ -414,6 +492,16 @@ const BulkOrderPortal = ({ token, employeeRole, onClose }) => {
                 Submit to Admin
               </button>
             )}
+            {selectedOrder.status === "needs_revision" && (
+              <button
+                className="secondary-button"
+                onClick={() => {
+                  loadOrderIntoWizard(selectedOrder);
+                }}
+              >
+                Edit & Resubmit
+              </button>
+            )}
             {selectedOrder.status && ["pending_vendor", "confirmed", "in_progress"].includes(selectedOrder.status) && (
               <button onClick={() => handleUpdateStatus(selectedOrder.id, "cancelled")} className="secondary-button" style={{ background: "#e74c3c", color: "#fff" }}>
                 Cancel Order
@@ -589,7 +677,10 @@ const BulkOrderPortal = ({ token, employeeRole, onClose }) => {
             <h2 style={{ margin: 0 }}>Create Bulk Order</h2>
             <button onClick={resetWizard} className="secondary-button">Close</button>
           </div>
-          <form onSubmit={handleSubmitOrder} style={{ marginTop: 16 }}>
+          <form
+            onSubmit={wizardMode === "edit" ? handleResubmitOrder : handleSubmitOrder}
+            style={{ marginTop: 16 }}
+          >
             <section style={{ marginBottom: 24 }}>
               <h3>Event basics</h3>
               <div className="form-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
