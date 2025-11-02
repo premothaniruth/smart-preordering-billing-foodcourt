@@ -318,6 +318,28 @@ const resolveEmployeeFromRequest = (req) => {
   return resolveEmployeeFromToken(token);
 };
 
+const resolveVendorFromToken = (token) => {
+  if (!token) return null;
+  const tokenStr = String(token).replace(/^Bearer\s+/i, '').trim();
+  if (!tokenStr) return null;
+  let decoded;
+  try {
+    decoded = jwt.verify(tokenStr, JWT_SECRET);
+  } catch (err) {
+    return null;
+  }
+  if (!decoded || decoded.vendorId == null) return null;
+  const vendors = getVendors();
+  const vendor = vendors.find((entry) => String(entry.vendorId) === String(decoded.vendorId));
+  if (!vendor) return null;
+  return { vendor, token: tokenStr };
+};
+
+const resolveVendorFromRequest = (req) => {
+  const token = req?.headers?.['authorization'] || req?.headers?.['x-vendor-token'] || req?.query?.vendorToken || req?.body?.vendorToken;
+  return resolveVendorFromToken(token);
+};
+
 /**
  * One-time migration: ensure every item has isHotSeller/isRecommended in menu.json.
  * If a category has no items with these flags, pick 5 random items in that category
@@ -672,30 +694,54 @@ app.post("/employee/verify-otp", (req, res) => {
 
 app.get('/bulk-orders', (req, res) => {
   try {
-    const resolved = resolveEmployeeFromRequest(req);
-    if (!resolved) return res.status(401).json({ message: 'Invalid or expired session' });
-    const { employee } = resolved;
+    const employeeResolved = resolveEmployeeFromRequest(req);
+    const vendorResolved = employeeResolved ? null : resolveVendorFromRequest(req);
+    if (!employeeResolved && !vendorResolved) {
+      return res.status(401).json({ message: 'Invalid or expired session' });
+    }
+
     const allOrders = getBulkOrders();
-    const canViewAll = hasBulkOrderPrivileges(employee.roleSlug);
-
     const statusFilter = req.query.status ? String(req.query.status).toLowerCase() : null;
-    const vendorFilter = req.query.vendorShopId ? String(req.query.vendorShopId) : null;
+    const vendorFilterParam = req.query.vendorShopId ? String(req.query.vendorShopId) : null;
 
-    const visible = allOrders.filter((order) => {
-      if (!order) return false;
-      const isOrganizer = order.organizer && Number(order.organizer.employeeId) === Number(employee.id);
-      const isAssignedVendor = Array.isArray(order.assignedVendors) && order.assignedVendors.includes(String(employee.vendorShopId || employee.shopId || ''));
-      if (!canViewAll && !isOrganizer && !isAssignedVendor) {
-        return false;
-      }
-      if (statusFilter && normalizeBulkStatus(order.status) !== normalizeBulkStatus(statusFilter)) {
-        return false;
-      }
-      if (vendorFilter && String(order.vendorShopId || '') !== vendorFilter) {
-        return false;
-      }
-      return true;
-    });
+    let visible = [];
+
+    if (employeeResolved) {
+      const { employee } = employeeResolved;
+      const canViewAll = hasBulkOrderPrivileges(employee.roleSlug);
+
+      visible = allOrders.filter((order) => {
+        if (!order) return false;
+        const isOrganizer = order.organizer && Number(order.organizer.employeeId) === Number(employee.id);
+        const isAssignedVendor = Array.isArray(order.assignedVendors) && order.assignedVendors.includes(String(employee.vendorShopId || employee.shopId || ''));
+        if (!canViewAll && !isOrganizer && !isAssignedVendor) {
+          return false;
+        }
+        if (statusFilter && normalizeBulkStatus(order.status) !== normalizeBulkStatus(statusFilter)) {
+          return false;
+        }
+        if (vendorFilterParam && String(order.vendorShopId || '') !== vendorFilterParam) {
+          return false;
+        }
+        return true;
+      });
+    } else if (vendorResolved) {
+      const { vendor } = vendorResolved;
+      const vendorShopId = vendor.shopId != null ? String(vendor.shopId) : '';
+      visible = allOrders.filter((order) => {
+        if (!order) return false;
+        if (!vendorCanAccessBulkOrder(vendor, order)) {
+          return false;
+        }
+        if (vendorFilterParam && vendorFilterParam !== vendorShopId) {
+          return false;
+        }
+        if (statusFilter && normalizeBulkStatus(order.status) !== normalizeBulkStatus(statusFilter)) {
+          return false;
+        }
+        return true;
+      });
+    }
 
     const response = visible.map((order) => sanitizeBulkOrder(order));
     res.json({ status: 'ok', orders: response });
@@ -796,17 +842,31 @@ app.put('/bulk-orders/:id', (req, res) => {
 
 app.post('/bulk-orders/:id/vendor-message', (req, res) => {
   try {
-    const resolved = resolveEmployeeFromRequest(req);
-    if (!resolved) return res.status(401).json({ message: 'Invalid or expired session' });
-    const { employee } = resolved;
+    const employeeResolved = resolveEmployeeFromRequest(req);
+    const vendorResolved = employeeResolved ? null : resolveVendorFromRequest(req);
+    if (!employeeResolved && !vendorResolved) {
+      return res.status(401).json({ message: 'Invalid or expired session' });
+    }
+
     const orders = getBulkOrders();
     const id = Number(req.params.id);
     const index = orders.findIndex((order) => Number(order.id) === id);
     if (index === -1) return res.status(404).json({ message: 'Bulk order not found' });
 
     const currentOrder = orders[index];
-    if (!employeeCanManageBulkOrder(employee, currentOrder)) {
-      return res.status(403).json({ message: 'You do not have permission to post messages on this bulk order' });
+    let actor = null;
+    if (employeeResolved) {
+      const { employee } = employeeResolved;
+      if (!employeeCanManageBulkOrder(employee, currentOrder)) {
+        return res.status(403).json({ message: 'You do not have permission to post messages on this bulk order' });
+      }
+      actor = buildBulkActorFromEmployee(employee);
+    } else if (vendorResolved) {
+      const { vendor } = vendorResolved;
+      if (!vendorCanAccessBulkOrder(vendor, currentOrder)) {
+        return res.status(403).json({ message: 'You do not have permission to post messages on this bulk order' });
+      }
+      actor = buildBulkActorFromVendor(vendor);
     }
 
     const messageText = clampString(req.body?.message || '', 500);
@@ -815,7 +875,6 @@ app.post('/bulk-orders/:id/vendor-message', (req, res) => {
     }
 
     const now = new Date().toISOString();
-    const actor = buildBulkActorFromEmployee(employee);
     const entry = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       timestamp: now,
@@ -839,16 +898,32 @@ app.post('/bulk-orders/:id/vendor-message', (req, res) => {
 
 app.post('/bulk-orders/:id/vendor-confirm', (req, res) => {
   try {
-    const resolved = resolveEmployeeFromRequest(req);
-    if (!resolved) return res.status(401).json({ message: 'Invalid or expired session' });
-    const { employee } = resolved;
+    const employeeResolved = resolveEmployeeFromRequest(req);
+    const vendorResolved = employeeResolved ? null : resolveVendorFromRequest(req);
+    if (!employeeResolved && !vendorResolved) {
+      return res.status(401).json({ message: 'Invalid or expired session' });
+    }
+
     const orders = getBulkOrders();
     const id = Number(req.params.id);
     const index = orders.findIndex((order) => Number(order.id) === id);
     if (index === -1) return res.status(404).json({ message: 'Bulk order not found' });
 
     const order = orders[index];
-    const actor = buildBulkActorFromEmployee(employee);
+    let actor = null;
+    if (employeeResolved) {
+      const { employee } = employeeResolved;
+      if (!employeeCanManageBulkOrder(employee, order)) {
+        return res.status(403).json({ message: 'You do not have permission to confirm this bulk order' });
+      }
+      actor = buildBulkActorFromEmployee(employee);
+    } else if (vendorResolved) {
+      const { vendor } = vendorResolved;
+      if (!vendorCanAccessBulkOrder(vendor, order)) {
+        return res.status(403).json({ message: 'You do not have permission to confirm this bulk order' });
+      }
+      actor = buildBulkActorFromVendor(vendor);
+    }
 
     const slotId = req.body?.slotId || null;
     const capacity = req.body?.capacity != null ? Number(req.body.capacity) : null;
@@ -1568,6 +1643,19 @@ const buildBulkActorFromEmployee = (employee) => {
   };
 };
 
+const buildBulkActorFromVendor = (vendor) => {
+  if (!vendor) return {};
+  const vendorName = vendor.shopName || vendor.vendorName || vendor.username || `Vendor ${vendor.vendorId}`;
+  return {
+    vendorId: vendor.vendorId,
+    shopId: vendor.shopId,
+    name: vendorName,
+    username: vendor.username || '',
+    email: vendor.email || vendor.contactEmail || '',
+    role: 'vendor',
+  };
+};
+
 const buildBulkActorFromAdmin = (admin) => ({
   adminUsername: admin?.username || 'admin',
   role: 'admin',
@@ -1649,6 +1737,18 @@ const employeeCanManageBulkOrder = (employee, order) => {
     return true;
   }
   return hasBulkOrderPrivileges(employee?.roleSlug);
+};
+
+const vendorCanAccessBulkOrder = (vendor, order) => {
+  if (!vendor || !order) return false;
+  const vendorShopId = vendor.shopId != null ? String(vendor.shopId) : '';
+  if (!vendorShopId) return false;
+  const directMatch = String(order.vendorShopId || '') === vendorShopId;
+  const assignedList = Array.isArray(order.assignedVendors)
+    ? order.assignedVendors.map((value) => String(value))
+    : [];
+  const assignedMatch = assignedList.includes(vendorShopId);
+  return directMatch || assignedMatch;
 };
 
 const normalizeBulkPricing = (payload = {}) => {
