@@ -140,7 +140,7 @@
   },
   {
     "id": 2,
-    "status": "needs_revision",
+    "status": "pending_vendor",
     "organizer": {
       "employeeId": 3,
       "name": "premtg",
@@ -175,7 +175,7 @@
         "endTime": "2025-11-03T04:30:00.000Z",
         "confirmed": false,
         "notes": "",
-        "vendorConfirmation": null
+        "vendorConfirmation": "confirmed"
       },
       {
         "id": "1762084029152-cb6e",
@@ -184,7 +184,7 @@
         "endTime": "2025-11-03T08:30:00.000Z",
         "confirmed": false,
         "notes": "",
-        "vendorConfirmation": null
+        "vendorConfirmation": "confirmed"
       }
     ],
     "itemGroups": [
@@ -245,15 +245,156 @@
       "bulkDiscountPercent": 5,
       "bulkFlatRate": 0
     },
-    "vendorShopId": null,
+    "vendorShopId": "2",
     "assignedVendors": [],
-    "vendorResponses": [],
-    "vendorMessages": [],
+    "vendorResponses": [
+      {
+        "id": "1762098971453-olpn44",
+        "actor": {
+          "vendorId": 2,
+          "shopId": 2,
+          "name": "southvendor",
+          "username": "southvendor",
+          "email": "",
+          "role": "vendor"
+        },
+        "slotId": "1762084029152-cb6e",
+        "status": "confirmed",
+        "capacity": 55,
+        "message": "",
+        "timestamp": "2025-11-02T15:56:11.453Z"
+      },
+      {
+        "id": "1762098964545-4p28ls",
+        "actor": {
+          "vendorId": 2,
+          "shopId": 2,
+          "name": "southvendor",
+          "username": "southvendor",
+          "email": "",
+          "role": "vendor"
+        },
+        "slotId": "1762083987213-f6cs",
+        "status": "confirmed",
+        "capacity": 55,
+        "message": "",
+        "timestamp": "2025-11-02T15:56:04.545Z"
+      }
+    ],
+    "vendorMessages": [
+      {
+        "id": "1762098981311-hd71vb",
+        "timestamp": "2025-11-02T15:56:21.311Z",
+        "actor": {
+          "vendorId": 2,
+          "shopId": 2,
+          "name": "southvendor",
+          "username": "southvendor",
+          "email": "",
+          "role": "vendor"
+        },
+        "message": "confirm once received"
+      }
+    ],
     "linkedOrders": [],
     "createdAt": "2025-11-02T11:48:46.129Z",
-    "updatedAt": "2025-11-02T11:50:00.244Z",
-    "lastStatusChangeAt": "2025-11-02T11:50:00.243Z",
+    "updatedAt": "2025-11-02T15:56:21.311Z",
+    "lastStatusChangeAt": "2025-11-02T15:55:08.962Z",
     "history": [
+      {
+        "id": "1762098981311-mlrzbv",
+        "timestamp": "2025-11-02T15:56:21.311Z",
+        "type": "vendor_message",
+        "actor": {
+          "vendorId": 2,
+          "shopId": 2,
+          "name": "southvendor",
+          "username": "southvendor",
+          "email": "",
+          "role": "vendor"
+        },
+        "details": {
+          "message": "confirm once received"
+        }
+      },
+      {
+        "id": "1762098971453-teubp2",
+        "timestamp": "2025-11-02T15:56:11.453Z",
+        "type": "vendor_confirmation",
+        "actor": {
+          "vendorId": 2,
+          "shopId": 2,
+          "name": "southvendor",
+          "username": "southvendor",
+          "email": "",
+          "role": "vendor"
+        },
+        "details": {
+          "slotId": "1762084029152-cb6e",
+          "status": "confirmed",
+          "capacity": 55,
+          "message": ""
+        }
+      },
+      {
+        "id": "1762098964545-pva5hi",
+        "timestamp": "2025-11-02T15:56:04.545Z",
+        "type": "vendor_confirmation",
+        "actor": {
+          "vendorId": 2,
+          "shopId": 2,
+          "name": "southvendor",
+          "username": "southvendor",
+          "email": "",
+          "role": "vendor"
+        },
+        "details": {
+          "slotId": "1762083987213-f6cs",
+          "status": "confirmed",
+          "capacity": 55,
+          "message": ""
+        }
+      },
+      {
+        "id": "1762098908963-kh3h4t",
+        "timestamp": "2025-11-02T15:55:08.963Z",
+        "type": "admin_sent_to_vendor",
+        "actor": {
+          "adminUsername": "infybhojans",
+          "role": "admin"
+        },
+        "details": {
+          "vendorShopId": "2"
+        }
+      },
+      {
+        "id": "1762098908962-umf33p",
+        "timestamp": "2025-11-02T15:55:08.962Z",
+        "type": "status_change",
+        "actor": {
+          "adminUsername": "infybhojans",
+          "role": "admin"
+        },
+        "details": {
+          "from": "approved_admin",
+          "to": "pending_vendor",
+          "vendorShopId": "2"
+        }
+      },
+      {
+        "id": "1762098902623-qe1190",
+        "timestamp": "2025-11-02T15:55:02.623Z",
+        "type": "status_change",
+        "actor": {
+          "adminUsername": "infybhojans",
+          "role": "admin"
+        },
+        "details": {
+          "from": "needs_revision",
+          "to": "approved_admin",
+          "comment": ""
+        }
+      },
       {
         "id": "1762084200244-atu0t6",
         "timestamp": "2025-11-02T11:50:00.244Z",
@@ -288,8 +429,18 @@
     ],
     "metadataVersion": 1,
     "adminReview": {
-      "status": "needs_revision",
+      "status": "approved",
       "decisions": [
+        {
+          "id": "1762098902624-7nw7cg",
+          "timestamp": "2025-11-02T15:55:02.624Z",
+          "action": "approve",
+          "comment": "",
+          "actor": {
+            "adminUsername": "infybhojans",
+            "role": "admin"
+          }
+        },
         {
           "id": "1762084200244-ik1xws",
           "timestamp": "2025-11-02T11:50:00.244Z",
