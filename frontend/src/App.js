@@ -1121,6 +1121,9 @@ function App() {
 
             {view === "admin" && (
               <div className="admin-panel">
+                <button onClick={() => setView("landing")} style={{ marginBottom: 15 }}>
+                  &larr; Back to Main Login
+                </button>
                 <div className="admin-panel-main">
                   <AdminControl
                     adminSession={adminSession}

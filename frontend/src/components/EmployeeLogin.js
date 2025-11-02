@@ -254,7 +254,7 @@ const EmployeeLogin = ({ onSuccess, onBack }) => {
       toast.error("Enter a valid 10-digit mobile");
       return false;
     }
-    if (!(password && password.length >= 8 && password.length <= 20 && /[a-z]/.test(password) && /[A-Z]/.test(password) && /\d/.test(password) && /[\.,&%#@!]/.test(password))) {
+    if (!(password && password.length >= 8 && password.length <= 20 && /[a-z]/.test(password) && /[A-Z]/.test(password) && /\d/.test(password) && /[.,&%#@!]/.test(password))) {
       toast.error("Password must be 8-20 chars with a-z, A-Z, 0-9 and one of .,&%#@!");
       return false;
     }

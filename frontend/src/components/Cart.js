@@ -120,8 +120,9 @@ const Cart = ({
     return futureSlot || null;
   };
 
-  const syncScheduled = (nextDate, nextHM) => {
-    if (nextDate && nextDate !== todayStr) nextDate = todayStr;
+  const syncScheduled = useCallback((nextDate, nextHM) => {
+    let effectiveDate = nextDate;
+    if (effectiveDate && effectiveDate !== todayStr) effectiveDate = todayStr;
     const nowHM = currentHM;
     let adjustedHM = nextHM ? clampHM(nextHM) : findNextSlot(nowHM);
     if (!adjustedHM || adjustedHM <= nowHM) {
@@ -134,14 +135,14 @@ const Cart = ({
       setScheduleEnabled(false);
       return;
     }
-    setScheduledDate(nextDate);
+    setScheduledDate(effectiveDate);
     setScheduledHM(adjustedHM);
-    if (nextDate && adjustedHM) {
-      setScheduledTime(`${nextDate}T${adjustedHM}`);
+    if (effectiveDate && adjustedHM) {
+      setScheduledTime(`${effectiveDate}T${adjustedHM}`);
     } else {
       setScheduledTime("");
     }
-  };
+  }, [todayStr, currentHM, clampHM, findNextSlot, setScheduledDate, setScheduledHM, setScheduledTime, setScheduleEnabled]);
 
   const [sectionWindows, setSectionWindows] = useState({}); // name -> { start, end }
   useEffect(() => {
