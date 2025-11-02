@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "react-toastify";
 import {
   fetchOrders,
   markOrderReady,
@@ -351,7 +352,7 @@ const openBrowserPrintPreview = (ticket) => {
   try {
     const popup = window.open("", "print-order", "width=720,height=900,noopener,noreferrer");
     if (!popup) {
-      window.alert("Please allow pop-ups to preview the order printout.");
+      toast.info("Please allow pop-ups to preview the order printout.");
       return;
     }
     const { metadata, items, totals } = ticket;
@@ -552,6 +553,16 @@ const AdminDashboard = ({ token }) => {
     [orders]
   );
 
+  const getShopName = useCallback(
+    (shopId) => menu.find((s) => s.shopId === shopId)?.shopName || shopId,
+    [menu]
+  );
+
+  const vendorShopName = useMemo(
+    () => (vendorShopId != null ? getShopName(vendorShopId) : null),
+    [getShopName, vendorShopId]
+  );
+
   const countdownMap = useMemo(() => {
     const now = Date.now() + tick * 0;
     const map = new Map();
@@ -598,9 +609,6 @@ const AdminDashboard = ({ token }) => {
     loadOrders();
   };
 
-  const getShopName = (shopId) =>
-    menu.find((s) => s.shopId === shopId)?.shopName || shopId;
-  const vendorShopName = getShopName(vendorShopId);
   const [bulkMins, setBulkMins] = useState(5);
   const lowStockItems = useMemo(() => {
     const shop = menu.find(s => s.shopId === vendorShopId);
@@ -753,7 +761,7 @@ const AdminDashboard = ({ token }) => {
           {showLowStock ? 'Hide Low Stock' : `Low Stock Items (${lowStockItems.length})`}
         </button>
         <button
-          onClick={() => window.alert('Connect vendorPrinterBridge.printOrderTicket(ticket) to your thermal printer. Use individual order print buttons below to test.')}>
+          onClick={() => toast.info('Connect vendorPrinterBridge.printOrderTicket(ticket) to your thermal printer. Use individual order print buttons below to test.')}>
           Printer Setup Help
         </button>
       </div>

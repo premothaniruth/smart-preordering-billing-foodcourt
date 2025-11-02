@@ -68,7 +68,6 @@ const EmployeeLogin = ({ onSuccess, onBack }) => {
   const [otpCountdown, setOtpCountdown] = useState(0);
 
   const [pinIdentity, setPinIdentity] = useState(() => readPinIdentity());
-  const [otpIdentity, setOtpIdentity] = useState(() => readOtpIdentity());
 
   const [signupData, setSignupData] = useState({
     username: "",
@@ -116,12 +115,6 @@ const EmployeeLogin = ({ onSuccess, onBack }) => {
     } catch {}
   };
 
-  const persistOtpIdentity = (identity) => {
-    try {
-      localStorage.setItem(OTP_IDENTITY_KEY, JSON.stringify(identity));
-      setOtpIdentity(identity);
-    } catch {}
-  };
 
   const formatMobileDigits = (value) => String(value || "").replace(/[^0-9]/g, "").slice(0, 10);
 
