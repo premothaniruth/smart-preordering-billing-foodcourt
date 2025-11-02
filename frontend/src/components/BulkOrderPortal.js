@@ -493,6 +493,7 @@ const BulkOrderPortal = ({ token, employeeRole, onClose }) => {
       if (res?.status === "ok" && res.order) {
         toast.success(`Order #${orderId} marked ${status}`);
         setOrders((prev) => prev.map((order) => (Number(order.id) === Number(orderId) ? res.order : order)));
+        loadOrders();
       } else {
         toast.error(res?.message || "Failed to update order");
       }

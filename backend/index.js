@@ -954,9 +954,17 @@ app.post('/bulk-orders/:id/vendor-confirm', (req, res) => {
     }
     updated.deliverySlots = slots;
     updated.vendorResponses = Array.isArray(updated.vendorResponses) ? [confirmation, ...updated.vendorResponses].slice(0, 200) : [confirmation];
-    updated.history = Array.isArray(updated.history)
-      ? [buildBulkHistoryEntry('vendor_confirmation', actor, { slotId, status, capacity, message: messageText }), ...updated.history]
-      : [buildBulkHistoryEntry('vendor_confirmation', actor, { slotId, status, capacity, message: messageText })];
+    const vendorHistoryEntry = buildBulkHistoryEntry('vendor_confirmation', actor, { slotId, status, capacity, message: messageText });
+    const existingHistory = Array.isArray(updated.history) ? updated.history : [];
+    updated.history = [vendorHistoryEntry, ...existingHistory];
+
+    if (status === 'confirmed') {
+      const currentStatus = normalizeBulkStatus(updated.status, updated.status);
+      if (currentStatus === 'pending_vendor') {
+        setBulkOrderStatus(updated, 'confirmed', actor, { slotId });
+      }
+    }
+
     updated.updatedAt = now;
 
     orders[index] = sanitizeBulkOrder(updated);
@@ -1789,15 +1797,72 @@ const computeBulkOrderTotals = ({ itemGroups = [], pricing }) => {
   };
 };
 
+const VENDOR_DIRECTORY_CACHE_TTL_MS = 60000;
+let vendorDirectoryCache = {
+  map: null,
+  timestamp: 0,
+};
+
+const getVendorDirectoryMap = () => {
+  const now = Date.now();
+  if (vendorDirectoryCache.map && now - vendorDirectoryCache.timestamp < VENDOR_DIRECTORY_CACHE_TTL_MS) {
+    return vendorDirectoryCache.map;
+  }
+
+  const directory = buildVendorDirectory();
+  const map = new Map();
+  directory.forEach((entry) => {
+    if (!entry || entry.shopId == null) return;
+    map.set(String(entry.shopId), entry);
+  });
+
+  vendorDirectoryCache = {
+    map,
+    timestamp: now,
+  };
+
+  return map;
+};
+
+const resolveVendorContactForOrder = (order) => {
+  if (!order) return order?.vendorContact || null;
+  const existing = order.vendorContact && typeof order.vendorContact === 'object'
+    ? { ...order.vendorContact }
+    : null;
+  const vendorShopId = order.vendorShopId != null ? String(order.vendorShopId) : null;
+  if (!vendorShopId) return existing;
+
+  try {
+    const directoryMap = getVendorDirectoryMap();
+    const entry = directoryMap.get(vendorShopId);
+    if (!entry) return existing;
+
+    return {
+      vendorId: entry.vendorId ?? existing?.vendorId ?? null,
+      shopId: entry.shopId,
+      shopName: entry.shopName || existing?.shopName || null,
+      email: entry.contactEmail || existing?.email || existing?.contactEmail || null,
+      contactEmail: entry.contactEmail || existing?.contactEmail || null,
+      phone: entry.contactPhone || existing?.phone || existing?.contactPhone || null,
+      contactPhone: entry.contactPhone || existing?.contactPhone || null,
+    };
+  } catch (error) {
+    console.error('Error resolving vendor contact for bulk order', error);
+    return existing;
+  }
+};
+
 const sanitizeBulkOrder = (order) => {
   if (!order) return null;
   const { subtotal, discountAmount, totalAmount, pricing } = computeBulkOrderTotals(order);
+  const vendorContact = resolveVendorContactForOrder(order);
   return {
     ...order,
     subtotal,
     discountAmount,
     totalAmount,
     pricing,
+    vendorContact: vendorContact || null,
   };
 };
 
@@ -2063,7 +2128,7 @@ const applyBulkOrderUpdates = (existingOrder, updates, employee) => {
   if (updates.status) {
     const desiredStatus = normalizeBulkStatus(updates.status, existingOrder.status);
     const isOrganizer = employee && existingOrder.organizer && Number(existingOrder.organizer.employeeId) === Number(employee.id);
-    const employeeAllowedStatuses = new Set(['draft', 'submitted_admin']);
+    const employeeAllowedStatuses = new Set(['draft', 'submitted_admin', 'cancelled', 'completed', 'confirmed', 'in_progress']);
     const canOverrideStatus = isOrganizer && employeeAllowedStatuses.has(desiredStatus);
     const privilegedOverride = !isOrganizer && hasBulkOrderPrivileges(employee?.roleSlug);
     if (canOverrideStatus || privilegedOverride) {

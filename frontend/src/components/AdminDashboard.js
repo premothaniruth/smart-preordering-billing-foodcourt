@@ -254,25 +254,20 @@ const CountdownDisplay = ({ info }) => {
  */
 
 const BULK_STATUS_OPTIONS = [
-  { value: 'pending_vendor', label: 'Pending vendor' },
-  { value: 'sent_to_vendor', label: 'Sent to vendor' },
-  { value: 'approved_admin', label: 'Approved by admin' },
-  { value: 'confirmed', label: 'Vendor confirmed' },
+  { value: 'pending_vendor', label: 'Pending' },
   { value: 'completed', label: 'Completed' },
-  { value: 'needs_revision', label: 'Needs revision' },
-  { value: 'admin_rejected', label: 'Admin rejected' },
-  { value: 'all', label: 'All statuses' }
+  { value: 'all', label: 'All' }
 ];
 
 const AdminDashboard = ({ token }) => {
   const [orders, setOrders] = useState([]);
   const [menu, setMenu] = useState([]);
   const [tab, setTab] = useState("current");
-  const [muted, setMuted] = useState(false);
   const [bulkOrders, setBulkOrders] = useState([]);
+  const [bulkStatusFilter, setBulkStatusFilter] = useState("pending_vendor");
   const [bulkLoading, setBulkLoading] = useState(false);
   const [bulkError, setBulkError] = useState(null);
-  const [bulkStatusFilter, setBulkStatusFilter] = useState('pending_vendor');
+  const [bulkLastFetchedAt, setBulkLastFetchedAt] = useState(null);
   const OVERDUE_SOUND = "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBDWM0/K/gC4EH29+3WgyBCk4XoCWJhcBTnLcWswB";
   // Low stock toggle
   const [showLowStock, setShowLowStock] = useState(false);
@@ -409,12 +404,15 @@ const AdminDashboard = ({ token }) => {
       const res = await fetchBulkOrders(token, params);
       if (res?.status === "ok" && Array.isArray(res.orders)) {
         setBulkOrders(res.orders);
+        setBulkLastFetchedAt(new Date());
       } else {
         setBulkError(res?.message || "Failed to load bulk orders");
+        setBulkLastFetchedAt(new Date());
       }
     } catch (error) {
       console.error("Failed to load bulk orders", error);
       setBulkError("Failed to load bulk orders");
+      setBulkLastFetchedAt(new Date());
     } finally {
       setBulkLoading(false);
     }
@@ -423,6 +421,16 @@ const AdminDashboard = ({ token }) => {
   useEffect(() => {
     loadBulkOrders();
   }, [loadBulkOrders]);
+
+  useEffect(() => {
+    if (!token) return undefined;
+    const interval = setInterval(() => {
+      if (tab === 'bulk') {
+        loadBulkOrders();
+      }
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [token, tab, loadBulkOrders]);
 
   const handleBulkStatusChange = useCallback((event) => {
     const nextStatus = event.target.value;
@@ -666,6 +674,9 @@ const AdminDashboard = ({ token }) => {
             <button className="secondary-button" onClick={() => loadBulkOrders()} disabled={bulkLoading}>
               Refresh
             </button>
+          </div>
+          <div style={{ fontSize: 12, color: '#6b7a8b', marginBottom: 8 }}>
+            Last updated: {bulkLastFetchedAt ? new Date(bulkLastFetchedAt).toLocaleTimeString() : '--'}
           </div>
           {bulkLoading ? (
             <div style={{ padding: 16 }}>Loading bulk orders…</div>
