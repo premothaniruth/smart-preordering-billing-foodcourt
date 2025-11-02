@@ -249,6 +249,23 @@
     "assignedVendors": [],
     "vendorResponses": [
       {
+        "id": "1762101078470-3egz4v",
+        "actor": {
+          "employeeId": 3,
+          "name": "premtg",
+          "mobile": "+919952911560",
+          "email": "premtg@gmail.com",
+          "role": "Employee",
+          "roleSlug": "employee",
+          "department": ""
+        },
+        "slotId": "1762083987213-f6cs",
+        "status": "confirmed",
+        "capacity": 55,
+        "message": "",
+        "timestamp": "2025-11-02T16:31:18.470Z"
+      },
+      {
         "id": "1762098971453-olpn44",
         "actor": {
           "vendorId": 2,
@@ -298,9 +315,29 @@
     ],
     "linkedOrders": [],
     "createdAt": "2025-11-02T11:48:46.129Z",
-    "updatedAt": "2025-11-02T15:56:21.311Z",
+    "updatedAt": "2025-11-02T16:31:18.470Z",
     "lastStatusChangeAt": "2025-11-02T15:55:08.962Z",
     "history": [
+      {
+        "id": "1762101078470-cglscf",
+        "timestamp": "2025-11-02T16:31:18.470Z",
+        "type": "vendor_confirmation",
+        "actor": {
+          "employeeId": 3,
+          "name": "premtg",
+          "mobile": "+919952911560",
+          "email": "premtg@gmail.com",
+          "role": "Employee",
+          "roleSlug": "employee",
+          "department": ""
+        },
+        "details": {
+          "slotId": "1762083987213-f6cs",
+          "status": "confirmed",
+          "capacity": 55,
+          "message": ""
+        }
+      },
       {
         "id": "1762098981311-mlrzbv",
         "timestamp": "2025-11-02T15:56:21.311Z",
