@@ -72,7 +72,6 @@ const BulkOrderPortal = ({ token, employeeRole, onClose }) => {
     notes: "",
   });
   const [selectedOrderId, setSelectedOrderId] = useState(null);
-  const [viewMode, setViewMode] = useState("grid");
 
   const loadOrders = useCallback(async () => {
     if (!token) return;
@@ -737,8 +736,6 @@ const BulkOrderPortal = ({ token, employeeRole, onClose }) => {
             <button className={selectedStatus === "past" ? "primary-button" : "secondary-button"} onClick={() => setSelectedStatus("past")}>Past</button>
           </div>
           <div style={{ display: "flex", gap: 8 }}>
-            <button className={viewMode === "grid" ? "primary-button" : "secondary-button"} onClick={() => setViewMode("grid")}>Grid</button>
-            <button className={viewMode === "list" ? "primary-button" : "secondary-button"} onClick={() => setViewMode("list")}>List</button>
             <button onClick={loadOrders} className="secondary-button">Refresh</button>
           </div>
         </div>
@@ -753,12 +750,7 @@ const BulkOrderPortal = ({ token, employeeRole, onClose }) => {
         )}
 
         {!loading && selectedOrders.length > 0 && (
-          <div className={viewMode === "grid" ? "bulk-grid" : "bulk-list"} style={{
-            display: viewMode === "grid" ? "grid" : "flex",
-            gridTemplateColumns: viewMode === "grid" ? "repeat(auto-fit, minmax(260px, 1fr))" : undefined,
-            gap: 16,
-            flexDirection: viewMode === "list" ? "column" : undefined,
-          }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             {selectedOrders.map(renderOrderCard)}
           </div>
         )}

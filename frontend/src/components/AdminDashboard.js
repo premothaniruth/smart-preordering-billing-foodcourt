@@ -662,6 +662,46 @@ const AdminDashboard = ({ token }) => {
   );
 };
 
+const ExtendControl = ({ order, token, onExtended }) => {
+  const [minutes, setMinutes] = useState(() => {
+    const base = Number(order?.etaExtensionMinutes) || 0;
+    return base > 0 ? base : 5;
+  });
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleExtend = async () => {
+    const mins = Number(minutes) || 0;
+    if (mins <= 0 || !order?.id) return;
+    try {
+      setSubmitting(true);
+      await extendOrderPrep(order.id, mins, token);
+      onExtended?.();
+    } catch (error) {
+      console.error("Failed to extend order", error);
+      window.alert("Could not extend order. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+      <input
+        type="number"
+        min="1"
+        value={minutes}
+        onChange={(e) => setMinutes(Number(e.target.value) || 0)}
+        style={{ width: 70 }}
+        disabled={submitting}
+      />
+      <span style={{ fontSize: 12 }}>mins</span>
+      <button onClick={handleExtend} disabled={submitting}>
+        {submitting ? "Extending…" : "Extend"}
+      </button>
+    </div>
+  );
+};
+
 const BulkOrderCard = ({ order, onPostMessage, onConfirm }) => {
   const [message, setMessage] = useState("");
   const [selectedSlotId, setSelectedSlotId] = useState(() => {
