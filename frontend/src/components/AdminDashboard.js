@@ -125,6 +125,39 @@ const computeVendorLoadMultiplier = ({ order, pendingOrdersCount, now }) => {
 const computeOrderCountdown = (order, { now, pendingOrdersCount, prepTimesByShop }) => {
   if (!order) return null;
 
+  const info = deriveOrderCountdownInfo(order, { now, pendingOrdersCount, prepTimesByShop });
+  if (!info) return null;
+
+  const {
+    orderId,
+    countdownMs,
+    displayCountdownMs,
+    startTime,
+    targetTime,
+    status,
+    label,
+    prefix,
+    message,
+    helperText,
+    domId,
+  } = info;
+
+  return {
+    orderId,
+    countdownMs,
+    displayCountdownMs,
+    startTime,
+    targetTime,
+    status,
+    label,
+    prefix,
+    message,
+    helperText,
+    domId,
+  };
+};
+
+const deriveOrderCountdownInfo = (order, { now, pendingOrdersCount, prepTimesByShop }) => {
   const items = Array.isArray(order.items) ? order.items : [];
   let maxItemPrepMinutes = 0;
   items.forEach((item) => {
@@ -215,6 +248,200 @@ const computeOrderCountdown = (order, { now, pendingOrdersCount, prepTimesByShop
   };
 };
 
+const formatInrCurrency = (value) => {
+  const num = Number(value);
+  if (!Number.isFinite(num)) {
+    return typeof value === "string" && value.trim() ? value : "₹0.00";
+  }
+  try {
+    return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(num);
+  } catch {
+    return `₹${num.toFixed(2)}`;
+  }
+};
+
+const buildPrintTicketPayload = (order, { vendorShopName, vendorShopId }) => {
+  const createdAt = order?.createdAt ? new Date(order.createdAt) : new Date();
+  const scheduledFor = order?.scheduledTime ? new Date(order.scheduledTime) : null;
+  const items = Array.isArray(order?.items)
+    ? order.items.map((item) => {
+        const quantity = Math.max(1, Number(item?.quantity) || 1);
+        const unitPrice = Number(item?.price ?? item?.finalPrice ?? item?.amount ?? 0);
+        const lineTotal = Number.isFinite(unitPrice) ? unitPrice * quantity : 0;
+        return {
+          name: item?.name || "Item",
+          option: item?.option || item?.selectedOption?.name || null,
+          quantity,
+          unitPrice,
+          lineTotal,
+        };
+      })
+    : [];
+  const subtotal = items.reduce((sum, entry) => sum + (Number.isFinite(entry.lineTotal) ? entry.lineTotal : 0), 0);
+  const discount = Number(order?.discountTotal ?? order?.offerSummary?.discountTotal ?? 0) || 0;
+  const total = (() => {
+    const explicit = Number(order?.total ?? order?.totalPayable ?? order?.grandTotal);
+    if (Number.isFinite(explicit)) return explicit;
+    return Math.max(subtotal - discount, 0);
+  })();
+
+  return {
+    version: "1.0",
+    metadata: {
+      orderId: order?.id,
+      billingId: order?.billingId,
+      createdAt: createdAt.toISOString(),
+      scheduledFor: scheduledFor ? scheduledFor.toISOString() : null,
+      vendor: {
+        shopId: vendorShopId,
+        name: vendorShopName || "Vendor",
+      },
+      customer: {
+        name: order?.user || order?.employeeName || order?.customerName || "Employee",
+        mobile: order?.mobile || order?.userMobile || null,
+        desk: order?.desk || null,
+      },
+      paymentMethod: order?.paymentMethod || order?.payment_mode || null,
+      notes: order?.notes || order?.specialInstructions || null,
+    },
+    items,
+    totals: {
+      subtotal,
+      discount,
+      total,
+      subtotalFormatted: formatInrCurrency(subtotal),
+      discountFormatted: formatInrCurrency(discount),
+      totalFormatted: formatInrCurrency(total),
+    },
+    rawOrder: order,
+  };
+};
+
+const trySendToVendorPrinter = async (ticket) => {
+  if (typeof window === "undefined") return false;
+  const bridge = window.vendorPrinterBridge || window.vendorPrinter || window.infyPrinter;
+  if (!bridge) return false;
+
+  const sendFn =
+    typeof bridge.printOrderTicket === "function"
+      ? bridge.printOrderTicket
+      : typeof bridge.printTicket === "function"
+      ? bridge.printTicket
+      : typeof bridge.print === "function"
+      ? bridge.print
+      : null;
+
+  if (!sendFn) return false;
+
+  try {
+    const result = sendFn.call(bridge, ticket);
+    if (result && typeof result.then === "function") {
+      const awaited = await result;
+      return awaited !== false;
+    }
+    return result !== false;
+  } catch (error) {
+    console.error("Vendor printer bridge failed", error);
+    return false;
+  }
+};
+
+const openBrowserPrintPreview = (ticket) => {
+  if (typeof window === "undefined") return;
+  try {
+    const popup = window.open("", "print-order", "width=720,height=900,noopener,noreferrer");
+    if (!popup) {
+      window.alert("Please allow pop-ups to preview the order printout.");
+      return;
+    }
+    const { metadata, items, totals } = ticket;
+    const createdAtDisplay = metadata?.createdAt
+      ? new Date(metadata.createdAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })
+      : "";
+    const scheduledDisplay = metadata?.scheduledFor
+      ? new Date(metadata.scheduledFor).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })
+      : "Immediate";
+
+    const itemsRows = items
+      .map(
+        (item) => `
+          <tr>
+            <td>${item.name}${item.option ? ` <small>(${item.option})</small>` : ""}</td>
+            <td style="text-align:center;">${item.quantity}</td>
+            <td style="text-align:right;">${formatInrCurrency(item.unitPrice)}</td>
+            <td style="text-align:right;">${formatInrCurrency(item.lineTotal)}</td>
+          </tr>
+        `
+      )
+      .join("");
+
+    popup.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <title>Order #${metadata?.billingId || metadata?.orderId}</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 16px; color: #111; }
+            h1 { font-size: 20px; margin-bottom: 6px; }
+            h2 { font-size: 16px; margin: 16px 0 8px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+            th, td { border: 1px solid #ddd; padding: 6px; font-size: 13px; }
+            th { background: #f5f5f5; text-align: left; }
+            .totals { margin-top: 16px; width: 100%; }
+            .totals td { border: none; font-size: 14px; padding: 4px 0; }
+            .totals tr:last-child td { font-weight: bold; font-size: 16px; border-top: 1px solid #ccc; padding-top: 8px; }
+            .meta { font-size: 13px; margin-bottom: 4px; }
+          </style>
+        </head>
+        <body>
+          <h1>${metadata?.vendor?.name || "Vendor"}</h1>
+          <div class="meta">Billing ID: <strong>${metadata?.billingId || "N/A"}</strong></div>
+          <div class="meta">Employee: ${metadata?.customer?.name || "Employee"}${metadata?.customer?.mobile ? ` · ${metadata.customer.mobile}` : ""}</div>
+          <div class="meta">Created: ${createdAtDisplay}</div>
+          <div class="meta">Scheduled: ${scheduledDisplay}</div>
+          <div class="meta">Payment: ${metadata?.paymentMethod || "--"}</div>
+          ${metadata?.notes ? `<div class="meta">Notes: ${metadata.notes}</div>` : ""}
+          <h2>Items</h2>
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 45%;">Item</th>
+                <th style="width: 15%; text-align:center;">Qty</th>
+                <th style="width: 20%; text-align:right;">Unit</th>
+                <th style="width: 20%; text-align:right;">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemsRows || "<tr><td colspan=4 style='text-align:center;'>No items</td></tr>"}
+            </tbody>
+          </table>
+          <table class="totals">
+            <tbody>
+              <tr>
+                <td style="text-align:right;">Subtotal:</td>
+                <td style="text-align:right;">${totals?.subtotalFormatted || formatInrCurrency(totals?.subtotal || 0)}</td>
+              </tr>
+              <tr>
+                <td style="text-align:right;">Discount:</td>
+                <td style="text-align:right;">${totals?.discountFormatted || formatInrCurrency(totals?.discount || 0)}</td>
+              </tr>
+              <tr>
+                <td style="text-align:right;">Grand Total:</td>
+                <td style="text-align:right;">${totals?.totalFormatted || formatInrCurrency(totals?.total || 0)}</td>
+              </tr>
+            </tbody>
+          </table>
+          <script>window.onload = function(){ setTimeout(function(){ window.print(); }, 250); };</script>
+        </body>
+      </html>
+    `);
+    popup.document.close();
+  } catch (error) {
+    console.error("Failed to open print preview", error);
+  }
+};
+
 const CountdownDisplay = ({ info }) => {
   if (!info) {
     return <span style={{ color: "#999" }}>—</span>;
@@ -286,6 +513,18 @@ const AdminDashboard = ({ token }) => {
   const loadOrders = useCallback(() => {
     fetchOrders(token).then(setOrders);
   }, [token]);
+
+  const handlePrintOrder = useCallback(
+    async (order, { previewFallback = false } = {}) => {
+      if (!order) return;
+      const ticket = buildPrintTicketPayload(order, { vendorShopName, vendorShopId });
+      const sent = await trySendToVendorPrinter(ticket);
+      if (!sent || previewFallback) {
+        openBrowserPrintPreview(ticket);
+      }
+    },
+    [vendorShopId, vendorShopName]
+  );
 
   useEffect(() => {
     loadOrders();
@@ -513,6 +752,10 @@ const AdminDashboard = ({ token }) => {
         <button onClick={() => setShowLowStock(v => !v)}>
           {showLowStock ? 'Hide Low Stock' : `Low Stock Items (${lowStockItems.length})`}
         </button>
+        <button
+          onClick={() => window.alert('Connect vendorPrinterBridge.printOrderTicket(ticket) to your thermal printer. Use individual order print buttons below to test.')}>
+          Printer Setup Help
+        </button>
       </div>
       {showLowStock && (
         <div className="card" style={{ marginBottom: 12 }}>
@@ -574,6 +817,7 @@ const AdminDashboard = ({ token }) => {
                 {tab === 'current' && <th>Countdown</th>}
                 {tab === 'current' && <th>Extend</th>}
                 <th>Status</th>
+                <th>Print</th>
                 {tab !== 'completed' && <th>Action</th>}
               </tr>
             </thead>
@@ -657,6 +901,22 @@ const AdminDashboard = ({ token }) => {
                         fontWeight: 700
                       }}>OVERDUE</span>
                     )}
+                  </td>
+                  <td>
+                    <button
+                      onClick={() => handlePrintOrder(o)}
+                      style={{ background: '#2c3e50', color: '#fff' }}
+                    >
+                      Print Ticket
+                    </button>
+                    <div style={{ marginTop: 6 }}>
+                      <button
+                        onClick={() => handlePrintOrder(o, { previewFallback: true })}
+                        style={{ fontSize: 11, padding: '4px 8px' }}
+                      >
+                        Preview Only
+                      </button>
+                    </div>
                   </td>
                   {tab !== 'completed' && (
                     <td>

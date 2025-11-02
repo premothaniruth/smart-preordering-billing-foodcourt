@@ -232,7 +232,6 @@ const Cart = ({
   const discountTotal = offerPreview?.discountTotal != null ? Number(offerPreview.discountTotal) : 0;
   const total = offerPreview?.totalPayable != null ? Number(offerPreview.totalPayable) : subtotal;
   const extraItems = Array.isArray(offerPreview?.extraItems) ? offerPreview.extraItems : [];
-  const totalPrepTime = cart.reduce((sum, c) => sum + (c.item.prepTime || 5) * c.quantity, 0);
   const walletDisabledReason = (() => {
     if (!walletEnabled) return 'Login to use wallet';
     if (walletBalance < total) return 'Top up required!';
@@ -433,10 +432,6 @@ const Cart = ({
                 <span>-₹{discountTotal.toFixed(2)}</span>
               </div>
             )}
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-              <span>Prep Time:</span>
-              <span>{totalPrepTime} mins</span>
-            </div>
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: "18px", fontWeight: "bold", marginTop: 10, paddingTop: 10, borderTop: "1px solid #ddd" }}>
               <span>Total:</span>
               <span>₹{total.toFixed(2)}</span>

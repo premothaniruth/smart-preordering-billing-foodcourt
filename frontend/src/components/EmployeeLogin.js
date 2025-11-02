@@ -11,6 +11,7 @@ import { toast } from "react-toastify";
 
 const PIN_IDENTITY_KEY = "employeePinIdentity";
 const OTP_IDENTITY_KEY = "employeeOtpIdentity";
+const LAST_SIGNIN_METHOD_KEY = "employeeLastSignInMethod";
 
 const readPinIdentity = () => {
   try {
@@ -36,9 +37,19 @@ const readOtpIdentity = () => {
   return null;
 };
 
+const readLastSignInMethod = () => {
+  try {
+    const raw = localStorage.getItem(LAST_SIGNIN_METHOD_KEY);
+    if (raw === "password" || raw === "pin" || raw === "otp") {
+      return raw;
+    }
+  } catch {}
+  return "password";
+};
+
 const EmployeeLogin = ({ onSuccess, onBack }) => {
   const [authMode, setAuthMode] = useState("signin");
-  const [signInMethod, setSignInMethod] = useState("password");
+  const [signInMethod, setSignInMethod] = useState(() => readLastSignInMethod());
   const [loading, setLoading] = useState(false);
   const [signupLoading, setSignupLoading] = useState(false);
 
@@ -66,6 +77,16 @@ const EmployeeLogin = ({ onSuccess, onBack }) => {
     password: "",
     pin: "",
   });
+
+  const updateSignInMethod = (method, remember = false) => {
+    if (!method || !["password", "pin", "otp"].includes(method)) return;
+    setSignInMethod(method);
+    if (remember) {
+      try {
+        localStorage.setItem(LAST_SIGNIN_METHOD_KEY, method);
+      } catch {}
+    }
+  };
 
   useEffect(() => {
     if (otpStage === "verify" && otpCountdown > 0) {
@@ -114,6 +135,7 @@ const EmployeeLogin = ({ onSuccess, onBack }) => {
       setLoading(true);
       const res = await employeePasswordLogin(uname, pwd);
       if (res && res.status === "ok" && res.token) {
+        updateSignInMethod("password", true);
         onSuccess({
           token: res.token,
           mobile: res.mobile,
@@ -216,6 +238,7 @@ const EmployeeLogin = ({ onSuccess, onBack }) => {
       const res = await employeeVerifyOtp(digits, otp);
       if (res && res.status === "ok" && res.token) {
         toast.success("Logged in");
+        updateSignInMethod("otp", true);
         onSuccess({
           token: res.token,
           mobile: res.mobile,
@@ -279,7 +302,7 @@ const EmployeeLogin = ({ onSuccess, onBack }) => {
       if (res && res.status === "ok") {
         toast.success("Registration successful. You can now sign in.");
         setAuthMode("signin");
-        setSignInMethod("password");
+        updateSignInMethod("password");
         setUname(payload.username);
         setPwd("");
       } else {
@@ -306,21 +329,21 @@ const EmployeeLogin = ({ onSuccess, onBack }) => {
             <div className="employee-auth-methods">
               <button
                 type="button"
-                onClick={() => setSignInMethod("otp")}
+                onClick={() => updateSignInMethod("otp")}
                 className={`employee-auth-method ${signInMethod === "otp" ? "active" : ""}`}
               >
                 Mobile + OTP
               </button>
               <button
                 type="button"
-                onClick={() => setSignInMethod("pin")}
+                onClick={() => updateSignInMethod("pin")}
                 className={`employee-auth-method ${signInMethod === "pin" ? "active" : ""}`}
               >
                 4-digit PIN
               </button>
               <button
                 type="button"
-                onClick={() => setSignInMethod("password")}
+                onClick={() => updateSignInMethod("password")}
                 className={`employee-auth-method ${signInMethod === "password" ? "active" : ""}`}
               >
                 Username &amp; Password

@@ -1081,8 +1081,8 @@ function App() {
 
             {view === "login" && (
               <>
-                <button onClick={() => setView("user")} style={{ marginBottom: 15 }}>
-                  ← Back to Menu
+                <button onClick={() => setView("landing")} style={{ marginBottom: 15 }}>
+                  ← Back to Main Login
                 </button>
                 <Login onLogin={handleLogin} />
               </>
