@@ -1,5 +1,222 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { fetchOrders, markOrderReady, fetchMenu, extendOrderPrep, markOrderPicked, revokeOrderExtension } from "../api";
+
+const DEFAULT_PREP_MINUTES = 5;
+const MAX_LOAD_MULTIPLIER = 3;
+
+const coerceNumber = (value, fallback = 0) => {
+  const num = Number(value);
+  return Number.isFinite(num) ? num : fallback;
+};
+
+const formatCountdown = (ms) => {
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  return `${days}d ${String(hours).padStart(2, "0")}h ${String(minutes).padStart(2, "0")}m ${String(seconds).padStart(2, "0")}s`;
+};
+
+const formatMinutes = (minutes) => {
+  const rounded = Math.round(minutes * 10) / 10;
+  return Number.isInteger(rounded) ? `${rounded}m` : `${rounded.toFixed(1)}m`;
+};
+
+const computeCustomizationExtraMinutes = (customization) => {
+  if (!customization) return 0;
+  let extra = 0;
+  if (customization.extraPrepMinutes != null) {
+    extra += coerceNumber(customization.extraPrepMinutes, 0);
+  }
+  const cookLevel = String(customization.cookLevel || "").toLowerCase();
+  if (cookLevel === "well-done" || cookLevel === "extra-crispy") {
+    extra += 2;
+  }
+  const notes = String(customization.notes || "").toLowerCase();
+  if (notes.includes("extra")) {
+    extra += 1;
+  }
+  if (notes.includes("very hot") || notes.includes("very spicy")) {
+    extra += 1;
+  }
+  return extra;
+};
+
+const buildPrepTimesByShop = (menu) => {
+  const map = new Map();
+  const addItem = (shopMap, item) => {
+    if (!item || item.id == null) return;
+    const itemId = String(item.id);
+    const prep = coerceNumber(item.prepTime, DEFAULT_PREP_MINUTES);
+    if (!shopMap.has(itemId)) {
+      shopMap.set(itemId, prep);
+    }
+  };
+  (menu || []).forEach((shop) => {
+    if (!shop) return;
+    const shopMap = new Map();
+    if (Array.isArray(shop.items)) {
+      shop.items.forEach((item) => addItem(shopMap, item));
+    }
+    if (Array.isArray(shop.categories)) {
+      shop.categories.forEach((category) => {
+        if (!Array.isArray(category?.items)) return;
+        category.items.forEach((item) => addItem(shopMap, item));
+      });
+    }
+    map.set(String(shop.shopId), shopMap);
+  });
+  return map;
+};
+
+const computeItemPrepMinutes = (item, orderShopId, prepTimesByShop) => {
+  const quantity = Math.max(1, coerceNumber(item?.quantity, 1));
+  const shopPrepMap = prepTimesByShop.get(String(orderShopId));
+  const lookupPrep = shopPrepMap?.get(String(item?.id));
+  const basePrep = coerceNumber(item?.prepTime, lookupPrep ?? DEFAULT_PREP_MINUTES);
+  const extra = computeCustomizationExtraMinutes(item?.customization);
+  const perUnit = Math.max(basePrep + extra, DEFAULT_PREP_MINUTES);
+  return perUnit * quantity;
+};
+
+const computeVendorLoadMultiplier = ({ order, pendingOrdersCount, now }) => {
+  if (order?.vendorLoadMultiplier != null) {
+    const direct = coerceNumber(order.vendorLoadMultiplier, 1);
+    return Math.min(Math.max(direct, 0.5), MAX_LOAD_MULTIPLIER);
+  }
+
+  let multiplier = 1;
+
+  if (pendingOrdersCount > 0) {
+    const queuePressure = Math.min(0.75, pendingOrdersCount * 0.05);
+    multiplier += queuePressure;
+  }
+
+  const referenceTime = order?.scheduledTime ? Date.parse(order.scheduledTime) : now;
+  const date = new Date(Number.isNaN(referenceTime) ? now : referenceTime);
+  const hour = date.getHours();
+  if ((hour >= 7 && hour < 9) || (hour >= 12 && hour < 15) || (hour >= 19 && hour < 21)) {
+    multiplier += 0.2;
+  }
+
+  if (order?.loadTags && Array.isArray(order.loadTags)) {
+    if (order.loadTags.includes("high-traffic")) multiplier += 0.15;
+    if (order.loadTags.includes("staff-shortage")) multiplier += 0.1;
+  }
+
+  if (order?.loadMultiplierOverride != null) {
+    multiplier = coerceNumber(order.loadMultiplierOverride, multiplier);
+  }
+
+  return Math.min(Math.max(multiplier, 0.5), MAX_LOAD_MULTIPLIER);
+};
+
+const computeOrderCountdown = (order, { now, pendingOrdersCount, prepTimesByShop }) => {
+  if (!order) return null;
+  const items = Array.isArray(order.items) ? order.items : [];
+  let maxItemPrepMinutes = 0;
+  items.forEach((item) => {
+    maxItemPrepMinutes = Math.max(maxItemPrepMinutes, computeItemPrepMinutes(item, order.shopId, prepTimesByShop));
+  });
+
+  const derivedPrep = Math.max(maxItemPrepMinutes, DEFAULT_PREP_MINUTES);
+  const orderPrepOverride = coerceNumber(order.prepTime, 0);
+  const basePrepMinutes = Math.max(derivedPrep, orderPrepOverride);
+  const vendorLoadMultiplier = computeVendorLoadMultiplier({ order, pendingOrdersCount, now });
+  const adjustedPrepMinutes = basePrepMinutes * vendorLoadMultiplier;
+  const adjustedPrepMs = adjustedPrepMinutes * 60000;
+
+  const orderTypeRaw = order?.orderType ? String(order.orderType).toLowerCase() : null;
+  const scheduledTimeValue = order?.scheduledTime ? Date.parse(order.scheduledTime) : NaN;
+  const inferredType = orderTypeRaw || (!Number.isNaN(scheduledTimeValue) ? "pre-order" : "live");
+  const orderType = inferredType === "pre-order" ? "pre-order" : "live";
+
+  let startTime = now;
+  let targetTime = now + adjustedPrepMs;
+  let countdownMs = adjustedPrepMs;
+  let status = "in-progress";
+  let prefix = "Ready in";
+  let message = "";
+
+  if (orderType === "pre-order" && !Number.isNaN(scheduledTimeValue)) {
+    targetTime = scheduledTimeValue;
+    startTime = scheduledTimeValue - adjustedPrepMs;
+    countdownMs = startTime - now;
+    if (countdownMs > 0) {
+      status = "waiting";
+      prefix = "Prep starts in";
+    } else {
+      status = "due";
+      prefix = "Start preparing now";
+      message = "Serve by";
+    }
+  } else {
+    const createdAt = order?.createdAt ? Date.parse(order.createdAt) : NaN;
+    startTime = Number.isNaN(createdAt) ? now : createdAt;
+    targetTime = startTime + adjustedPrepMs;
+    countdownMs = targetTime - now;
+    if (countdownMs > 0) {
+      status = "in-progress";
+      prefix = "Ready in";
+    } else {
+      status = "overdue";
+      prefix = "Prep window elapsed";
+      message = "Expected ready";
+    }
+  }
+
+  const label = formatCountdown(Math.max(countdownMs, 0));
+  const helperParts = [];
+  helperParts.push(`Base ${formatMinutes(basePrepMinutes)}`);
+  helperParts.push(`Adj ${formatMinutes(adjustedPrepMinutes)} (×${vendorLoadMultiplier.toFixed(2)})`);
+  if (orderType === "pre-order" && !Number.isNaN(targetTime)) {
+    helperParts.push(`Serve ${new Date(targetTime).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}`);
+  } else if (!Number.isNaN(targetTime)) {
+    helperParts.push(`ETA ${new Date(targetTime).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}`);
+  }
+
+  return {
+    orderId: order.id,
+    orderType,
+    basePrepMinutes,
+    adjustedPrepMinutes,
+    vendorLoadMultiplier,
+    countdownMs,
+    startTime,
+    targetTime,
+    status,
+    label,
+    prefix,
+    message,
+    helperText: helperParts.join(" · "),
+    domId: `order-countdown-${order.id}`
+  };
+};
+
+const CountdownDisplay = ({ info }) => {
+  if (!info) {
+    return <span style={{ color: "#999" }}>—</span>;
+  }
+
+  const isPositive = info.countdownMs > 0;
+  const color = info.status === "overdue" ? "#e74c3c" : info.status === "due" ? "#e67e22" : "#2c3e50";
+  const primaryText = isPositive ? `${info.prefix}: ${info.label}` : info.prefix;
+  const secondaryPrefix = !isPositive && info.message ? `${info.message}: ` : "";
+  const secondaryValue = !isPositive && !Number.isNaN(info.targetTime)
+    ? new Date(info.targetTime).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })
+    : "";
+
+  return (
+    <div id={info.domId} style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 4 }} aria-live="polite">
+      <span style={{ fontWeight: 700, color }}>{primaryText}</span>
+      {(!isPositive && secondaryValue) && (
+        <span style={{ fontSize: 11, color: "#8e44ad" }}>{secondaryPrefix}{secondaryValue}</span>
+      )}
+      <span style={{ fontSize: 11, color: "#7f8c8d" }}>{info.helperText}</span>
+    </div>
+  );
+};
 
 /**
  * AdminDashboard
@@ -41,32 +258,46 @@ const AdminDashboard = ({ token }) => {
     return () => clearInterval(t);
   }, []);
 
-  // compute remaining ms to ETA; negative means overdue
-  const remainingTime = (o) => {
-    if (!o.estimatedReadyTime) return null;
-    const now = Date.now();
-    const eta = new Date(o.estimatedReadyTime).getTime();
-    const diff = eta - now; // ms
-    return diff;
-  };
-
   // per-item restock handled via Menu Editor; see low-stock table button below
-
-  const formatDuration = (ms) => {
-    const sign = ms < 0 ? '-' : '';
-    const abs = Math.abs(ms);
-    const m = Math.floor(abs / 60000);
-    const s = Math.floor((abs % 60000) / 1000);
-    return `${sign}${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-  };
 
   const loadOrders = () => {
     fetchOrders(token).then(setOrders);
   };
 
+  const prepTimesByShop = useMemo(() => buildPrepTimesByShop(menu), [menu]);
+
+  const pendingOrdersCount = useMemo(
+    () => orders.filter((o) => o.status === 'pending').length,
+    [orders]
+  );
+
+  const countdownMap = useMemo(() => {
+    const now = Date.now();
+    const map = new Map();
+    orders.forEach((order) => {
+      const info = computeOrderCountdown(order, { now, pendingOrdersCount, prepTimesByShop });
+      if (info) {
+        map.set(order.id, info);
+      }
+    });
+    return map;
+  }, [orders, pendingOrdersCount, prepTimesByShop, tick]);
+
+  const remainingTime = useCallback(
+    (order) => {
+      const info = countdownMap.get(order.id);
+      return info ? info.countdownMs : null;
+    },
+    [countdownMap]
+  );
+
   // Play overdue sound once when an order first becomes overdue
   useEffect(() => {
-    const overduePending = orders.filter(o => o.status === 'pending' && remainingTime(o) !== null && remainingTime(o) < 0);
+    const overduePending = orders.filter((o) => {
+      if (o.status !== 'pending') return false;
+      const info = countdownMap.get(o.id);
+      return info && info.orderType === 'live' && info.countdownMs != null && info.countdownMs < 0;
+    });
     overduePending.forEach(o => {
       if (!overdueNotifiedRef.current.has(o.id)) {
         overdueNotifiedRef.current.add(o.id);
@@ -75,7 +306,7 @@ const AdminDashboard = ({ token }) => {
         }
       }
     });
-  }, [orders, tick, muted]);
+  }, [orders, countdownMap, tick, muted]);
 
   const handleBulkExtend = async (mins) => {
     const targets = orders.filter(o => o.status === 'pending');
@@ -140,7 +371,7 @@ const AdminDashboard = ({ token }) => {
     } else {
       return list.filter(o => o.status === 'completed').sort((a,b) => new Date(b.completedAt || b.createdAt) - new Date(a.completedAt || a.createdAt));
     }
-  }, [orders, tab, tick]);
+  }, [orders, tab, tick, remainingTime]);
 
   return (
     <div>
@@ -255,16 +486,7 @@ const AdminDashboard = ({ token }) => {
                 {tab === 'current' && <td>{o.prepTime} mins</td>}
                 {tab === 'current' && (
                   <td>
-                    {o.estimatedReadyTime ? (
-                      <span style={{
-                        fontWeight: 600,
-                        color: (remainingTime(o) !== null && remainingTime(o) < 0 && o.status === 'pending') ? '#e74c3c' : '#2c3e50'
-                      }}>
-                        {formatDuration(remainingTime(o))}
-                      </span>
-                    ) : (
-                      <span style={{ color: '#999' }}>—</span>
-                    )}
+                    <CountdownDisplay info={countdownMap.get(o.id)} />
                   </td>
                 )}
                 {tab === 'current' && (
@@ -291,7 +513,10 @@ const AdminDashboard = ({ token }) => {
                   <span className={`badge badge-${o.status === 'ready' ? 'success' : 'warning'}`}>
                     {o.status.toUpperCase()}
                   </span>
-                  {o.status === 'pending' && remainingTime(o) !== null && remainingTime(o) < 0 && (
+                  {o.status === 'pending' && (() => {
+                    const info = countdownMap.get(o.id);
+                    return info && info.orderType === 'live' && info.countdownMs < 0;
+                  })() && (
                     <span style={{
                       marginLeft: 8,
                       background: '#e74c3c',
