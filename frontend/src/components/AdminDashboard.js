@@ -275,15 +275,19 @@ const AdminDashboard = ({ token }) => {
     } catch { return null; }
   })();
 
+  const loadOrders = useCallback(() => {
+    fetchOrders(token).then(setOrders);
+  }, [token]);
+
   useEffect(() => {
     loadOrders();
     fetchMenu().then(setMenu);
     if (!localStorage.getItem('vendorSoundFirstLoginDone')) {
       try { localStorage.setItem('vendorSoundFirstLoginDone', '1'); } catch {}
     }
-    const interval = setInterval(loadOrders, 5000);
+    const interval = setInterval(() => loadOrders(), 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [loadOrders]);
 
   // tick every second for countdown rendering
   const [tick, setTick] = useState(0);
@@ -294,10 +298,6 @@ const AdminDashboard = ({ token }) => {
 
   // per-item restock handled via Menu Editor; see low-stock table button below
 
-  const loadOrders = () => {
-    fetchOrders(token).then(setOrders);
-  };
-
   const prepTimesByShop = useMemo(() => buildPrepTimesByShop(menu), [menu]);
 
   const pendingOrdersCount = useMemo(
@@ -306,7 +306,7 @@ const AdminDashboard = ({ token }) => {
   );
 
   const countdownMap = useMemo(() => {
-    const now = Date.now();
+    const now = Date.now() + tick * 0;
     const map = new Map();
     orders.forEach((order) => {
       const info = computeOrderCountdown(order, { now, pendingOrdersCount, prepTimesByShop });
@@ -361,23 +361,6 @@ const AdminDashboard = ({ token }) => {
     return shop.items.filter(it => Number(it.inventory ?? 100) <= Number(lowStockThreshold));
   }, [menu, vendorShopId, lowStockThreshold]);
 
-  const handleRestockLow = async () => {
-    const shop = menu.find(s => s.shopId === vendorShopId);
-    if (!shop || !Array.isArray(shop.items)) return;
-    const ok = window.confirm(`Restock ${lowStockItems.length} low-stock items to 100?`);
-    if (!ok) return;
-    const updated = shop.items.map(it => (Number(it.inventory ?? 100) <= Number(lowStockThreshold) ? { ...it, inventory: 100 } : it));
-    const res = await updateMenu(updated, token);
-    if (res && res.status === 'success') {
-      const fresh = await fetchMenu();
-      setMenu(fresh);
-      toast.success('Restocked low-stock items to 100');
-      window.dispatchEvent(new CustomEvent('menu:updated'));
-    } else {
-      toast.error('Failed to restock');
-    }
-  };
-
   const markReady = (id) => {
     markOrderReady(id, token).then(() => loadOrders());
   };
@@ -428,7 +411,7 @@ const AdminDashboard = ({ token }) => {
 
   useEffect(() => {
     loadBulkOrders();
-  }, [token]);
+  }, [loadBulkOrders]);
 
   const bulkOrdersByStatus = useMemo(() => {
     const grouped = new Map();

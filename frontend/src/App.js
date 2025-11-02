@@ -12,7 +12,6 @@ import VendorOffers from "./components/VendorOffers";
 import VendorFeedbacks from "./components/VendorFeedbacks";
 import Analytics from "./components/Analytics";
 import OrderHistory from "./components/OrderHistory";
-import RatingModal from "./components/RatingModal";
 import GrievanceModal from "./components/GrievanceModal";
 import VendorGrievances from "./components/VendorGrievances";
 import AdminControl from "./components/AdminControl";
@@ -77,8 +76,6 @@ function App() {
   const [paymentMethod, setPaymentMethod] = useState('gateway');
   const [activeMenuSection, setActiveMenuSection] = useState(null);
   const readyNotifiedRef = useRef(new Set());
-  const [showRatingModal, setShowRatingModal] = useState(false);
-  const [currentOrderForRating, setCurrentOrderForRating] = useState(null);
   const [inlineRating, setInlineRating] = useState(0);
   const [inlineFeedback, setInlineFeedback] = useState("");
   const [inlineHoverRating, setInlineHoverRating] = useState(0);
@@ -381,7 +378,7 @@ function App() {
     } else {
       setFavorites([]);
     }
-  }, [userId]);
+  }, [userId, loadFavorites]);
 
   useEffect(() => {
     if (employeeToken) {
@@ -1160,14 +1157,6 @@ function App() {
             )}
           </>
         )}
-
-      {showRatingModal && currentOrderForRating && (
-        <RatingModal
-          orderId={currentOrderForRating}
-          onClose={() => setShowRatingModal(false)}
-        />
-      )}
-
       {showGrievanceModal && selectedOrderForGrievance && (
         <GrievanceModal
           order={selectedOrderForGrievance}
