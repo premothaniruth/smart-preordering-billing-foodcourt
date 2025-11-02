@@ -15,11 +15,74 @@ export const employeeCheckUsername = async (username) => {
   return res.json();
 };
 
-export const employeeRegister = async ({ username, password, pin, mobile, email }) => {
+export const employeeRegister = async ({ username, password, pin, mobile, email, role, department }) => {
   const res = await fetch(`${API_URL}/employee/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, password, pin, mobile, email })
+    body: JSON.stringify({ username, password, pin, mobile, email, role, department })
+  });
+  return res.json();
+};
+
+export const fetchBulkOrders = async (token, { status, vendorShopId } = {}) => {
+  const params = new URLSearchParams();
+  if (status) params.set('status', status);
+  if (vendorShopId) params.set('vendorShopId', vendorShopId);
+  const qs = params.toString();
+  const res = await fetch(`${API_URL}/bulk-orders${qs ? `?${qs}` : ''}`, {
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: token,
+    },
+    method: 'GET',
+  });
+  return res.json();
+};
+
+export const createBulkOrder = async (token, payload) => {
+  const res = await fetch(`${API_URL}/bulk-orders`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: token,
+    },
+    body: JSON.stringify(payload),
+  });
+  return res.json();
+};
+
+export const updateBulkOrder = async (token, orderId, updates) => {
+  const res = await fetch(`${API_URL}/bulk-orders/${orderId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: token,
+    },
+    body: JSON.stringify({ updates }),
+  });
+  return res.json();
+};
+
+export const postBulkOrderVendorMessage = async (token, orderId, message) => {
+  const res = await fetch(`${API_URL}/bulk-orders/${orderId}/vendor-message`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: token,
+    },
+    body: JSON.stringify({ message }),
+  });
+  return res.json();
+};
+
+export const confirmBulkOrderSlot = async (token, orderId, payload) => {
+  const res = await fetch(`${API_URL}/bulk-orders/${orderId}/vendor-confirm`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: token,
+    },
+    body: JSON.stringify(payload),
   });
   return res.json();
 };

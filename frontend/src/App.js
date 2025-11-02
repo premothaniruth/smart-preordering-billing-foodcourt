@@ -22,6 +22,7 @@ import VendorGrievanceList from "./components/VendorGrievanceList";
 import VendorConcernsMenu from "./components/VendorConcernsMenu";
 import SosButton from "./components/SosButton";
 import AdminVendorGrievances from "./components/AdminVendorGrievances";
+import BulkOrderPortal from "./components/BulkOrderPortal";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -63,6 +64,12 @@ function App() {
   const [vendorToken, setVendorToken] = useState(null);
   const [employeeToken, setEmployeeToken] = useState(null);
   const [employeeMobile, setEmployeeMobile] = useState("");
+  const [employeeRole, setEmployeeRole] = useState({
+    role: null,
+    roleSlug: null,
+    department: null,
+    bulkOrderEligible: false,
+  });
   const [view, setView] = useState("landing");
   const [orderSummary, setOrderSummary] = useState(null);
   const [userOrders, setUserOrders] = useState([]);
@@ -199,10 +206,16 @@ function App() {
   }, [userId]);
 
   useEffect(() => {
-    if (!employeeToken && ["orders", "profile"].includes(view)) {
-      setView("landing");
+    if (!employeeToken && ["orders", "profile", "bulk-portal"].includes(view)) {
+      setView("user");
     }
   }, [employeeToken, view]);
+
+  useEffect(() => {
+    if (view === "bulk-portal" && (!employeeToken || !employeeRole?.bulkOrderEligible)) {
+      setView("user");
+    }
+  }, [view, employeeToken, employeeRole]);
 
   // Employee ready notification: poll orders and alert when status becomes ready
   useEffect(() => {
@@ -760,9 +773,15 @@ function App() {
     toast.info("Logged out from vendor account");
   };
 
-  const handleEmployeeLogin = ({ token, mobile }) => {
+  const handleEmployeeLogin = ({ token, mobile, role, roleSlug, department, bulkOrderEligible }) => {
     setEmployeeToken(token);
     setEmployeeMobile(mobile);
+    setEmployeeRole({
+      role: role || null,
+      roleSlug: roleSlug || null,
+      department: department || null,
+      bulkOrderEligible: Boolean(bulkOrderEligible),
+    });
     setPaymentMethod('gateway');
     setView("user");
     playSound(READY_SOUND);
@@ -772,6 +791,7 @@ function App() {
   const handleEmployeeLogout = () => {
     setEmployeeToken(null);
     setEmployeeMobile("");
+    setEmployeeRole({ role: null, roleSlug: null, department: null, bulkOrderEligible: false });
     setCart([]);
     setOrderSummary(null);
     applyWalletPayload({ balance: 0, transactions: [] });
@@ -942,6 +962,15 @@ function App() {
                       marginBottom: 20
                     }}
                   >
+                    {employeeRole?.bulkOrderEligible && (
+                      <button
+                        onClick={() => setView("bulk-portal")}
+                        className="primary-button"
+                        style={{ minWidth: 150, width: 150 }}
+                      >
+                        Bulk Orders
+                      </button>
+                    )}
                     <button
                       onClick={() => setView("profile")}
                       className="secondary-button"
@@ -1069,6 +1098,14 @@ function App() {
                 </button>
                 <Login onLogin={handleLogin} />
               </>
+            )}
+
+            {view === "bulk-portal" && employeeToken && (
+              <BulkOrderPortal
+                token={employeeToken}
+                employeeRole={employeeRole}
+                onClose={() => setView("user")}
+              />
             )}
 
             {view === "orders" && (

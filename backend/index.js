@@ -31,6 +31,7 @@ const employeesFile = __dirname + "/data/employees.json";
 const combosFile = __dirname + "/data/combos.json";
 const offersFile = __dirname + "/data/offers.json";
 const sectionWindowsFile = __dirname + "/data/section_windows.json";
+const bulkOrdersFile = path.join(__dirname, 'data', 'bulk_orders.json');
 
 // Simple admin credentials (can be overridden via env)
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "infybhojans";
@@ -49,6 +50,9 @@ const getEmployees = () => {
         }
         if (!Array.isArray(emp.walletTransactions)) {
           emp.walletTransactions = [];
+          changed = true;
+        }
+        if (ensureEmployeeRoleFields(emp)) {
           changed = true;
         }
       }
@@ -108,6 +112,95 @@ const recordWalletTransaction = (employees, employee, tx = {}) => {
 };
 
 const validatePin = (pin) => /^\d{4}$/.test(String(pin || ''));
+
+const DEFAULT_EMPLOYEE_ROLE_LABEL = 'Employee';
+const DEFAULT_EMPLOYEE_ROLE_SLUG = 'employee';
+const BULK_ORDER_ROLE_SLUGS = new Set([
+  'hr',
+  'human-resources',
+  'people-ops',
+  'people-operations',
+  'onboarding',
+  'onboarding-team',
+  'event',
+  'events',
+  'event-team',
+  'event-coordinator',
+  'client-meeting',
+  'client-meetings',
+  'client-success',
+  'vendor-relations',
+]);
+
+const slugifyRoleLabel = (value) => {
+  const raw = String(value || '').trim().toLowerCase();
+  if (!raw) return DEFAULT_EMPLOYEE_ROLE_SLUG;
+  const slug = raw.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  return slug || DEFAULT_EMPLOYEE_ROLE_SLUG;
+};
+
+const normalizeEmployeeRoleInput = (value) => {
+  const label = String(value || '').trim();
+  if (!label) {
+    return { label: DEFAULT_EMPLOYEE_ROLE_LABEL, slug: DEFAULT_EMPLOYEE_ROLE_SLUG };
+  }
+  const safeLabel = label.slice(0, 80);
+  return { label: safeLabel, slug: slugifyRoleLabel(safeLabel) };
+};
+
+const normalizeDepartmentInput = (value) => {
+  const label = String(value || '').trim();
+  if (!label) return '';
+  return label.slice(0, 80);
+};
+
+const buildEmployeeRoleSnapshot = (employee) => {
+  if (!employee) {
+    return normalizeEmployeeRoleInput(null);
+  }
+  const base = normalizeEmployeeRoleInput(employee.role || employee.roleLabel);
+  let label = base.label;
+  let slug = base.slug;
+  if (employee.role && !employee.role.trim()) {
+    label = DEFAULT_EMPLOYEE_ROLE_LABEL;
+  } else if (employee.role) {
+    label = String(employee.role).trim().slice(0, 80);
+  }
+  if (employee.roleSlug) {
+    const candidate = slugifyRoleLabel(employee.roleSlug);
+    if (candidate) slug = candidate;
+  }
+  if (!label) label = DEFAULT_EMPLOYEE_ROLE_LABEL;
+  if (!slug) slug = DEFAULT_EMPLOYEE_ROLE_SLUG;
+  return { label, slug };
+};
+
+const hasBulkOrderPrivileges = (roleSlug) => BULK_ORDER_ROLE_SLUGS.has(roleSlug);
+
+const ensureEmployeeRoleFields = (employee) => {
+  if (!employee) return false;
+  let changed = false;
+  const snapshot = buildEmployeeRoleSnapshot(employee);
+  const department = normalizeDepartmentInput(employee.department);
+  if (employee.role !== snapshot.label) {
+    employee.role = snapshot.label;
+    changed = true;
+  }
+  if (employee.roleSlug !== snapshot.slug) {
+    employee.roleSlug = snapshot.slug;
+    changed = true;
+  }
+  if (employee.department !== department) {
+    employee.department = department;
+    changed = true;
+  }
+  const bulkEligible = hasBulkOrderPrivileges(snapshot.slug);
+  if (employee.bulkOrderEligible !== bulkEligible) {
+    employee.bulkOrderEligible = bulkEligible;
+    changed = true;
+  }
+  return changed;
+};
 const validatePassword = (pwd) => {
   const s = String(pwd || '');
   if (s.length < 8 || s.length > 20) return false;
@@ -166,6 +259,10 @@ const sanitizeEmployeeProfile = (employee) => ({
   friends: Array.isArray(employee.friends) ? employee.friends : [],
   hasPassword: Boolean(employee.passwordHash),
   hasPin: Boolean(employee.pinHash),
+  role: employee.role || DEFAULT_EMPLOYEE_ROLE_LABEL,
+  roleSlug: employee.roleSlug || DEFAULT_EMPLOYEE_ROLE_SLUG,
+  department: employee.department || '',
+  bulkOrderEligible: Boolean(employee.bulkOrderEligible),
 });
 
 const resolveEmployeeFromToken = (token) => {
@@ -209,7 +306,16 @@ const resolveEmployeeFromToken = (token) => {
     if (index >= 0) break;
   }
   if (index === -1) return null;
-  return { employee: employees[index], index, employees, token: tokenStr };
+  const employee = employees[index];
+  if (ensureEmployeeRoleFields(employee)) {
+    saveEmployees(employees);
+  }
+  return { employee, index, employees, token: tokenStr };
+};
+
+const resolveEmployeeFromRequest = (req) => {
+  const token = req?.body?.token || req?.query?.token || req?.headers?.['x-employee-token'] || req?.headers?.['authorization'];
+  return resolveEmployeeFromToken(token);
 };
 
 /**
@@ -291,13 +397,22 @@ app.post('/employee/profile', (req, res) => {
     if (!resolved) return res.status(401).json({ message: 'Invalid or expired session' });
     const employee = resolved.employee;
     ensureWalletFields(employee);
+    let roleChanged = false;
+    if (ensureEmployeeRoleFields(employee)) {
+      roleChanged = true;
+    }
+    if (roleChanged) {
+      saveEmployees(resolved.employees || getEmployees());
+    }
+    const profile = sanitizeEmployeeProfile(employee);
+    const wallet = {
+      balance: Number(employee.walletBalance || 0),
+      transactions: Array.isArray(employee.walletTransactions) ? employee.walletTransactions.slice(0, 20) : []
+    };
     return res.json({
       status: 'ok',
-      profile: sanitizeEmployeeProfile(employee),
-      wallet: {
-        balance: formatCurrency(employee.walletBalance || 0),
-        transactions: (employee.walletTransactions || []).slice(0, 20)
-      }
+      profile,
+      wallet
     });
   } catch {
     res.status(500).json({ message: 'Failed to load profile' });
@@ -427,6 +542,26 @@ app.post('/employee/profile/update', async (req, res) => {
       }
     }
 
+    if (Object.prototype.hasOwnProperty.call(updates, 'department')) {
+      const department = normalizeDepartmentInput(updates.department);
+      if (department !== String(employee.department || '')) {
+        updated.department = department;
+        changed = true;
+      }
+    }
+
+    if (Object.prototype.hasOwnProperty.call(updates, 'role')) {
+      const { label, slug } = normalizeEmployeeRoleInput(updates.role);
+      if (label && slug) {
+        if (label !== String(employee.role || '') || slug !== String(employee.roleSlug || '')) {
+          updated.role = label;
+          updated.roleSlug = slug;
+          updated.bulkOrderEligible = hasBulkOrderPrivileges(slug);
+          changed = true;
+        }
+      }
+    }
+
     if (sensitiveChanges.length > 1) {
       return res.status(400).json({ message: 'Update one sensitive field at a time (email, mobile, password, or pin)' });
     }
@@ -456,6 +591,9 @@ app.post('/employee/profile/update', async (req, res) => {
     }
 
     employees[index] = updated;
+    if (ensureEmployeeRoleFields(updated)) {
+      employees[index] = updated;
+    }
     saveEmployees(employees);
 
     const sessionInfo = employeeSessions.get(tokenStr);
@@ -490,12 +628,233 @@ app.post("/employee/verify-otp", (req, res) => {
     const employees = getEmployees();
     const user = employees.find(e => String(e.mobile || '').toLowerCase() === fullMobile.toLowerCase());
     if (!user) return res.status(404).json({ message: 'User not found' });
-    const payload = { role: 'employee', mobile: fullMobile, employeeId: user.id, username: user.username, email: user.email };
+    ensureEmployeeRoleFields(user);
+    saveEmployees(employees);
+    const payload = {
+      role: 'employee',
+      mobile: fullMobile,
+      employeeId: user.id,
+      username: user.username,
+      email: user.email,
+      roleLabel: user.role,
+      roleSlug: user.roleSlug,
+      department: user.department,
+      bulkOrderEligible: Boolean(user.bulkOrderEligible)
+    };
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '8h' });
-    employeeSessions.set(token, { mobile: fullMobile, contact: fullMobile, createdAt: Date.now(), employeeId: user.id });
-    res.json({ status: 'ok', token, mobile: fullMobile, username: user.username, email: user.email });
+    employeeSessions.set(token, {
+      mobile: fullMobile,
+      contact: fullMobile,
+      createdAt: Date.now(),
+      employeeId: user.id,
+      roleLabel: user.role,
+      roleSlug: user.roleSlug,
+      department: user.department,
+      bulkOrderEligible: Boolean(user.bulkOrderEligible)
+    });
+    res.json({
+      status: 'ok',
+      token,
+      mobile: fullMobile,
+      username: user.username,
+      email: user.email,
+      role: user.role,
+      roleSlug: user.roleSlug,
+      department: user.department,
+      bulkOrderEligible: Boolean(user.bulkOrderEligible)
+    });
   } catch {
     res.status(500).json({ message: 'Error verifying OTP' });
+  }
+});
+
+// Bulk Orders APIs
+
+app.get('/bulk-orders', (req, res) => {
+  try {
+    const resolved = resolveEmployeeFromRequest(req);
+    if (!resolved) return res.status(401).json({ message: 'Invalid or expired session' });
+    const { employee } = resolved;
+    const allOrders = getBulkOrders();
+    const canViewAll = hasBulkOrderPrivileges(employee.roleSlug);
+
+    const statusFilter = req.query.status ? String(req.query.status).toLowerCase() : null;
+    const vendorFilter = req.query.vendorShopId ? String(req.query.vendorShopId) : null;
+
+    const visible = allOrders.filter((order) => {
+      if (!order) return false;
+      const isOrganizer = order.organizer && Number(order.organizer.employeeId) === Number(employee.id);
+      const isAssignedVendor = Array.isArray(order.assignedVendors) && order.assignedVendors.includes(String(employee.vendorShopId || employee.shopId || ''));
+      if (!canViewAll && !isOrganizer && !isAssignedVendor) {
+        return false;
+      }
+      if (statusFilter && normalizeBulkStatus(order.status) !== normalizeBulkStatus(statusFilter)) {
+        return false;
+      }
+      if (vendorFilter && String(order.vendorShopId || '') !== vendorFilter) {
+        return false;
+      }
+      return true;
+    });
+
+    const response = visible.map((order) => sanitizeBulkOrder(order));
+    res.json({ status: 'ok', orders: response });
+  } catch (error) {
+    console.error('Error listing bulk orders', error);
+    res.status(500).json({ message: 'Failed to fetch bulk orders' });
+  }
+});
+
+app.post('/bulk-orders', (req, res) => {
+  try {
+    const resolved = resolveEmployeeFromRequest(req);
+    if (!resolved) return res.status(401).json({ message: 'Invalid or expired session' });
+    const { employee } = resolved;
+    if (!hasBulkOrderPrivileges(employee.roleSlug)) {
+      return res.status(403).json({ message: 'You do not have permission to create bulk orders' });
+    }
+
+    const payload = req.body || {};
+    const orders = getBulkOrders();
+    const record = normalizeBulkOrderForCreate(payload, employee, orders);
+    orders.push(record);
+    saveBulkOrders(orders);
+
+    res.status(201).json({ status: 'ok', order: sanitizeBulkOrder(record) });
+  } catch (error) {
+    console.error('Error creating bulk order', error);
+    res.status(400).json({ message: error?.message || 'Failed to create bulk order' });
+  }
+});
+
+app.put('/bulk-orders/:id', (req, res) => {
+  try {
+    const resolved = resolveEmployeeFromRequest(req);
+    if (!resolved) return res.status(401).json({ message: 'Invalid or expired session' });
+    const { employee, employees } = resolved;
+    const orders = getBulkOrders();
+    const id = Number(req.params.id);
+    const index = orders.findIndex((order) => Number(order.id) === id);
+    if (index === -1) return res.status(404).json({ message: 'Bulk order not found' });
+
+    const currentOrder = orders[index];
+    if (!employeeCanManageBulkOrder(employee, currentOrder)) {
+      return res.status(403).json({ message: 'You do not have permission to modify this bulk order' });
+    }
+
+    const updated = applyBulkOrderUpdates(currentOrder, req.body?.updates || req.body, employee);
+    orders[index] = updated;
+    saveBulkOrders(orders);
+
+    // Keep resolve cache up to date if organizer fields changed
+    if (employees) {
+      saveEmployees(employees);
+    }
+
+    res.json({ status: 'ok', order: sanitizeBulkOrder(updated) });
+  } catch (error) {
+    console.error('Error updating bulk order', error);
+    res.status(400).json({ message: error?.message || 'Failed to update bulk order' });
+  }
+});
+
+app.post('/bulk-orders/:id/vendor-message', (req, res) => {
+  try {
+    const resolved = resolveEmployeeFromRequest(req);
+    if (!resolved) return res.status(401).json({ message: 'Invalid or expired session' });
+    const { employee } = resolved;
+    const orders = getBulkOrders();
+    const id = Number(req.params.id);
+    const index = orders.findIndex((order) => Number(order.id) === id);
+    if (index === -1) return res.status(404).json({ message: 'Bulk order not found' });
+
+    const currentOrder = orders[index];
+    if (!employeeCanManageBulkOrder(employee, currentOrder)) {
+      return res.status(403).json({ message: 'You do not have permission to post messages on this bulk order' });
+    }
+
+    const messageText = clampString(req.body?.message || '', 500);
+    if (!messageText) {
+      return res.status(400).json({ message: 'Message is required' });
+    }
+
+    const now = new Date().toISOString();
+    const actor = buildBulkActorFromEmployee(employee);
+    const entry = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      timestamp: now,
+      actor,
+      message: messageText,
+    };
+
+    const next = { ...currentOrder };
+    next.vendorMessages = Array.isArray(next.vendorMessages) ? [entry, ...next.vendorMessages].slice(0, 200) : [entry];
+    next.history = Array.isArray(next.history) ? [buildBulkHistoryEntry('vendor_message', actor, { message: messageText }), ...next.history] : [buildBulkHistoryEntry('vendor_message', actor, { message: messageText })];
+    next.updatedAt = now;
+    orders[index] = sanitizeBulkOrder(next);
+    saveBulkOrders(orders);
+
+    res.json({ status: 'ok', order: sanitizeBulkOrder(orders[index]) });
+  } catch (error) {
+    console.error('Error posting bulk order message', error);
+    res.status(400).json({ message: error?.message || 'Failed to post message' });
+  }
+});
+
+app.post('/bulk-orders/:id/vendor-confirm', (req, res) => {
+  try {
+    const resolved = resolveEmployeeFromRequest(req);
+    if (!resolved) return res.status(401).json({ message: 'Invalid or expired session' });
+    const { employee } = resolved;
+    const orders = getBulkOrders();
+    const id = Number(req.params.id);
+    const index = orders.findIndex((order) => Number(order.id) === id);
+    if (index === -1) return res.status(404).json({ message: 'Bulk order not found' });
+
+    const order = orders[index];
+    const actor = buildBulkActorFromEmployee(employee);
+
+    const slotId = req.body?.slotId || null;
+    const capacity = req.body?.capacity != null ? Number(req.body.capacity) : null;
+    const messageText = clampString(req.body?.message || '', 500);
+    const agree = req.body?.status ? String(req.body.status).toLowerCase() : null;
+    const status = agree === 'confirmed' || agree === 'accept' ? 'confirmed'
+      : agree === 'rejected' || agree === 'decline' ? 'rejected'
+      : 'pending';
+
+    const now = new Date().toISOString();
+    const confirmation = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      actor,
+      slotId,
+      status,
+      capacity: capacity != null && Number.isFinite(capacity) ? capacity : null,
+      message: messageText,
+      timestamp: now,
+    };
+
+    const updated = { ...order };
+    const slots = Array.isArray(updated.deliverySlots) ? updated.deliverySlots.map((slot) => ({ ...slot })) : [];
+    if (slotId) {
+      const slotIndex = slots.findIndex((slot) => String(slot.id) === String(slotId));
+      if (slotIndex >= 0) {
+        slots[slotIndex].vendorConfirmation = status;
+      }
+    }
+    updated.deliverySlots = slots;
+    updated.vendorResponses = Array.isArray(updated.vendorResponses) ? [confirmation, ...updated.vendorResponses].slice(0, 200) : [confirmation];
+    updated.history = Array.isArray(updated.history)
+      ? [buildBulkHistoryEntry('vendor_confirmation', actor, { slotId, status, capacity, message: messageText }), ...updated.history]
+      : [buildBulkHistoryEntry('vendor_confirmation', actor, { slotId, status, capacity, message: messageText })];
+    updated.updatedAt = now;
+
+    orders[index] = sanitizeBulkOrder(updated);
+    saveBulkOrders(orders);
+
+    res.json({ status: 'ok', order: orders[index] });
+  } catch (error) {
+    console.error('Error updating bulk order confirmation', error);
+    res.status(400).json({ message: error?.message || 'Failed to update confirmation' });
   }
 });
 
@@ -515,7 +874,7 @@ app.get('/employee/check-username', (req, res) => {
 // Registration
 app.post('/employee/register', async (req, res) => {
   try {
-    let { username, password, pin, mobile, email } = req.body || {};
+    let { username, password, pin, mobile, email, role, department } = req.body || {};
     username = String(username || '').trim();
     if (!username) return res.status(400).json({ message: 'Username is required' });
     if (!validatePin(pin)) return res.status(400).json({ message: 'PIN must be 4 digits' });
@@ -536,7 +895,21 @@ app.post('/employee/register', async (req, res) => {
     const id = (employees.reduce((m, e) => Math.max(m, Number(e.id)||0), 0) + 1) || 1;
     const passwordHash = await bcrypt.hash(String(password), 10);
     const pinHash = await bcrypt.hash(String(pin), 10);
-    const newEmp = { id, username, email: emailStr, mobile: mobileNorm, passwordHash, pinHash };
+    const { label: roleLabel, slug: roleSlug } = normalizeEmployeeRoleInput(role);
+    const departmentLabel = normalizeDepartmentInput(department);
+    const bulkOrderEligible = hasBulkOrderPrivileges(roleSlug);
+    const newEmp = {
+      id,
+      username,
+      email: emailStr,
+      mobile: mobileNorm,
+      passwordHash,
+      pinHash,
+      role: roleLabel,
+      roleSlug,
+      department: departmentLabel,
+      bulkOrderEligible
+    };
     employees.push(newEmp);
     saveEmployees(employees);
     res.json({ status: 'ok', id, username });
@@ -557,22 +930,42 @@ app.post('/employee/login-password', async (req, res) => {
     if (!ok) return res.status(401).json({ message: 'Invalid credentials' });
     ensureWalletFields(u);
     const contact = u.mobile || u.email || u.username || String(u.id);
+    ensureEmployeeRoleFields(u);
+    saveEmployees(employees);
     const payload = {
       role: 'employee',
       mobile: u.mobile || contact,
       employeeId: u.id,
       username: u.username,
       email: u.email,
-      contact
+      contact,
+      roleLabel: u.role,
+      roleSlug: u.roleSlug,
+      department: u.department,
+      bulkOrderEligible: Boolean(u.bulkOrderEligible)
     };
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '8h' });
     employeeSessions.set(token, {
       mobile: u.mobile || contact,
       contact,
       createdAt: Date.now(),
-      employeeId: u.id
+      employeeId: u.id,
+      roleLabel: u.role,
+      roleSlug: u.roleSlug,
+      department: u.department,
+      bulkOrderEligible: Boolean(u.bulkOrderEligible)
     });
-    res.json({ status: 'ok', token, mobile: u.mobile || contact, username: u.username, email: u.email });
+    res.json({
+      status: 'ok',
+      token,
+      mobile: u.mobile || contact,
+      username: u.username,
+      email: u.email,
+      role: u.role,
+      roleSlug: u.roleSlug,
+      department: u.department,
+      bulkOrderEligible: Boolean(u.bulkOrderEligible)
+    });
   } catch (e) {
     res.status(500).json({ message: 'Error during password login' });
   }
@@ -592,22 +985,42 @@ app.post('/employee/login-pin', async (req, res) => {
     if (!ok) return res.status(401).json({ message: 'Invalid credentials' });
     ensureWalletFields(u);
     const contact = u.mobile || u.email || u.username || String(u.id);
+    ensureEmployeeRoleFields(u);
+    saveEmployees(employees);
     const payload = {
       role: 'employee',
       mobile: u.mobile || contact,
       employeeId: u.id,
       username: u.username,
       email: u.email || null,
-      contact
+      contact,
+      roleLabel: u.role,
+      roleSlug: u.roleSlug,
+      department: u.department,
+      bulkOrderEligible: Boolean(u.bulkOrderEligible)
     };
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '8h' });
     employeeSessions.set(token, {
       mobile: u.mobile || contact,
       contact,
       createdAt: Date.now(),
-      employeeId: u.id
+      employeeId: u.id,
+      roleLabel: u.role,
+      roleSlug: u.roleSlug,
+      department: u.department,
+      bulkOrderEligible: Boolean(u.bulkOrderEligible)
     });
-    res.json({ status: 'ok', token, mobile: u.mobile || contact });
+    res.json({
+      status: 'ok',
+      token,
+      mobile: u.mobile || contact,
+      username: u.username,
+      email: u.email || null,
+      role: u.role,
+      roleSlug: u.roleSlug,
+      department: u.department,
+      bulkOrderEligible: Boolean(u.bulkOrderEligible)
+    });
   } catch (e) {
     res.status(500).json({ message: 'Error during PIN login' });
   }
@@ -909,6 +1322,494 @@ const getVendorGrievances = () => {
  * @param {Array} grievances
  */
 const saveVendorGrievances = (grievances) => fs.writeFileSync(vendorGrievancesFile, JSON.stringify(grievances, null, 2));
+
+/**
+ * Read bulk orders from disk.
+ * @returns {Array}
+ */
+const getBulkOrders = () => {
+  try {
+    const raw = fs.readFileSync(bulkOrdersFile, 'utf8');
+    const list = JSON.parse(raw);
+    return Array.isArray(list) ? list : [];
+  } catch {
+    return [];
+  }
+};
+
+const saveBulkOrders = (orders) => {
+  fs.writeFileSync(bulkOrdersFile, JSON.stringify(Array.isArray(orders) ? orders : [], null, 2));
+};
+
+const generateBulkOrderId = (existing = []) => {
+  const max = existing.reduce((m, o) => Math.max(m, Number(o.id) || 0), 0);
+  return max + 1;
+};
+
+const clampString = (value, max = 120) => {
+  if (value == null) return '';
+  const str = String(value).trim();
+  if (max <= 0) return str;
+  return str.slice(0, max);
+};
+
+const BULK_DEFAULT_PRICE_MODE = 'vendor_rate';
+
+const BULK_ORDER_STATUSES = new Set(['draft', 'pending_vendor', 'confirmed', 'in_progress', 'completed', 'cancelled']);
+const normalizeBulkStatus = (value, fallback = 'draft') => {
+  const slug = clampString(value || '', 60).toLowerCase();
+  if (!slug) return fallback;
+  return BULK_ORDER_STATUSES.has(slug) ? slug : fallback;
+};
+
+const buildBulkActorFromEmployee = (employee) => {
+  if (!employee) return {};
+  return {
+    employeeId: employee.id,
+    name: employee.username || '',
+    mobile: employee.mobile || '',
+    email: employee.email || '',
+    role: employee.role || '',
+    roleSlug: employee.roleSlug || '',
+    department: employee.department || '',
+  };
+};
+
+const buildBulkHistoryEntry = (type, actor = {}, details = {}) => ({
+  id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+  timestamp: new Date().toISOString(),
+  type,
+  actor,
+  details,
+});
+
+const employeeCanManageBulkOrder = (employee, order) => {
+  if (!employee || !order) return false;
+  if (order.organizer && Number(order.organizer.employeeId) === Number(employee.id)) {
+    return true;
+  }
+  return hasBulkOrderPrivileges(employee.roleSlug);
+};
+
+const normalizeBulkPricing = (payload = {}) => {
+  const pricingType = String(payload.pricing_type || payload.pricingType || '').trim().toLowerCase();
+  const supported = new Set(['bulk_discount', 'vendor_rate', 'custom_quote']);
+  const type = supported.has(pricingType) ? pricingType : BULK_DEFAULT_PRICE_MODE;
+  const discountPct = Math.max(0, Math.min(100, Number(payload.bulk_discount_percent || payload.bulkDiscountPercent || 0)));
+  const flatRate = Math.max(0, Number(payload.bulk_flat_rate || payload.bulkFlatRate || 0));
+  return {
+    pricingType: type,
+    bulkDiscountPercent: discountPct,
+    bulkFlatRate: flatRate,
+  };
+};
+
+const computeBulkOrderTotals = ({ itemGroups = [], pricing }) => {
+  let baseSubtotal = 0;
+  for (const group of itemGroups) {
+    const qty = Math.max(0, Number(group.quantity || 0));
+    const unitPrice = Math.max(0, Number(group.unitPrice || group.price || 0));
+    baseSubtotal += unitPrice * qty;
+  }
+  const normalizedPricing = normalizeBulkPricing(pricing);
+  let total = baseSubtotal;
+  let discountAmount = 0;
+  if (normalizedPricing.pricingType === 'bulk_discount' && normalizedPricing.bulkDiscountPercent > 0) {
+    discountAmount = (baseSubtotal * normalizedPricing.bulkDiscountPercent) / 100;
+    total = Math.max(0, baseSubtotal - discountAmount);
+  } else if (normalizedPricing.pricingType === 'custom_quote' && normalizedPricing.bulkFlatRate > 0) {
+    total = normalizedPricing.bulkFlatRate;
+    discountAmount = Math.max(0, baseSubtotal - total);
+  }
+  return {
+    subtotal: Math.round(baseSubtotal * 100) / 100,
+    discountAmount: Math.round(discountAmount * 100) / 100,
+    totalAmount: Math.round(total * 100) / 100,
+    pricing: normalizedPricing,
+  };
+};
+
+const sanitizeBulkOrder = (order) => {
+  if (!order) return null;
+  const { subtotal, discountAmount, totalAmount, pricing } = computeBulkOrderTotals(order);
+  return {
+    ...order,
+    subtotal,
+    discountAmount,
+    totalAmount,
+    pricing,
+  };
+};
+
+const validateIsoString = (value) => {
+  if (!value) return null;
+  const str = String(value);
+  const date = new Date(str);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+};
+
+const normalizeBulkItemGroups = (groups) => {
+  if (!Array.isArray(groups)) return [];
+  return groups
+    .map((group, idx) => {
+      const quantity = Math.max(0, Number(group.quantity || 0));
+      const unitPrice = Math.max(0, Number(group.unitPrice || group.price || 0));
+      if (!quantity) return null;
+      return {
+        id: group.id || `${Date.now()}-${idx}`,
+        name: String(group.name || group.itemName || `Item Group ${idx + 1}`).trim().slice(0, 120),
+        itemId: group.itemId || null,
+        quantity,
+        unitPrice,
+        options: Array.isArray(group.options) ? group.options : [],
+        notes: String(group.notes || '').trim().slice(0, 200),
+        slotId: group.slotId || null,
+      };
+    })
+    .filter(Boolean);
+};
+
+const normalizeBulkDeliverySlots = (slots) => {
+  if (!Array.isArray(slots)) return [];
+  return slots
+    .map((slot, idx) => {
+      const start = validateIsoString(slot.startTime || slot.start);
+      const end = validateIsoString(slot.endTime || slot.end);
+      const label = clampString(slot.label || slot.name || `Slot ${idx + 1}`, 80);
+      if (!start || !end) return null;
+      return {
+        id: slot.id || `${Date.now()}-${idx}`,
+        label,
+        startTime: start,
+        endTime: end,
+        confirmed: Boolean(slot.confirmed),
+        notes: clampString(slot.notes || '', 280),
+        vendorConfirmation: slot.vendorConfirmation || null,
+      };
+    })
+    .filter(Boolean);
+};
+
+const normalizeAttendeeGroups = (groups) => {
+  if (!Array.isArray(groups)) return [];
+  return groups
+    .map((group, idx) => {
+      const count = Math.max(0, Number(group.count || group.size || 0));
+      const label = clampString(group.label || group.name || `Group ${idx + 1}`, 120);
+      const notes = clampString(group.notes || '', 240);
+      if (!count && !notes) return null;
+      return {
+        id: group.id || `${Date.now()}-grp-${idx}`,
+        label,
+        count,
+        notes,
+      };
+    })
+    .filter(Boolean);
+};
+
+const normalizeBulkSubOrders = (subOrders) => {
+  if (!Array.isArray(subOrders)) return [];
+  return subOrders
+    .map((sub, idx) => {
+      const label = clampString(sub.label || sub.name || `Sub-order ${idx + 1}`, 120);
+      const quantity = Math.max(0, Number(sub.quantity || 0));
+      const slotId = sub.slotId || null;
+      const notes = clampString(sub.notes || '', 240);
+      const items = Array.isArray(sub.items) ? sub.items : [];
+      if (!quantity && items.length === 0) return null;
+      return {
+        id: sub.id || `${Date.now()}-sub-${idx}`,
+        label,
+        quantity,
+        slotId,
+        notes,
+        items,
+      };
+    })
+    .filter(Boolean);
+};
+
+const sortSlotsByStartTime = (slots) => {
+  if (!Array.isArray(slots)) return [];
+  return slots.slice().sort((a, b) => {
+    const aTs = a && a.startTime ? new Date(a.startTime).getTime() : Infinity;
+    const bTs = b && b.startTime ? new Date(b.startTime).getTime() : Infinity;
+    return aTs - bTs;
+  });
+};
+
+const normalizeRequestedVendors = (vendors) => {
+  if (!Array.isArray(vendors)) return [];
+  return vendors.map((v) => clampString(v, 80)).filter(Boolean);
+};
+
+const normalizeAttachments = (attachments) => {
+  if (!Array.isArray(attachments)) return [];
+  return attachments
+    .filter((a) => typeof a === 'string' && a.trim().length > 0)
+    .map((a) => clampString(a, 300))
+    .slice(0, 10);
+};
+
+const mergeMetadata = (current = {}, incoming = {}) => {
+  const base = (current && typeof current === 'object' && !Array.isArray(current)) ? { ...current } : {};
+  if (incoming && typeof incoming === 'object' && !Array.isArray(incoming)) {
+    for (const [key, value] of Object.entries(incoming)) {
+      base[key] = value;
+    }
+  }
+  return base;
+};
+
+const validateBulkOrderStructure = (order) => {
+  if (!order) throw new Error('Invalid bulk order payload');
+  if (!Array.isArray(order.itemGroups) || order.itemGroups.length === 0) {
+    throw new Error('At least one item group is required for a bulk order');
+  }
+  const hasSchedule = (Array.isArray(order.deliverySlots) && order.deliverySlots.length > 0)
+    || Boolean(order.eventStartTime)
+    || Boolean(order.eventDate);
+  if (!hasSchedule) {
+    throw new Error('Provide an event date or at least one delivery slot for the bulk order');
+  }
+  return true;
+};
+
+const computeBulkOrderHeadcount = (attendeeGroups = [], itemGroups = [], fallbackValue = 0) => {
+  const attendeeSum = attendeeGroups.reduce((sum, group) => sum + Math.max(0, Number(group.count || 0)), 0);
+  const itemSum = itemGroups.reduce((sum, group) => sum + Math.max(0, Number(group.quantity || 0)), 0);
+  const fallback = Math.max(0, Number(fallbackValue || 0));
+  return attendeeSum || fallback || itemSum || 0;
+};
+
+const normalizeBulkOrderForCreate = (input, employee, existingOrders = []) => {
+  if (!input || typeof input !== 'object') {
+    throw new Error('Bulk order payload missing');
+  }
+  const itemGroups = normalizeBulkItemGroups(input.itemGroups);
+  const deliverySlots = sortSlotsByStartTime(normalizeBulkDeliverySlots(input.deliverySlots));
+  const attendeeGroups = normalizeAttendeeGroups(input.attendeeGroups);
+  const subOrders = normalizeBulkSubOrders(input.subOrders);
+  const attachments = normalizeAttachments(input.attachments);
+  const requestedVendors = normalizeRequestedVendors(input.requestedVendors);
+  const metadata = mergeMetadata({}, input.metadata);
+
+  const expectedHeadcount = computeBulkOrderHeadcount(attendeeGroups, itemGroups, input.expectedHeadcount);
+  const now = new Date().toISOString();
+  const id = generateBulkOrderId(existingOrders);
+  const status = normalizeBulkStatus(input.status || 'pending_vendor');
+
+  const baseRecord = {
+    id,
+    status,
+    organizer: buildBulkActorFromEmployee(employee),
+    organizerContact: {
+      name: clampString(input.organizerName || input.organizer?.name || employee?.username || '', 120),
+      email: clampString(input.organizerEmail || input.organizer?.email || employee?.email || '', 150),
+      mobile: clampString(input.organizerMobile || input.organizer?.mobile || employee?.mobile || '', 20),
+    },
+    eventName: clampString(input.eventName || input.event || '', 160),
+    eventType: clampString(input.eventType || '', 80),
+    eventTheme: clampString(input.eventTheme || '', 120),
+    eventDate: input.eventDate ? validateIsoString(input.eventDate) : null,
+    eventStartTime: validateIsoString(input.eventStartTime),
+    eventEndTime: validateIsoString(input.eventEndTime),
+    location: clampString(input.location || '', 200),
+    building: clampString(input.building || '', 80),
+    floor: clampString(input.floor || '', 60),
+    campus: clampString(input.campus || '', 80),
+    notes: clampString(input.notes || '', 600),
+    specialInstructions: clampString(input.specialInstructions || '', 600),
+    deliverySlots,
+    itemGroups,
+    attendeeGroups,
+    subOrders,
+    requestedVendors,
+    attachments,
+    metadata,
+    expectedHeadcount,
+    expectedGuests: expectedHeadcount,
+    pricing: input.pricing || {},
+    vendorShopId: input.vendorShopId != null ? String(input.vendorShopId) : (input.shopId != null ? String(input.shopId) : null),
+    assignedVendors: Array.isArray(input.assignedVendors) ? input.assignedVendors.map((entry) => String(entry)) : [],
+    vendorResponses: [],
+    vendorMessages: [],
+    linkedOrders: Array.isArray(input.linkedOrders) ? input.linkedOrders : [],
+    createdAt: now,
+    updatedAt: now,
+    lastStatusChangeAt: now,
+    history: [buildBulkHistoryEntry('created', buildBulkActorFromEmployee(employee), { status })],
+    metadataVersion: 1,
+  };
+
+  validateBulkOrderStructure(baseRecord);
+  const sanitized = sanitizeBulkOrder(baseRecord);
+  sanitized.deliverySlots = sortSlotsByStartTime(sanitized.deliverySlots);
+  sanitized.expectedHeadcount = computeBulkOrderHeadcount(sanitized.attendeeGroups, sanitized.itemGroups, expectedHeadcount);
+  sanitized.expectedGuests = sanitized.expectedHeadcount;
+  sanitized.history = Array.isArray(baseRecord.history) ? baseRecord.history : [];
+  sanitized.createdAt = now;
+  sanitized.updatedAt = now;
+  sanitized.lastStatusChangeAt = now;
+  return sanitized;
+};
+
+const applyBulkOrderUpdates = (existingOrder, updates, employee) => {
+  if (!existingOrder) throw new Error('Bulk order not found');
+  if (!updates || typeof updates !== 'object') {
+    return sanitizeBulkOrder(existingOrder);
+  }
+
+  const now = new Date().toISOString();
+  const actor = buildBulkActorFromEmployee(employee);
+  const next = { ...existingOrder };
+  let statusChanged = false;
+  const changedFields = new Set();
+
+  if (updates.status) {
+    const newStatus = normalizeBulkStatus(updates.status, existingOrder.status);
+    if (newStatus !== existingOrder.status) {
+      next.status = newStatus;
+      statusChanged = true;
+      next.lastStatusChangeAt = now;
+      changedFields.add('status');
+    }
+  }
+
+  if (updates.eventName != null) {
+    next.eventName = clampString(updates.eventName, 160);
+    changedFields.add('eventName');
+  }
+  if (updates.eventType != null) {
+    next.eventType = clampString(updates.eventType, 80);
+    changedFields.add('eventType');
+  }
+  if (updates.eventTheme != null) {
+    next.eventTheme = clampString(updates.eventTheme, 120);
+    changedFields.add('eventTheme');
+  }
+  if (updates.eventDate !== undefined) {
+    next.eventDate = updates.eventDate ? validateIsoString(updates.eventDate) : null;
+    changedFields.add('eventDate');
+  }
+  if (updates.eventStartTime !== undefined) {
+    next.eventStartTime = validateIsoString(updates.eventStartTime);
+    changedFields.add('eventStartTime');
+  }
+  if (updates.eventEndTime !== undefined) {
+    next.eventEndTime = validateIsoString(updates.eventEndTime);
+    changedFields.add('eventEndTime');
+  }
+  if (updates.location != null) {
+    next.location = clampString(updates.location, 200);
+    changedFields.add('location');
+  }
+  if (updates.building != null) {
+    next.building = clampString(updates.building, 80);
+    changedFields.add('building');
+  }
+  if (updates.floor != null) {
+    next.floor = clampString(updates.floor, 60);
+    changedFields.add('floor');
+  }
+  if (updates.campus != null) {
+    next.campus = clampString(updates.campus, 80);
+    changedFields.add('campus');
+  }
+  if (updates.notes != null) {
+    next.notes = clampString(updates.notes, 600);
+    changedFields.add('notes');
+  }
+  if (updates.specialInstructions != null) {
+    next.specialInstructions = clampString(updates.specialInstructions, 600);
+    changedFields.add('specialInstructions');
+  }
+  if (updates.organizerContact && typeof updates.organizerContact === 'object') {
+    next.organizerContact = {
+      ...next.organizerContact,
+      name: clampString(updates.organizerContact.name || next.organizerContact?.name || '', 120),
+      email: clampString(updates.organizerContact.email || next.organizerContact?.email || '', 150),
+      mobile: clampString(updates.organizerContact.mobile || next.organizerContact?.mobile || '', 20),
+    };
+    changedFields.add('organizerContact');
+  }
+
+  if (updates.itemGroups) {
+    next.itemGroups = normalizeBulkItemGroups(updates.itemGroups);
+    changedFields.add('itemGroups');
+  }
+  if (updates.deliverySlots) {
+    next.deliverySlots = sortSlotsByStartTime(normalizeBulkDeliverySlots(updates.deliverySlots));
+    changedFields.add('deliverySlots');
+  }
+  if (updates.attendeeGroups) {
+    next.attendeeGroups = normalizeAttendeeGroups(updates.attendeeGroups);
+    changedFields.add('attendeeGroups');
+  }
+  if (updates.subOrders) {
+    next.subOrders = normalizeBulkSubOrders(updates.subOrders);
+    changedFields.add('subOrders');
+  }
+  if (updates.attachments) {
+    next.attachments = normalizeAttachments(updates.attachments);
+    changedFields.add('attachments');
+  }
+  if (updates.requestedVendors) {
+    next.requestedVendors = normalizeRequestedVendors(updates.requestedVendors);
+    changedFields.add('requestedVendors');
+  }
+  if (updates.assignedVendors) {
+    next.assignedVendors = Array.isArray(updates.assignedVendors) ? updates.assignedVendors.map((entry) => String(entry)) : [];
+    changedFields.add('assignedVendors');
+  }
+  if (updates.vendorShopId !== undefined) {
+    next.vendorShopId = updates.vendorShopId != null ? String(updates.vendorShopId) : null;
+    changedFields.add('vendorShopId');
+  }
+  if (updates.pricing) {
+    next.pricing = updates.pricing;
+    changedFields.add('pricing');
+  }
+  if (updates.metadata) {
+    next.metadata = mergeMetadata(next.metadata, updates.metadata);
+    changedFields.add('metadata');
+  }
+  if (updates.expectedHeadcount !== undefined) {
+    next.expectedHeadcount = Math.max(0, Number(updates.expectedHeadcount || 0));
+    next.expectedGuests = next.expectedHeadcount;
+    changedFields.add('expectedHeadcount');
+  }
+  if (updates.vendorMessages && Array.isArray(updates.vendorMessages)) {
+    next.vendorMessages = updates.vendorMessages;
+    changedFields.add('vendorMessages');
+  }
+  if (updates.linkedOrders && Array.isArray(updates.linkedOrders)) {
+    next.linkedOrders = updates.linkedOrders;
+    changedFields.add('linkedOrders');
+  }
+
+  validateBulkOrderStructure(next);
+
+  const sanitized = sanitizeBulkOrder(next);
+  sanitized.deliverySlots = sortSlotsByStartTime(sanitized.deliverySlots);
+  sanitized.expectedHeadcount = computeBulkOrderHeadcount(sanitized.attendeeGroups, sanitized.itemGroups, sanitized.expectedHeadcount);
+  sanitized.expectedGuests = sanitized.expectedHeadcount;
+  sanitized.updatedAt = now;
+
+  const history = Array.isArray(existingOrder.history) ? existingOrder.history.slice() : [];
+  if (statusChanged) {
+    history.unshift(buildBulkHistoryEntry('status_changed', actor, { from: existingOrder.status, to: sanitized.status }));
+  }
+  if (changedFields.size > (statusChanged ? 1 : 0)) {
+    history.unshift(buildBulkHistoryEntry('updated', actor, { fields: Array.from(changedFields) }));
+  }
+  sanitized.history = history;
+  if (!sanitized.lastStatusChangeAt) {
+    sanitized.lastStatusChangeAt = existingOrder.lastStatusChangeAt || existingOrder.updatedAt || now;
+  }
+  return sanitized;
+};
 
 const getSosState = () => {
   try {
@@ -1661,6 +2562,11 @@ app.post("/order", (req, res) => {
       offerSummary
     };
 
+    if (req.body?.bulkOrderId != null) {
+      newOrder.bulkOrderId = Number(req.body.bulkOrderId);
+      newOrder.orderType = 'bulk-linked';
+    }
+
     let paymentSummary = { method: paymentMethod, amount: totalAmount };
 
     if (paymentMethod === 'wallet') {
@@ -1719,15 +2625,17 @@ app.post("/order", (req, res) => {
       extra.excludedItems = req._excludedItems;
       extra.message = 'Some items were excluded as they are not available at this time.';
     }
-    res.json({ 
-      status: "success", 
-      billingId, 
-      orderSummary, 
-      message: "Order placed!",
-      ...extra
+
+    res.json({
+      status: 'success',
+      billingId,
+      orderSummary,
+      extra: Object.keys(extra).length ? extra : undefined,
+      walletBalance: paymentMethod === 'wallet' ? paymentSummary.walletBalance : undefined
     });
   } catch (error) {
-    res.status(500).json({ message: "Error placing order" });
+    console.error('Error placing order', error);
+    res.status(500).json({ message: 'Error placing order' });
   }
 });
 

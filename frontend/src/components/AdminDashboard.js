@@ -1,5 +1,15 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { fetchOrders, markOrderReady, fetchMenu, extendOrderPrep, markOrderPicked, revokeOrderExtension } from "../api";
+import {
+  fetchOrders,
+  markOrderReady,
+  fetchMenu,
+  extendOrderPrep,
+  markOrderPicked,
+  revokeOrderExtension,
+  fetchBulkOrders,
+  postBulkOrderVendorMessage,
+  confirmBulkOrderSlot,
+} from "../api";
 
 const DEFAULT_PREP_MINUTES = 5;
 const MAX_LOAD_MULTIPLIER = 3;
@@ -227,10 +237,15 @@ const CountdownDisplay = ({ info }) => {
 const AdminDashboard = ({ token }) => {
   const [orders, setOrders] = useState([]);
   const [menu, setMenu] = useState([]);
-  const [tab, setTab] = useState('current'); // 'current' | 'ready' | 'completed'
-  const overdueNotifiedRef = useRef(new Set());
+  const [selectedOrderId, setSelectedOrderId] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [tab, setTab] = useState("current");
+  const [muted, setMuted] = useState(false);
+  const [bulkOrders, setBulkOrders] = useState([]);
+  const [bulkLoading, setBulkLoading] = useState(false);
+  const [bulkError, setBulkError] = useState(null);
+  const [filter, setFilter] = useState("all");
   const OVERDUE_SOUND = "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBDWM0/K/gC4EH29+3WgyBCk4XoCWJhcBTnLcWswB";
-  const [muted, setMuted] = useState(() => (localStorage.getItem('vendorSoundFirstLoginDone') ? true : false));
   // Low stock toggle
   const [showLowStock, setShowLowStock] = useState(false);
   const [lowStockThreshold, setLowStockThreshold] = useState(10);
@@ -371,7 +386,72 @@ const AdminDashboard = ({ token }) => {
     } else {
       return list.filter(o => o.status === 'completed').sort((a,b) => new Date(b.completedAt || b.createdAt) - new Date(a.completedAt || a.createdAt));
     }
-  }, [orders, tab, tick, remainingTime]);
+  }, [orders, tab, remainingTime]);
+
+  const loadBulkOrders = useCallback(async () => {
+    if (!token) return;
+    try {
+      setBulkLoading(true);
+      setBulkError(null);
+      const res = await fetchBulkOrders(token);
+      if (res?.status === "ok" && Array.isArray(res.orders)) {
+        setBulkOrders(res.orders);
+      } else {
+        setBulkError(res?.message || "Failed to load bulk orders");
+      }
+    } catch (error) {
+      console.error("Failed to load bulk orders", error);
+      setBulkError("Failed to load bulk orders");
+    } finally {
+      setBulkLoading(false);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    loadBulkOrders();
+  }, [loadBulkOrders]);
+
+  const bulkOrdersByStatus = useMemo(() => {
+    const grouped = new Map();
+    bulkOrders.forEach((order) => {
+      const status = order?.status || "unknown";
+      if (!grouped.has(status)) {
+        grouped.set(status, []);
+      }
+      grouped.get(status).push(order);
+    });
+    return grouped;
+  }, [bulkOrders]);
+
+  const handleBulkMessage = useCallback(
+    async (orderId, message) => {
+      if (!token || !message) return;
+      try {
+        const res = await postBulkOrderVendorMessage(token, orderId, message);
+        if (res?.status === "ok" && res.order) {
+          setBulkOrders((prev) => prev.map((order) => (order.id === orderId ? res.order : order)));
+        }
+      } catch (error) {
+        console.error("Failed to post bulk message", error);
+      }
+    },
+    [token]
+  );
+
+  const handleBulkConfirm = useCallback(
+    async (orderId, payload) => {
+      if (!token) return;
+      try {
+        const res = await confirmBulkOrderSlot(token, orderId, payload);
+        if (res?.status === "ok" && res.order) {
+          setBulkOrders((prev) => prev.map((order) => (order.id === orderId ? res.order : order)));
+        }
+      } catch (error) {
+        console.error("Failed to confirm bulk order slot", error);
+      }
+    },
+    [token]
+  );
 
   return (
     <div>
@@ -421,6 +501,7 @@ const AdminDashboard = ({ token }) => {
         <button onClick={() => setTab('current')} className={tab==='current' ? 'active' : ''}>Current</button>
         <button onClick={() => setTab('ready')} className={tab==='ready' ? 'active' : ''}>Ready</button>
         <button onClick={() => setTab('completed')} className={tab==='completed' ? 'active' : ''}>Completed</button>
+        <button onClick={() => setTab('bulk')} className={tab==='bulk' ? 'active' : ''}>Bulk Orders</button>
       </div>
       {tab === 'current' && (
         <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -432,137 +513,292 @@ const AdminDashboard = ({ token }) => {
       )}
       
       <div style={{ overflowX: "auto" }}>
-        <table border="1" cellPadding="10" width="100%">
-          <thead>
-            <tr>
-              <th>Billing ID</th>
-              <th>User</th>
-              <th>Items</th>
-              {tab !== 'completed' && <th>Remarks</th>}
-              {tab !== 'completed' && <th>Scheduled For</th>}
-              {tab === 'current' && <th>Prep Time</th>}
-              {tab === 'current' && <th>Countdown</th>}
-              {tab === 'current' && <th>Extend</th>}
-              <th>Status</th>
-              {tab !== 'completed' && <th>Action</th>}
-            </tr>
-          </thead>
-          <tbody>
-            {visibleOrders.length === 0 && (
+        {tab !== "bulk" && (
+          <table border="1" cellPadding="10" width="100%">
+            <thead>
               <tr>
-                <td colSpan="8" style={{ textAlign: "center", padding: 30, color: "#999" }}>
-                  No orders to display
-                </td>
+                <th>Billing ID</th>
+                <th>User</th>
+                <th>Items</th>
+                {tab !== 'completed' && <th>Remarks</th>}
+                {tab !== 'completed' && <th>Scheduled For</th>}
+                {tab === 'current' && <th>Prep Time</th>}
+                {tab === 'current' && <th>Countdown</th>}
+                {tab === 'current' && <th>Extend</th>}
+                <th>Status</th>
+                {tab !== 'completed' && <th>Action</th>}
               </tr>
-            )}
-            {visibleOrders.map((o) => (
-              <tr key={o.id} style={{ background: o.status === 'pending' ? '#fff3cd' : (o.status === 'ready' ? '#d4edda' : '#f8f9fa') }}>
-                <td><strong>{o.billingId}</strong></td>
-                <td>{o.user}</td>
-                <td>
-                  {o.items.map((it, idx) => (
-                    <div key={idx} style={{ fontSize: 12, marginBottom: 4 }}>
-                      {it.name} {it.option && `(${it.option})`} x{it.quantity}
-                    </div>
-                  ))}
-                </td>
-                {tab !== 'completed' && (
-                  <td style={{ fontSize: 11 }}>
+            </thead>
+            <tbody>
+              {visibleOrders.length === 0 && (
+                <tr>
+                  <td colSpan="8" style={{ textAlign: "center", padding: 30, color: "#999" }}>
+                    No orders to display
+                  </td>
+                </tr>
+              )}
+              {visibleOrders.map((o) => (
+                <tr key={o.id} style={{ background: o.status === 'pending' ? '#fff3cd' : (o.status === 'ready' ? '#d4edda' : '#f8f9fa') }}>
+                  <td><strong>{o.billingId}</strong></td>
+                  <td>{o.user}</td>
+                  <td>
                     {o.items.map((it, idx) => (
-                      it.customization && it.customization.notes ? (
-                        <div key={idx} style={{ marginBottom: 8, padding: 4, background: "#f8f9fa", borderRadius: 4 }}>
-                          <strong>{it.name}:</strong>
-                          <div>📝 {it.customization.notes}</div>
-                        </div>
-                      ) : null
+                      <div key={idx} style={{ fontSize: 12, marginBottom: 4 }}>
+                        {it.name} {it.option && `(${it.option})`} x{it.quantity}
+                      </div>
                     ))}
                   </td>
-                )}
-                {tab !== 'completed' && (
-                  <td style={{ fontSize: 12 }}>
-                    {o.scheduledTime ? new Date(o.scheduledTime).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : '-'}
-                  </td>
-                )}
-                {tab === 'current' && <td>{o.prepTime} mins</td>}
-                {tab === 'current' && (
-                  <td>
-                    <CountdownDisplay info={countdownMap.get(o.id)} />
-                  </td>
-                )}
-                {tab === 'current' && (
-                  <td>
-                    {o.status === 'pending' && (
-                      <ExtendControl order={o} token={token} onExtended={loadOrders} />
-                    )}
-                    {o.status === 'pending' && (o.etaExtensionMinutes || 0) > 0 && (remainingTime(o) === null || remainingTime(o) >= 0) && (
-                      <div style={{ marginTop: 6 }}>
-                        <button
-                          style={{ background: '#e74c3c' }}
-                          onClick={async () => {
-                            const ok = window.confirm('Revoke extended time and restore previous ETA?');
-                            if (!ok) return;
-                            await revokeOrderExtension(o.id, token);
-                            loadOrders();
-                          }}
-                        >Revoke Extension</button>
-                      </div>
-                    )}
-                  </td>
-                )}
-                <td>
-                  <span className={`badge badge-${o.status === 'ready' ? 'success' : 'warning'}`}>
-                    {o.status.toUpperCase()}
-                  </span>
-                  {o.status === 'pending' && (() => {
-                    const info = countdownMap.get(o.id);
-                    return info && info.orderType === 'live' && info.countdownMs < 0;
-                  })() && (
-                    <span style={{
-                      marginLeft: 8,
-                      background: '#e74c3c',
-                      color: '#fff',
-                      borderRadius: 12,
-                      padding: '2px 8px',
-                      fontSize: 11,
-                      fontWeight: 700
-                    }}>OVERDUE</span>
+                  {tab !== 'completed' && (
+                    <td style={{ fontSize: 11 }}>
+                      {o.items.map((it, idx) => (
+                        it.customization && it.customization.notes ? (
+                          <div key={idx} style={{ marginBottom: 8, padding: 4, background: "#f8f9fa", borderRadius: 4 }}>
+                            <strong>{it.name}:</strong>
+                            <div>📝 {it.customization.notes}</div>
+                          </div>
+                        ) : null
+                      ))}
+                    </td>
                   )}
-                </td>
-                {tab !== 'completed' && (
+                  {tab !== 'completed' && (
+                    <td style={{ fontSize: 12 }}>
+                      {o.scheduledTime ? new Date(o.scheduledTime).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : '-'}
+                    </td>
+                  )}
+                  {tab === 'current' && <td>{o.prepTime} mins</td>}
+                  {tab === 'current' && (
+                    <td>
+                      <CountdownDisplay info={countdownMap.get(o.id)} />
+                    </td>
+                  )}
+                  {tab === 'current' && (
+                    <td>
+                      {o.status === 'pending' && (
+                        <ExtendControl order={o} token={token} onExtended={loadOrders} />
+                      )}
+                      {o.status === 'pending' && (o.etaExtensionMinutes || 0) > 0 && (remainingTime(o) === null || remainingTime(o) >= 0) && (
+                        <div style={{ marginTop: 6 }}>
+                          <button
+                            style={{ background: '#e74c3c' }}
+                            onClick={async () => {
+                              const ok = window.confirm('Revoke extended time and restore previous ETA?');
+                              if (!ok) return;
+                              await revokeOrderExtension(o.id, token);
+                              loadOrders();
+                            }}
+                          >Revoke Extension</button>
+                        </div>
+                      )}
+                    </td>
+                  )}
                   <td>
-                    {o.status === "pending" && (
-                      <button onClick={() => markReady(o.id)} style={{ background: "#27ae60" }}>
-                        Mark Ready
-                      </button>
-                    )}
-                    {o.status === "ready" && (
-                      <>
-                        <span style={{ color: "#27ae60", marginRight: 8 }}>✓ Ready</span>
-                        <button onClick={async () => { await markOrderPicked(o.id, token); loadOrders(); }} style={{ background: "#2c3e50" }}>Mark Picked</button>
-                      </>
+                    <span className={`badge badge-${o.status === 'ready' ? 'success' : 'warning'}`}>
+                      {o.status.toUpperCase()}
+                    </span>
+                    {o.status === 'pending' && (() => {
+                      const info = countdownMap.get(o.id);
+                      return info && info.orderType === 'live' && info.countdownMs < 0;
+                    })() && (
+                      <span style={{
+                        marginLeft: 8,
+                        background: '#e74c3c',
+                        color: '#fff',
+                        borderRadius: 12,
+                        padding: '2px 8px',
+                        fontSize: 11,
+                        fontWeight: 700
+                      }}>OVERDUE</span>
                     )}
                   </td>
-                )}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                  {tab !== 'completed' && (
+                    <td>
+                      {o.status === "pending" && (
+                        <button onClick={() => markReady(o.id)} style={{ background: "#27ae60" }}>
+                          Mark Ready
+                        </button>
+                      )}
+                      {o.status === "ready" && (
+                        <>
+                          <span style={{ color: "#27ae60", marginRight: 8 }}>✓ Ready</span>
+                          <button onClick={async () => { await markOrderPicked(o.id, token); loadOrders(); }} style={{ background: "#2c3e50" }}>Mark Picked</button>
+                        </>
+                      )}
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
+      {tab === "bulk" && (
+        <div className="bulk-orders-wrapper">
+          {bulkLoading ? (
+            <div style={{ padding: 16 }}>Loading bulk orders…</div>
+          ) : bulkError ? (
+            <div className="error" style={{ padding: 16 }}>{bulkError}</div>
+          ) : bulkOrders.length === 0 ? (
+            <div style={{ padding: 16 }}>No bulk orders yet.</div>
+          ) : (
+            Array.from(bulkOrdersByStatus.entries()).map(([status, list]) => (
+              <div key={status} className="bulk-section">
+                <h3 style={{ marginTop: 24 }}>{status.toUpperCase()} ({list.length})</h3>
+                <div className="bulk-list">
+                  {list.map((order) => (
+                    <BulkOrderCard
+                      key={order.id}
+                      order={order}
+                      onPostMessage={handleBulkMessage}
+                      onConfirm={handleBulkConfirm}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
     </div>
   );
 };
 
-/**
- * ExtendControl
- * Quick control to extend an order's prep time in minutes.
- * @param {{ order: any, token: string, onExtended?: ()=>void }} props
- */
-const ExtendControl = ({ order, token, onExtended }) => {
-  const [loading, setLoading] = useState(false);
+const BulkOrderCard = ({ order, onPostMessage, onConfirm }) => {
+  const [message, setMessage] = useState("");
+  const [selectedSlotId, setSelectedSlotId] = useState(() => {
+    const slots = Array.isArray(order?.deliverySlots) ? order.deliverySlots : [];
+    return slots.length > 0 ? String(slots[0].id) : "";
+  });
+  const [responseStatus, setResponseStatus] = useState("confirmed");
+  const [capacity, setCapacity] = useState("");
+
+  const slots = Array.isArray(order.deliverySlots) ? order.deliverySlots : [];
+  const attendees = Array.isArray(order.attendeeGroups) ? order.attendeeGroups : [];
+  const vendorResponses = Array.isArray(order.vendorResponses) ? order.vendorResponses : [];
+  const vendorMessages = Array.isArray(order.vendorMessages) ? order.vendorMessages : [];
+
+  const handleSendMessage = () => {
+    if (!message.trim()) return;
+    onPostMessage?.(order.id, message.trim());
+    setMessage("");
+  };
+
+  const handleConfirm = () => {
+    if (!selectedSlotId && slots.length > 0) return;
+    onConfirm?.(order.id, {
+      slotId: selectedSlotId || (slots[0] && slots[0].id),
+      status: responseStatus,
+      capacity: capacity ? Number(capacity) : undefined,
+      message,
+    });
+    setMessage("");
+    setCapacity("");
+  };
+
   return (
-    <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-      <button disabled={loading} onClick={async ()=>{ setLoading(true); try { await extendOrderPrep(order.id, 5, token); onExtended && onExtended(); } finally { setLoading(false);} }}>+5</button>
-      <button disabled={loading} onClick={async ()=>{ setLoading(true); try { await extendOrderPrep(order.id, 10, token); onExtended && onExtended(); } finally { setLoading(false);} }}>+10</button>
+    <div className="bulk-card">
+      <div className="bulk-card-header">
+        <div>
+          <strong>#{order.id}</strong> · {order.eventName || "Untitled Event"}
+        </div>
+        <div>Status: <strong>{(order.status || '').toUpperCase()}</strong></div>
+      </div>
+      <div className="bulk-card-body">
+        <div className="bulk-meta">
+          <div>Organizer: {order.organizerContact?.name || order.organizer?.name || '—'}</div>
+          <div>Guests: {order.expectedHeadcount || order.expectedGuests || 'n/a'}</div>
+          <div>Location: {order.location || '—'}</div>
+          <div>Notes: {order.specialInstructions || order.notes || 'None'}</div>
+        </div>
+        <div className="bulk-slots">
+          <h4>Delivery Slots</h4>
+          {slots.length === 0 ? (
+            <div>Not specified</div>
+          ) : (
+            <ul>
+              {slots.map((slot) => (
+                <li key={slot.id}>
+                  <label>
+                    <input
+                      type="radio"
+                      name={`slot-${order.id}`}
+                      checked={String(selectedSlotId) === String(slot.id)}
+                      onChange={() => setSelectedSlotId(String(slot.id))}
+                    />
+                    {slot.label || slot.startTime} · {new Date(slot.startTime).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
+                    {slot.vendorConfirmation ? ` (${slot.vendorConfirmation})` : ""}
+                  </label>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        {attendees.length > 0 && (
+          <div className="bulk-attendees">
+            <h4>Attendee Groups</h4>
+            <ul>
+              {attendees.map((group) => (
+                <li key={group.id}>
+                  {group.label}: {group.count} {group.notes ? `– ${group.notes}` : ""}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        <div className="bulk-actions">
+          <textarea
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="Share updates or ask questions"
+          />
+          <div className="bulk-action-row">
+            <select value={responseStatus} onChange={(e) => setResponseStatus(e.target.value)}>
+              <option value="confirmed">Confirm slot</option>
+              <option value="pending">Need clarification</option>
+              <option value="rejected">Cannot fulfill</option>
+            </select>
+            <input
+              type="number"
+              min="0"
+              value={capacity}
+              onChange={(e) => setCapacity(e.target.value)}
+              placeholder="Capacity"
+              style={{ width: 120 }}
+            />
+          </div>
+          <div className="bulk-button-row">
+            <button onClick={handleConfirm} className="primary-button">Submit Response</button>
+            <button onClick={handleSendMessage} className="secondary-button">Post Message</button>
+          </div>
+        </div>
+        <div className="bulk-history">
+          <h4>Recent Vendor Responses</h4>
+          {vendorResponses.length === 0 ? (
+            <div>No confirmations yet.</div>
+          ) : (
+            <ul>
+              {vendorResponses.slice(0, 3).map((entry) => (
+                <li key={entry.id}>
+                  <strong>{entry.status?.toUpperCase()}</strong> · {new Date(entry.timestamp).toLocaleString("en-IN", { dateStyle: "short", timeStyle: "short" })}
+                  {entry.capacity != null ? ` · capacity ${entry.capacity}` : ""}
+                  {entry.message ? ` – ${entry.message}` : ""}
+                </li>
+              ))}
+            </ul>
+          )}
+          {vendorMessages.length > 0 && (
+            <div className="bulk-messages">
+              <h4>Message Thread</h4>
+              <ul>
+                {vendorMessages.slice(0, 3).map((entry) => (
+                  <li key={entry.id}>
+                    {new Date(entry.timestamp).toLocaleString("en-IN", { dateStyle: "short", timeStyle: "short" })}: {entry.message}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 };

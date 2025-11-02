@@ -65,6 +65,8 @@ const EmployeeLogin = ({ onSuccess, onBack }) => {
     mobile: "",
     password: "",
     pin: "",
+    role: "",
+    department: "",
   });
 
   useEffect(() => {
@@ -114,7 +116,14 @@ const EmployeeLogin = ({ onSuccess, onBack }) => {
       setLoading(true);
       const res = await employeePasswordLogin(uname, pwd);
       if (res && res.status === "ok" && res.token) {
-        onSuccess({ token: res.token, mobile: res.mobile });
+        onSuccess({
+          token: res.token,
+          mobile: res.mobile,
+          role: res.role || res.roleLabel,
+          roleSlug: res.roleSlug,
+          department: res.department,
+          bulkOrderEligible: res.bulkOrderEligible,
+        });
         toast.success("Logged in");
         const identity = {
           username: res.username || uname,
@@ -149,7 +158,14 @@ const EmployeeLogin = ({ onSuccess, onBack }) => {
       setLoading(true);
       const res = await employeePinLogin(pinUsername.trim(), pin, pinIdentity?.mobile || pinIdentity?.email);
       if (res && res.status === "ok" && res.token) {
-        onSuccess({ token: res.token, mobile: res.mobile });
+        onSuccess({
+          token: res.token,
+          mobile: res.mobile,
+          role: res.role || res.roleLabel,
+          roleSlug: res.roleSlug,
+          department: res.department,
+          bulkOrderEligible: res.bulkOrderEligible,
+        });
         toast.success("Logged in");
         persistPinIdentity({ username: pinUsername.trim(), mobile: res.mobile, email: res.email });
       } else {
@@ -202,7 +218,14 @@ const EmployeeLogin = ({ onSuccess, onBack }) => {
       const res = await employeeVerifyOtp(digits, otp);
       if (res && res.status === "ok" && res.token) {
         toast.success("Logged in");
-        onSuccess({ token: res.token, mobile: res.mobile });
+        onSuccess({
+          token: res.token,
+          mobile: res.mobile,
+          role: res.role || res.roleLabel,
+          roleSlug: res.roleSlug,
+          department: res.department,
+          bulkOrderEligible: res.bulkOrderEligible,
+        });
         setOtp("");
         setOtpMobile("");
         setOtpStage("request");
@@ -218,7 +241,7 @@ const EmployeeLogin = ({ onSuccess, onBack }) => {
   };
 
   const validateSignup = () => {
-    const { username, email, mobile, password, pin } = signupData;
+    const { username, email, mobile, password, pin, role, department } = signupData;
     if (!username.trim()) {
       toast.error("Username is required");
       return false;
@@ -253,6 +276,8 @@ const EmployeeLogin = ({ onSuccess, onBack }) => {
         mobile: formatMobileDigits(signupData.mobile),
         password: signupData.password,
         pin: signupData.pin,
+        role: signupData.role.trim(),
+        department: signupData.department.trim(),
       };
       const res = await employeeRegister(payload);
       if (res && res.status === "ok") {
@@ -642,6 +667,22 @@ const EmployeeLogin = ({ onSuccess, onBack }) => {
                   onChange={(e) => setSignupData((prev) => ({ ...prev, pin: e.target.value.replace(/[^0-9]/g, "").slice(0, 4) }))}
                   maxLength={4}
                   required
+                />
+              </div>
+              <div>
+                <label className="label">Role / Team</label>
+                <input
+                  placeholder="e.g. HR, Onboarding"
+                  value={signupData.role}
+                  onChange={(e) => setSignupData((prev) => ({ ...prev, role: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="label">Department (optional)</label>
+                <input
+                  placeholder="Department"
+                  value={signupData.department}
+                  onChange={(e) => setSignupData((prev) => ({ ...prev, department: e.target.value }))}
                 />
               </div>
               <button type="submit" disabled={signupLoading}>
