@@ -725,6 +725,23 @@ const resolveEmployeeFromRequest = (req) => {
   return resolveEmployeeFromToken(token);
 };
 
+const resolveVendorFromRequest = (req) => {
+  const tokenCandidates = [
+    req?.headers?.authorization,
+    req?.headers?.['x-vendor-token'],
+    req?.body?.vendorToken,
+    req?.body?.token,
+    req?.query?.vendorToken,
+    req?.query?.token,
+  ];
+  const token = tokenCandidates.find((value) => typeof value === "string" && value.trim().length > 0);
+  if (!token) return null;
+  const decoded = decodeVendorToken(token.trim());
+  if (!decoded) return null;
+  const vendor = enrichVendorContext(decoded);
+  return { vendor };
+};
+
 const ensureHotRecFlags = () => {
   try {
     const raw = getMenu();
