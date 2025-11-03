@@ -33,7 +33,7 @@ const Login = ({ onLogin }) => {
       <h2>Vendor Login</h2>
       <form onSubmit={handleSubmit}>
         <input
-          placeholder="Employee ID"
+          placeholder="Vendor username"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           required
