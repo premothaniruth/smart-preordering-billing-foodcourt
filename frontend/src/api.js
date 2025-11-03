@@ -19,6 +19,47 @@ export const fetchForecast = async (token) => {
   return res.json();
 };
 
+export const fetchProcurementTasks = async (token) => {
+  const res = await fetch(`${API_URL}/procurement/tasks`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to fetch procurement tasks: ${res.status}`);
+  }
+  return res.json();
+};
+
+export const generateProcurementTask = async (token) => {
+  const res = await fetch(`${API_URL}/procurement/tasks/generate`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (res.status === 204) {
+    return null;
+  }
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || `Failed to generate procurement task: ${res.status}`);
+  }
+  return res.json();
+};
+
+export const approveProcurementTask = async (token, taskId, payload = {}) => {
+  const res = await fetch(`${API_URL}/procurement/tasks/${taskId}/approve`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || `Failed to approve task: ${res.status}`);
+  }
+  return res.json();
+};
+
 export const employeeCheckUsername = async (username) => {
   const u = encodeURIComponent(username || '');
   const res = await fetch(`${API_URL}/employee/check-username?username=${u}`);

@@ -28,6 +28,14 @@ const { appendAuditEntry } = require("./lib/auditLogger");
 const { metricsRegistry } = require("./lib/metricsRegistry");
 const { runArchiveJob, loadMetadata } = require("./lib/archiveScheduler");
 const { generateForecast } = require("./lib/forecastingModel");
+const { startNightlyJobs, stopNightlyJobs } = require("./lib/nightlyScheduler");
+const { getLatestAccuracyForVendor } = require("./lib/forecastingEvaluationService");
+const {
+  generateProcurementTask,
+  listTasks: listProcurementTasks,
+  getTaskById,
+  updateTaskStatus,
+} = require("./lib/procurementAutomationService");
 const {
   listTemplates,
   saveTemplate,
@@ -76,8 +84,32 @@ app.get("/healthz", (req, res) => {
 
 app.get("/metrics", (req, res) => {
   const snapshot = metricsRegistry.getSnapshot();
-  res.json(snapshot);
+  if (req.headers.accept && req.headers.accept.includes("text/plain")) {
+    res.setHeader("Content-Type", "text/plain; version=0.0.4");
+    res.send(metricsRegistry.toPrometheus());
+  } else {
+    res.json(snapshot);
+  }
 });
+
+app.get("/analytics/status", authenticateVendor, requirePermission("analytics:read"), asyncHandler(async (req, res) => {
+  assertAnalyticsAccess(req);
+  const health = metricsRegistry.getHealthSummary();
+  const accuracy = getLatestAccuracyForVendor(req.vendor.vendorId);
+  recordAuditEvent({
+    actorType: "vendor",
+    actorId: req.vendor.vendorId,
+    vendorId: req.vendor.vendorId,
+    shopId: req.vendor.shopId,
+    action: "analytics.status.read",
+    metadata: { accuracyCount: accuracy.length },
+  });
+  res.json({
+    generatedAt: new Date().toISOString(),
+    health,
+    forecastAccuracy: accuracy,
+  });
+}));
 
 // File paths
 const menuFile = __dirname + "/data/menu.json";
@@ -4282,7 +4314,7 @@ app.get("/analytics/timeseries", authenticateVendor, asyncHandler(async (req, re
   res.json(response);
 }));
 
-app.get("/analytics/forecast", authenticateVendor, asyncHandler(async (req, res) => {
+app.get("/analytics/forecast", authenticateVendor, requirePermission("analytics:read"), asyncHandler(async (req, res) => {
   assertAnalyticsAccess(req);
   const forecast = await generateForecast({
     shopId: req.vendor.shopId,
@@ -4438,6 +4470,57 @@ app.post("/procurement/orders", authenticateVendor, requirePermission("procureme
     metadata: { orderId: order.id, supplier: supplier || null },
   });
   res.status(201).json({ order });
+}));
+
+app.post("/procurement/tasks/generate", authenticateVendor, requirePermission("procurement:manage"), asyncHandler(async (req, res) => {
+  assertAnalyticsAccess(req);
+  const task = await generateProcurementTask({
+    vendorId: req.vendor.vendorId,
+    shopId: req.vendor.shopId,
+  });
+  if (!task) {
+    return res.status(204).send();
+  }
+  recordAuditEvent({
+    actorType: "vendor",
+    actorId: req.vendor.vendorId,
+    vendorId: req.vendor.vendorId,
+    shopId: req.vendor.shopId,
+    action: "procurement.task.generate",
+    metadata: { taskId: task.id, itemCount: task.items.length },
+  });
+  res.status(201).json({ task });
+}));
+
+app.get("/procurement/tasks", authenticateVendor, requirePermission("procurement:manage"), asyncHandler(async (req, res) => {
+  assertAnalyticsAccess(req);
+  const tasks = listProcurementTasks(req.vendor.vendorId);
+  res.json({ tasks });
+}));
+
+app.post("/procurement/tasks/:taskId/approve", authenticateVendor, requirePermission("procurement:manage"), asyncHandler(async (req, res) => {
+  assertAnalyticsAccess(req);
+  const taskId = req.params.taskId;
+  const task = getTaskById(taskId);
+  if (!task || String(task.vendorId) !== String(req.vendor.vendorId)) {
+    return res.status(404).json({ message: "Task not found" });
+  }
+  const comment = String(req.body.comment || "").trim() || null;
+  const updated = updateTaskStatus(taskId, {
+    status: "approved",
+    approvedAt: new Date().toISOString(),
+    approvedBy: req.vendor.vendorId,
+    approvalComment: comment,
+  });
+  recordAuditEvent({
+    actorType: "vendor",
+    actorId: req.vendor.vendorId,
+    vendorId: req.vendor.vendorId,
+    shopId: req.vendor.shopId,
+    action: "procurement.task.approve",
+    metadata: { taskId, comment },
+  });
+  res.json({ task: updated });
 }));
 app.get("/analytics/inventory", authenticateVendor, asyncHandler(async (req, res) => {
   assertAnalyticsAccess(req);
@@ -4612,7 +4695,7 @@ app.post("/analytics/headcount/integrations", asyncHandler(async (req, res) => {
 }));
 
 // Forecasting & recommendations
-app.get("/analytics/recommendations", authenticateVendor, asyncHandler(async (req, res) => {
+app.get("/analytics/recommendations", authenticateVendor, requirePermission("analytics:read"), asyncHandler(async (req, res) => {
   assertAnalyticsAccess(req);
   const response = await forecastingService.getRecommendations({
     shopId: req.vendor.shopId,
@@ -4671,39 +4754,57 @@ app.post("/grievance/resolve/:id", authenticateVendor, (req, res) => {
   }
 });
 
-server.listen(PORT, () => {
+server.listen(PORT, async () => {
   console.log(`Backend running on http://localhost:${PORT}`);
   console.log(`Images served from: http://localhost:${PORT}/images/`);
-  if (analyticsConfig.ANALYTICS_INGESTOR_ENABLED) {
-    analyticsIngestor
-      .start()
-      .then(() => {
-        console.log("Analytics ingestor started (Redis Streams -> InfluxDB/DuckDB)");
-      })
-      .catch((err) => {
-        console.error("Failed to start analytics ingestor", err);
-      });
-  } else {
-    console.log("Analytics ingestor disabled via configuration");
+
+  try {
+    if (analyticsConfig.ANALYTICS_INGESTOR_ENABLED) {
+      await analyticsIngestor.start();
+      console.log("Analytics ingestor started");
+    } else {
+      console.log("Analytics ingestor disabled via configuration");
+    }
+  } catch (error) {
+    console.error("Failed to start analytics ingestor", error);
   }
-  realtimeAnalyticsService
-    .start()
-    .then(() => console.log("Realtime analytics service started"))
-    .catch((err) => console.error("Failed to start realtime analytics service", err));
+
+  try {
+    await realtimeAnalyticsService.start();
+    console.log("Realtime analytics service started");
+  } catch (error) {
+    console.error("Failed to start realtime analytics", error);
+  }
+
+  try {
+    startNightlyJobs();
+    console.log("Nightly jobs scheduled");
+  } catch (error) {
+    console.error("Failed to start nightly jobs", error);
+  }
 });
 
 const shutdown = async () => {
-  try {
-    await analyticsIngestor.stop?.();
-  } catch (error) {
-    console.error("Failed to stop analytics ingestor", error);
-  }
+  stopNightlyJobs();
   try {
     await realtimeAnalyticsService.stop();
+    console.log("Realtime analytics service stopped");
   } catch (error) {
     console.error("Failed to stop realtime analytics service", error);
   }
-  process.exit(0);
+  try {
+    if (analyticsConfig.ANALYTICS_INGESTOR_ENABLED) {
+      await analyticsIngestor.stop?.();
+      console.log("Analytics ingestor stopped");
+    }
+  } catch (error) {
+    console.error("Failed to stop analytics ingestor", error);
+  }
+
+  server.close(() => {
+    console.log("Server closed");
+    process.exit(0);
+  });
 };
 
 process.on("SIGINT", shutdown);

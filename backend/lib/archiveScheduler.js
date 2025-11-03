@@ -183,4 +183,5 @@ module.exports = {
   loadMetadata,
   saveMetadata,
   monthKey,
+  listVendors,
 };

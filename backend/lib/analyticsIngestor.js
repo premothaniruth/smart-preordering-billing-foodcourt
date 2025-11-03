@@ -3,6 +3,7 @@ const { InfluxDB, Point } = require("@influxdata/influxdb-client");
 const duckdb = require("duckdb");
 const analyticsConfig = require("./analyticsConfig");
 const { metricsRegistry } = require("./metricsRegistry");
+const { buildContext } = require("./contextEnricher");
 
 const parsePayload = (entry) => {
   try {
@@ -109,7 +110,10 @@ class AnalyticsIngestor {
         billing_id VARCHAR,
         status VARCHAR,
         total_amount DOUBLE,
-        actor_type VARCHAR
+        actor_type VARCHAR,
+        holiday_flag BOOLEAN,
+        holiday_name VARCHAR,
+        weather_code VARCHAR
       );
     `);
     await conn.run(`
@@ -125,9 +129,22 @@ class AnalyticsIngestor {
         order_id BIGINT,
         billing_id VARCHAR,
         reason VARCHAR,
-        actor_type VARCHAR
+        actor_type VARCHAR,
+        holiday_flag BOOLEAN,
+        holiday_name VARCHAR,
+        weather_code VARCHAR
       );
     `);
+    await Promise.all([
+      conn.run("ALTER TABLE order_events ADD COLUMN IF NOT EXISTS holiday_flag BOOLEAN"),
+      conn.run("ALTER TABLE order_events ADD COLUMN IF NOT EXISTS holiday_name VARCHAR"),
+      conn.run("ALTER TABLE order_events ADD COLUMN IF NOT EXISTS weather_code VARCHAR"),
+      conn.run("ALTER TABLE inventory_events ADD COLUMN IF NOT EXISTS holiday_flag BOOLEAN"),
+      conn.run("ALTER TABLE inventory_events ADD COLUMN IF NOT EXISTS holiday_name VARCHAR"),
+      conn.run("ALTER TABLE inventory_events ADD COLUMN IF NOT EXISTS weather_code VARCHAR")
+    ]).catch((error) => {
+      console.warn("[AnalyticsIngestor] Schema alteration warning", error.message);
+    });
   }
 
   async _loop() {
@@ -206,6 +223,12 @@ class AnalyticsIngestor {
   async _processEvent(eventRecord) {
     const { type, ts, payload } = eventRecord;
     if (!type || !payload) return;
+    const context = buildContext({
+      timestamp: ts || payload.createdAt || new Date().toISOString(),
+      vendorId: payload.vendorId,
+      shopId: payload.shopId,
+    });
+    payload.context = context;
     switch (type) {
       case "order.created":
         await Promise.all([
@@ -245,6 +268,8 @@ class AnalyticsIngestor {
       .tag("billing_id", payload?.billingId || "")
       .tag("status", payload?.status || payload?.newStatus || "")
       .tag("actor_type", payload?.actor?.type || "")
+      .tag("holiday_flag", String(payload?.context?.holidayFlag || false))
+      .tag("weather_code", payload?.context?.weatherCode || "")
       .floatField("total_amount", Number(payload?.totalAmount || 0))
       .timestamp(new Date(toIsoTime(ts)));
 
@@ -258,6 +283,8 @@ class AnalyticsIngestor {
       .tag("item_id", String(payload?.itemId || ""))
       .tag("reason", payload?.reason || "")
       .tag("actor_type", payload?.actor?.type || "")
+      .tag("holiday_flag", String(payload?.context?.holidayFlag || false))
+      .tag("weather_code", payload?.context?.weatherCode || "")
       .floatField("delta", Number(payload?.delta || 0))
       .floatField("previous", payload?.previous != null ? Number(payload.previous) : 0)
       .floatField("current", payload?.current != null ? Number(payload.current) : 0)
@@ -270,8 +297,8 @@ class AnalyticsIngestor {
   async _insertOrderEventToDuckDB(eventType, ts, payload) {
     if (!this.duckDbConnection) return;
     const stmt = `
-      INSERT INTO order_events (ts, event_type, shop_id, vendor_id, order_id, billing_id, status, total_amount, actor_type)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+      INSERT INTO order_events (ts, event_type, shop_id, vendor_id, order_id, billing_id, status, total_amount, actor_type, holiday_flag, holiday_name, weather_code)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
     `;
     const params = [
       toIsoTime(ts),
@@ -283,6 +310,9 @@ class AnalyticsIngestor {
       payload?.status || payload?.newStatus || null,
       payload?.totalAmount != null ? Number(payload.totalAmount) : null,
       payload?.actor?.type || null,
+      payload?.context?.holidayFlag || false,
+      payload?.context?.holidayName || null,
+      payload?.context?.weatherCode || null,
     ];
     await this._runDuckDb(stmt, params);
   }
@@ -290,8 +320,8 @@ class AnalyticsIngestor {
   async _insertInventoryEventToDuckDB(eventType, ts, payload) {
     if (!this.duckDbConnection) return;
     const stmt = `
-      INSERT INTO inventory_events (ts, event_type, shop_id, item_id, item_name, delta, previous, current, order_id, billing_id, reason, actor_type)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+      INSERT INTO inventory_events (ts, event_type, shop_id, item_id, item_name, delta, previous, current, order_id, billing_id, reason, actor_type, holiday_flag, holiday_name, weather_code)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
     `;
     const params = [
       toIsoTime(ts),
@@ -306,6 +336,9 @@ class AnalyticsIngestor {
       payload?.billingId || null,
       payload?.reason || null,
       payload?.actor?.type || null,
+      payload?.context?.holidayFlag || false,
+      payload?.context?.holidayName || null,
+      payload?.context?.weatherCode || null,
     ];
     await this._runDuckDb(stmt, params);
   }

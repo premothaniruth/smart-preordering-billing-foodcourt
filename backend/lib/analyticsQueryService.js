@@ -228,7 +228,9 @@ class AnalyticsQueryService {
             ts,
             total_amount,
             order_id,
-            billing_id
+            billing_id,
+            holiday_flag,
+            weather_code
           FROM order_events
           WHERE shop_id = ?
             AND ts >= ?
@@ -239,7 +241,9 @@ class AnalyticsQueryService {
           SELECT
             date_trunc('day', ts) AS day,
             COUNT(*) AS orders,
-            SUM(total_amount) AS revenue
+            SUM(total_amount) AS revenue,
+            MAX(weather_code) AS weather_code,
+            MAX(holiday_flag::INT)::BOOLEAN AS holiday_flag
           FROM orders
           GROUP BY 1
         ),
@@ -257,7 +261,9 @@ class AnalyticsQueryService {
           d.day,
           d.orders,
           d.revenue,
-          COALESCE(i.daily_consumption, 0) AS daily_consumption
+          COALESCE(i.daily_consumption, 0) AS daily_consumption,
+          COALESCE(d.weather_code, 'clear') AS weather_code,
+          COALESCE(d.holiday_flag, FALSE) AS holiday_flag
         FROM daily_orders d
         LEFT JOIN inventory i ON d.day = i.day
         ORDER BY d.day;
@@ -294,6 +300,8 @@ class AnalyticsQueryService {
           rolling7Orders: rollingOrders,
           rolling7Revenue: rollingRevenue,
           rolling7Consumption: rollingConsumption,
+          weatherCode: row.weather_code || 'clear',
+          holidayFlag: Boolean(row.holiday_flag),
         };
       });
 

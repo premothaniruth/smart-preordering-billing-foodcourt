@@ -10,6 +10,7 @@ import {
   deleteProcurementTemplate,
   fetchProcurementOrders,
   createProcurementOrder,
+  fetchForecast,
 } from "../api";
 
 const formatNumber = (value, digits = 0) => Number(value || 0).toLocaleString("en-IN", {
@@ -25,6 +26,7 @@ const ProcurementManager = ({ token }) => {
 
   const [templatesState, setTemplatesState] = useState({ loading: false, error: null, list: [] });
   const [ordersState, setOrdersState] = useState({ loading: false, error: null, list: [] });
+  const [forecastState, setForecastState] = useState({ loading: false, error: null, data: null });
 
   const [view, setView] = useState("overview");
   const [editingTemplateId, setEditingTemplateId] = useState(null);
@@ -77,14 +79,46 @@ const ProcurementManager = ({ token }) => {
     }
   }, [token]);
 
+  const loadForecast = useCallback(async () => {
+    setForecastState({ loading: true, error: null, data: null });
+    try {
+      const data = await fetchForecast(token);
+      setForecastState({ loading: false, error: null, data });
+    } catch (error) {
+      setForecastState({ loading: false, error: error.message || "Failed to load forecast", data: null });
+    }
+  }, [token]);
+
   useEffect(() => {
     loadRecommendations();
     loadHeadcount();
     loadTemplates();
     loadOrders();
-  }, [loadRecommendations, loadHeadcount, loadTemplates, loadOrders]);
+    loadForecast();
+  }, [loadRecommendations, loadHeadcount, loadTemplates, loadOrders, loadForecast]);
 
   const recommendations = useMemo(() => recommendationsState.data?.recommendations || [], [recommendationsState]);
+  const forecastEntries = useMemo(() => forecastState.data?.baseline || [], [forecastState]);
+  const forecastAlerts = useMemo(() => {
+    if (!Array.isArray(forecastEntries) || forecastEntries.length === 0) return [];
+    const threshold = Number(process.env.REACT_APP_FORECAST_ALERT_THRESHOLD || 50);
+    return forecastEntries
+      .filter((entry) => entry.projectedOrders >= threshold)
+      .map((entry) => ({
+        dayOffset: entry.dayOffset,
+        projectedOrders: entry.projectedOrders,
+      }));
+  }, [forecastEntries]);
+
+  const recommendationByItem = useMemo(() => {
+    const map = new Map();
+    recommendations.forEach((item) => {
+      if (item?.itemId != null) {
+        map.set(String(item.itemId), item);
+      }
+    });
+    return map;
+  }, [recommendations]);
 
   const handleHeadcountSubmit = async (event) => {
     event.preventDefault();
@@ -108,6 +142,33 @@ const ProcurementManager = ({ token }) => {
 
   const renderOverview = () => (
     <div className="procurement-overview" style={{ display: "grid", gap: 16 }}>
+      {forecastAlerts.length > 0 && (
+        <section
+          className="card"
+          style={{
+            borderLeft: "4px solid #e67e22",
+            background: "#fef5e7",
+          }}
+        >
+          <div className="card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <h3 style={{ margin: 0 }}>Upcoming Demand Alert</h3>
+            <button type="button" onClick={loadForecast} disabled={forecastState.loading}>
+              {forecastState.loading ? "Refreshing…" : "Refresh Forecast"}
+            </button>
+          </div>
+          <ul style={{ marginTop: 8 }}>
+            {forecastAlerts.map((alert) => (
+              <li key={alert.dayOffset}>
+                Day +{alert.dayOffset}: projected {Math.round(alert.projectedOrders)} orders across menu. Prepare procurement accordingly.
+              </li>
+            ))}
+          </ul>
+          {forecastState.error && (
+            <div style={{ fontSize: 12, color: "#c0392b", marginTop: 6 }}>{forecastState.error}</div>
+          )}
+        </section>
+      )}
+
       <section className="card">
         <div className="card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <h3 style={{ margin: 0 }}>Workforce Headcount</h3>
@@ -181,6 +242,55 @@ const ProcurementManager = ({ token }) => {
                         {(rec.rationale || []).map((line, idx) => (
                           <li key={idx}>{line}</li>
                         ))}
+                      </ul>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      <section className="card">
+        <div className="card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <h3 style={{ margin: 0 }}>Forecast Snapshot</h3>
+          <span style={{ fontSize: 12, color: "#777" }}>
+            Horizon: {forecastState.data?.horizonDays || 0} days · Generated {forecastState.data?.generatedAt ? new Date(forecastState.data.generatedAt).toLocaleString() : "--"}
+          </span>
+        </div>
+        {forecastState.loading ? (
+          <div>Loading forecast…</div>
+        ) : forecastState.error ? (
+          <div className="error">{forecastState.error}</div>
+        ) : forecastEntries.length === 0 ? (
+          <div>No forecast data yet. Ensure recent activity is captured.</div>
+        ) : (
+          <div style={{ overflowX: "auto" }}>
+            <table className="table" style={{ width: "100%", marginTop: 12 }}>
+              <thead>
+                <tr>
+                  <th>Day Offset</th>
+                  <th>Projected Orders</th>
+                  <th>Linked Recommendations</th>
+                </tr>
+              </thead>
+              <tbody>
+                {forecastEntries.map((entry) => (
+                  <tr key={entry.dayOffset}>
+                    <td>Day +{entry.dayOffset}</td>
+                    <td>{formatNumber(entry.projectedOrders, 1)}</td>
+                    <td>
+                      <ul style={{ margin: 0, paddingLeft: 18 }}>
+                        {(forecastState.data?.recommendations || [])
+                          .filter((rec) => rec.suggestedRestock > 0)
+                          .slice(0, 5)
+                          .map((rec) => (
+                            <li key={rec.itemId || rec.itemName}>
+                              {rec.itemName || `Item ${rec.itemId}`} · restock {formatNumber(rec.suggestedRestock)}
+                            </li>
+                          ))}
+                        {forecastState.data?.recommendations?.length > 5 && <li>…more</li>}
                       </ul>
                     </td>
                   </tr>

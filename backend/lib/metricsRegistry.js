@@ -72,6 +72,39 @@ class MetricsRegistry {
       timestamp: snapshot.timestamp,
     };
   }
+
+  toPrometheus() {
+    const snapshot = this.getSnapshot();
+    const lines = [];
+    const sanitize = (name) => String(name || "metric").replace(/[^a-zA-Z0-9_]/g, "_");
+
+    for (const [key, value] of Object.entries(snapshot.counters || {})) {
+      const metric = sanitize(`app_${key}`);
+      lines.push(`# TYPE ${metric} counter`);
+      lines.push(`${metric} ${Number(value) || 0}`);
+    }
+
+    for (const [key, value] of Object.entries(snapshot.gauges || {})) {
+      const metric = sanitize(`app_${key}`);
+      lines.push(`# TYPE ${metric} gauge`);
+      lines.push(`${metric} ${Number(value) || 0}`);
+    }
+
+    for (const [component, status] of Object.entries(snapshot.health || {})) {
+      const metric = sanitize(`component_${component}_healthy`);
+      const labels = [`component="${component}"`];
+      if (status.detail) {
+        labels.push(`detail="${String(status.detail).replace(/"/g, '\"')}"`);
+      }
+      lines.push(`# TYPE ${metric} gauge`);
+      lines.push(`${metric}{${labels.join(",")}} ${status.healthy ? 1 : 0}`);
+    }
+
+    lines.push(`# TYPE app_metrics_timestamp gauge`);
+    lines.push(`app_metrics_timestamp ${Date.parse(snapshot.timestamp) / 1000 || 0}`);
+
+    return `${lines.join("\n")}\n`;
+  }
 }
 
 const metricsRegistry = new MetricsRegistry();
