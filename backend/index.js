@@ -105,36 +105,6 @@ const authenticateVendor = (req, res, next) => {
   });
 };
 
-const assertAnalyticsAccess = (req) => {
-  if (!req.vendor) {
-    throw new Error("Analytics access requires vendor authentication");
-  }
-  if (!req.vendor.permissions?.includes("analytics:read")) {
-    const error = new Error("Analytics permission denied");
-    error.status = 403;
-    throw error;
-  }
-  return req.vendor;
-};
-
-const requirePermission = (perm) => (req, res, next) => {
-  if (!req.vendor?.permissions?.includes(perm)) {
-    return res.status(403).json({ message: "Forbidden" });
-  }
-  next();
-};
-
-const recordAuditEvent = ({ actorType, actorId, shopId, vendorId, action, metadata }) => {
-  appendAuditEntry({
-    timestamp: new Date().toISOString(),
-    actorType,
-    actorId,
-    shopId,
-    vendorId,
-    action,
-    metadata,
-  });
-};
 
 app.use(cors());
 app.use(bodyParser.json({ limit: '6mb' }));
@@ -475,33 +445,6 @@ const resolveEmployeeFromRequest = (req) => {
   return resolveEmployeeFromToken(token);
 };
 
-const resolveVendorFromToken = (token) => {
-  if (!token) return null;
-  const tokenStr = String(token).replace(/^Bearer\s+/i, '').trim();
-  if (!tokenStr) return null;
-  let decoded;
-  try {
-    decoded = jwt.verify(tokenStr, JWT_SECRET);
-  } catch (err) {
-    return null;
-  }
-  if (!decoded || decoded.vendorId == null) return null;
-  const vendors = getVendors();
-  const vendor = vendors.find((entry) => String(entry.vendorId) === String(decoded.vendorId));
-  if (!vendor) return null;
-  return { vendor, token: tokenStr };
-};
-
-const resolveVendorFromRequest = (req) => {
-  const token = req?.headers?.['authorization'] || req?.headers?.['x-vendor-token'] || req?.query?.vendorToken || req?.body?.vendorToken;
-  return resolveVendorFromToken(token);
-};
-
-/**
- * One-time migration: ensure every item has isHotSeller/isRecommended in menu.json.
- * If a category has no items with these flags, pick 5 random items in that category
- * for each flag and persist back to disk.
- */
 const ensureHotRecFlags = () => {
   try {
     const raw = getMenu();
@@ -2628,36 +2571,6 @@ const asyncHandler = (fn) => (req, res, next) => {
   Promise.resolve(fn(req, res, next)).catch(next);
 };
 
-const assertAnalyticsAccess = (req) => {
-  if (!req.vendor) {
-    throw new Error("Analytics access requires vendor authentication");
-  }
-  if (!req.vendor.permissions?.includes("analytics:read")) {
-    const error = new Error("Analytics permission denied");
-    error.status = 403;
-    throw error;
-  }
-  return req.vendor;
-};
-
-const requirePermission = (perm) => (req, res, next) => {
-  if (!req.vendor?.permissions?.includes(perm)) {
-    return res.status(403).json({ message: "Forbidden" });
-  }
-  next();
-};
-
-const recordAuditEvent = ({ actorType, actorId, shopId, vendorId, action, metadata }) => {
-  appendAuditEntry({
-    timestamp: new Date().toISOString(),
-    actorType,
-    actorId,
-    shopId,
-    vendorId,
-    action,
-    metadata,
-  });
-};
 
 const getEmployeeByUserId = (user) => {
   if (!user) return null;
@@ -2774,45 +2687,6 @@ const getMenuItemSnapshot = (rawMenu, targetShopId, itemId) => {
 const getMenuItemInventory = (rawMenu, targetShopId, itemId) => {
   const snapshot = getMenuItemSnapshot(rawMenu, targetShopId, itemId);
   return snapshot ? snapshot.inventory : null;
-};
-
-// Middleware: Authenticate vendor
-/**
- * Middleware: Validates vendor JWT and enriches req.vendor.
- * @param {import('express').Request} req
- * @param {import('express').Response} res
- * @param {Function} next
- */
-const enrichVendorContext = (decoded) => {
-  const vendorCtx = { ...decoded };
-  vendorCtx.vendorId = vendorCtx.vendorId ?? vendorCtx.id ?? vendorCtx.vendorID ?? null;
-  vendorCtx.shopId = vendorCtx.shopId ?? vendorCtx.shopID ?? vendorCtx.shop ?? null;
-  vendorCtx.role = vendorCtx.role || "vendor";
-  const permissions = new Set(Array.isArray(vendorCtx.permissions) ? vendorCtx.permissions : []);
-  if (vendorCtx.role === "vendor-admin") {
-    permissions.add("analytics:read");
-    permissions.add("analytics:write");
-    permissions.add("procurement:manage");
-  } else if (vendorCtx.role === "vendor-analyst") {
-    permissions.add("analytics:read");
-  } else {
-    permissions.add("analytics:read");
-    permissions.add("procurement:manage");
-  }
-  vendorCtx.permissions = Array.from(permissions);
-  return vendorCtx;
-};
-
-const authenticateVendor = (req, res, next) => {
-  const token = req.headers["authorization"];
-  if (!token) return res.status(401).json({ message: "No token provided" });
-
-  const tokenValue = token.replace("Bearer ", "");
-  jwt.verify(tokenValue, JWT_SECRET, (err, decoded) => {
-    if (err) return res.status(401).json({ message: "Failed to authenticate token" });
-    req.vendor = enrichVendorContext(decoded);
-    next();
-  });
 };
 
 // Middleware: Authenticate admin via headers
