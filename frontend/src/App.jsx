@@ -821,9 +821,9 @@ function App() {
     try {
       const res = await createVendor(payload, adminSession);
       if (res?.status === "success") {
-        const id = Date.now(); // or use res.vendor.id if returned
-        setAdminManagedVendors((prev) => [...prev, { id, ...payload }]);
-        toast.success(`Vendor ${payload.shopName} created and email sent to ${payload.email}.`);
+        const vendor = res.vendor || {};
+        setAdminManagedVendors((prev) => [...prev, vendor]);
+        toast.success(`Vendor ${vendor.shopName || payload.shopName} created successfully.`);
       } else {
         toast.error(res?.message || "Failed to create vendor");
       }
@@ -837,8 +837,12 @@ function App() {
       const res = await updateVendor(vendorId, payload, adminSession);
       if (res?.status === "success") {
         setAdminManagedVendors((prev) => prev.map((vendor) => {
-          if (String(vendor.id) !== String(vendorId)) return vendor;
-          return { ...vendor, ...payload };
+          if (String(vendor.vendorId ?? vendor.id) !== String(vendorId)) return vendor;
+          const updated = { ...vendor, ...payload };
+          if (res.vendor) {
+            Object.assign(updated, res.vendor);
+          }
+          return updated;
         }));
         toast.success("Vendor credentials updated and notification sent");
       } else {

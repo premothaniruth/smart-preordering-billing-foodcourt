@@ -1136,6 +1136,107 @@ app.get('/admin/vendors', authenticateAdmin, (req, res) => {
   }
 });
 
+app.post('/admin/vendor', authenticateAdmin, async (req, res) => {
+  try {
+    const { shopName, username, password, email, shopId } = req.body || {};
+    const trimmedShopName = String(shopName || '').trim();
+    const trimmedUsername = String(username || '').trim();
+    const passwordStr = String(password || '');
+    const trimmedEmail = email != null ? String(email).trim() : '';
+
+    if (!trimmedShopName || !trimmedUsername || !passwordStr) {
+      return res.status(400).json({ message: 'shopName, username, and password are required' });
+    }
+
+    const vendors = getVendors();
+    const usernameTaken = vendors.some((v) => String(v.username || '').toLowerCase() === trimmedUsername.toLowerCase());
+    if (usernameTaken) {
+      return res.status(409).json({ message: 'Username already exists' });
+    }
+
+    const vendorId = vendors.reduce((max, vendor) => Math.max(max, Number(vendor.vendorId) || 0), 0) + 1;
+
+    const rawMenu = getMenu();
+    const collectShopIds = (menuData) => {
+      const ids = new Set();
+      if (Array.isArray(menuData)) {
+        menuData.forEach((shop) => {
+          if (shop && shop.shopId != null) ids.add(Number(shop.shopId));
+        });
+      } else if (menuData && Array.isArray(menuData.shops)) {
+        menuData.shops.forEach((shop) => {
+          if (shop && shop.shopId != null) ids.add(Number(shop.shopId));
+        });
+      }
+      return ids;
+    };
+
+    const existingShopIds = collectShopIds(rawMenu);
+    let resolvedShopId;
+    if (shopId != null && shopId !== '') {
+      resolvedShopId = Number(shopId);
+      if (!Number.isFinite(resolvedShopId) || resolvedShopId <= 0) {
+        return res.status(400).json({ message: 'Invalid shopId' });
+      }
+      if (existingShopIds.has(resolvedShopId)) {
+        return res.status(409).json({ message: 'Shop ID already exists' });
+      }
+    } else {
+      let candidate = existingShopIds.size ? Math.max(...existingShopIds) + 1 : 1;
+      while (existingShopIds.has(candidate)) {
+        candidate += 1;
+      }
+      resolvedShopId = candidate;
+    }
+
+    const passwordHash = await bcrypt.hash(passwordStr, 10);
+    const newVendor = {
+      vendorId,
+      shopId: resolvedShopId,
+      username: trimmedUsername,
+      passwordHash,
+    };
+    if (trimmedEmail) newVendor.email = trimmedEmail;
+    newVendor.shopName = trimmedShopName;
+
+    vendors.push(newVendor);
+    saveVendors(vendors);
+
+    const newShopEntry = {
+      shopId: resolvedShopId,
+      shopName: trimmedShopName,
+      categories: [],
+    };
+    if (trimmedEmail) newShopEntry.contactEmail = trimmedEmail;
+
+    let updatedMenu = rawMenu;
+    if (Array.isArray(updatedMenu)) {
+      updatedMenu = [...updatedMenu, newShopEntry];
+      saveMenu(updatedMenu);
+    } else {
+      const menuObj = updatedMenu && typeof updatedMenu === 'object' ? { ...updatedMenu } : { shops: [] };
+      menuObj.shops = Array.isArray(menuObj.shops) ? [...menuObj.shops, newShopEntry] : [newShopEntry];
+      saveMenu(menuObj);
+    }
+
+    vendorDirectoryCache = { map: null, timestamp: 0 };
+
+    res.json({
+      status: 'success',
+      vendor: {
+        vendorId,
+        shopId: resolvedShopId,
+        username: trimmedUsername,
+        email: trimmedEmail || null,
+        shopName: trimmedShopName,
+      },
+    });
+  } catch (error) {
+    console.error('Error creating vendor', error);
+    res.status(500).json({ message: 'Error creating vendor' });
+  }
+});
+
 app.post('/admin/bulk-orders/:id/decision', authenticateAdmin, (req, res) => {
   try {
     const orders = getBulkOrders();
@@ -1617,6 +1718,10 @@ const saveOrders = (orders) => fs.writeFileSync(ordersFile, JSON.stringify(order
  * @returns {Array}
  */
 const getVendors = () => JSON.parse(fs.readFileSync(vendorsFile, "utf8"));
+
+const saveVendors = (vendors) => {
+  fs.writeFileSync(vendorsFile, JSON.stringify(Array.isArray(vendors) ? vendors : [], null, 2));
+};
 
 /**
  * Read favorites from disk.
@@ -4227,7 +4332,7 @@ app.put("/admin/vendor/:id", authenticateAdmin, (req, res) => {
       return res.status(404).json({ message: "Vendor not found" });
     }
 
-    const { username, password } = req.body || {};
+    const { username, password, shopId, shopName, email } = req.body || {};
     if (username != null) {
       vendors[index].username = String(username).trim();
     }
@@ -4235,7 +4340,55 @@ app.put("/admin/vendor/:id", authenticateAdmin, (req, res) => {
       vendors[index].passwordHash = bcrypt.hashSync(String(password), 10);
     }
 
+    if (shopId != null && shopId !== '') {
+      const newShopId = Number(shopId);
+      if (!Number.isFinite(newShopId) || newShopId <= 0) {
+        return res.status(400).json({ message: 'Invalid shopId' });
+      }
+      const vendorsWithoutCurrent = vendors.filter((v) => v.vendorId !== vendorId);
+      const shopIdConflict = vendorsWithoutCurrent.some((v) => Number(v.shopId) === newShopId);
+      if (shopIdConflict) {
+        return res.status(409).json({ message: 'Shop ID already in use by another vendor' });
+      }
+      vendors[index].shopId = newShopId;
+
+      const rawMenu = getMenu();
+      const updateShopEntry = (menuData) => {
+        if (Array.isArray(menuData)) {
+          return menuData.map((shop) => {
+            if (shop && Number(shop.shopId) === Number(vendors[index].shopId)) {
+              return { ...shop, shopId: newShopId };
+            }
+            return shop;
+          });
+        }
+        if (menuData && Array.isArray(menuData.shops)) {
+          return {
+            ...menuData,
+            shops: menuData.shops.map((shop) => {
+              if (shop && Number(shop.shopId) === Number(vendors[index].shopId)) {
+                return { ...shop, shopId: newShopId };
+              }
+              return shop;
+            }),
+          };
+        }
+        return menuData;
+      };
+
+      const updatedMenu = updateShopEntry(rawMenu);
+      saveMenu(updatedMenu);
+    }
+
+    if (shopName != null) {
+      vendors[index].shopName = String(shopName).trim();
+    }
+    if (email != null) {
+      vendors[index].email = String(email).trim();
+    }
+
     saveVendors(vendors);
+    vendorDirectoryCache = { map: null, timestamp: 0 };
     res.json({ status: "success", message: "Vendor updated successfully" });
   } catch (error) {
     res.status(500).json({ message: "Error updating vendor" });
