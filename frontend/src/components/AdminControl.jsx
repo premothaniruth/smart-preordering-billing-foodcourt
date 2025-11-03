@@ -1,11 +1,17 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import PropTypes from "prop-types";
 import { toast } from "react-toastify";
-import {
-  fetchAdminBulkOrders,
-  fetchAdminVendors,
-  submitAdminBulkDecision,
-  sendBulkOrderToVendor,
+import { 
+  approveBulkOrder, 
+  fetchAdminBulkOrders, 
+  sendBulkOrderToVendor, 
+  submitAdminBulkDecision, 
+  fetchAdminVendors, 
+  updateVendor as updateVendorApi, 
+  createVendor as createVendorApi, 
+  deleteAdminVendor, 
+  fetchArchivedVendors, 
+  restoreArchivedVendor 
 } from "../api";
 
 const initialCreateState = {
@@ -37,10 +43,53 @@ function AdminControl({
   const [vendorDirectory, setVendorDirectory] = useState([]);
   const [vendorDirectoryLoading, setVendorDirectoryLoading] = useState(false);
   const [vendorDirectoryError, setVendorDirectoryError] = useState(null);
+  const [archivedVendors, setArchivedVendors] = useState([]);
+  const [archivedLoading, setArchivedLoading] = useState(false);
+  const [archivedError, setArchivedError] = useState(null);
 
   const sortedVendors = useMemo(() => {
     return [...vendors].sort((a, b) => a.shopName.localeCompare(b.shopName));
   }, [vendors]);
+
+  const handleDeleteVendor = async (vendorId) => {
+    if (!adminSession || !vendorId) return;
+    const confirmDelete = window.confirm("Are you sure you want to remove this vendor? This will delete associated shop data.");
+    if (!confirmDelete) return;
+    try {
+      const res = await deleteAdminVendor(adminSession, vendorId);
+      if (res?.status === "success") {
+        toast.success("Vendor removed");
+        if (String(selectedVendorId) === String(vendorId)) {
+          setSelectedVendorId("");
+          setUpdateForm(initialCreateState);
+        }
+        await refreshVendorDirectory();
+        onRequestRefresh && onRequestRefresh();
+      } else {
+        toast.error(res?.message || "Failed to remove vendor");
+      }
+    } catch (error) {
+      console.error("Failed to delete vendor", error);
+      toast.error("Unable to remove vendor");
+    }
+  };
+
+  const handleRestoreVendor = async (archiveId) => {
+    if (!adminSession || !archiveId) return;
+    try {
+      const res = await restoreArchivedVendor(adminSession, archiveId);
+      if (res?.status === "success") {
+        toast.success("Vendor restored successfully");
+        await Promise.all([refreshVendorDirectory(), loadArchivedVendors()]);
+        onRequestRefresh && onRequestRefresh();
+      } else {
+        toast.error(res?.message || "Failed to restore vendor");
+      }
+    } catch (error) {
+      console.error("Failed to restore vendor", error);
+      toast.error("Unable to restore vendor");
+    }
+  };
 
   const loadBulkOrders = async (session, status) => {
     if (!session) return;
@@ -77,11 +126,65 @@ function AdminControl({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [adminSession, bulkStatus]);
 
+  const refreshVendorDirectory = useCallback(async () => {
+    if (!adminSession) {
+      setVendorDirectory([]);
+      setVendorDirectoryError(null);
+      return;
+    }
+    try {
+      setVendorDirectoryLoading(true);
+      setVendorDirectoryError(null);
+      const res = await fetchAdminVendors(adminSession);
+      if (res?.status === "ok" && Array.isArray(res.vendors)) {
+        setVendorDirectory(res.vendors);
+      } else {
+        setVendorDirectory([]);
+        setVendorDirectoryError(res?.message || "Failed to load vendor directory");
+      }
+    } catch (error) {
+      console.error("Admin vendor directory error", error);
+      setVendorDirectory([]);
+      setVendorDirectoryError("Unable to load vendor directory");
+    } finally {
+      setVendorDirectoryLoading(false);
+    }
+  }, [adminSession]);
+
+  const loadArchivedVendors = useCallback(async () => {
+    if (!adminSession) {
+      setArchivedVendors([]);
+      setArchivedError(null);
+      return;
+    }
+    try {
+      setArchivedLoading(true);
+      setArchivedError(null);
+      const res = await fetchArchivedVendors(adminSession);
+      if (res?.status === "ok" && Array.isArray(res.archives)) {
+        setArchivedVendors(res.archives);
+      } else {
+        setArchivedVendors([]);
+        setArchivedError(res?.message || "Failed to load archived vendors");
+      }
+    } catch (error) {
+      console.error("Admin archived vendor error", error);
+      setArchivedVendors([]);
+      setArchivedError("Unable to load archived vendors");
+    } finally {
+      setArchivedLoading(false);
+    }
+  }, [adminSession]);
+
   useEffect(() => {
     let cancelled = false;
     if (!adminSession) {
       setVendorDirectory([]);
       setVendorDirectoryError(null);
+      setVendorDirectoryLoading(false);
+      setArchivedVendors([]);
+      setArchivedError(null);
+      setArchivedLoading(false);
       return () => {
         cancelled = true;
       };
@@ -112,11 +215,12 @@ function AdminControl({
     };
 
     loadVendorDirectory();
+    loadArchivedVendors();
 
     return () => {
       cancelled = true;
     };
-  }, [adminSession]);
+  }, [adminSession, refreshVendorDirectory, loadArchivedVendors]);
 
   const handleLoginSubmit = (e) => {
     e.preventDefault();
@@ -173,7 +277,7 @@ function AdminControl({
 
   const handleVendorSelection = (vendorId) => {
     setSelectedVendorId(vendorId);
-    const vendor = vendors.find((v) => String(v?.id ?? v?.vendorId) === String(vendorId));
+    const vendor = vendors.find((v) => String(v.id) === String(vendorId));
     if (vendor) {
       setUpdateForm({
         username: vendor.username || "",
@@ -806,10 +910,74 @@ function AdminControl({
           ) : (
             <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
               {sortedVendors.map((vendor) => (
-                <li key={vendor.id} style={{ padding: "8px 0", borderBottom: "1px solid #ecf0f1" }}>
-                  <div style={{ fontWeight: 600 }}>{vendor.shopName}</div>
-                  <div style={{ fontSize: 12, color: "#7f8c8d" }}>{vendor.email}</div>
-                  <div style={{ fontSize: 12, color: "#7f8c8d" }}>Username: {vendor.username || "—"}</div>
+                <li key={vendor.id} style={{ padding: "8px 0", borderBottom: "1px solid #ecf0f1", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+                  <div>
+                    <div style={{ fontWeight: 600 }}>{vendor.shopName}</div>
+                    <div style={{ fontSize: 12, color: "#7f8c8d" }}>{vendor.email}</div>
+                    <div style={{ fontSize: 12, color: "#7f8c8d" }}>{vendor.username}</div>
+                  </div>
+                  <button
+                    type="button"
+                    style={{ background: "#e74c3c", color: "#fff", border: "none", padding: "6px 12px", borderRadius: 4, cursor: "pointer" }}
+                    onClick={() => handleDeleteVendor(vendor.id)}
+                    disabled={vendorDirectoryLoading}
+                  >
+                    Remove
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+
+      <div className="card" style={{ marginTop: 24 }}>
+        <div className="card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span>Recently Removed Vendors</span>
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={loadArchivedVendors}
+            disabled={archivedLoading}
+          >
+            Refresh
+          </button>
+        </div>
+        <div className="card-body" style={{ maxHeight: 220, overflowY: "auto" }}>
+          {archivedLoading && <div>Loading archived vendors…</div>}
+          {archivedError && <div style={{ color: "#c0392b" }}>{archivedError}</div>}
+          {!archivedLoading && !archivedError && archivedVendors.length === 0 && (
+            <p style={{ color: "#7f8c8d", fontSize: 14 }}>No vendors are pending restoration. Deleted vendors remain here for 7 days.</p>
+          )}
+          {!archivedLoading && !archivedError && archivedVendors.length > 0 && (
+            <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+              {archivedVendors.map((archive) => (
+                <li
+                  key={archive.archiveId}
+                  style={{
+                    padding: "10px 8px",
+                    borderBottom: "1px solid #ecf0f1",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    gap: 12,
+                  }}
+                >
+                  <div>
+                    <div style={{ fontWeight: 600 }}>{archive.shopName || `Shop ${archive.shopId}`}</div>
+                    <div style={{ fontSize: 12, color: "#7f8c8d" }}>User: {archive.username}</div>
+                    <div style={{ fontSize: 11, color: "#95a5a6" }}>
+                      Expires: {new Date(archive.expiresAt).toLocaleString()}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="primary-button"
+                    onClick={() => handleRestoreVendor(archive.archiveId)}
+                    disabled={archivedLoading}
+                  >
+                    Restore
+                  </button>
                 </li>
               ))}
             </ul>
@@ -828,7 +996,8 @@ AdminControl.propTypes = {
   onAdminLogout: PropTypes.func.isRequired,
   onCreateVendor: PropTypes.func.isRequired,
   onUpdateVendor: PropTypes.func.isRequired,
-  vendors: PropTypes.arrayOf(PropTypes.object)
+  vendors: PropTypes.arrayOf(PropTypes.object),
+  onRequestRefresh: PropTypes.func
 };
 
 export default AdminControl;

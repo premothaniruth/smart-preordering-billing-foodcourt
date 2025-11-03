@@ -168,6 +168,29 @@ export const fetchAdminVendors = async (session) => {
   return res.json();
 };
 
+export const deleteAdminVendor = async (session, vendorId) => {
+  const res = await fetch(`${API_URL}/admin/vendor/${vendorId}`, {
+    method: "DELETE",
+    headers: buildAdminHeaders(session),
+  });
+  return res.json();
+};
+
+export const fetchArchivedVendors = async (session) => {
+  const res = await fetch(`${API_URL}/admin/vendor-archives`, {
+    headers: buildAdminHeaders(session),
+  });
+  return res.json();
+};
+
+export const restoreArchivedVendor = async (session, archiveId) => {
+  const res = await fetch(`${API_URL}/admin/vendor-archives/${archiveId}/restore`, {
+    method: "POST",
+    headers: buildAdminHeaders(session),
+  });
+  return res.json();
+};
+
 export const submitAdminBulkDecision = async (session, orderId, { action, comment }) => {
   const res = await fetch(`${API_URL}/admin/bulk-orders/${orderId}/decision`, {
     method: 'POST',

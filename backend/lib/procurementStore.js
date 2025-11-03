@@ -42,6 +42,14 @@ const saveTemplate = (template) => {
   return template;
 };
 
+const removeTemplatesForVendor = (vendorId) => {
+  const templates = readJson(templatesFile);
+  const filtered = templates.filter((tpl) => normalizeVendorId(tpl.vendorId) !== normalizeVendorId(vendorId));
+  if (filtered.length !== templates.length) {
+    writeJson(templatesFile, filtered);
+  }
+};
+
 const deleteTemplate = (vendorId, templateId) => {
   const templates = readJson(templatesFile);
   const filtered = templates.filter(
@@ -64,6 +72,14 @@ const saveOrder = (order) => {
   return order;
 };
 
+const removeOrdersForVendor = (vendorId) => {
+  const orders = readJson(ordersFile);
+  const filtered = orders.filter((order) => normalizeVendorId(order.vendorId) !== normalizeVendorId(vendorId));
+  if (filtered.length !== orders.length) {
+    writeJson(ordersFile, filtered);
+  }
+};
+
 module.exports = {
   listTemplates,
   saveTemplate,
@@ -71,4 +87,6 @@ module.exports = {
   generateTemplateId,
   listOrders,
   saveOrder,
+  removeTemplatesForVendor,
+  removeOrdersForVendor,
 };

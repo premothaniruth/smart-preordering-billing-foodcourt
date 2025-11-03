@@ -38,6 +38,25 @@ const saveTask = (task) => {
   return task;
 };
 
+const removeTasksForVendor = (vendorId) => {
+  const store = readStore();
+  const filtered = store.filter((task) => String(task.vendorId) !== String(vendorId));
+  if (filtered.length !== store.length) {
+    writeStore(filtered);
+  }
+};
+
+const addTasksForVendor = (tasks = []) => {
+  if (!Array.isArray(tasks) || tasks.length === 0) return;
+  const store = readStore();
+  const map = new Map(store.map((task) => [task.id, task]));
+  tasks.forEach((task) => {
+    if (!task || task.id == null) return;
+    map.set(task.id, task);
+  });
+  writeStore(Array.from(map.values()));
+};
+
 const generateTaskId = () => `task-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
 const getTaskById = (taskId) => {
@@ -50,4 +69,6 @@ module.exports = {
   saveTask,
   generateTaskId,
   getTaskById,
+  removeTasksForVendor,
+  addTasksForVendor,
 };

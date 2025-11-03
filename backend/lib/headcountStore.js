@@ -84,9 +84,34 @@ const getAverageHeadcount = (vendorId) => {
   return total / entries.length;
 };
 
+const removeVendorHeadcount = (vendorId) => {
+  const store = readStore();
+  const filtered = store.filter((entry) => normalizeVendorId(entry.vendorId) !== normalizeVendorId(vendorId));
+  if (filtered.length !== store.length) {
+    writeStore(filtered);
+  }
+};
+
+const restoreVendorRecord = (record) => {
+  if (!record || record.vendorId == null) return;
+  const store = readStore();
+  const key = normalizeVendorId(record.vendorId);
+  const filtered = store.filter((entry) => normalizeVendorId(entry.vendorId) !== key);
+  const sanitized = {
+    vendorId: record.vendorId,
+    shopId: record.shopId,
+    entries: Array.isArray(record.entries) ? record.entries : [],
+  };
+  filtered.push(sanitized);
+  writeStore(filtered);
+};
+
 module.exports = {
   addHeadcountEntry,
   getVendorHeadcountEntries,
   getLatestHeadcount,
   getAverageHeadcount,
+  getVendorRecord,
+  removeVendorHeadcount,
+  restoreVendorRecord,
 };

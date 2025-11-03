@@ -6,6 +6,8 @@ const {
   saveTask,
   generateTaskId,
   getTaskById,
+  removeTasksForVendor,
+  addTasksForVendor,
 } = require("./procurementTaskStore");
 
 const DEFAULT_LEAD_TIME_DAYS = Number(process.env.PROCUREMENT_LEAD_TIME_DAYS || 2);
@@ -163,4 +165,6 @@ module.exports = {
   getTaskById,
   saveTask,
   updateTaskStatus,
+  removeTasksForVendor,
+  addTasksForVendor,
 };

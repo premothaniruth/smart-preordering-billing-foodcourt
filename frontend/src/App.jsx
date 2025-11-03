@@ -1207,6 +1207,9 @@ function App() {
                     onCreateVendor={handleCreateVendor}
                     onUpdateVendor={handleUpdateVendor}
                     vendors={adminManagedVendors}
+                    onRequestRefresh={() => {
+                      loadMenu();
+                    }}
                     sosState={sosState}
                     onTriggerSos={() => handleSosTrigger("admin")}
                     onResolveSos={() => handleSosResolve("admin")}

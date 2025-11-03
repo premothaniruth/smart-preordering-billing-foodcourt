@@ -23,7 +23,7 @@ const { analyticsQueryService } = require("./lib/analyticsQueryService");
 const { realtimeAnalyticsService } = require("./lib/realtimeAnalyticsService");
 const { analyticsImportService } = require("./lib/analyticsImportService");
 const { forecastingService } = require("./lib/forecastingService");
-const { addHeadcountEntry, getVendorHeadcountEntries } = require("./lib/headcountStore");
+const { addHeadcountEntry, getVendorHeadcountEntries, removeVendorHeadcount } = require("./lib/headcountStore");
 const { appendAuditEntry } = require("./lib/auditLogger");
 const { metricsRegistry } = require("./lib/metricsRegistry");
 const { runArchiveJob, loadMetadata } = require("./lib/archiveScheduler");
@@ -43,7 +43,15 @@ const {
   generateTemplateId,
   listOrders,
   saveOrder,
+  removeTemplatesForVendor,
+  removeOrdersForVendor,
 } = require("./lib/procurementStore");
+const {
+  listArchives: listVendorArchives,
+  appendArchive: appendVendorArchive,
+  removeArchiveById,
+  findArchiveByVendorId,
+} = require("./lib/vendorArchiveStore");
 const multer = require("multer");
 
 // App setup
@@ -156,6 +164,242 @@ app.get("/metrics", (req, res) => {
     res.send(metricsRegistry.toPrometheus());
   } else {
     res.json(snapshot);
+  }
+});
+
+app.delete("/admin/vendor/:id", authenticateAdmin, (req, res) => {
+  try {
+    const vendorId = Number(req.params.id);
+    if (!Number.isFinite(vendorId)) {
+      return res.status(400).json({ message: "Invalid vendor ID" });
+    }
+
+    const vendors = getVendors();
+    const index = vendors.findIndex((v) => Number(v.vendorId) === vendorId);
+    if (index === -1) {
+      return res.status(404).json({ message: "Vendor not found" });
+    }
+
+    const removedVendor = vendors[index];
+    const shopIdValue = Number(removedVendor.shopId);
+
+    const archivePayload = {
+      archiveId: `vendor-${removedVendor.vendorId}-${Date.now()}`,
+      vendorId: removedVendor.vendorId,
+      shopId: removedVendor.shopId,
+      username: removedVendor.username,
+      email: removedVendor.email || null,
+      shopName: removedVendor.shopName || null,
+      passwordHash: removedVendor.passwordHash,
+      deletedAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      data: {
+        vendorRecord: removedVendor,
+        menuSnapshot: getMenu(),
+        combos: getCombos(),
+        offers: getOffers(),
+        procurementTemplates: listTemplates(removedVendor.vendorId),
+        procurementOrders: listOrders(removedVendor.vendorId),
+        procurementTasks: listProcurementTasks(removedVendor.vendorId),
+        grievances: getVendorGrievances(),
+        orders: getOrders(),
+        headcount: getVendorHeadcountEntries(removedVendor.vendorId),
+      },
+    };
+
+    appendVendorArchive(archivePayload);
+
+    vendors.splice(index, 1);
+    saveVendors(vendors);
+
+    const rawMenu = getMenu();
+    const purgeShopFromMenu = (data) => {
+      if (Array.isArray(data)) {
+        return data.filter((shop) => Number(shop?.shopId) !== Number(removedVendor.shopId));
+      }
+      if (data && typeof data === "object") {
+        const next = { ...data };
+        if (Array.isArray(next.shops)) {
+          next.shops = next.shops.filter((shop) => Number(shop?.shopId) !== Number(removedVendor.shopId));
+        }
+        return next;
+      }
+      return data;
+    };
+
+    const updatedMenu = purgeShopFromMenu(rawMenu);
+    if (updatedMenu !== rawMenu) {
+      saveMenu(updatedMenu);
+    }
+
+    const filterByShop = (collection) => collection.filter((entry) => Number(entry.shopId) !== shopIdValue);
+
+    const combos = getCombos();
+    const nextCombos = filterByShop(combos);
+    if (nextCombos.length !== combos.length) {
+      saveCombos(nextCombos);
+    }
+
+    const offers = getOffers();
+    const nextOffers = filterByShop(offers);
+    if (nextOffers.length !== offers.length) {
+      saveOffers(nextOffers);
+    }
+
+    try {
+      removeTemplatesForVendor(removedVendor.vendorId);
+    } catch (error) {
+      console.warn("Failed to clean procurement templates for vendor", removedVendor.vendorId, error);
+    }
+
+    try {
+      removeOrdersForVendor(removedVendor.vendorId);
+    } catch (error) {
+      console.warn("Failed to clean procurement orders for vendor", removedVendor.vendorId, error);
+    }
+
+    try {
+      removeTasksForVendor(removedVendor.vendorId);
+    } catch (error) {
+      console.warn("Failed to clean procurement tasks for vendor", removedVendor.vendorId, error);
+    }
+
+    const grievances = getVendorGrievances();
+    const nextGrievances = grievances.filter((g) => Number(g.vendorId) !== Number(removedVendor.vendorId));
+    if (nextGrievances.length !== grievances.length) {
+      saveVendorGrievances(nextGrievances);
+    }
+
+    const historicalOrders = getOrders();
+    const ordersAfterPurge = historicalOrders.filter((order) => Number(order.shopId) !== shopIdValue);
+    if (ordersAfterPurge.length !== historicalOrders.length) {
+      saveOrders(ordersAfterPurge);
+    }
+
+    try {
+      removeVendorHeadcount(removedVendor.vendorId);
+    } catch (error) {
+      console.warn("Failed to remove headcount history for vendor", removedVendor.vendorId, error);
+    }
+
+    try {
+      analyticsIngestor?.deleteShopHistory?.(shopIdValue);
+    } catch (error) {
+      console.warn("Failed to purge realtime analytics history", error);
+    }
+
+    try {
+      analyticsQueryService?.deleteVendorSnapshots?.(shopIdValue);
+    } catch (error) {
+      console.warn("Failed to purge analytics snapshots", error);
+    }
+
+    vendorDirectoryCache = { map: null, timestamp: 0 };
+
+    res.json({ status: "success", message: "Vendor removed", vendorId, archiveId: archivePayload.archiveId });
+  } catch (error) {
+    console.error("Error deleting vendor", error);
+    res.status(500).json({ message: "Error deleting vendor" });
+  }
+});
+
+app.get("/admin/vendor-archives", authenticateAdmin, (req, res) => {
+  try {
+    const now = Date.now();
+    const archives = listVendorArchives().filter((entry) => new Date(entry.expiresAt).getTime() > now);
+    res.json({ status: "ok", archives });
+  } catch (error) {
+    console.error("Error listing vendor archives", error);
+    res.status(500).json({ message: "Failed to load vendor archives" });
+  }
+});
+
+app.post("/admin/vendor-archives/:archiveId/restore", authenticateAdmin, async (req, res) => {
+  try {
+    const { archiveId } = req.params;
+    const archive = listVendorArchives().find((entry) => entry.archiveId === archiveId);
+    if (!archive) {
+      return res.status(404).json({ message: "Archive not found" });
+    }
+
+    const expiresAt = new Date(archive.expiresAt).getTime();
+    if (Date.now() > expiresAt) {
+      removeArchiveById(archiveId);
+      return res.status(410).json({ message: "Archive expired" });
+    }
+
+    const vendors = getVendors();
+    if (vendors.some((vendor) => Number(vendor.vendorId) === Number(archive.vendorId))) {
+      return res.status(409).json({ message: "Vendor already exists" });
+    }
+
+    vendors.push({
+      vendorId: archive.vendorId,
+      shopId: archive.shopId,
+      username: archive.username,
+      passwordHash: archive.passwordHash,
+      email: archive.email || undefined,
+      shopName: archive.shopName || undefined,
+    });
+    saveVendors(vendors);
+
+    const menu = archive.data.menuSnapshot;
+    if (menu) {
+      saveMenu(menu);
+    }
+
+    const combos = archive.data.combos || [];
+    saveCombos(combos);
+
+    const offers = archive.data.offers || [];
+    saveOffers(offers);
+
+    const procurementTemplates = archive.data.procurementTemplates || [];
+    procurementTemplates.forEach((tpl) => saveTemplate(tpl));
+
+    const procurementOrders = archive.data.procurementOrders || [];
+    procurementOrders.forEach((order) => saveOrder(order));
+
+    const procurementTasks = archive.data.procurementTasks || [];
+    addTasksForVendor(procurementTasks);
+
+    const grievances = archive.data.grievances || [];
+    if (Array.isArray(grievances)) {
+      const existingGrievances = getVendorGrievances();
+      const merged = [...existingGrievances.filter((g) => Number(g.vendorId) !== Number(archive.vendorId)), ...grievances];
+      saveVendorGrievances(merged);
+    }
+
+    const orders = archive.data.orders || [];
+    if (Array.isArray(orders)) {
+      saveOrders(orders);
+    }
+
+    const headcountRecord = archive.data.headcountRecord || null;
+    if (headcountRecord) {
+      restoreVendorRecord(headcountRecord);
+    } else if (Array.isArray(archive.data.headcount) && archive.data.headcount.length) {
+      restoreVendorRecord({ vendorId: archive.vendorId, shopId: archive.shopId, entries: archive.data.headcount });
+    }
+
+    try {
+      analyticsIngestor?.restoreShopHistory?.(archive.shopId, archive.data.analyticsSnapshot || null);
+    } catch (error) {
+      console.warn("Failed to restore realtime analytics history", error);
+    }
+
+    try {
+      analyticsQueryService?.restoreVendorSnapshots?.(archive.shopId, archive.data.analyticsSnapshot || null);
+    } catch (error) {
+      console.warn("Failed to restore analytics snapshots", error);
+    }
+
+    removeArchiveById(archiveId);
+
+    res.json({ status: "success", message: "Vendor restored", vendorId: archive.vendorId });
+  } catch (error) {
+    console.error("Error restoring vendor", error);
+    res.status(500).json({ message: "Error restoring vendor" });
   }
 });
 
