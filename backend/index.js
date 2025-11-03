@@ -5321,6 +5321,13 @@ server.listen(PORT, async () => {
   }
 
   try {
+    await bootstrapAnalyticsFromOrders();
+    console.log("Analytics bootstrap completed");
+  } catch (error) {
+    console.error("Failed to bootstrap historical analytics", error);
+  }
+
+  try {
     startNightlyJobs();
     console.log("Nightly jobs scheduled");
   } catch (error) {
