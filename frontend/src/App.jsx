@@ -818,6 +818,11 @@ function App() {
   };
 
   const handleCreateVendor = async (payload) => {
+    if (!adminSession) {
+      console.warn("Create vendor attempted without admin session", payload);
+      toast.error("Admin session expired. Please log in again before creating vendors.");
+      return;
+    }
     try {
       const res = await createVendor(payload, adminSession);
       if (res?.status === "success") {
@@ -828,11 +833,17 @@ function App() {
         toast.error(res?.message || "Failed to create vendor");
       }
     } catch (error) {
+      console.error("Error creating vendor", error);
       toast.error("Error creating vendor");
     }
   };
 
   const handleUpdateVendor = async (vendorId, payload) => {
+    if (!adminSession) {
+      console.warn("Update vendor attempted without admin session", vendorId, payload);
+      toast.error("Admin session expired. Please log in again before updating vendors.");
+      return;
+    }
     try {
       const res = await updateVendor(vendorId, payload, adminSession);
       if (res?.status === "success") {
@@ -849,6 +860,7 @@ function App() {
         toast.error(res?.message || "Failed to update vendor");
       }
     } catch (error) {
+      console.error("Error updating vendor", error);
       toast.error("Error updating vendor");
     }
   };
