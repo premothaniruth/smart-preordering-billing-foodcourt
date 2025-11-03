@@ -127,22 +127,53 @@ function AdminControl({
 
   const handleCreateSubmit = (e) => {
     e.preventDefault();
-    if (!createForm.shopName || !createForm.email || !createForm.username || !createForm.password) return;
-    onCreateVendor({ ...createForm });
+    const shopName = String(createForm.shopName || "").trim();
+    const username = String(createForm.username || "").trim();
+    const password = String(createForm.password || "").trim();
+    const email = String(createForm.email || "").trim();
+
+    if (!shopName) {
+      toast.error("Shop name is required");
+      return;
+    }
+    if (!username) {
+      toast.error("Vendor username is required");
+      return;
+    }
+    if (!password) {
+      toast.error("Temporary password is required");
+      return;
+    }
+
+    onCreateVendor({
+      shopName,
+      username,
+      password,
+      email: email || undefined,
+    });
     setCreateForm(initialCreateState);
   };
 
   const handleUpdateSubmit = (e) => {
     e.preventDefault();
     if (!selectedVendorId) return;
-    onUpdateVendor(selectedVendorId, { ...updateForm });
+    const username = String(updateForm.username || "").trim();
+    const password = String(updateForm.password || "").trim();
+    if (!username && !password) {
+      toast.error("Provide a username or password to update");
+      return;
+    }
+    const payload = {};
+    if (username) payload.username = username;
+    if (password) payload.password = password;
+    onUpdateVendor(selectedVendorId, payload);
     setUpdateForm({ username: "", password: "" });
     setSelectedVendorId("");
   };
 
   const handleVendorSelection = (vendorId) => {
     setSelectedVendorId(vendorId);
-    const vendor = vendors.find((v) => String(v.id) === String(vendorId));
+    const vendor = vendors.find((v) => String(v?.id ?? v?.vendorId) === String(vendorId));
     if (vendor) {
       setUpdateForm({
         username: vendor.username || "",
