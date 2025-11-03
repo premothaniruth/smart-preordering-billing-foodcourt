@@ -2,6 +2,7 @@ const EventEmitter = require("events");
 const { createClient } = require("redis");
 const analyticsConfig = require("./analyticsConfig");
 const { analyticsQueryService } = require("./analyticsQueryService");
+const { metricsRegistry } = require("./metricsRegistry");
 
 const GRANULARITIES = {
   hour: 60 * 60 * 1000,
@@ -64,6 +65,7 @@ class RealtimeAnalyticsService extends EventEmitter {
     this.state = new Map();
     this.subscriptions = new Map();
     this.running = false;
+    metricsRegistry.setHealthStatus("realtimeAnalytics", { healthy: false, detail: "initialized" });
   }
 
   async start() {
@@ -82,6 +84,7 @@ class RealtimeAnalyticsService extends EventEmitter {
       }
     }
     this.running = true;
+    metricsRegistry.setHealthStatus("realtimeAnalytics", { healthy: true, detail: "running" });
     this._loop();
   }
 
@@ -92,6 +95,7 @@ class RealtimeAnalyticsService extends EventEmitter {
     } catch (error) {
       console.error("[RealtimeAnalyticsService] Failed to quit Redis", error);
     }
+    metricsRegistry.setHealthStatus("realtimeAnalytics", { healthy: false, detail: "stopped" });
   }
 
   async getSummary(shopId, fallback = true) {
@@ -190,13 +194,22 @@ class RealtimeAnalyticsService extends EventEmitter {
   async _loop() {
     const group = `${this.config.ANALYTICS_CONSUMER_GROUP}-realtime`;
     const consumer = `${this.config.ANALYTICS_CONSUMER_NAME}-rt-${process.pid}`;
+    let retryMs = this.config.ANALYTICS_INGESTOR_RETRY_MS || 1000;
+    const maxRetry = Math.min((this.config.ANALYTICS_INGESTOR_RETRY_MS || 1000) * 8, 30000);
     while (this.running) {
       try {
-        const response = await this.redis.xReadGroup(group, consumer, [{ key: this.config.ANALYTICS_STREAM, id: ">" }], {
-          COUNT: 200,
-          BLOCK: this.config.ANALYTICS_INGESTOR_BLOCK_MS,
-        });
+        const response = await this.redis.xReadGroup(
+          group,
+          consumer,
+          [{ key: this.config.ANALYTICS_STREAM, id: ">" }],
+          {
+            COUNT: 200,
+            BLOCK: this.config.ANALYTICS_INGESTOR_BLOCK_MS,
+          }
+        );
         if (!response || response.length === 0) {
+          await this._updateLagGauge();
+          metricsRegistry.setHealthStatus("realtimeAnalytics", { healthy: true, detail: "idle" });
           continue;
         }
         for (const stream of response) {
@@ -209,10 +222,28 @@ class RealtimeAnalyticsService extends EventEmitter {
             await this.redis.xAck(this.config.ANALYTICS_STREAM, group, message.id);
           }
         }
+        await this._updateLagGauge();
+        metricsRegistry.setHealthStatus("realtimeAnalytics", { healthy: true, detail: "processing" });
+        retryMs = this.config.ANALYTICS_INGESTOR_RETRY_MS || 1000;
       } catch (error) {
         console.error("[RealtimeAnalyticsService] Loop error", error);
-        await new Promise((resolve) => setTimeout(resolve, this.config.ANALYTICS_INGESTOR_RETRY_MS));
+        metricsRegistry.incrementCounter("realtimeAnalytics.errors");
+        metricsRegistry.setHealthStatus("realtimeAnalytics", { healthy: false, detail: error.message });
+        await new Promise((resolve) => setTimeout(resolve, retryMs));
+        retryMs = Math.min(retryMs * 2, maxRetry);
       }
+    }
+  }
+
+  async _updateLagGauge() {
+    try {
+      const summary = await this.redis.xPending(
+        this.config.ANALYTICS_STREAM,
+        `${this.config.ANALYTICS_CONSUMER_GROUP}-realtime`
+      );
+      metricsRegistry.setGauge("realtime.redisLag", summary?.count || 0);
+    } catch (error) {
+      metricsRegistry.incrementCounter("realtimeAnalytics.lagErrors");
     }
   }
 

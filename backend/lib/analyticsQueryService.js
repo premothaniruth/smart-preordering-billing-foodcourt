@@ -214,6 +214,96 @@ class AnalyticsQueryService {
     }
   }
 
+  async getRollingDemandFeatures({ shopId, endDate = new Date(), windowDays = 30 }) {
+    if (shopId == null) {
+      throw new Error("shopId is required");
+    }
+    const end = new Date(endDate);
+    const start = new Date(end.getTime() - windowDays * 24 * 60 * 60 * 1000);
+    try {
+      const conn = await this._getDuckConnection();
+      const query = `
+        WITH orders AS (
+          SELECT
+            ts,
+            total_amount,
+            order_id,
+            billing_id
+          FROM order_events
+          WHERE shop_id = ?
+            AND ts >= ?
+            AND ts < ?
+            AND event_type = 'order_created'
+        ),
+        daily_orders AS (
+          SELECT
+            date_trunc('day', ts) AS day,
+            COUNT(*) AS orders,
+            SUM(total_amount) AS revenue
+          FROM orders
+          GROUP BY 1
+        ),
+        inventory AS (
+          SELECT
+            date_trunc('day', ts) AS day,
+            SUM(CASE WHEN delta < 0 THEN -delta ELSE 0 END) AS daily_consumption
+          FROM inventory_events
+          WHERE shop_id = ?
+            AND ts >= ?
+            AND ts < ?
+          GROUP BY 1
+        )
+        SELECT
+          d.day,
+          d.orders,
+          d.revenue,
+          COALESCE(i.daily_consumption, 0) AS daily_consumption
+        FROM daily_orders d
+        LEFT JOIN inventory i ON d.day = i.day
+        ORDER BY d.day;
+      `;
+
+      const rows = await new Promise((resolve, reject) => {
+        conn.all(
+          query,
+          [
+            String(shopId),
+            start.toISOString(),
+            end.toISOString(),
+            String(shopId),
+            start.toISOString(),
+            end.toISOString(),
+          ],
+          (err, result) => {
+            if (err) reject(err);
+            else resolve(result || []);
+          }
+        );
+      });
+
+      const withFeatures = rows.map((row, index) => {
+        const slice = rows.slice(Math.max(0, index - 6), index + 1);
+        const rollingOrders = slice.reduce((sum, r) => sum + safeNumber(r.orders), 0);
+        const rollingRevenue = slice.reduce((sum, r) => sum + safeNumber(r.revenue), 0);
+        const rollingConsumption = slice.reduce((sum, r) => sum + safeNumber(r.daily_consumption), 0);
+        return {
+          day: new Date(row.day).toISOString(),
+          orders: safeNumber(row.orders),
+          revenue: safeNumber(row.revenue),
+          consumption: safeNumber(row.daily_consumption),
+          rolling7Orders: rollingOrders,
+          rolling7Revenue: rollingRevenue,
+          rolling7Consumption: rollingConsumption,
+        };
+      });
+
+      return withFeatures;
+    } catch (error) {
+      console.error("[AnalyticsQueryService] Failed to compute rolling demand features", error);
+      return [];
+    }
+  }
+
   async getInventoryConsumptionStats({ shopId, lookbackDays = 14 }) {
     if (shopId == null) {
       throw new Error("shopId is required");

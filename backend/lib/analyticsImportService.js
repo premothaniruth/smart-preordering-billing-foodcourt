@@ -3,6 +3,7 @@ const XLSX = require("xlsx");
 const path = require("path");
 const analyticsConfig = require("./analyticsConfig");
 const { getEventBus } = require("./eventBus");
+const { metricsRegistry } = require("./metricsRegistry");
 
 const SUPPORTED_MIME_TYPES = [
   "text/csv",
@@ -130,6 +131,8 @@ const buildInventoryEvent = (record) => {
 class AnalyticsImportService {
   constructor(config = analyticsConfig) {
     this.config = config;
+    this.emitRetryAttempts = Number(process.env.IMPORT_EMIT_RETRY_ATTEMPTS || 3);
+    this.emitRetryBaseMs = Number(process.env.IMPORT_EMIT_RETRY_BASE_MS || 250);
   }
 
   async importFile({ buffer, mimetype, originalname, actor }) {
@@ -173,10 +176,12 @@ class AnalyticsImportService {
           importedBy: actor?.username || actor?.userId || "unknown",
           originalRow: i + 1,
         };
-        await bus.emit("order.created", orderEvent);
+        await this.emitWithRetry(bus, "order.created", orderEvent);
         summary.ordersEmitted += 1;
+        metricsRegistry.incrementCounter("import.orders.success");
       } catch (error) {
         summary.errors.push({ index: i, reason: `Order emit failed: ${error.message}` });
+        metricsRegistry.incrementCounter("import.orders.failed");
       }
 
       try {
@@ -187,15 +192,36 @@ class AnalyticsImportService {
             userId: actor?.userId || null,
             username: actor?.username || null,
           };
-          await bus.emit("inventory.adjusted", inventoryEvent);
+          await this.emitWithRetry(bus, "inventory.adjusted", inventoryEvent);
           summary.inventoryEmitted += 1;
+          metricsRegistry.incrementCounter("import.inventory.success");
         }
       } catch (error) {
         summary.errors.push({ index: i, reason: `Inventory emit failed: ${error.message}` });
+        metricsRegistry.incrementCounter("import.inventory.failed");
       }
     }
 
     return summary;
+  }
+
+  async emitWithRetry(bus, eventType, payload) {
+    let attempt = 0;
+    let delayMs = this.emitRetryBaseMs;
+    while (attempt < this.emitRetryAttempts) {
+      try {
+        await bus.emit(eventType, payload);
+        return;
+      } catch (error) {
+        attempt += 1;
+        if (attempt >= this.emitRetryAttempts) {
+          throw error;
+        }
+        metricsRegistry.incrementCounter("import.emit.retries");
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+        delayMs = Math.min(delayMs * 2, 2000);
+      }
+    }
   }
 }
 

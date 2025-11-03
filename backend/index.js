@@ -24,6 +24,10 @@ const { realtimeAnalyticsService } = require("./lib/realtimeAnalyticsService");
 const { analyticsImportService } = require("./lib/analyticsImportService");
 const { forecastingService } = require("./lib/forecastingService");
 const { addHeadcountEntry, getVendorHeadcountEntries } = require("./lib/headcountStore");
+const { appendAuditEntry } = require("./lib/auditLogger");
+const { metricsRegistry } = require("./lib/metricsRegistry");
+const { runArchiveJob, loadMetadata } = require("./lib/archiveScheduler");
+const { generateForecast } = require("./lib/forecastingModel");
 const {
   listTemplates,
   saveTemplate,
@@ -64,6 +68,16 @@ const decodeVendorToken = (token) => {
 app.use(cors());
 app.use(bodyParser.json({ limit: '6mb' }));
 app.use('/images', express.static(path.join(__dirname, 'data', 'images')));
+
+app.get("/healthz", (req, res) => {
+  const summary = metricsRegistry.getHealthSummary();
+  res.status(summary.healthy ? 200 : 503).json(summary);
+});
+
+app.get("/metrics", (req, res) => {
+  const snapshot = metricsRegistry.getSnapshot();
+  res.json(snapshot);
+});
 
 // File paths
 const menuFile = __dirname + "/data/menu.json";
@@ -2539,8 +2553,7 @@ const requirePermission = (perm) => (req, res, next) => {
 };
 
 const recordAuditEvent = ({ actorType, actorId, shopId, vendorId, action, metadata }) => {
-  const logFile = path.join(__dirname, "data", "analytics_audit_log.jsonl");
-  const entry = {
+  appendAuditEntry({
     timestamp: new Date().toISOString(),
     actorType,
     actorId,
@@ -2548,10 +2561,6 @@ const recordAuditEvent = ({ actorType, actorId, shopId, vendorId, action, metada
     vendorId,
     action,
     metadata,
-  };
-  const line = `${JSON.stringify(entry)}\n`;
-  fs.appendFile(logFile, line, (err) => {
-    if (err) console.error("Failed to write audit log", err);
   });
 };
 
@@ -3707,19 +3716,14 @@ app.post("/vendor/login", async (req, res) => {
   try {
     const { username, password } = req.body;
     const vendors = getVendors();
-    
+
     const vendor = vendors.find((v) => v.username === username);
     if (!vendor) {
       return res.status(401).json({ message: "Invalid username or password" });
     }
 
-    let authenticated = false;
-    if (password === 'password123') {
-      authenticated = true; // demo bypass
-    } else {
-      const match = await bcrypt.compare(password, vendor.passwordHash);
-      authenticated = match;
-    }
+    const match = await bcrypt.compare(password, vendor.passwordHash || "");
+    const authenticated = Boolean(match);
     if (!authenticated) {
       return res.status(401).json({ message: "Invalid username or password" });
     }
@@ -4278,14 +4282,31 @@ app.get("/analytics/timeseries", authenticateVendor, asyncHandler(async (req, re
   res.json(response);
 }));
 
+app.get("/analytics/forecast", authenticateVendor, asyncHandler(async (req, res) => {
+  assertAnalyticsAccess(req);
+  const forecast = await generateForecast({
+    shopId: req.vendor.shopId,
+    vendorId: req.vendor.vendorId,
+  });
+  recordAuditEvent({
+    actorType: "vendor",
+    actorId: req.vendor.vendorId,
+    vendorId: req.vendor.vendorId,
+    shopId: req.vendor.shopId,
+    action: "analytics.forecast.read",
+    metadata: { horizonDays: forecast.horizonDays },
+  });
+  res.json(forecast);
+}));
+
 // ========== PROCUREMENT ENDPOINTS ==========
-app.get("/procurement/templates", authenticateVendor, asyncHandler(async (req, res) => {
+app.get("/procurement/templates", authenticateVendor, requirePermission("analytics:read"), asyncHandler(async (req, res) => {
   assertAnalyticsAccess(req);
   const templates = listTemplates(req.vendor.vendorId);
   res.json({ templates });
 }));
 
-app.post("/procurement/templates", authenticateVendor, asyncHandler(async (req, res) => {
+app.post("/procurement/templates", authenticateVendor, requirePermission("procurement:manage"), asyncHandler(async (req, res) => {
   assertAnalyticsAccess(req);
   const body = req.body || {};
   const title = String(body.title || "").trim();
@@ -4320,7 +4341,7 @@ app.post("/procurement/templates", authenticateVendor, asyncHandler(async (req, 
   res.status(201).json({ template });
 }));
 
-app.put("/procurement/templates/:id", authenticateVendor, asyncHandler(async (req, res) => {
+app.put("/procurement/templates/:id", authenticateVendor, requirePermission("procurement:manage"), asyncHandler(async (req, res) => {
   assertAnalyticsAccess(req);
   const templateId = req.params.id;
   const existing = listTemplates(req.vendor.vendorId).find((tpl) => tpl.id === templateId);
@@ -4354,7 +4375,7 @@ app.put("/procurement/templates/:id", authenticateVendor, asyncHandler(async (re
   res.json({ template: updated });
 }));
 
-app.delete("/procurement/templates/:id", authenticateVendor, asyncHandler(async (req, res) => {
+app.delete("/procurement/templates/:id", authenticateVendor, requirePermission("procurement:manage"), asyncHandler(async (req, res) => {
   assertAnalyticsAccess(req);
   const templateId = req.params.id;
   const templates = listTemplates(req.vendor.vendorId);
@@ -4380,7 +4401,7 @@ app.get("/procurement/orders", authenticateVendor, asyncHandler(async (req, res)
   res.json({ orders });
 }));
 
-app.post("/procurement/orders", authenticateVendor, asyncHandler(async (req, res) => {
+app.post("/procurement/orders", authenticateVendor, requirePermission("procurement:manage"), asyncHandler(async (req, res) => {
   assertAnalyticsAccess(req);
   const body = req.body || {};
   const supplier = String(body.supplier || "").trim();
@@ -4414,7 +4435,7 @@ app.post("/procurement/orders", authenticateVendor, asyncHandler(async (req, res
     vendorId: req.vendor.vendorId,
     shopId: req.vendor.shopId,
     action: "procurement.order.create",
-    metadata: { orderId: order.id },
+    metadata: { orderId: order.id, supplier: supplier || null },
   });
   res.status(201).json({ order });
 }));
@@ -4453,7 +4474,7 @@ app.get("/analytics", authenticateVendor, asyncHandler(async (req, res) => {
 }));
 
 // ========== HISTORICAL IMPORT/ARCHIVE ==========
-app.post("/analytics/import", authenticateVendor, upload.single("file"), asyncHandler(async (req, res) => {
+app.post("/analytics/import", authenticateVendor, requirePermission("analytics:write"), upload.single("file"), asyncHandler(async (req, res) => {
   assertAnalyticsAccess(req);
   if (!req.file) {
     return res.status(400).json({ message: "No file uploaded" });
@@ -4494,6 +4515,11 @@ app.get("/data/archive/:vendorId/:period", authenticateVendor, asyncHandler(asyn
   }
   res.setHeader("Content-Type", "application/octet-stream");
   res.setHeader("Content-Disposition", `attachment; filename=${period}.parquet`);
+  const metadata = loadMetadata();
+  const checksum = metadata?.[vendorId]?.[period]?.checksum || null;
+  if (checksum) {
+    res.setHeader("X-Archive-Checksum", checksum);
+  }
   recordAuditEvent({
     actorType: "vendor",
     actorId: req.vendor.vendorId,
@@ -4505,6 +4531,28 @@ app.get("/data/archive/:vendorId/:period", authenticateVendor, asyncHandler(asyn
   fs.createReadStream(filePath).pipe(res);
 }));
 
+app.post("/data/archive/materialize", authenticateVendor, requirePermission("analytics:write"), asyncHandler(async (req, res) => {
+  assertAnalyticsAccess(req);
+  const specificVendorId = req.vendor.vendorId;
+  const report = await runArchiveJob({ specificVendorId });
+  recordAuditEvent({
+    actorType: "vendor",
+    actorId: req.vendor.vendorId,
+    vendorId: req.vendor.vendorId,
+    shopId: req.vendor.shopId,
+    action: "archive.materialize",
+    metadata: report,
+  });
+  res.json(report);
+}));
+
+app.get("/data/archive/catalog", authenticateVendor, asyncHandler(async (req, res) => {
+  assertAnalyticsAccess(req);
+  const metadata = loadMetadata();
+  const vendorEntries = metadata[String(req.vendor.vendorId)] || {};
+  res.json({ vendorId: req.vendor.vendorId, entries: vendorEntries });
+}));
+
 // Vendor headcount management
 app.get("/analytics/headcount", authenticateVendor, asyncHandler(async (req, res) => {
   assertAnalyticsAccess(req);
@@ -4512,7 +4560,7 @@ app.get("/analytics/headcount", authenticateVendor, asyncHandler(async (req, res
   res.json({ entries });
 }));
 
-app.post("/analytics/headcount", authenticateVendor, asyncHandler(async (req, res) => {
+app.post("/analytics/headcount", authenticateVendor, requirePermission("analytics:write"), asyncHandler(async (req, res) => {
   assertAnalyticsAccess(req);
   const headcount = Number(req.body.headcount);
   if (!Number.isFinite(headcount) || headcount <= 0) {

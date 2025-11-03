@@ -9,6 +9,16 @@ export const fetchMenu = async () => {
   return res.json();
 };
 
+export const fetchForecast = async (token) => {
+  const res = await fetch(`${API_URL}/analytics/forecast`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to fetch forecast: ${res.status}`);
+  }
+  return res.json();
+};
+
 export const employeeCheckUsername = async (username) => {
   const u = encodeURIComponent(username || '');
   const res = await fetch(`${API_URL}/employee/check-username?username=${u}`);

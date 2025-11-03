@@ -2,6 +2,7 @@ const { createClient } = require("redis");
 const { InfluxDB, Point } = require("@influxdata/influxdb-client");
 const duckdb = require("duckdb");
 const analyticsConfig = require("./analyticsConfig");
+const { metricsRegistry } = require("./metricsRegistry");
 
 const parsePayload = (entry) => {
   try {
@@ -55,6 +56,7 @@ class AnalyticsIngestor {
     await this.redis.connect();
     this.duckDbConnection = await this._openDuckDbConnection();
     this.running = true;
+    metricsRegistry.setHealthStatus("analyticsIngestor", { healthy: true, detail: "running" });
     this._loop();
   }
 
@@ -79,6 +81,7 @@ class AnalyticsIngestor {
         console.error("[AnalyticsIngestor] Failed to close DuckDB connection", error);
       }
     }
+    metricsRegistry.setHealthStatus("analyticsIngestor", { healthy: false, detail: "stopped" });
   }
 
   async _openDuckDbConnection() {
@@ -160,6 +163,8 @@ class AnalyticsIngestor {
         );
 
         if (!response || response.length === 0) {
+          await this._updateLagGauge();
+          metricsRegistry.setHealthStatus("analyticsIngestor", { healthy: true, detail: "idle" });
           continue;
         }
 
@@ -175,10 +180,26 @@ class AnalyticsIngestor {
             await this.redis.xAck(ANALYTICS_STREAM, ANALYTICS_CONSUMER_GROUP, message.id);
           }
         }
+        await this._updateLagGauge();
+        metricsRegistry.setHealthStatus("analyticsIngestor", { healthy: true, detail: "processing" });
       } catch (error) {
         console.error("[AnalyticsIngestor] Error in processing loop", error);
+        metricsRegistry.incrementCounter("analyticsIngestor.errors");
+        metricsRegistry.setHealthStatus("analyticsIngestor", { healthy: false, detail: error.message });
         await new Promise((resolve) => setTimeout(resolve, ANALYTICS_INGESTOR_RETRY_MS));
       }
+    }
+  }
+
+  async _updateLagGauge() {
+    try {
+      const summary = await this.redis.xPending(
+        this.config.ANALYTICS_STREAM,
+        this.config.ANALYTICS_CONSUMER_GROUP
+      );
+      metricsRegistry.setGauge("analytics.redisLag", summary?.count || 0);
+    } catch (error) {
+      metricsRegistry.incrementCounter("analyticsIngestor.lagErrors");
     }
   }
 
