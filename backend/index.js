@@ -1225,6 +1225,7 @@ app.post('/admin/vendor', authenticateAdmin, async (req, res) => {
       status: 'success',
       vendor: {
         vendorId,
+        id: vendorId,
         shopId: resolvedShopId,
         username: trimmedUsername,
         email: trimmedEmail || null,
@@ -4416,6 +4417,7 @@ app.put("/admin/vendor/:id", authenticateAdmin, (req, res) => {
 
     const sanitizedVendor = {
       vendorId: vendor.vendorId,
+      id: vendor.vendorId,
       shopId: vendor.shopId,
       username: vendor.username,
       email: vendor.email || null,
