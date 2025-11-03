@@ -355,7 +355,7 @@
     "shopId": 2,
     "user": "9952911560",
     "scheduledTime": "2025-10-29T09:25",
-    "status": "pending",
+    "status": "completed",
     "createdAt": "2025-10-29T14:12:51.195Z",
     "billingId": "00001",
     "estimatedReadyTime": "2025-11-02T17:00:41.124Z",
@@ -365,7 +365,10 @@
     "rating": null,
     "feedback": null,
     "etaExtendedAt": "2025-11-02T16:55:41.124Z",
-    "etaExtensionMinutes": 5
+    "etaExtensionMinutes": 5,
+    "readyAt": "2025-11-03T17:04:18.881Z",
+    "pickedAt": "2025-11-03T17:04:21.596Z",
+    "completedAt": "2025-11-03T17:04:21.596Z"
   },
   {
     "id": 15,

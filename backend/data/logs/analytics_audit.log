@@ -5,3 +5,4 @@
 {"timestamp":"2025-11-03T15:53:52.424Z","actorType":"vendor","actorId":5,"shopId":5,"vendorId":5,"action":"vendor.login.success","metadata":{"username":"northfoods"}}
 {"timestamp":"2025-11-03T16:21:33.369Z","actorType":"vendor","actorId":1,"shopId":1,"vendorId":1,"action":"vendor.login.success","metadata":{"username":"northfoods"}}
 {"timestamp":"2025-11-03T16:32:15.012Z","actorType":"vendor","actorId":1,"shopId":1,"vendorId":1,"action":"vendor.login.success","metadata":{"username":"northfoods"}}
+{"timestamp":"2025-11-03T17:04:08.940Z","actorType":"vendor","actorId":2,"shopId":2,"vendorId":2,"action":"vendor.login.success","metadata":{"username":"southfoods"}}
