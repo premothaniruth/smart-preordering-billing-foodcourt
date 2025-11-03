@@ -190,6 +190,18 @@ function App() {
     });
   }, [selectedShop]);
 
+  const refreshAdminManagedVendors = useCallback(async () => {
+    if (!adminSession) return;
+    try {
+      const res = await fetchAdminVendors(adminSession);
+      if (res?.status === "ok" && Array.isArray(res.vendors)) {
+        setAdminManagedVendors(res.vendors);
+      }
+    } catch (error) {
+      console.error("Failed to refresh admin vendors", error);
+    }
+  }, [adminSession]);
+
   useEffect(() => {
     document.title = "Infy Bhojans";
     loadMenu();
@@ -1209,6 +1221,7 @@ function App() {
                     vendors={adminManagedVendors}
                     onRequestRefresh={() => {
                       loadMenu();
+                      refreshAdminManagedVendors();
                     }}
                     sosState={sosState}
                     onTriggerSos={() => handleSosTrigger("admin")}
