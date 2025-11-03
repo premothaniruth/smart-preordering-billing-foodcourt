@@ -63,6 +63,75 @@ const wss = new WebSocketServer({ server, path: "/ws/analytics" });
 const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET || "MySuperSecretKeyForJWT";
 
+const analyticsBootstrapStateFile = path.join(__dirname, "data", "analytics_bootstrap_state.json");
+
+const loadAnalyticsBootstrapState = () => {
+  try {
+    const raw = fs.readFileSync(analyticsBootstrapStateFile, "utf8");
+    return JSON.parse(raw || "{}") || {};
+  } catch {
+    return {};
+  }
+};
+
+const saveAnalyticsBootstrapState = (state) => {
+  try {
+    fs.writeFileSync(analyticsBootstrapStateFile, JSON.stringify(state, null, 2));
+  } catch (error) {
+    console.warn("Failed to persist analytics bootstrap state", error);
+  }
+};
+
+const bootstrapAnalyticsFromOrders = async () => {
+  const state = loadAnalyticsBootstrapState();
+  const lastOrderId = Number(state.lastOrderId || 0);
+  const orders = getOrders();
+  const pending = orders.filter((order) => Number(order.id) > lastOrderId);
+  if (pending.length === 0) {
+    return;
+  }
+
+  const vendors = getVendors();
+  const vendorByShop = new Map();
+  vendors.forEach((vendor) => {
+    if (vendor?.shopId != null) {
+      vendorByShop.set(String(vendor.shopId), vendor);
+    }
+  });
+
+  for (const order of pending) {
+    const vendor = vendorByShop.get(String(order.shopId)) || null;
+    try {
+      await emitOrderCreatedEvent(order, {
+        user: order.user || null,
+        payment: order.payment || null,
+        vendor,
+        meta: { source: "bootstrap" },
+      });
+
+      if (order.status) {
+        await emitOrderStatusEvent(order, {
+          vendor,
+          previousStatus: null,
+          actor: vendor
+            ? {
+                type: "vendor",
+                vendorId: vendor.vendorId,
+                shopId: vendor.shopId,
+                username: vendor.username,
+              }
+            : { type: "system", source: "bootstrap" },
+        });
+      }
+    } catch (error) {
+      console.warn("Failed to bootstrap analytics event for order", order.id, error);
+    }
+  }
+
+  const maxOrderId = pending.reduce((max, order) => Math.max(max, Number(order.id) || 0), lastOrderId);
+  saveAnalyticsBootstrapState({ lastOrderId: maxOrderId });
+};
+
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: Number(process.env.ANALYTICS_IMPORT_MAX_SIZE || 15 * 1024 * 1024) },
