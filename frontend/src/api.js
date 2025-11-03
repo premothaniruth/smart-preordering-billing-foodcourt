@@ -617,13 +617,20 @@ export const fetchSosStatus = async () => {
  * Fetch analytics
  * @param {string} token
  * @param {('daily'|'monthly'|'quarterly'|'yearly'|'')} period
+ * @param {('hour'|'day'|'week')} granularity
  * @returns {Promise<any>}
  */
-export const fetchAnalytics = async (token, period) => {
-  const qs = period ? `?period=${encodeURIComponent(period)}` : "";
+export const fetchAnalytics = async (token, period, granularity) => {
+  const params = new URLSearchParams();
+  if (period) params.set("period", period);
+  if (granularity) params.set("granularity", granularity);
+  const qs = params.toString() ? `?${params.toString()}` : "";
   const res = await fetch(`${API_URL}/analytics${qs}`, {
     headers: { Authorization: `Bearer ${token}` }
   });
+  if (!res.ok) {
+    throw new Error(`Failed to fetch analytics: ${res.status}`);
+  }
   return res.json();
 };
 

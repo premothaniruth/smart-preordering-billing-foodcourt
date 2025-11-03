@@ -3,6 +3,10 @@ const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 const fs = require("fs");
+const fsPromises = require("fs/promises");
+const http = require("http");
+const { WebSocketServer } = require("ws");
+const { URL } = require("url");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const path = require("path");
@@ -15,11 +19,37 @@ const {
 } = require("./lib/analyticsEvents");
 const analyticsConfig = require("./lib/analyticsConfig");
 const { analyticsIngestor } = require("./lib/analyticsIngestor");
+const { analyticsQueryService } = require("./lib/analyticsQueryService");
+const { realtimeAnalyticsService } = require("./lib/realtimeAnalyticsService");
+const { analyticsImportService } = require("./lib/analyticsImportService");
+const multer = require("multer");
 
 // App setup
 const app = express();
+const server = http.createServer(app);
+const wss = new WebSocketServer({ server, path: "/ws/analytics" });
 const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET || "MySuperSecretKeyForJWT";
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: Number(process.env.ANALYTICS_IMPORT_MAX_SIZE || 15 * 1024 * 1024) },
+});
+
+const ARCHIVE_ROOT = path.join(__dirname, "data", "archive");
+fsPromises.mkdir(ARCHIVE_ROOT, { recursive: true }).catch(() => {});
+
+const decodeVendorToken = (token) => {
+  if (!token) return null;
+  const raw = token.startsWith("Bearer ") ? token.slice(7) : token;
+  try {
+    const decoded = jwt.verify(raw, JWT_SECRET);
+    if (!decoded || decoded.shopId == null) return null;
+    return decoded;
+  } catch (error) {
+    return null;
+  }
+};
 
 app.use(cors());
 app.use(bodyParser.json({ limit: '6mb' }));
@@ -2467,6 +2497,25 @@ const calculateOrderTotal = (order) => {
   return Math.round(total * 100) / 100;
 };
 
+const ensureDirectory = async (dirPath) => {
+  try {
+    await fsPromises.mkdir(dirPath, { recursive: true });
+  } catch (error) {
+    if (error.code !== "EEXIST") throw error;
+  }
+};
+
+const asyncHandler = (fn) => (req, res, next) => {
+  Promise.resolve(fn(req, res, next)).catch(next);
+};
+
+const assertAnalyticsAccess = (req) => {
+  if (!req.vendor) {
+    throw new Error("Analytics access requires vendor authentication");
+  }
+  return req.vendor;
+};
+
 const getEmployeeByUserId = (user) => {
   if (!user) return null;
   const employees = getEmployees();
@@ -4128,71 +4177,81 @@ app.post("/order/extend/:id", authenticateVendor, (req, res) => {
   }
 });
 
-// Get analytics
-/**
- * GET /analytics?period=
- * Vendor: Returns basic KPIs and popularity for selected period.
- */
-app.get("/analytics", authenticateVendor, (req, res) => {
-  try {
-    const period = (req.query.period || '').toLowerCase();
-    const allOrdersForShop = getOrders().filter((o) => o.shopId === req.vendor.shopId);
+// ========== REAL-TIME ANALYTICS ENDPOINTS ==========
+app.get("/analytics/summary", authenticateVendor, asyncHandler(async (req, res) => {
+  assertAnalyticsAccess(req);
+  const summary = await realtimeAnalyticsService.getSummary(req.vendor.shopId);
+  res.json(summary);
+}));
 
-    const now = new Date();
-    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const startOfYear = new Date(now.getFullYear(), 0, 1);
-    const startOfQuarter = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
+app.get("/analytics/timeseries", authenticateVendor, asyncHandler(async (req, res) => {
+  assertAnalyticsAccess(req);
+  const granularity = String(req.query.granularity || "hour").toLowerCase();
+  const response = await realtimeAnalyticsService.getTimeSeries(req.vendor.shopId, granularity);
+  res.json(response);
+}));
 
-    const inRange = (d, start) => new Date(d) >= start;
-    const filterByPeriod = (orders, p) => {
-      if (p === 'daily') return orders.filter(o => inRange(o.createdAt, startOfDay));
-      if (p === 'monthly') return orders.filter(o => inRange(o.createdAt, startOfMonth));
-      if (p === 'quarterly') return orders.filter(o => inRange(o.createdAt, startOfQuarter));
-      if (p === 'yearly') return orders.filter(o => inRange(o.createdAt, startOfYear));
-      return orders;
-    };
+app.get("/analytics/inventory", authenticateVendor, asyncHandler(async (req, res) => {
+  assertAnalyticsAccess(req);
+  const inventory = await realtimeAnalyticsService.getInventory(req.vendor.shopId);
+  res.json(inventory);
+}));
 
-    const orders = filterByPeriod(allOrdersForShop, period);
-    const totalOrders = orders.length;
+app.get("/analytics/export/current", authenticateVendor, asyncHandler(async (req, res) => {
+  assertAnalyticsAccess(req);
+  const format = String(req.query.format || "json").toLowerCase();
+  const { contentType, payload } = await realtimeAnalyticsService.exportCurrent(req.vendor.shopId, format);
+  res.setHeader("Content-Type", contentType);
+  res.setHeader("Content-Disposition", `attachment; filename=analytics-${req.vendor.shopId}.${format === "csv" ? "csv" : "json"}`);
+  res.send(payload);
+}));
 
-    const itemCounts = {};
-    let totalItems = 0;
-    for (const order of orders) {
-      for (const item of order.items) {
-        const qty = item.quantity || 1;
-        totalItems += qty;
-        const itemName = item.name;
-        if (!itemCounts[itemName]) itemCounts[itemName] = 0;
-        itemCounts[itemName] += qty;
-      }
-    }
+// Historical summary (fallback)
+app.get("/analytics", authenticateVendor, asyncHandler(async (req, res) => {
+  assertAnalyticsAccess(req);
+  const summary = await analyticsQueryService.getVendorSummary({
+    shopId: req.vendor.shopId,
+    period: req.query.period,
+    granularity: req.query.granularity,
+  });
+  res.json(summary);
+}));
 
-    const popularItems = Object.entries(itemCounts).map(([name, count]) => ({
-      name,
-      count
-    }));
-
-    const ratingsData = getRatings();
-    const shopOrderIds = orders.map(o => o.id);
-    const shopRatings = ratingsData.filter(r => r.orderId && shopOrderIds.includes(r.orderId));
-    const avgRating = shopRatings.length > 0 
-      ? (shopRatings.reduce((sum, r) => sum + r.rating, 0) / shopRatings.length).toFixed(1)
-      : 0;
-
-    // breakdown counts irrespective of current period
-    const breakdown = {
-      daily: filterByPeriod(allOrdersForShop, 'daily').length,
-      monthly: filterByPeriod(allOrdersForShop, 'monthly').length,
-      quarterly: filterByPeriod(allOrdersForShop, 'quarterly').length,
-      yearly: filterByPeriod(allOrdersForShop, 'yearly').length
-    };
-
-    res.json({ totalOrders, totalItems, popularItems, avgRating, totalRatings: shopRatings.length, breakdown });
-  } catch (error) {
-    res.status(500).json({ message: "Error fetching analytics" });
+// ========== HISTORICAL IMPORT/ARCHIVE ==========
+app.post("/analytics/import", authenticateVendor, upload.single("file"), asyncHandler(async (req, res) => {
+  assertAnalyticsAccess(req);
+  if (!req.file) {
+    return res.status(400).json({ message: "No file uploaded" });
   }
-});
+  try {
+    const result = await analyticsImportService.importFile({
+      buffer: req.file.buffer,
+      mimetype: req.file.mimetype,
+      originalname: req.file.originalname,
+      actor: req.vendor,
+    });
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ message: error.message || "Import failed" });
+  }
+}));
+
+app.get("/data/archive/:vendorId/:period", authenticateVendor, asyncHandler(async (req, res) => {
+  assertAnalyticsAccess(req);
+  const vendorId = String(req.params.vendorId);
+  if (String(req.vendor.vendorId) !== vendorId) {
+    return res.status(403).json({ message: "Forbidden" });
+  }
+  const period = String(req.params.period);
+  const filePath = path.join(ARCHIVE_ROOT, vendorId, `${period}.parquet`);
+  const exists = fs.existsSync(filePath);
+  if (!exists) {
+    return res.status(404).json({ message: "Archive not found" });
+  }
+  res.setHeader("Content-Type", "application/octet-stream");
+  res.setHeader("Content-Disposition", `attachment; filename=${period}.parquet`);
+  fs.createReadStream(filePath).pipe(res);
+}));
 
 // Get grievances for vendor's shop
 /**
@@ -4236,7 +4295,7 @@ app.post("/grievance/resolve/:id", authenticateVendor, (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Backend running on http://localhost:${PORT}`);
   console.log(`Images served from: http://localhost:${PORT}/images/`);
   if (analyticsConfig.ANALYTICS_INGESTOR_ENABLED) {
@@ -4251,4 +4310,57 @@ app.listen(PORT, () => {
   } else {
     console.log("Analytics ingestor disabled via configuration");
   }
+  realtimeAnalyticsService
+    .start()
+    .then(() => console.log("Realtime analytics service started"))
+    .catch((err) => console.error("Failed to start realtime analytics service", err));
+});
+
+const shutdown = async () => {
+  try {
+    await analyticsIngestor.stop?.();
+  } catch (error) {
+    console.error("Failed to stop analytics ingestor", error);
+  }
+  try {
+    await realtimeAnalyticsService.stop();
+  } catch (error) {
+    console.error("Failed to stop realtime analytics service", error);
+  }
+  process.exit(0);
+};
+
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);
+
+app.post("/analytics/import", authenticateVendor, upload.single("file"), asyncHandler(async (req, res) => {
+  assertAnalyticsAccess(req);
+  if (!req.file) {
+    return res.status(400).json({ message: "No file uploaded" });
+  }
+  try {
+    const result = await analyticsImportService.importFile({
+      buffer: req.file.buffer,
+      mimetype: req.file.mimetype,
+      originalname: req.file.originalname,
+      actor: req.vendor,
+    });
+    res.json(result);
+  } catch (error) {
+    console.error("Error importing analytics data", error);
+    res.status(400).json({ message: error.message || "Import failed" });
+  }
+}));
+
+wss.on("connection", async (ws, req) => {
+  const url = new URL(req.url, `http://${req.headers.host}`);
+  const token = url.searchParams.get("token") || req.headers["sec-websocket-protocol"]; // allow auth via query or protocol
+  const vendor = decodeVendorToken(token || "");
+  if (!vendor || vendor.shopId == null) {
+    ws.close(4401, "Unauthorized");
+    return;
+  }
+  realtimeAnalyticsService.registerWebSocket(vendor.shopId, ws);
+  const snapshot = await realtimeAnalyticsService.getSummary(vendor.shopId);
+  ws.send(JSON.stringify({ type: "analytics:init", data: snapshot }));
 });
