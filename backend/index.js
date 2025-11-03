@@ -105,6 +105,10 @@ const authenticateVendor = (req, res, next) => {
   });
 };
 
+const asyncHandler = (fn) => (req, res, next) => {
+  Promise.resolve(fn(req, res, next)).catch(next);
+};
+
 const assertAnalyticsAccess = (req) => {
   if (!req.vendor) {
     throw new Error("Analytics access requires vendor authentication");
@@ -2596,11 +2600,6 @@ const ensureDirectory = async (dirPath) => {
     if (error.code !== "EEXIST") throw error;
   }
 };
-
-const asyncHandler = (fn) => (req, res, next) => {
-  Promise.resolve(fn(req, res, next)).catch(next);
-};
-
 
 const getEmployeeByUserId = (user) => {
   if (!user) return null;
