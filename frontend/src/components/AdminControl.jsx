@@ -868,7 +868,7 @@ function AdminControl({
               <select value={selectedVendorId} onChange={(e) => handleVendorSelection(e.target.value)}>
                 <option value="">-- Choose a vendor --</option>
                 {sortedVendors.map((vendor) => (
-                  <option key={vendor.id} value={vendor.id}>
+                  <option key={vendor.vendorId ?? vendor.id} value={vendor.vendorId ?? vendor.id}>
                     {vendor.shopName}
                   </option>
                 ))}
@@ -909,7 +909,7 @@ function AdminControl({
           ) : (
             <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
               {sortedVendors.map((vendor) => (
-                <li key={vendor.id} style={{ padding: "8px 0", borderBottom: "1px solid #ecf0f1", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+                <li key={vendor.vendorId ?? vendor.id} style={{ padding: "8px 0", borderBottom: "1px solid #ecf0f1", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
                   <div>
                     <div style={{ fontWeight: 600 }}>{vendor.shopName}</div>
                     <div style={{ fontSize: 12, color: "#7f8c8d" }}>{vendor.email}</div>
@@ -918,7 +918,7 @@ function AdminControl({
                   <button
                     type="button"
                     style={{ background: "#e74c3c", color: "#fff", border: "none", padding: "6px 12px", borderRadius: 4, cursor: "pointer" }}
-                    onClick={() => handleDeleteVendor(vendor.id)}
+                    onClick={() => handleDeleteVendor(vendor.vendorId ?? vendor.id)}
                     disabled={vendorDirectoryLoading}
                   >
                     Remove
