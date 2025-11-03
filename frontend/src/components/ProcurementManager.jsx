@@ -101,7 +101,7 @@ const ProcurementManager = ({ token }) => {
   const forecastEntries = useMemo(() => forecastState.data?.baseline || [], [forecastState]);
   const forecastAlerts = useMemo(() => {
     if (!Array.isArray(forecastEntries) || forecastEntries.length === 0) return [];
-    const threshold = Number(process.env.REACT_APP_FORECAST_ALERT_THRESHOLD || 50);
+    const threshold = Number(import.meta.env.VITE_FORECAST_ALERT_THRESHOLD || 50);
     return forecastEntries
       .filter((entry) => entry.projectedOrders >= threshold)
       .map((entry) => ({

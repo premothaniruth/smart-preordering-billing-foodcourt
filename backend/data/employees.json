@@ -55,5 +55,33 @@
     "bulkOrderEligible": true,
     "walletBalance": 0,
     "walletTransactions": []
+  },
+  {
+    "id": 5,
+    "username": "prem",
+    "email": "premanir@gmail.com",
+    "mobile": "+918489196892",
+    "passwordHash": "$2b$10$syNT90QxmPVwSRJKMaIjouq/JR0GahwL.XDdJ1bZk7h8G62kFSAR2",
+    "pinHash": "$2b$10$xLbDksmzm30ve5ABWT7VrOjiCkH19s48nB2ak6STdXb1Pbot6bPHW",
+    "role": "Employee",
+    "roleSlug": "employee",
+    "department": "",
+    "bulkOrderEligible": false,
+    "walletBalance": 0,
+    "walletTransactions": []
+  },
+  {
+    "id": 6,
+    "username": "aniruthtg",
+    "email": "aniruth@gmail.com",
+    "mobile": "+919922911560",
+    "passwordHash": "$2b$10$SLjkn0jUJ3Vv9NySUc547.cyqDt9z/H0iDAVIrCeo0bu57qfPaIqq",
+    "pinHash": "$2b$10$AFKWYVrKZLEYdkZekETVy.2ifb3WAlnIJxwCbI4shjuEtDiWhS2Lq",
+    "role": "Employee",
+    "roleSlug": "employee",
+    "department": "",
+    "bulkOrderEligible": false,
+    "walletBalance": 0,
+    "walletTransactions": []
   }
 ]
