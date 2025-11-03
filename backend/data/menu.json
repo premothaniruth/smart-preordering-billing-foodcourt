@@ -2754,24 +2754,6 @@
           ]
         }
       ]
-    },
-    {
-      "shopId": 5,
-      "shopName": "North Indian Dhamaka",
-      "categories": [],
-      "contactEmail": "northvendor@infosys.com"
-    },
-    {
-      "shopId": 6,
-      "shopName": "Fast Food & Desserts",
-      "categories": [],
-      "contactEmail": "fastfoodvendor@infosys.com"
-    },
-    {
-      "shopId": 7,
-      "shopName": "Beverage Corner",
-      "categories": [],
-      "contactEmail": "beveragevendor@infosys.com"
     }
   ]
 }
