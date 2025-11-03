@@ -105,6 +105,36 @@ const authenticateVendor = (req, res, next) => {
   });
 };
 
+const assertAnalyticsAccess = (req) => {
+  if (!req.vendor) {
+    throw new Error("Analytics access requires vendor authentication");
+  }
+  if (!req.vendor.permissions?.includes("analytics:read")) {
+    const error = new Error("Analytics permission denied");
+    error.status = 403;
+    throw error;
+  }
+  return req.vendor;
+};
+
+const requirePermission = (perm) => (req, res, next) => {
+  if (!req.vendor?.permissions?.includes(perm)) {
+    return res.status(403).json({ message: "Forbidden" });
+  }
+  next();
+};
+
+const recordAuditEvent = ({ actorType, actorId, shopId, vendorId, action, metadata }) => {
+  appendAuditEntry({
+    timestamp: new Date().toISOString(),
+    actorType,
+    actorId,
+    shopId,
+    vendorId,
+    action,
+    metadata,
+  });
+};
 
 app.use(cors());
 app.use(bodyParser.json({ limit: '6mb' }));
