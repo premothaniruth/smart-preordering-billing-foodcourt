@@ -817,18 +817,36 @@ function App() {
     setView("landing");
   };
 
-  const handleCreateVendor = (payload) => {
-    const id = Date.now();
-    setAdminManagedVendors((prev) => [...prev, { id, ...payload }]);
-    toast.success(`Vendor ${payload.shopName} created. Email sent to ${payload.email}.`);
+  const handleCreateVendor = async (payload) => {
+    try {
+      const res = await createVendor(payload);
+      if (res?.status === "success") {
+        const id = Date.now(); // or use res.vendor.id if returned
+        setAdminManagedVendors((prev) => [...prev, { id, ...payload }]);
+        toast.success(`Vendor ${payload.shopName} created and email sent to ${payload.email}.`);
+      } else {
+        toast.error(res?.message || "Failed to create vendor");
+      }
+    } catch (error) {
+      toast.error("Error creating vendor");
+    }
   };
 
-  const handleUpdateVendor = (vendorId, payload) => {
-    setAdminManagedVendors((prev) => prev.map((vendor) => {
-      if (String(vendor.id) !== String(vendorId)) return vendor;
-      return { ...vendor, ...payload };
-    }));
-    toast.success("Vendor credentials updated and notification sent");
+  const handleUpdateVendor = async (vendorId, payload) => {
+    try {
+      const res = await updateVendor(vendorId, payload, adminSession);
+      if (res?.status === "success") {
+        setAdminManagedVendors((prev) => prev.map((vendor) => {
+          if (String(vendor.id) !== String(vendorId)) return vendor;
+          return { ...vendor, ...payload };
+        }));
+        toast.success("Vendor credentials updated and notification sent");
+      } else {
+        toast.error(res?.message || "Failed to update vendor");
+      }
+    } catch (error) {
+      toast.error("Error updating vendor");
+    }
   };
 
   return (
