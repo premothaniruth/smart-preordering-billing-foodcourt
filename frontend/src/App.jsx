@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
-import { fetchMenu, placeOrder, fetchUserOrders, fetchFavorites, submitRating, cancelOrder, employeeProfile, triggerSosAlert, resolveSosAlert, fetchSosStatus, previewOffers, createVendor, updateVendor } from "./api";
+import { fetchMenu, placeOrder, fetchUserOrders, fetchFavorites, submitRating, cancelOrder, employeeProfile, triggerSosAlert, resolveSosAlert, fetchSosStatus, previewOffers, createVendor, updateVendor, fetchAdminVendors } from "./api";
 import Menu from "./components/Menu.jsx";
 import Cart from "./components/Cart.jsx";
 import Login from "./components/Login.jsx";
@@ -149,6 +149,28 @@ function App() {
       console.warn("Failed to persist admin vendors", error);
     }
   }, [adminManagedVendors]);
+
+  useEffect(() => {
+    const storedSession = adminSession;
+    if (!storedSession) return;
+    let cancelled = false;
+    const hydrateVendors = async () => {
+      try {
+        const res = await fetchAdminVendors(storedSession);
+        if (!cancelled && res?.status === "ok" && Array.isArray(res.vendors)) {
+          setAdminManagedVendors(res.vendors);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.warn("Failed to hydrate admin vendors", error);
+        }
+      }
+    };
+    hydrateVendors();
+    return () => {
+      cancelled = true;
+    };
+  }, [adminSession]);
 
   const userId = employeeMobile || null;
   const vendorShopId = (() => {
@@ -793,7 +815,7 @@ function App() {
     toast.info("Logged out");
   };
 
-  const handleAdminLogin = ({ username, password }) => {
+  const handleAdminLogin = async ({ username, password }) => {
     const trimmedUser = String(username || '').trim();
     const trimmedPass = String(password || '').trim();
     if (!trimmedUser || !trimmedPass) {
@@ -807,7 +829,23 @@ function App() {
       toast.error("Invalid admin username or password");
       return;
     }
-    setAdminSession({ username: trimmedUser, password: trimmedPass });
+    const session = { username: trimmedUser, password: trimmedPass };
+    setAdminSession(session);
+    try {
+      const res = await fetchAdminVendors(session);
+      if (res?.status === "ok" && Array.isArray(res.vendors)) {
+        setAdminManagedVendors(res.vendors);
+      } else {
+        setAdminManagedVendors([]);
+        if (res?.message) {
+          toast.error(res.message);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to load admin vendors", error);
+      toast.error("Unable to load vendors");
+      setAdminManagedVendors([]);
+    }
     toast.success("Admin logged in");
   };
 
