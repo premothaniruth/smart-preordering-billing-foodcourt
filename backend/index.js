@@ -4332,64 +4332,97 @@ app.put("/admin/vendor/:id", authenticateAdmin, (req, res) => {
       return res.status(404).json({ message: "Vendor not found" });
     }
 
-    const { username, password, shopId, shopName, email } = req.body || {};
-    if (username != null) {
-      vendors[index].username = String(username).trim();
+    const vendor = vendors[index];
+    const originalShopId = vendor.shopId != null ? Number(vendor.shopId) : null;
+
+    const trimmedUsername = username != null ? String(username).trim() : null;
+    const trimmedShopName = shopName != null ? String(shopName).trim() : null;
+    const trimmedEmail = email != null ? String(email).trim() : null;
+
+    if (trimmedUsername) {
+      vendor.username = trimmedUsername;
     }
     if (password != null && password !== "") {
-      vendors[index].passwordHash = bcrypt.hashSync(String(password), 10);
+      vendor.passwordHash = bcrypt.hashSync(String(password), 10);
     }
 
+    let newShopIdValue = originalShopId;
     if (shopId != null && shopId !== '') {
-      const newShopId = Number(shopId);
-      if (!Number.isFinite(newShopId) || newShopId <= 0) {
+      const candidateShopId = Number(shopId);
+      if (!Number.isFinite(candidateShopId) || candidateShopId <= 0) {
         return res.status(400).json({ message: 'Invalid shopId' });
       }
       const vendorsWithoutCurrent = vendors.filter((v) => v.vendorId !== vendorId);
-      const shopIdConflict = vendorsWithoutCurrent.some((v) => Number(v.shopId) === newShopId);
+      const shopIdConflict = vendorsWithoutCurrent.some((v) => Number(v.shopId) === candidateShopId);
       if (shopIdConflict) {
         return res.status(409).json({ message: 'Shop ID already in use by another vendor' });
       }
-      vendors[index].shopId = newShopId;
-
-      const rawMenu = getMenu();
-      const updateShopEntry = (menuData) => {
-        if (Array.isArray(menuData)) {
-          return menuData.map((shop) => {
-            if (shop && Number(shop.shopId) === Number(vendors[index].shopId)) {
-              return { ...shop, shopId: newShopId };
-            }
-            return shop;
-          });
-        }
-        if (menuData && Array.isArray(menuData.shops)) {
-          return {
-            ...menuData,
-            shops: menuData.shops.map((shop) => {
-              if (shop && Number(shop.shopId) === Number(vendors[index].shopId)) {
-                return { ...shop, shopId: newShopId };
-              }
-              return shop;
-            }),
-          };
-        }
-        return menuData;
-      };
-
-      const updatedMenu = updateShopEntry(rawMenu);
-      saveMenu(updatedMenu);
+      vendor.shopId = candidateShopId;
+      newShopIdValue = candidateShopId;
     }
 
-    if (shopName != null) {
-      vendors[index].shopName = String(shopName).trim();
+    if (trimmedShopName) {
+      vendor.shopName = trimmedShopName;
     }
-    if (email != null) {
-      vendors[index].email = String(email).trim();
+    if (trimmedEmail !== null) {
+      if (trimmedEmail) {
+        vendor.email = trimmedEmail;
+      } else {
+        delete vendor.email;
+      }
     }
 
     saveVendors(vendors);
+
+    const rawMenu = getMenu();
+    const updateShopEntry = (menuData) => {
+      const applyUpdate = (shop) => {
+        if (!shop) return shop;
+        if (Number(shop.shopId) !== Number(originalShopId)) {
+          return shop;
+        }
+        const updatedShop = { ...shop };
+        if (newShopIdValue != null) updatedShop.shopId = newShopIdValue;
+        if (trimmedShopName) updatedShop.shopName = trimmedShopName;
+        if (trimmedEmail !== null) {
+          if (trimmedEmail) {
+            updatedShop.contactEmail = trimmedEmail;
+          } else {
+            delete updatedShop.contactEmail;
+          }
+        }
+        return updatedShop;
+      };
+
+      if (Array.isArray(menuData)) {
+        return menuData.map(applyUpdate);
+      }
+      if (menuData && typeof menuData === 'object') {
+        const next = { ...menuData };
+        if (Array.isArray(next.shops)) {
+          next.shops = next.shops.map(applyUpdate);
+        }
+        return next;
+      }
+      return menuData;
+    };
+
+    const updatedMenu = updateShopEntry(rawMenu);
+    if (updatedMenu !== rawMenu) {
+      saveMenu(updatedMenu);
+    }
+
     vendorDirectoryCache = { map: null, timestamp: 0 };
-    res.json({ status: "success", message: "Vendor updated successfully" });
+
+    const sanitizedVendor = {
+      vendorId: vendor.vendorId,
+      shopId: vendor.shopId,
+      username: vendor.username,
+      email: vendor.email || null,
+      shopName: vendor.shopName || null,
+    };
+
+    res.json({ status: "success", message: "Vendor updated successfully", vendor: sanitizedVendor });
   } catch (error) {
     res.status(500).json({ message: "Error updating vendor" });
   }
