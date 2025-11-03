@@ -694,18 +694,40 @@ export const fetchSosStatus = async () => {
  * @param {('hour'|'day'|'week')} granularity
  * @returns {Promise<any>}
  */
-export const fetchAnalytics = async (token, period, granularity) => {
+export const fetchAnalytics = async (token, period, granularity, { onFallback } = {}) => {
+  const realtimeParams = new URLSearchParams();
+  if (granularity) realtimeParams.set("granularity", granularity);
+  realtimeParams.set("includeInventory", "true");
+
+  const realtimeRes = await fetch(`${API_URL}/analytics/summary?${realtimeParams.toString()}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+
+  if (realtimeRes.ok) {
+    const payload = await realtimeRes.json();
+    return { ...payload, source: "realtime" };
+  }
+
+  if (typeof onFallback === "function") {
+    try {
+      onFallback(realtimeRes.status);
+    } catch (callbackError) {
+      console.warn("fetchAnalytics onFallback handler threw", callbackError);
+    }
+  }
+
   const params = new URLSearchParams();
   if (period) params.set("period", period);
   if (granularity) params.set("granularity", granularity);
   const qs = params.toString() ? `?${params.toString()}` : "";
-  const res = await fetch(`${API_URL}/analytics${qs}`, {
+  const fallbackRes = await fetch(`${API_URL}/analytics${qs}`, {
     headers: { Authorization: `Bearer ${token}` }
   });
-  if (!res.ok) {
-    throw new Error(`Failed to fetch analytics: ${res.status}`);
+  if (!fallbackRes.ok) {
+    throw new Error(`Failed to fetch analytics: ${fallbackRes.status}`);
   }
-  return res.json();
+  const fallbackPayload = await fallbackRes.json();
+  return { ...fallbackPayload, source: "historical" };
 };
 
 export const downloadAnalyticsExport = async (token, format = "json") => {

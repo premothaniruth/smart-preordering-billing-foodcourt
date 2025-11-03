@@ -3588,6 +3588,31 @@ app.post("/order", (req, res) => {
     orders.push(newOrder);
     saveOrders(orders);
 
+    try {
+      (Array.isArray(items) ? items : []).forEach((item) => {
+        const numericId = item?.id ?? item?.itemId;
+        if (numericId == null) return;
+        const quantity = Number(item.quantity || 1);
+        const delta = -Math.abs(quantity);
+        emitInventoryAdjustedEvent({
+          shopId: shopId,
+          itemId: numericId,
+          itemName: item.name || null,
+          delta,
+          orderId: newOrder.id,
+          billingId: newBillingId,
+          reason: "order-created",
+          actor: {
+            type: "system",
+            source: "order.create",
+            userId: user || null,
+          },
+        });
+      });
+    } catch (inventoryError) {
+      console.warn("Failed to emit inventory adjustment events", inventoryError);
+    }
+
     emitOrderCreatedEvent(newOrder, {
       user: user || null,
       payment: paymentSummary,
