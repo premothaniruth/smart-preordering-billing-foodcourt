@@ -1,5 +1,5 @@
 const { parse } = require("csv-parse");
-const XLSX = require("xlsx");
+const ExcelJS = require("exceljs");
 const path = require("path");
 const analyticsConfig = require("./analyticsConfig");
 const { getEventBus } = require("./eventBus");
@@ -35,12 +35,52 @@ const parseCsvBuffer = (buffer) =>
     });
   });
 
-const parseXlsxBuffer = (buffer) => {
-  const workbook = XLSX.read(buffer, { type: "buffer" });
-  const firstSheet = workbook.SheetNames[0];
-  if (!firstSheet) return [];
-  const sheet = workbook.Sheets[firstSheet];
-  return XLSX.utils.sheet_to_json(sheet, { defval: null });
+const parseXlsxBuffer = async (buffer) => {
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(buffer);
+  const sheet = workbook.worksheets[0];
+  if (!sheet) return [];
+
+  const values = sheet.getSheetValues();
+  if (!values || values.length <= 1) {
+    return [];
+  }
+
+  const headerRow = values[1] || [];
+  const headers = headerRow.slice(1).map((header) => normalizeKey(header));
+  const records = [];
+
+  for (let rowIndex = 2; rowIndex < values.length; rowIndex += 1) {
+    const row = values[rowIndex];
+    if (!row) continue;
+    const entry = {};
+    headers.forEach((header, colIdx) => {
+      if (!header) return;
+      const cellValue = row[colIdx + 1];
+      if (cellValue == null) {
+        entry[header] = null;
+      } else if (cellValue instanceof Date) {
+        entry[header] = cellValue.toISOString();
+      } else if (typeof cellValue === "object" && cellValue !== null) {
+        if (typeof cellValue.text === "string") {
+          entry[header] = cellValue.text;
+        } else if (Array.isArray(cellValue.richText)) {
+          entry[header] = cellValue.richText.map((part) => part.text || "").join("");
+        } else if (cellValue.result != null) {
+          entry[header] = cellValue.result;
+        } else {
+          entry[header] = cellValue; // fallback
+        }
+      } else {
+        entry[header] = cellValue;
+      }
+    });
+    if (Object.keys(entry).length > 0) {
+      records.push(entry);
+    }
+  }
+
+  return records;
 };
 
 const normalizeRecords = (records) =>
@@ -147,7 +187,7 @@ class AnalyticsImportService {
     if (isCsv(originalname, mimetype)) {
       rawRecords = await parseCsvBuffer(buffer);
     } else {
-      rawRecords = parseXlsxBuffer(buffer);
+      rawRecords = await parseXlsxBuffer(buffer);
     }
 
     const records = normalizeRecords(rawRecords);
