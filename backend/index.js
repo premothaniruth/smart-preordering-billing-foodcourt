@@ -73,6 +73,69 @@ const decodeVendorToken = (token) => {
   }
 };
 
+const enrichVendorContext = (decoded) => {
+  const vendorCtx = { ...decoded };
+  vendorCtx.vendorId = vendorCtx.vendorId ?? vendorCtx.id ?? vendorCtx.vendorID ?? null;
+  vendorCtx.shopId = vendorCtx.shopId ?? vendorCtx.shopID ?? vendorCtx.shop ?? null;
+  vendorCtx.role = vendorCtx.role || "vendor";
+  const permissions = new Set(Array.isArray(vendorCtx.permissions) ? vendorCtx.permissions : []);
+  if (vendorCtx.role === "vendor-admin") {
+    permissions.add("analytics:read");
+    permissions.add("analytics:write");
+    permissions.add("procurement:manage");
+  } else if (vendorCtx.role === "vendor-analyst") {
+    permissions.add("analytics:read");
+  } else {
+    permissions.add("analytics:read");
+    permissions.add("procurement:manage");
+  }
+  vendorCtx.permissions = Array.from(permissions);
+  return vendorCtx;
+};
+
+const authenticateVendor = (req, res, next) => {
+  const token = req.headers["authorization"];
+  if (!token) return res.status(401).json({ message: "No token provided" });
+
+  const tokenValue = token.replace("Bearer ", "");
+  jwt.verify(tokenValue, JWT_SECRET, (err, decoded) => {
+    if (err) return res.status(401).json({ message: "Failed to authenticate token" });
+    req.vendor = enrichVendorContext(decoded);
+    next();
+  });
+};
+
+const assertAnalyticsAccess = (req) => {
+  if (!req.vendor) {
+    throw new Error("Analytics access requires vendor authentication");
+  }
+  if (!req.vendor.permissions?.includes("analytics:read")) {
+    const error = new Error("Analytics permission denied");
+    error.status = 403;
+    throw error;
+  }
+  return req.vendor;
+};
+
+const requirePermission = (perm) => (req, res, next) => {
+  if (!req.vendor?.permissions?.includes(perm)) {
+    return res.status(403).json({ message: "Forbidden" });
+  }
+  next();
+};
+
+const recordAuditEvent = ({ actorType, actorId, shopId, vendorId, action, metadata }) => {
+  appendAuditEntry({
+    timestamp: new Date().toISOString(),
+    actorType,
+    actorId,
+    shopId,
+    vendorId,
+    action,
+    metadata,
+  });
+};
+
 app.use(cors());
 app.use(bodyParser.json({ limit: '6mb' }));
 app.use('/images', express.static(path.join(__dirname, 'data', 'images')));
