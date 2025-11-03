@@ -214,6 +214,55 @@ class AnalyticsQueryService {
     }
   }
 
+  async getInventoryConsumptionStats({ shopId, lookbackDays = 14 }) {
+    if (shopId == null) {
+      throw new Error("shopId is required");
+    }
+    const days = Math.max(1, Number(lookbackDays) || 14);
+    const lookbackStart = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    try {
+      const conn = await this._getDuckConnection();
+      const query = `
+        WITH filtered AS (
+          SELECT *,
+                 ROW_NUMBER() OVER (PARTITION BY item_id ORDER BY ts DESC) AS rn_latest
+          FROM inventory_events
+          WHERE shop_id = ?
+            AND ts >= ?
+        )
+        SELECT
+          item_id,
+          MAX(CASE WHEN rn_latest = 1 THEN item_name END) AS item_name,
+          MAX(CASE WHEN rn_latest = 1 THEN current END) AS current_inventory,
+          SUM(CASE WHEN delta < 0 THEN -delta ELSE 0 END) AS total_consumption,
+          SUM(CASE WHEN delta > 0 THEN delta ELSE 0 END) AS total_restock,
+          COUNT(*) AS event_count
+        FROM filtered
+        GROUP BY item_id
+        HAVING SUM(CASE WHEN delta < 0 THEN -delta ELSE 0 END) > 0;
+      `;
+      const rows = await new Promise((resolve, reject) => {
+        conn.all(query, [String(shopId), lookbackStart.toISOString()], (err, result) => {
+          if (err) reject(err);
+          else resolve(result || []);
+        });
+      });
+
+      return rows.map((row) => ({
+        itemId: row.item_id != null ? Number(row.item_id) : null,
+        itemName: row.item_name || null,
+        currentInventory: row.current_inventory != null ? Number(row.current_inventory) : null,
+        totalConsumption: Number(row.total_consumption || 0),
+        totalRestock: Number(row.total_restock || 0),
+        eventCount: Number(row.event_count || 0),
+        averageDailyConsumption: Number(row.total_consumption || 0) / days,
+      }));
+    } catch (error) {
+      console.error("[AnalyticsQueryService] Failed to compute consumption stats", error);
+      return [];
+    }
+  }
+
   async getVendorSummary({ shopId, period, granularity }) {
     if (shopId == null) {
       throw new Error("shopId is required");

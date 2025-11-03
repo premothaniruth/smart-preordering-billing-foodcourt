@@ -634,6 +634,134 @@ export const fetchAnalytics = async (token, period, granularity) => {
   return res.json();
 };
 
+export const downloadAnalyticsExport = async (token, format = "json") => {
+  const params = new URLSearchParams();
+  if (format) params.set("format", format);
+  const res = await fetch(`${API_URL}/analytics/export/current?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to export analytics: ${res.status}`);
+  }
+  return res;
+};
+
+export const fetchRecommendations = async (token) => {
+  const res = await fetch(`${API_URL}/analytics/recommendations`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to fetch recommendations: ${res.status}`);
+  }
+  return res.json();
+};
+
+export const fetchHeadcountEntries = async (token) => {
+  const res = await fetch(`${API_URL}/analytics/headcount`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to fetch headcount: ${res.status}`);
+  }
+  return res.json();
+};
+
+export const submitHeadcount = async (token, headcount) => {
+  const res = await fetch(`${API_URL}/analytics/headcount`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ headcount }),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || `Failed to submit headcount: ${res.status}`);
+  }
+  return res.json();
+};
+
+export const fetchProcurementTemplates = async (token) => {
+  const res = await fetch(`${API_URL}/procurement/templates`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to fetch templates: ${res.status}`);
+  }
+  return res.json();
+};
+
+export const createProcurementTemplate = async (token, payload) => {
+  const res = await fetch(`${API_URL}/procurement/templates`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || `Failed to create template: ${res.status}`);
+  }
+  return res.json();
+};
+
+export const updateProcurementTemplate = async (token, id, payload) => {
+  const res = await fetch(`${API_URL}/procurement/templates/${id}`, {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || `Failed to update template: ${res.status}`);
+  }
+  return res.json();
+};
+
+export const deleteProcurementTemplate = async (token, id) => {
+  const res = await fetch(`${API_URL}/procurement/templates/${id}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || `Failed to delete template: ${res.status}`);
+  }
+  return res.json();
+};
+
+export const fetchProcurementOrders = async (token) => {
+  const res = await fetch(`${API_URL}/procurement/orders`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to fetch procurement orders: ${res.status}`);
+  }
+  return res.json();
+};
+
+export const createProcurementOrder = async (token, payload) => {
+  const res = await fetch(`${API_URL}/procurement/orders`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || `Failed to create procurement order: ${res.status}`);
+  }
+  return res.json();
+};
+
 /**
  * Fetch orders for a user
  * @param {string} userId

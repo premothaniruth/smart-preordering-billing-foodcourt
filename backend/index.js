@@ -22,6 +22,16 @@ const { analyticsIngestor } = require("./lib/analyticsIngestor");
 const { analyticsQueryService } = require("./lib/analyticsQueryService");
 const { realtimeAnalyticsService } = require("./lib/realtimeAnalyticsService");
 const { analyticsImportService } = require("./lib/analyticsImportService");
+const { forecastingService } = require("./lib/forecastingService");
+const { addHeadcountEntry, getVendorHeadcountEntries } = require("./lib/headcountStore");
+const {
+  listTemplates,
+  saveTemplate,
+  deleteTemplate,
+  generateTemplateId,
+  listOrders,
+  saveOrder,
+} = require("./lib/procurementStore");
 const multer = require("multer");
 
 // App setup
@@ -2513,7 +2523,36 @@ const assertAnalyticsAccess = (req) => {
   if (!req.vendor) {
     throw new Error("Analytics access requires vendor authentication");
   }
+  if (!req.vendor.permissions?.includes("analytics:read")) {
+    const error = new Error("Analytics permission denied");
+    error.status = 403;
+    throw error;
+  }
   return req.vendor;
+};
+
+const requirePermission = (perm) => (req, res, next) => {
+  if (!req.vendor?.permissions?.includes(perm)) {
+    return res.status(403).json({ message: "Forbidden" });
+  }
+  next();
+};
+
+const recordAuditEvent = ({ actorType, actorId, shopId, vendorId, action, metadata }) => {
+  const logFile = path.join(__dirname, "data", "analytics_audit_log.jsonl");
+  const entry = {
+    timestamp: new Date().toISOString(),
+    actorType,
+    actorId,
+    shopId,
+    vendorId,
+    action,
+    metadata,
+  };
+  const line = `${JSON.stringify(entry)}\n`;
+  fs.appendFile(logFile, line, (err) => {
+    if (err) console.error("Failed to write audit log", err);
+  });
 };
 
 const getEmployeeByUserId = (user) => {
@@ -2640,6 +2679,26 @@ const getMenuItemInventory = (rawMenu, targetShopId, itemId) => {
  * @param {import('express').Response} res
  * @param {Function} next
  */
+const enrichVendorContext = (decoded) => {
+  const vendorCtx = { ...decoded };
+  vendorCtx.vendorId = vendorCtx.vendorId ?? vendorCtx.id ?? vendorCtx.vendorID ?? null;
+  vendorCtx.shopId = vendorCtx.shopId ?? vendorCtx.shopID ?? vendorCtx.shop ?? null;
+  vendorCtx.role = vendorCtx.role || "vendor";
+  const permissions = new Set(Array.isArray(vendorCtx.permissions) ? vendorCtx.permissions : []);
+  if (vendorCtx.role === "vendor-admin") {
+    permissions.add("analytics:read");
+    permissions.add("analytics:write");
+    permissions.add("procurement:manage");
+  } else if (vendorCtx.role === "vendor-analyst") {
+    permissions.add("analytics:read");
+  } else {
+    permissions.add("analytics:read");
+    permissions.add("procurement:manage");
+  }
+  vendorCtx.permissions = Array.from(permissions);
+  return vendorCtx;
+};
+
 const authenticateVendor = (req, res, next) => {
   const token = req.headers["authorization"];
   if (!token) return res.status(401).json({ message: "No token provided" });
@@ -2647,7 +2706,7 @@ const authenticateVendor = (req, res, next) => {
   const tokenValue = token.replace("Bearer ", "");
   jwt.verify(tokenValue, JWT_SECRET, (err, decoded) => {
     if (err) return res.status(401).json({ message: "Failed to authenticate token" });
-    req.vendor = decoded;
+    req.vendor = enrichVendorContext(decoded);
     next();
   });
 };
@@ -3665,18 +3724,38 @@ app.post("/vendor/login", async (req, res) => {
       return res.status(401).json({ message: "Invalid username or password" });
     }
 
+    const vendorRole = vendor.role || "vendor";
     const token = jwt.sign(
-      { 
-        vendorId: vendor.vendorId, 
-        shopId: vendor.shopId, 
-        username: vendor.username 
+      {
+        vendorId: vendor.vendorId,
+        shopId: vendor.shopId,
+        username: vendor.username,
+        role: vendorRole,
+        permissions: Array.isArray(vendor.permissions) ? vendor.permissions : undefined,
       },
       JWT_SECRET,
       { expiresIn: "8h" }
     );
 
-    res.json({ token });
+    recordAuditEvent({
+      actorType: "vendor",
+      actorId: vendor.vendorId,
+      shopId: vendor.shopId,
+      vendorId: vendor.vendorId,
+      action: "vendor.login.success",
+      metadata: { username: vendor.username },
+    });
+
+    res.json({ token, role: vendorRole });
   } catch (error) {
+    recordAuditEvent({
+      actorType: "system",
+      actorId: null,
+      shopId: null,
+      vendorId: null,
+      action: "vendor.login.error",
+      metadata: { message: error?.message || "unknown" },
+    });
     res.status(500).json({ message: "Error during login" });
   }
 });
@@ -4181,6 +4260,14 @@ app.post("/order/extend/:id", authenticateVendor, (req, res) => {
 app.get("/analytics/summary", authenticateVendor, asyncHandler(async (req, res) => {
   assertAnalyticsAccess(req);
   const summary = await realtimeAnalyticsService.getSummary(req.vendor.shopId);
+  recordAuditEvent({
+    actorType: "vendor",
+    actorId: req.vendor.vendorId,
+    vendorId: req.vendor.vendorId,
+    shopId: req.vendor.shopId,
+    action: "analytics.summary.read",
+    metadata: {},
+  });
   res.json(summary);
 }));
 
@@ -4191,6 +4278,146 @@ app.get("/analytics/timeseries", authenticateVendor, asyncHandler(async (req, re
   res.json(response);
 }));
 
+// ========== PROCUREMENT ENDPOINTS ==========
+app.get("/procurement/templates", authenticateVendor, asyncHandler(async (req, res) => {
+  assertAnalyticsAccess(req);
+  const templates = listTemplates(req.vendor.vendorId);
+  res.json({ templates });
+}));
+
+app.post("/procurement/templates", authenticateVendor, asyncHandler(async (req, res) => {
+  assertAnalyticsAccess(req);
+  const body = req.body || {};
+  const title = String(body.title || "").trim();
+  if (!title) {
+    return res.status(400).json({ message: "title is required" });
+  }
+  const items = Array.isArray(body.items) ? body.items : [];
+  const template = {
+    id: generateTemplateId(),
+    vendorId: req.vendor.vendorId,
+    shopId: req.vendor.shopId,
+    title,
+    description: String(body.description || "").trim(),
+    items: items.map((item) => ({
+      itemId: item.itemId,
+      itemName: item.itemName || null,
+      quantity: Number(item.quantity || 0),
+      unit: item.unit || null,
+    })),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+  saveTemplate(template);
+  recordAuditEvent({
+    actorType: "vendor",
+    actorId: req.vendor.vendorId,
+    vendorId: req.vendor.vendorId,
+    shopId: req.vendor.shopId,
+    action: "procurement.template.create",
+    metadata: { templateId: template.id },
+  });
+  res.status(201).json({ template });
+}));
+
+app.put("/procurement/templates/:id", authenticateVendor, asyncHandler(async (req, res) => {
+  assertAnalyticsAccess(req);
+  const templateId = req.params.id;
+  const existing = listTemplates(req.vendor.vendorId).find((tpl) => tpl.id === templateId);
+  if (!existing) {
+    return res.status(404).json({ message: "Template not found" });
+  }
+  const body = req.body || {};
+  const updated = {
+    ...existing,
+    title: String(body.title || existing.title || "").trim() || existing.title,
+    description: String(body.description || existing.description || "").trim(),
+    items: Array.isArray(body.items)
+      ? body.items.map((item) => ({
+          itemId: item.itemId,
+          itemName: item.itemName || null,
+          quantity: Number(item.quantity || 0),
+          unit: item.unit || null,
+        }))
+      : existing.items,
+    updatedAt: new Date().toISOString(),
+  };
+  saveTemplate(updated);
+  recordAuditEvent({
+    actorType: "vendor",
+    actorId: req.vendor.vendorId,
+    vendorId: req.vendor.vendorId,
+    shopId: req.vendor.shopId,
+    action: "procurement.template.update",
+    metadata: { templateId },
+  });
+  res.json({ template: updated });
+}));
+
+app.delete("/procurement/templates/:id", authenticateVendor, asyncHandler(async (req, res) => {
+  assertAnalyticsAccess(req);
+  const templateId = req.params.id;
+  const templates = listTemplates(req.vendor.vendorId);
+  const exists = templates.some((tpl) => tpl.id === templateId);
+  if (!exists) {
+    return res.status(404).json({ message: "Template not found" });
+  }
+  deleteTemplate(req.vendor.vendorId, templateId);
+  recordAuditEvent({
+    actorType: "vendor",
+    actorId: req.vendor.vendorId,
+    vendorId: req.vendor.vendorId,
+    shopId: req.vendor.shopId,
+    action: "procurement.template.delete",
+    metadata: { templateId },
+  });
+  res.json({ status: "success" });
+}));
+
+app.get("/procurement/orders", authenticateVendor, asyncHandler(async (req, res) => {
+  assertAnalyticsAccess(req);
+  const orders = listOrders(req.vendor.vendorId);
+  res.json({ orders });
+}));
+
+app.post("/procurement/orders", authenticateVendor, asyncHandler(async (req, res) => {
+  assertAnalyticsAccess(req);
+  const body = req.body || {};
+  const supplier = String(body.supplier || "").trim();
+  const dueDate = body.dueDate ? new Date(body.dueDate).toISOString() : null;
+  const items = Array.isArray(body.items) ? body.items : [];
+  if (!items.length) {
+    return res.status(400).json({ message: "At least one item is required" });
+  }
+
+  const order = {
+    id: `po-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+    vendorId: req.vendor.vendorId,
+    shopId: req.vendor.shopId,
+    supplier,
+    dueDate,
+    notes: String(body.notes || "").trim(),
+    items: items.map((item) => ({
+      itemId: item.itemId,
+      itemName: item.itemName || null,
+      quantity: Number(item.quantity || 0),
+      unit: item.unit || null,
+      source: item.source || null,
+    })),
+    recommendationsSource: body.recommendationsSource || null,
+    createdAt: new Date().toISOString(),
+  };
+  saveOrder(order);
+  recordAuditEvent({
+    actorType: "vendor",
+    actorId: req.vendor.vendorId,
+    vendorId: req.vendor.vendorId,
+    shopId: req.vendor.shopId,
+    action: "procurement.order.create",
+    metadata: { orderId: order.id },
+  });
+  res.status(201).json({ order });
+}));
 app.get("/analytics/inventory", authenticateVendor, asyncHandler(async (req, res) => {
   assertAnalyticsAccess(req);
   const inventory = await realtimeAnalyticsService.getInventory(req.vendor.shopId);
@@ -4203,6 +4430,14 @@ app.get("/analytics/export/current", authenticateVendor, asyncHandler(async (req
   const { contentType, payload } = await realtimeAnalyticsService.exportCurrent(req.vendor.shopId, format);
   res.setHeader("Content-Type", contentType);
   res.setHeader("Content-Disposition", `attachment; filename=analytics-${req.vendor.shopId}.${format === "csv" ? "csv" : "json"}`);
+  recordAuditEvent({
+    actorType: "vendor",
+    actorId: req.vendor.vendorId,
+    vendorId: req.vendor.vendorId,
+    shopId: req.vendor.shopId,
+    action: "analytics.export.download",
+    metadata: { format },
+  });
   res.send(payload);
 }));
 
@@ -4230,8 +4465,17 @@ app.post("/analytics/import", authenticateVendor, upload.single("file"), asyncHa
       originalname: req.file.originalname,
       actor: req.vendor,
     });
+    recordAuditEvent({
+      actorType: "vendor",
+      actorId: req.vendor.vendorId,
+      vendorId: req.vendor.vendorId,
+      shopId: req.vendor.shopId,
+      action: "analytics.import.upload",
+      metadata: { filename: req.file.originalname, size: req.file.size },
+    });
     res.json(result);
   } catch (error) {
+    console.error("Error importing analytics data", error);
     res.status(400).json({ message: error.message || "Import failed" });
   }
 }));
@@ -4250,7 +4494,91 @@ app.get("/data/archive/:vendorId/:period", authenticateVendor, asyncHandler(asyn
   }
   res.setHeader("Content-Type", "application/octet-stream");
   res.setHeader("Content-Disposition", `attachment; filename=${period}.parquet`);
+  recordAuditEvent({
+    actorType: "vendor",
+    actorId: req.vendor.vendorId,
+    vendorId: req.vendor.vendorId,
+    shopId: req.vendor.shopId,
+    action: "analytics.archive.download",
+    metadata: { period },
+  });
   fs.createReadStream(filePath).pipe(res);
+}));
+
+// Vendor headcount management
+app.get("/analytics/headcount", authenticateVendor, asyncHandler(async (req, res) => {
+  assertAnalyticsAccess(req);
+  const entries = getVendorHeadcountEntries(req.vendor.vendorId);
+  res.json({ entries });
+}));
+
+app.post("/analytics/headcount", authenticateVendor, asyncHandler(async (req, res) => {
+  assertAnalyticsAccess(req);
+  const headcount = Number(req.body.headcount);
+  if (!Number.isFinite(headcount) || headcount <= 0) {
+    return res.status(400).json({ message: "headcount must be a positive number" });
+  }
+  const record = addHeadcountEntry({
+    vendorId: req.vendor.vendorId,
+    shopId: req.vendor.shopId,
+    headcount,
+    source: "manual",
+  });
+  recordAuditEvent({
+    actorType: "vendor",
+    actorId: req.vendor.vendorId,
+    vendorId: req.vendor.vendorId,
+    shopId: req.vendor.shopId,
+    action: "analytics.headcount.update",
+    metadata: { headcount },
+  });
+  res.json({ status: "success", record });
+}));
+
+// Headcount integration hook
+app.post("/analytics/headcount/integrations", asyncHandler(async (req, res) => {
+  const token = String(req.headers["x-analytics-integration-token"] || "");
+  const vendor = decodeVendorToken(token);
+  if (!vendor || vendor.vendorId == null) {
+    return res.status(401).json({ message: "Invalid integration token" });
+  }
+  const headcount = Number(req.body.headcount);
+  if (!Number.isFinite(headcount) || headcount <= 0) {
+    return res.status(400).json({ message: "headcount must be a positive number" });
+  }
+  addHeadcountEntry({
+    vendorId: vendor.vendorId,
+    shopId: vendor.shopId,
+    headcount,
+    source: req.body.source || "integration",
+  });
+  recordAuditEvent({
+    actorType: "integration",
+    actorId: vendor.vendorId,
+    vendorId: vendor.vendorId,
+    shopId: vendor.shopId,
+    action: "analytics.headcount.integration",
+    metadata: { headcount },
+  });
+  res.json({ status: "success" });
+}));
+
+// Forecasting & recommendations
+app.get("/analytics/recommendations", authenticateVendor, asyncHandler(async (req, res) => {
+  assertAnalyticsAccess(req);
+  const response = await forecastingService.getRecommendations({
+    shopId: req.vendor.shopId,
+    vendorId: req.vendor.vendorId,
+  });
+  recordAuditEvent({
+    actorType: "vendor",
+    actorId: req.vendor.vendorId,
+    vendorId: req.vendor.vendorId,
+    shopId: req.vendor.shopId,
+    action: "analytics.recommendations.read",
+    metadata: { lookbackDays: response.lookbackDays },
+  });
+  res.json(response);
 }));
 
 // Get grievances for vendor's shop

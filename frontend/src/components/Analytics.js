@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import PropTypes from "prop-types";
-import { fetchAnalytics } from "../api";
+import { fetchAnalytics, downloadAnalyticsExport } from "../api";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from "recharts";
 
 /**
@@ -32,6 +32,8 @@ const Analytics = ({ token }) => {
   const [granularity, setGranularity] = useState("hour");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [exporting, setExporting] = useState(false);
+  const [exportFormat, setExportFormat] = useState("json");
   const vendorShopId = useMemo(() => {
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
@@ -87,6 +89,27 @@ const Analytics = ({ token }) => {
   const ordersSeries = useMemo(() => data.timeSeries.map((row) => ({ ...row, orders: row.orders || 0 })), [data.timeSeries]);
   const revenueSeries = useMemo(() => data.timeSeries.map((row) => ({ ...row, revenue: row.revenue || 0 })), [data.timeSeries]);
 
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const res = await downloadAnalyticsExport(token, exportFormat);
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const extension = exportFormat === "csv" ? "csv" : "json";
+      link.href = url;
+      link.download = `analytics-export-${new Date().toISOString().slice(0, 10)}.${extension}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(err?.message || "Failed to export analytics");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <div>
       <h2 style={{ marginBottom: 10 }}>Analytics Dashboard</h2>
@@ -109,6 +132,21 @@ const Analytics = ({ token }) => {
             <option value="week">Weekly</option>
           </select>
         </div>
+        <div>
+          <label>Export Format:&nbsp;</label>
+          <select value={exportFormat} onChange={(e) => setExportFormat(e.target.value)}>
+            <option value="json">JSON</option>
+            <option value="csv">CSV</option>
+          </select>
+        </div>
+        <button
+          type="button"
+          onClick={handleExport}
+          disabled={exporting}
+          style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #2980b9', background: exporting ? '#95a5a6' : '#2980b9', color: '#fff', cursor: exporting ? 'not-allowed' : 'pointer' }}
+        >
+          {exporting ? 'Exporting…' : 'Export Snapshot'}
+        </button>
         {data.generatedAt && (
           <span style={{ fontSize: 12, color: '#777' }}>Updated: {new Date(data.generatedAt).toLocaleString()}</span>
         )}
