@@ -9,7 +9,7 @@ const statusOptions = [
   { value: "resolved", label: "Resolved" }
 ];
 
-const AdminVendorGrievances = ({ adminSession }) => {
+const AdminVendorGrievances = ({ adminSession = null }) => {
   const [loading, setLoading] = useState(false);
   const [grievances, setGrievances] = useState([]);
   const [filter, setFilter] = useState("pending");
@@ -186,10 +186,6 @@ AdminVendorGrievances.propTypes = {
     username: PropTypes.string.isRequired,
     password: PropTypes.string.isRequired
   })
-};
-
-AdminVendorGrievances.defaultProps = {
-  adminSession: null
 };
 
 export default AdminVendorGrievances;

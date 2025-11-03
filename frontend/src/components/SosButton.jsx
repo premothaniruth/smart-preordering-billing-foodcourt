@@ -1,7 +1,7 @@
 import React from "react";
 import PropTypes from "prop-types";
 
-const SosButton = ({ isActive, onTrigger, onResolve, disabled }) => {
+const SosButton = ({ isActive = false, onTrigger = null, onResolve = null, disabled = false }) => {
   const handleClick = () => {
     if (isActive) {
       const confirmResolve = window.confirm("Resolve the active SOS alert and notify everyone that the hazard is cleared?");
@@ -36,13 +36,6 @@ SosButton.propTypes = {
   onTrigger: PropTypes.func,
   onResolve: PropTypes.func,
   disabled: PropTypes.bool
-};
-
-SosButton.defaultProps = {
-  isActive: false,
-  onTrigger: null,
-  onResolve: null,
-  disabled: false
 };
 
 export default SosButton;

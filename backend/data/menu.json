@@ -442,7 +442,7 @@
               "isVeg": false,
               "image": "/images/butter-chicken.jpg",
               "prepTime": 20,
-              "inventory": 99,
+              "inventory": 98,
               "hasOptions": [
                 {
                   "name": "With Bone",

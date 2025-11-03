@@ -16,12 +16,12 @@ const initialCreateState = {
 };
 
 function AdminControl({
-  adminSession,
+  adminSession = null,
   onAdminLogin,
-  onAdminLogout,
+  onAdminLogout = () => {},
   onCreateVendor,
   onUpdateVendor,
-  vendors
+  vendors = []
 }) {
   const [loginForm, setLoginForm] = useState({ username: "", password: "" });
   const [createForm, setCreateForm] = useState(initialCreateState);
@@ -798,12 +798,6 @@ AdminControl.propTypes = {
   onCreateVendor: PropTypes.func.isRequired,
   onUpdateVendor: PropTypes.func.isRequired,
   vendors: PropTypes.arrayOf(PropTypes.object)
-};
-
-AdminControl.defaultProps = {
-  adminSession: null,
-  onAdminLogout: () => {},
-  vendors: []
 };
 
 export default AdminControl;

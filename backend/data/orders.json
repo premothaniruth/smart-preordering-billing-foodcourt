@@ -480,5 +480,44 @@
     "cancellationPolicy": "75% refund (cancel 30-59 minutes before scheduled time)",
     "cancellationRefundPercent": 0.75,
     "cancellationLeadMinutes": 34.52555
+  },
+  {
+    "id": 18,
+    "items": [
+      {
+        "id": 43,
+        "name": "Butter Chicken",
+        "price": 180,
+        "quantity": 1,
+        "option": "Boneless",
+        "prepTime": 20
+      }
+    ],
+    "shopId": 1,
+    "user": "+918489196892",
+    "scheduledTime": "2025-11-03T18:00",
+    "status": "pending",
+    "createdAt": "2025-11-03T12:26:27.117Z",
+    "billingId": "00001",
+    "estimatedReadyTime": "2025-11-03T12:48:27.116Z",
+    "prepTime": 22,
+    "baseEstimatedReadyTime": "2025-11-03T12:48:27.116Z",
+    "basePrepTime": 22,
+    "rating": null,
+    "feedback": null,
+    "totalAmount": 180,
+    "subtotalBeforeDiscount": 180,
+    "discountTotal": 0,
+    "offerSummary": {
+      "subtotalBeforeDiscount": 180,
+      "discountTotal": 0,
+      "totalPayable": 180,
+      "appliedOffers": [],
+      "extraItems": []
+    },
+    "payment": {
+      "method": "cash",
+      "amount": 180
+    }
   }
 ]
