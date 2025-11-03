@@ -146,13 +146,16 @@
     "shopId": 1,
     "user": "Employee XYZ",
     "scheduledTime": null,
-    "status": "pending",
+    "status": "completed",
     "createdAt": "2025-10-25T02:59:41.146Z",
     "billingId": "BILL-MH5OYXGA-486",
     "prepTime": 10,
     "estimatedReadyTime": "2025-11-02T12:00:54.627Z",
     "etaExtendedAt": "2025-11-02T11:51:03.892Z",
-    "etaExtensionMinutes": 10
+    "etaExtensionMinutes": 10,
+    "readyAt": "2025-11-03T16:32:26.317Z",
+    "pickedAt": "2025-11-03T16:32:30.969Z",
+    "completedAt": "2025-11-03T16:32:30.969Z"
   },
   {
     "id": 8,
@@ -496,7 +499,7 @@
     "shopId": 1,
     "user": "+918489196892",
     "scheduledTime": "2025-11-03T18:00",
-    "status": "pending",
+    "status": "completed",
     "createdAt": "2025-11-03T12:26:27.117Z",
     "billingId": "00001",
     "estimatedReadyTime": "2025-11-03T12:48:27.116Z",
@@ -518,6 +521,9 @@
     "payment": {
       "method": "cash",
       "amount": 180
-    }
+    },
+    "readyAt": "2025-11-03T16:32:27.408Z",
+    "pickedAt": "2025-11-03T16:32:29.926Z",
+    "completedAt": "2025-11-03T16:32:29.926Z"
   }
 ]

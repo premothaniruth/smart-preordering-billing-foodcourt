@@ -726,10 +726,22 @@ function App() {
   };
 
   const handleClearHistory = () => {
-    if (window.confirm("Are you sure you want to clear your order history? This cannot be undone.")) {
-      setUserOrders([]);
-      toast.success("Order history cleared");
+    if (!userOrders.length) {
+      toast.info("No order history to clear");
+      return;
     }
+
+    const completedOrCancelled = userOrders.filter((order) => order.status === "completed" || order.status === "cancelled");
+    if (completedOrCancelled.length === 0) {
+      toast.info("Only completed or cancelled orders can be cleared." );
+      return;
+    }
+
+    const confirmMessage = `This will remove ${completedOrCancelled.length} completed/cancelled ${completedOrCancelled.length === 1 ? "order" : "orders"} from your history. Pending and ready orders will stay.`;
+    if (!window.confirm(`${confirmMessage}\nContinue?`)) return;
+
+    setUserOrders((prev) => prev.filter((order) => order.status !== "completed" && order.status !== "cancelled"));
+    toast.success("Completed and cancelled orders cleared");
   };
 
   const handleReportIssue = (order) => {
