@@ -8,8 +8,10 @@
   {
     "vendorId": 2,
     "shopId": 2,
-    "username": "southvendor",
-    "passwordHash": "$2b$10$IY6m7q4UVTFh49P3kvYqg.Q/Hf5ZKWNreXrNk8xH9EktKZUQYVUpu"
+    "username": "southfoods",
+    "passwordHash": "$2b$10$4.4309XmP50LhPuLouI3I.qR47FrV0db/Er.CUQQFBN882oAx0ZF2",
+    "email": "southvendor@infosys.com",
+    "shopName": "South Indian Delights"
   },
   {
     "vendorId": 3,
@@ -20,12 +22,6 @@
   {
     "vendorId": 4,
     "shopId": 4,
-    "username": "fastfoodvendor",
-    "passwordHash": "$2b$10$F0nI0d2lw3ViqR/69TROqOpxh6cksLbN7UnXOzdKhXTX94QSHTdQm"
-  },
-  {
-    "vendorId": 5,
-    "shopId": 5,
     "username": "southfoods",
     "passwordHash": "$2b$10$4.4309XmP50LhPuLouI3I.qR47FrV0db/Er.CUQQFBN882oAx0ZF2",
     "email": "southvendor@infosys.com",
