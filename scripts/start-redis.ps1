@@ -1,7 +1,7 @@
 param(
     [int]$Port = 6379,
-    [string]$ContainerName = "dev-redis",
-    [string]$DataDirectory = "$PSScriptRoot/../infra/redis-data"
+    [string]$ContainerName = 'dev-redis',
+    [string]$DataDirectory = (Join-Path -Path $PSScriptRoot -ChildPath '..\infra\redis-data')
 )
 
 function Convert-ToDockerPath {
@@ -20,10 +20,10 @@ if (-not (Test-Path -Path $DataDirectory)) {
     New-Item -ItemType Directory -Path $DataDirectory -Force | Out-Null
 }
 
-$docker = Get-Command docker -ErrorAction SilentlyContinue
-if ($docker) {
-    Write-Host "→ Docker detected. Ensuring container '$ContainerName' is running…" -ForegroundColor Cyan
-    $existing = docker ps -a --filter "name=$ContainerName" --format "{{.ID}}"
+$dockerCmd = Get-Command docker -ErrorAction SilentlyContinue
+if ($dockerCmd) {
+    Write-Host "→ Docker detected. Ensuring container '$ContainerName' is running..." -ForegroundColor Cyan
+    $existing = docker ps -a --filter "name=$ContainerName" --format '{{.ID}}'
     if ($existing) {
         docker start $ContainerName | Out-Null
         Write-Host "✓ Redis container '$ContainerName' started on port $Port" -ForegroundColor Green
@@ -42,13 +42,14 @@ if ($docker) {
     exit 0
 }
 
-$redisServer = Get-Command redis-server -ErrorAction SilentlyContinue
-if ($redisServer) {
+$redisBinary = Get-Command redis-server -ErrorAction SilentlyContinue
+if ($redisBinary) {
     Write-Host "→ Launching local redis-server binary on port $Port" -ForegroundColor Cyan
-    Start-Process -FilePath $redisServer.Source -ArgumentList "--port", $Port.ToString() -WorkingDirectory $DataDirectory
+    Start-Process -FilePath $redisBinary.Source -ArgumentList '--port', $Port.ToString() -WorkingDirectory $DataDirectory
     Write-Host "✓ redis-server started in the background." -ForegroundColor Green
     exit 0
 }
 
-Write-Error "Redis is not installed. Install Docker Desktop or redis-server (winget install Redis)."
+$message = 'Redis is not installed. Install Docker Desktop or run: winget install Redis'
+Write-Error $message
 exit 1
