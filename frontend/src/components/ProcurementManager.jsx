@@ -34,6 +34,7 @@ const ProcurementManager = ({ token }) => {
 
   const [orderDraft, setOrderDraft] = useState({ supplier: "", dueDate: "", notes: "", items: [], recommendationsSource: null });
   const [creatingOrder, setCreatingOrder] = useState(false);
+  const [uiError, setUiError] = useState(null);
 
   const loadRecommendations = useCallback(async () => {
     setRecommendationsState({ loading: true, error: null, data: null });
@@ -96,6 +97,139 @@ const ProcurementManager = ({ token }) => {
     loadOrders();
     loadForecast();
   }, [loadRecommendations, loadHeadcount, loadTemplates, loadOrders, loadForecast]);
+
+  const resetUiError = () => setUiError(null);
+
+  const startNewTemplate = () => {
+    resetUiError();
+    setEditingTemplateId(null);
+    setTemplateDraft({ title: "", description: "", items: [] });
+    setView("template-editor");
+  };
+
+  const editTemplate = (template) => {
+    resetUiError();
+    setEditingTemplateId(template.id);
+    setTemplateDraft({
+      title: template.title || "",
+      description: template.description || "",
+      items: Array.isArray(template.items) ? template.items.map((item) => ({ ...item })) : [],
+    });
+    setView("template-editor");
+  };
+
+  const deleteTemplateHandler = async (templateId) => {
+    if (!templateId) return;
+    resetUiError();
+    try {
+      await deleteProcurementTemplate(token, templateId);
+      await loadTemplates();
+    } catch (error) {
+      setUiError(error.message || "Failed to delete template");
+    }
+  };
+
+  const addTemplateItem = () => {
+    setTemplateDraft((prev) => ({
+      ...prev,
+      items: [...prev.items, { itemName: "", itemId: "", quantity: 0, unit: "" }],
+    }));
+  };
+
+  const updateTemplateItem = (index, changes) => {
+    setTemplateDraft((prev) => {
+      const nextItems = prev.items.map((item, idx) => (idx === index ? { ...item, ...changes } : item));
+      return { ...prev, items: nextItems };
+    });
+  };
+
+  const removeTemplateItem = (index) => {
+    setTemplateDraft((prev) => ({
+      ...prev,
+      items: prev.items.filter((_, idx) => idx !== index),
+    }));
+  };
+
+  const saveTemplate = async (event) => {
+    event.preventDefault();
+    resetUiError();
+    try {
+      if (editingTemplateId) {
+        await updateProcurementTemplate(token, editingTemplateId, templateDraft);
+      } else {
+        await createProcurementTemplate(token, templateDraft);
+      }
+      await loadTemplates();
+      setView("overview");
+    } catch (error) {
+      setUiError(error.message || "Failed to save template");
+    }
+  };
+
+  const startOrderFromRecommendations = () => {
+    if (recommendations.length === 0) return;
+    resetUiError();
+    const seededItems = recommendations.map((rec) => ({
+      itemName: rec.itemName || `Item ${rec.itemId}`,
+      itemId: rec.itemId || "",
+      quantity: rec.suggestedRestock || 0,
+      unit: "units",
+      source: "recommendation",
+    }));
+    setOrderDraft({ supplier: "", dueDate: "", notes: "", items: seededItems, recommendationsSource: "analytics" });
+    setView("order-editor");
+  };
+
+  const startOrderFromTemplate = (template) => {
+    resetUiError();
+    const items = Array.isArray(template.items)
+      ? template.items.map((item) => ({
+          itemName: item.itemName || "",
+          itemId: item.itemId || "",
+          quantity: item.quantity || 0,
+          unit: item.unit || "units",
+          source: `template:${template.id}`,
+        }))
+      : [];
+    setOrderDraft({ supplier: "", dueDate: "", notes: template.description || "", items, recommendationsSource: `template:${template.id}` });
+    setView("order-editor");
+  };
+
+  const addOrderItem = () => {
+    setOrderDraft((prev) => ({
+      ...prev,
+      items: [...prev.items, { itemName: "", itemId: "", quantity: 0, unit: "" }],
+    }));
+  };
+
+  const updateOrderItem = (index, changes) => {
+    setOrderDraft((prev) => {
+      const nextItems = prev.items.map((item, idx) => (idx === index ? { ...item, ...changes } : item));
+      return { ...prev, items: nextItems };
+    });
+  };
+
+  const removeOrderItem = (index) => {
+    setOrderDraft((prev) => ({
+      ...prev,
+      items: prev.items.filter((_, idx) => idx !== index),
+    }));
+  };
+
+  const createOrder = async (event) => {
+    event.preventDefault();
+    resetUiError();
+    setCreatingOrder(true);
+    try {
+      await createProcurementOrder(token, orderDraft);
+      await loadOrders();
+      setView("overview");
+    } catch (error) {
+      setUiError(error.message || "Failed to create procurement order");
+    } finally {
+      setCreatingOrder(false);
+    }
+  };
 
   const recommendations = useMemo(() => recommendationsState.data?.recommendations || [], [recommendationsState]);
   const forecastEntries = useMemo(() => forecastState.data?.baseline || [], [forecastState]);
@@ -578,6 +712,12 @@ const ProcurementManager = ({ token }) => {
         <button onClick={startNewTemplate}>New Template</button>
         <button onClick={startOrderFromRecommendations} disabled={recommendations.length === 0}>New Order</button>
       </div>
+
+      {uiError && (
+        <div className="error" style={{ background: "#fdecea", border: "1px solid #f5c6cb", color: "#721c24", padding: 12, borderRadius: 8 }}>
+          {uiError}
+        </div>
+      )}
 
       {view === "overview" && (
         <>

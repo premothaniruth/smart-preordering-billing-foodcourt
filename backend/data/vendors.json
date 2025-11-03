@@ -22,5 +22,13 @@
     "shopId": 4,
     "username": "fastfoodvendor",
     "passwordHash": "$2b$10$F0nI0d2lw3ViqR/69TROqOpxh6cksLbN7UnXOzdKhXTX94QSHTdQm"
+  },
+  {
+    "vendorId": 5,
+    "shopId": 5,
+    "username": "southfoods",
+    "passwordHash": "$2b$10$4.4309XmP50LhPuLouI3I.qR47FrV0db/Er.CUQQFBN882oAx0ZF2",
+    "email": "southvendor@infosys.com",
+    "shopName": "South Indian Delights"
   }
 ]
