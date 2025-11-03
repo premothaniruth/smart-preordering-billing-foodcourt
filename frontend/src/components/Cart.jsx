@@ -11,7 +11,7 @@ import { fetchSectionsMeta } from "../api";
  *  incrementFromCart: (index:number)=>void,
  *  scheduledTime: string,
  *  setScheduledTime: (iso:string)=>void,
- *  onPayment: ()=>void,
+ *  onProceedToPayment: (details?:{ notes?:string })=>void,
  *  shopItems?: any[],
  *  inventoryById?: Map<number, any> | Record<string, any>,
  *  paymentMethod?: 'wallet' | 'gateway' | 'cash',
@@ -28,13 +28,9 @@ const Cart = ({
   incrementFromCart,
   scheduledTime,
   setScheduledTime,
-  onPayment,
+  onProceedToPayment,
   shopItems = [],
   inventoryById = new Map(),
-  paymentMethod = 'gateway',
-  setPaymentMethod = () => {},
-  walletBalance = 0,
-  walletEnabled = false,
   cartShopMismatch = false,
   offerPreview = null,
   offersLoading = false
@@ -234,23 +230,8 @@ const Cart = ({
   const discountTotal = offerPreview?.discountTotal != null ? Number(offerPreview.discountTotal) : 0;
   const total = offerPreview?.totalPayable != null ? Number(offerPreview.totalPayable) : subtotal;
   const extraItems = Array.isArray(offerPreview?.extraItems) ? offerPreview.extraItems : [];
-  const walletDisabledReason = (() => {
-    if (!walletEnabled) return 'Login to use wallet';
-    if (walletBalance < total) return 'Top up required!';
-    return null;
-  })();
-
-  // Attach custom notes to the first item (simple demo) and trigger payment
-  const handlePayment = () => {
-    // Add custom notes to the first item or create a general note
-    if (cart.length > 0 && customNotes) {
-      cart[0].item.customization = {
-        ...cart[0].item.customization,
-        notes: customNotes
-      };
-    }
-    onPayment();
-    setCustomNotes("");
+  const handleProceedToPayment = () => {
+    onProceedToPayment({ notes: customNotes.trim() || undefined });
   };
 
   return (
@@ -477,60 +458,6 @@ const Cart = ({
             </div>
           )}
 
-          <div style={{ marginTop: 15, border: '1px solid #e1e6eb', borderRadius: 8, padding: 16 }}>
-            <div style={{ fontWeight: 600, marginBottom: 10 }}>Select Payment Method</div>
-            <div style={{ display: 'grid', gap: 10 }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <input
-                  type="radio"
-                  name="payment-method"
-                  value="wallet"
-                  checked={paymentMethod === 'wallet'}
-                  onChange={() => setPaymentMethod('wallet')}
-                  disabled={Boolean(walletDisabledReason)}
-                />
-                <span>
-                  Wallet ({walletEnabled ? `₹${Number(walletBalance || 0).toFixed(2)} available` : 'Login required'})
-                  {walletDisabledReason && (
-                    <span style={{ color: '#c0392b', fontSize: 12, marginLeft: 6 }}>• {walletDisabledReason}</span>
-                  )}
-                </span>
-              </label>
-
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <input
-                  type="radio"
-                  name="payment-method"
-                  value="gateway"
-                  checked={paymentMethod === 'gateway'}
-                  onChange={() => setPaymentMethod('gateway')}
-                />
-                <span>Google Pay (Online)</span>
-              </label>
-
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <input
-                  type="radio"
-                  name="payment-method"
-                  value="cash"
-                  checked={paymentMethod === 'cash'}
-                  onChange={() => setPaymentMethod('cash')}
-                />
-                <span>Cash on Pickup</span>
-              </label>
-            </div>
-            {paymentMethod === 'cash' && (
-              <div style={{ marginTop: 8, fontSize: 12, color: '#7f8c8d' }}>
-                Please carry the exact amount for faster handover at pickup counter.
-              </div>
-            )}
-            {paymentMethod === 'gateway' && (
-              <div style={{ marginTop: 8, fontSize: 12, color: '#7f8c8d' }}>
-                You will be redirected to Google Pay gateway to complete the payment.
-              </div>
-            )}
-          </div>
-
           <div style={{ marginTop: 15 }}>
             <label style={{ fontSize: "12px", fontWeight: "bold", display: "block", marginBottom: 5 }}>
               Special Instructions for All Items (Optional):
@@ -559,10 +486,10 @@ const Cart = ({
           </div>
 
           <button
-            onClick={handlePayment}
+            onClick={handleProceedToPayment}
             style={{ width: "100%", marginTop: 15, background: "#27ae60", padding: "14px", fontSize: "16px", fontWeight: "bold", color: '#fff', border: 'none', borderRadius: 6 }}
           >
-            Place Order (₹{total.toFixed(2)})
+            Proceed to Payment (₹{total.toFixed(2)})
           </button>
         </>
       )}
