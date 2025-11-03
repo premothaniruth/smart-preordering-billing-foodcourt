@@ -480,7 +480,7 @@ const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemN
             alt={item.name} 
             className="menu-item-image"
             onError={(e) => {
-              e.target.src = "https://via.placeholder.com/200x150/95a5a6/ffffff?text=No+Image";
+              e.target.src = "https://dummyimage.com/200x150/95a5a6/ffffff&text=No+Image";
             }}
           />
           {!hideFavorites && (
