@@ -7,6 +7,14 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const path = require("path");
 const { evaluateOffers } = require("./lib/offersEngine");
+const {
+  emitOrderCreatedEvent,
+  emitOrderStatusEvent,
+  emitOrderPrepExtendedEvent,
+  emitInventoryAdjustedEvent,
+} = require("./lib/analyticsEvents");
+const analyticsConfig = require("./lib/analyticsConfig");
+const { analyticsIngestor } = require("./lib/analyticsIngestor");
 
 // App setup
 const app = express();
@@ -2543,6 +2551,39 @@ const restockInventory = (rawMenu, targetShopId, itemId, qty) => {
   }
 };
 
+const getMenuItemSnapshot = (rawMenu, targetShopId, itemId) => {
+  const shopIdStr = String(targetShopId);
+  const idNum = Number(itemId);
+  if (Array.isArray(rawMenu)) {
+    const shopEntry = rawMenu.find((x) => String(x.shopId) === shopIdStr);
+    if (!shopEntry || !Array.isArray(shopEntry.items)) return null;
+    const item = shopEntry.items.find((i) => Number(i.id) === idNum);
+    if (!item) return null;
+    return {
+      inventory: Number(item.inventory ?? 0),
+      name: item.name || null,
+    };
+  }
+  const shops = Array.isArray(rawMenu?.shops) ? rawMenu.shops : [];
+  const shopEntry = shops.find((x) => String(x.shopId) === shopIdStr);
+  if (!shopEntry || !Array.isArray(shopEntry.categories)) return null;
+  for (const category of shopEntry.categories) {
+    if (!Array.isArray(category.items)) continue;
+    const item = category.items.find((i) => Number(i.id) === idNum);
+    if (!item) continue;
+    return {
+      inventory: Number(item.inventory ?? 0),
+      name: item.name || null,
+    };
+  }
+  return null;
+};
+
+const getMenuItemInventory = (rawMenu, targetShopId, itemId) => {
+  const snapshot = getMenuItemSnapshot(rawMenu, targetShopId, itemId);
+  return snapshot ? snapshot.inventory : null;
+};
+
 // Middleware: Authenticate vendor
 /**
  * Middleware: Validates vendor JWT and enriches req.vendor.
@@ -2914,8 +2955,20 @@ app.post("/order", (req, res) => {
         }
       }
     };
+    const inventoryAdjustments = [];
     for (const [itemId, qtyNeeded] of required.entries()) {
+      const beforeSnapshot = getMenuItemSnapshot(raw, shopId, itemId);
       persistDecrement(raw, shopId, itemId, qtyNeeded);
+      const afterSnapshot = getMenuItemSnapshot(raw, shopId, itemId);
+      inventoryAdjustments.push({
+        shopId,
+        itemId,
+        itemName: beforeSnapshot?.name || afterSnapshot?.name || null,
+        delta: -qtyNeeded,
+        previous: beforeSnapshot?.inventory ?? null,
+        current: afterSnapshot?.inventory ?? null,
+        reason: "order-placement",
+      });
     }
     saveMenu(raw);
 
@@ -3070,6 +3123,28 @@ app.post("/order", (req, res) => {
     orders.push(newOrder);
     saveOrders(orders);
 
+    emitOrderCreatedEvent(newOrder, {
+      user: user || null,
+      payment: paymentSummary,
+      excludedItems: Array.isArray(req._excludedItems) ? req._excludedItems : null,
+      meta: {
+        requestId: req.headers["x-request-id"] || null,
+        source: req.headers["x-client-source"] || "frontend",
+      },
+    });
+
+    for (const adj of inventoryAdjustments) {
+      emitInventoryAdjustedEvent({
+        ...adj,
+        orderId: newOrder.id,
+        billingId,
+        actor: {
+          type: "order-system",
+          userId: user || null,
+        },
+      });
+    }
+
     const orderSummary = {
       billingId,
       user: newOrder.user,
@@ -3177,18 +3252,30 @@ app.post("/order/cancel/:id", (req, res) => {
       rawMenu = null;
     }
 
+    const cancelRestocks = [];
     if (rawMenu && Array.isArray(order.items)) {
       for (const item of order.items) {
         const quantity = Number(item?.quantity || 0);
         const itemId = item?.id;
         if (!itemId || !quantity) continue;
+        const before = getMenuItemSnapshot(rawMenu, order.shopId, itemId);
         restockInventory(rawMenu, order.shopId, itemId, quantity);
+        const after = getMenuItemSnapshot(rawMenu, order.shopId, itemId);
+        cancelRestocks.push({
+          shopId: order.shopId,
+          itemId,
+          itemName: before?.name || after?.name || null,
+          delta: quantity,
+          previous: before?.inventory ?? null,
+          current: after?.inventory ?? null,
+        });
       }
       try {
         saveMenu(rawMenu);
       } catch {}
     }
 
+    const previousStatus = order.status;
     order.status = "cancelled";
     order.cancelledAt = new Date().toISOString();
     order.cancelledBy = userId;
@@ -3220,6 +3307,28 @@ app.post("/order/cancel/:id", (req, res) => {
     } catch {}
 
     saveOrders(orders);
+
+    for (const adj of cancelRestocks) {
+      emitInventoryAdjustedEvent({
+        ...adj,
+        orderId: order.id,
+        billingId: order.billingId,
+        reason: "order-cancelled-restock",
+        actor: {
+          type: "employee",
+          userId,
+        },
+      });
+    }
+
+    emitOrderStatusEvent(order, {
+      actor: {
+        type: "employee",
+        userId,
+      },
+      previousStatus: previousStatus,
+      reason: reason || null,
+    });
 
     res.json({
       status: "success",
@@ -3820,9 +3929,20 @@ app.post("/order/ready/:id", authenticateVendor, (req, res) => {
       return res.status(404).json({ message: "Order not found for your shop" });
     }
 
+    const previousStatus = order.status;
     order.status = "ready";
     order.readyAt = new Date().toISOString();
     saveOrders(orders);
+    emitOrderStatusEvent(order, {
+      vendor: req.vendor,
+      previousStatus,
+      actor: {
+        type: "vendor",
+        vendorId: req.vendor.vendorId,
+        shopId: req.vendor.shopId,
+        username: req.vendor.username,
+      },
+    });
     res.json({ status: "success", message: `Order ${orderId} marked ready` });
   } catch (error) {
     res.status(500).json({ message: "Error marking order ready" });
@@ -3850,6 +3970,7 @@ app.post("/order/picked/:id", authenticateVendor, (req, res) => {
     }
 
     const now = new Date().toISOString();
+    const previousStatus = order.status;
     order.status = "completed";
     order.pickedAt = now;
     order.completedAt = now;
@@ -3858,6 +3979,16 @@ app.post("/order/picked/:id", authenticateVendor, (req, res) => {
     }
 
     saveOrders(orders);
+    emitOrderStatusEvent(order, {
+      vendor: req.vendor,
+      previousStatus,
+      actor: {
+        type: "vendor",
+        vendorId: req.vendor.vendorId,
+        shopId: req.vendor.shopId,
+        username: req.vendor.username,
+      },
+    });
     res.json({ status: "success", message: `Order ${orderId} marked completed` });
   } catch (error) {
     res.status(500).json({ message: "Error marking order picked" });
@@ -3969,6 +4100,8 @@ app.post("/order/extend/:id", authenticateVendor, (req, res) => {
       return res.status(404).json({ message: "Order not found for your shop" });
     }
 
+    const previousPrepMinutes = order.prepTime || 0;
+    const previousEta = order.estimatedReadyTime || null;
     order.prepTime = (order.prepTime || 0) + addMinutes;
     const prevEta = order.estimatedReadyTime ? new Date(order.estimatedReadyTime).getTime() : Date.now();
     const baseTime = Math.max(prevEta, Date.now());
@@ -3977,6 +4110,18 @@ app.post("/order/extend/:id", authenticateVendor, (req, res) => {
     order.etaExtensionMinutes = (order.etaExtensionMinutes || 0) + addMinutes;
 
     saveOrders(orders);
+    emitOrderPrepExtendedEvent(order, {
+      vendor: req.vendor,
+      addMinutes,
+      previousPrepMinutes,
+      previousEta,
+      actor: {
+        type: "vendor",
+        vendorId: req.vendor.vendorId,
+        shopId: req.vendor.shopId,
+        username: req.vendor.username,
+      },
+    });
     res.json({ status: "success", message: "Preparation time extended", order });
   } catch (error) {
     res.status(500).json({ message: "Error extending preparation time" });
@@ -4094,4 +4239,16 @@ app.post("/grievance/resolve/:id", authenticateVendor, (req, res) => {
 app.listen(PORT, () => {
   console.log(`Backend running on http://localhost:${PORT}`);
   console.log(`Images served from: http://localhost:${PORT}/images/`);
+  if (analyticsConfig.ANALYTICS_INGESTOR_ENABLED) {
+    analyticsIngestor
+      .start()
+      .then(() => {
+        console.log("Analytics ingestor started (Redis Streams -> InfluxDB/DuckDB)");
+      })
+      .catch((err) => {
+        console.error("Failed to start analytics ingestor", err);
+      });
+  } else {
+    console.log("Analytics ingestor disabled via configuration");
+  }
 });

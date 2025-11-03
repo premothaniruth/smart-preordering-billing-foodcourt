@@ -24,5 +24,9 @@ module.exports = {
   INFLUX_TOKEN: process.env.INFLUX_TOKEN || "influx-dev-token",
   INFLUX_ORG: process.env.INFLUX_ORG || "smart-foodcourt",
   INFLUX_BUCKET: process.env.INFLUX_BUCKET || "vendor_metrics",
+  ANALYTICS_INGESTOR_ENABLED: String(process.env.ENABLE_ANALYTICS_INGESTOR || "true").toLowerCase() !== "false",
+  ANALYTICS_INGESTOR_BATCH_SIZE: toNumberOrFallback(process.env.ANALYTICS_INGESTOR_BATCH_SIZE, 100),
+  ANALYTICS_INGESTOR_BLOCK_MS: toNumberOrFallback(process.env.ANALYTICS_INGESTOR_BLOCK_MS, 5000),
+  ANALYTICS_INGESTOR_RETRY_MS: toNumberOrFallback(process.env.ANALYTICS_INGESTOR_RETRY_MS, 3000),
   DUCKDB_PATH: resolveDuckDbPath(),
 };
