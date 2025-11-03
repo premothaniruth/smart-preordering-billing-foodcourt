@@ -988,3 +988,32 @@ export const updateAdminVendorGrievance = async (grievanceId, updates, session) 
   });
   return res.json();
 };
+
+/**
+ * Create a new vendor
+ * @param {object} data
+ * @param {{username:string,password:string}} session
+ */
+export const createVendor = async (data, session) => {
+  const res = await fetch(`${API_URL}/admin/vendor`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...buildAdminHeaders(session) },
+    body: JSON.stringify(data),
+  });
+  return res.json();
+};
+
+/**
+ * Update a vendor
+ * @param {number} vendorId
+ * @param {object} data
+ * @param {{username:string,password:string}} session
+ */
+export const updateVendor = async (vendorId, data, session) => {
+  const res = await fetch(`${API_URL}/admin/vendor/${vendorId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...buildAdminHeaders(session) },
+    body: JSON.stringify(data),
+  });
+  return res.json();
+};

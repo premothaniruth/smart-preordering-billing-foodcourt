@@ -819,7 +819,7 @@ function App() {
 
   const handleCreateVendor = async (payload) => {
     try {
-      const res = await createVendor(payload);
+      const res = await createVendor(payload, adminSession);
       if (res?.status === "success") {
         const id = Date.now(); // or use res.vendor.id if returned
         setAdminManagedVendors((prev) => [...prev, { id, ...payload }]);

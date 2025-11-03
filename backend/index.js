@@ -4209,6 +4209,39 @@ app.get("/sos/status", (req, res) => {
   }
 });
 
+// Admin: update vendor credentials
+/**
+ * PUT /admin/vendor/:id
+ * Admin: Update a vendor's username or password.
+ * @body {username?:string,password?:string}
+ */
+app.put("/admin/vendor/:id", authenticateAdmin, (req, res) => {
+  try {
+    const vendorId = Number(req.params.id);
+    if (!Number.isFinite(vendorId)) {
+      return res.status(400).json({ message: "Invalid vendor ID" });
+    }
+    const vendors = getVendors();
+    const index = vendors.findIndex((v) => v.vendorId === vendorId);
+    if (index === -1) {
+      return res.status(404).json({ message: "Vendor not found" });
+    }
+
+    const { username, password } = req.body || {};
+    if (username != null) {
+      vendors[index].username = String(username).trim();
+    }
+    if (password != null && password !== "") {
+      vendors[index].passwordHash = bcrypt.hashSync(String(password), 10);
+    }
+
+    saveVendors(vendors);
+    res.json({ status: "success", message: "Vendor updated successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Error updating vendor" });
+  }
+});
+
 // Extend preparation time for an order (in minutes)
 /**
  * POST /order/extend/:id
