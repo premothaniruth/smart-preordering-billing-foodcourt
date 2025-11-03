@@ -120,6 +120,16 @@ const Cart = ({
     return futureSlot || null;
   };
 
+  const toHM = (d) => `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  const [currentHM, setCurrentHM] = useState(() => toHM(new Date()));
+  useEffect(() => {
+    const id = setInterval(() => setCurrentHM(toHM(new Date())), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const availableSlots = useMemo(() => {
+    return slots.filter((slot) => slot > currentHM);
+  }, [slots, currentHM]);
+
   const syncScheduled = useCallback((nextDate, nextHM) => {
     let effectiveDate = nextDate;
     if (effectiveDate && effectiveDate !== todayStr) effectiveDate = todayStr;
@@ -149,15 +159,6 @@ const Cart = ({
     fetchSectionsMeta().then((d)=> setSectionWindows(d?.windows || {})).catch(()=>setSectionWindows({}));
   }, []);
 
-  const toHM = (d) => `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-  const [currentHM, setCurrentHM] = useState(() => toHM(new Date()));
-  useEffect(() => {
-    const id = setInterval(() => setCurrentHM(toHM(new Date())), 1000);
-    return () => clearInterval(id);
-  }, []);
-  const availableSlots = useMemo(() => {
-    return slots.filter((slot) => slot > currentHM);
-  }, [slots, currentHM]);
   const effectiveHM = scheduledHM || currentHM; // if scheduled, validate against selected slot; else now
   const handleToggleSchedule = (e) => {
     const enabled = e.target.checked;
