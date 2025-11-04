@@ -71,6 +71,7 @@ function App() {
     department: null,
     bulkOrderEligible: false,
   });
+  const [pointsRefreshNonce, setPointsRefreshNonce] = useState(0);
   const [view, setView] = useState("landing");
   const [orderSummary, setOrderSummary] = useState(null);
   const [userOrders, setUserOrders] = useState([]);
@@ -261,6 +262,10 @@ function App() {
       setView("user");
     }
   }, [employeeToken, view]);
+
+  useEffect(() => {
+    setPointsRefreshNonce(0);
+  }, [employeeToken]);
 
   // Employee ready notification: poll orders and alert when status becomes ready
   useEffect(() => {
@@ -749,6 +754,7 @@ function App() {
         },
         offerPreview: checkoutDraft.offerPreview,
         orderNotes: checkoutDraft.notes || undefined,
+        employeeToken: employeeToken || undefined,
       });
 
       if (!response || response.status !== 'success') {
@@ -802,6 +808,8 @@ function App() {
           }
         });
       }
+
+      setPointsRefreshNonce((nonce) => nonce + 1);
 
       playSound(ORDER_PLACED_SOUND);
       toast.success(`Order placed! Billing ID: ${response.billingId}`);
@@ -1346,6 +1354,7 @@ function App() {
                   wallet={wallet}
                   onWalletChange={applyWalletPayload}
                   onRequestWalletRefresh={loadWallet}
+                  pointsRefreshNonce={pointsRefreshNonce}
                 />
               </div>
             )}

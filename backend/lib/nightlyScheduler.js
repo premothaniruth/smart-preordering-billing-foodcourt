@@ -4,9 +4,15 @@ const { analyticsIngestor } = require("./analyticsIngestor");
 const analyticsConfig = require("./analyticsConfig");
 const { metricsRegistry } = require("./metricsRegistry");
 const { evaluateVendorForecastAccuracy } = require("./forecastingEvaluationService");
+const {
+  handlePointsExpirySweep,
+  handlePointsReminderSweep,
+} = require("./pointsService");
 
 let archiveTask;
 let forecastEvalTask;
+let pointsExpiryTask;
+let pointsReminderTask;
 
 const startNightlyJobs = () => {
   if (!archiveTask) {
@@ -48,6 +54,34 @@ const startNightlyJobs = () => {
     });
     forecastEvalTask.start();
   }
+
+  if (!pointsReminderTask) {
+    const cronExpr = process.env.POINTS_REMINDER_CRON || "0 5 * * *"; // 5 AM UTC
+    pointsReminderTask = cron.schedule(cronExpr, async () => {
+      try {
+        metricsRegistry.incrementCounter("scheduler.pointsReminder.invocations");
+        await handlePointsReminderSweep();
+      } catch (error) {
+        console.error("[NightlyScheduler] Points reminder sweep failed", error);
+        metricsRegistry.incrementCounter("scheduler.pointsReminder.failures");
+      }
+    });
+    pointsReminderTask.start();
+  }
+
+  if (!pointsExpiryTask) {
+    const cronExpr = process.env.POINTS_EXPIRY_CRON || "30 5 * * *"; // 5:30 AM UTC
+    pointsExpiryTask = cron.schedule(cronExpr, async () => {
+      try {
+        metricsRegistry.incrementCounter("scheduler.pointsExpiry.invocations");
+        await handlePointsExpirySweep();
+      } catch (error) {
+        console.error("[NightlyScheduler] Points expiry sweep failed", error);
+        metricsRegistry.incrementCounter("scheduler.pointsExpiry.failures");
+      }
+    });
+    pointsExpiryTask.start();
+  }
 };
 
 const stopNightlyJobs = () => {
@@ -58,6 +92,14 @@ const stopNightlyJobs = () => {
   if (forecastEvalTask) {
     forecastEvalTask.stop();
     forecastEvalTask = null;
+  }
+  if (pointsReminderTask) {
+    pointsReminderTask.stop();
+    pointsReminderTask = null;
+  }
+  if (pointsExpiryTask) {
+    pointsExpiryTask.stop();
+    pointsExpiryTask = null;
   }
 };
 

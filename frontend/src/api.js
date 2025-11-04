@@ -562,6 +562,15 @@ export const placeOrder = async (order) => {
   return res.json();
 };
 
+export const fetchEmployeePointsSummary = async (token) => {
+  const res = await fetch(`${API_URL}/employee/points/summary`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token }),
+  });
+  return res.json();
+};
+
 /**
  * Fetch combos for a shop
  * @param {string|number} shopId

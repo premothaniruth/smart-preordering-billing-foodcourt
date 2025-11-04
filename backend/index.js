@@ -60,6 +60,7 @@ const multer = require("multer");
 const app = express();
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server, path: "/ws/analytics" });
+
 const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET || "MySuperSecretKeyForJWT";
 
@@ -210,8 +211,11 @@ const recordAuditEvent = ({ actorType, actorId, shopId, vendorId, action, metada
 };
 
 app.use(cors());
-app.use(bodyParser.json({ limit: '6mb' }));
-app.use('/images', express.static(path.join(__dirname, 'data', 'images')));
+app.use(bodyParser.json({ limit: "10mb" }));
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, "public")));
+
+ensurePointsDataFiles();
 
 app.get("/healthz", (req, res) => {
   const summary = metricsRegistry.getHealthSummary();
@@ -583,6 +587,13 @@ const recordWalletTransaction = (employees, employee, tx = {}) => {
   return entry;
 };
 
+const {
+  processOrderPoints,
+  getEmployeePointsSummary,
+  getPointsAdminReport,
+  ensurePointsDataFiles,
+} = require("./lib/pointsService");
+
 const validatePin = (pin) => /^\d{4}$/.test(String(pin || ''));
 
 const DEFAULT_EMPLOYEE_ROLE_LABEL = 'Employee';
@@ -709,44 +720,69 @@ const ensureEmployeePins = async () => {
 };
 
 const validateEmailAddress = (email) => {
-  const str = String(email || '').trim();
-  if (!str) return false;
-  return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(str);
+const str = String(email || '').trim();
+if (!str) return false;
+return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(str);
 };
 
 const normalizeMobileInput = (value) => {
-  if (value == null) return null;
-  const digits = String(value).replace(/[^0-9]/g, '');
-  if (!digits) return '';
-  if (digits.length !== 10) return null;
-  return `+91${digits}`;
+if (value == null) return null;
+const digits = String(value).replace(/[^0-9]/g, '');
+if (!digits) return '';
+if (digits.length !== 10) return null;
+return `+91${digits}`;
 };
 
-const sanitizeEmployeeProfile = (employee) => ({
-  id: employee.id,
-  username: employee.username || '',
-  email: employee.email || '',
-  mobile: employee.mobile || '',
-  birthday: employee.birthday || '',
-  friends: Array.isArray(employee.friends) ? employee.friends : [],
-  hasPassword: Boolean(employee.passwordHash),
-  hasPin: Boolean(employee.pinHash),
-  role: employee.role || DEFAULT_EMPLOYEE_ROLE_LABEL,
-  roleSlug: employee.roleSlug || DEFAULT_EMPLOYEE_ROLE_SLUG,
-  department: employee.department || '',
-  bulkOrderEligible: Boolean(employee.bulkOrderEligible)
-});
+const sanitizeEmployeeProfile = (employee, options = {}) => {
+  const { pointsSummary } = options;
+  const profile = {
+    id: employee.id,
+    username: employee.username || "",
+    email: employee.email || "",
+    mobile: employee.mobile || "",
+    name: employee.name || "",
+    avatar: employee.avatar || "",
+    birthday: employee.birthday || "",
+    department: employee.department || "",
+    designation: employee.designation || "",
+    employeeId: employee.employeeId || "",
+    location: employee.location || "",
+    favoriteVendors: Array.isArray(employee.favoriteVendors) ? employee.favoriteVendors : [],
+    favorites: Array.isArray(employee.favorites) ? employee.favorites : [],
+    preferences: employee.preferences || {},
+    walletBalance: Number(employee.walletBalance || 0),
+    walletTransactions: Array.isArray(employee.walletTransactions)
+      ? employee.walletTransactions.slice(0, 10)
+      : [],
+    friends: Array.isArray(employee.friends) ? employee.friends : [],
+    hasPassword: Boolean(employee.passwordHash),
+    hasPin: Boolean(employee.pinHash),
+    role: employee.role || DEFAULT_EMPLOYEE_ROLE_LABEL,
+    roleSlug: employee.roleSlug || DEFAULT_EMPLOYEE_ROLE_SLUG,
+    bulkOrderEligible: Boolean(employee.bulkOrderEligible),
+  };
+
+  if (pointsSummary !== undefined) {
+    profile.points = pointsSummary;
+  }
+
+  return profile;
+};
 
 const resolveEmployeeFromToken = (token) => {
   if (!token) return null;
-  const tokenStr = String(token);
+  const tokenStr = String(token).trim();
+  if (!tokenStr) return null;
+
   let decoded;
   try {
     decoded = jwt.verify(tokenStr, JWT_SECRET);
   } catch {
     return null;
   }
-  if (!decoded || decoded.role !== 'employee') return null;
+
+  if (!decoded || decoded.role !== "employee") return null;
+
   const identifiers = new Set();
   const pushIdent = (val) => {
     if (val === undefined || val === null) return;
@@ -754,34 +790,45 @@ const resolveEmployeeFromToken = (token) => {
     if (!str) return;
     identifiers.add(str.toLowerCase());
   };
+
   pushIdent(decoded.employeeId);
   pushIdent(decoded.mobile);
   pushIdent(decoded.contact);
   pushIdent(decoded.username);
   pushIdent(decoded.email);
+
   const sessionInfo = employeeSessions.get(tokenStr);
   if (sessionInfo) {
     pushIdent(sessionInfo.employeeId);
     pushIdent(sessionInfo.mobile);
     pushIdent(sessionInfo.contact);
   }
+
   const employees = getEmployees();
   let index = -1;
   for (const ident of identifiers) {
     index = employees.findIndex((emp) => {
-      const username = String(emp.username || '').toLowerCase();
-      const email = String(emp.email || '').toLowerCase();
-      const mobile = String(emp.mobile || '').toLowerCase();
-      const idStr = String(emp.id || '').toLowerCase();
-      return username === ident || email === ident || mobile === ident || idStr === ident;
+      const username = String(emp.username || "").toLowerCase();
+      const email = String(emp.email || "").toLowerCase();
+      const mobile = String(emp.mobile || "").toLowerCase();
+      const idStr = String(emp.id || "").toLowerCase();
+      return (
+        username === ident ||
+        email === ident ||
+        mobile === ident ||
+        idStr === ident
+      );
     });
     if (index >= 0) break;
   }
+
   if (index === -1) return null;
+
   const employee = employees[index];
   if (ensureEmployeeRoleFields(employee)) {
     saveEmployees(employees);
   }
+
   return { employee, index, employees, token: tokenStr };
 };
 
@@ -898,7 +945,8 @@ app.post('/employee/profile', (req, res) => {
     if (roleChanged) {
       saveEmployees(resolved.employees || getEmployees());
     }
-    const profile = sanitizeEmployeeProfile(employee);
+    const points = getEmployeePointsSummary(employee.id);
+    const profile = sanitizeEmployeeProfile(employee, { pointsSummary: points.summary });
     const wallet = {
       balance: Number(employee.walletBalance || 0),
       transactions: Array.isArray(employee.walletTransactions) ? employee.walletTransactions.slice(0, 20) : []
@@ -906,10 +954,37 @@ app.post('/employee/profile', (req, res) => {
     return res.json({
       status: 'ok',
       profile,
-      wallet
+      wallet,
+      points,
     });
-  } catch {
+  } catch (error) {
+    console.error('Failed to load profile', error);
     res.status(500).json({ message: 'Failed to load profile' });
+  }
+});
+
+app.post('/employee/points/summary', (req, res) => {
+  try {
+    const { token } = req.body || {};
+    const resolved = resolveEmployeeFromToken(token);
+    if (!resolved?.employee) {
+      return res.status(401).json({ message: 'Invalid or expired session' });
+    }
+    const points = getEmployeePointsSummary(resolved.employee.id);
+    return res.json({ status: 'ok', points });
+  } catch (error) {
+    console.error('Failed to load employee points summary', error);
+    res.status(500).json({ message: 'Failed to load points summary' });
+  }
+});
+
+app.get('/vendor/points/summary', authenticateVendor, requirePermission('analytics:read'), (req, res) => {
+  try {
+    const report = getPointsAdminReport({ date: req.query?.date });
+    res.json({ status: 'ok', report });
+  } catch (error) {
+    console.error('Failed to load vendor points summary', error);
+    res.status(500).json({ message: 'Failed to load vendor points summary' });
   }
 });
 
@@ -3780,7 +3855,7 @@ app.put('/vendor/interest/threshold', authenticateVendor, requirePermission('ana
  */
 app.post("/order", (req, res) => {
   try {
-    const { items, user, scheduledTime, shopId, paymentMethod = 'gateway', paymentPayload = {}, orderNotes = '' } = req.body;
+    const { items, user, scheduledTime, shopId, paymentMethod = 'gateway', paymentPayload = {}, orderNotes = '', employeeToken: explicitEmployeeToken = null } = req.body;
     // Validate inventory and decrement (supports combo expansion)
     const raw = getMenu();
     const normalizedShops = normalizeMenuShops(raw);
@@ -4197,6 +4272,54 @@ app.post("/order", (req, res) => {
       appliedOffers,
       offerExtras: offerExtras
     };
+
+    const resolvedEmployee = (() => {
+      const explicit = explicitEmployeeToken ? resolveEmployeeFromToken(explicitEmployeeToken) : null;
+      if (explicit?.employee) return explicit;
+      if (!user) return null;
+      const employees = getEmployees();
+      const employeeIndex = employees.findIndex((emp) => String(emp.mobile || '').toLowerCase() === String(user || '').toLowerCase());
+      if (employeeIndex === -1) return null;
+      const employee = employees[employeeIndex];
+      return { employee, employees, index: employeeIndex };
+    })();
+
+    if (resolvedEmployee?.employee) {
+      try {
+        const employeeId = resolvedEmployee.employee.id;
+        const orderPoints = processOrderPoints({
+          employeeId,
+          orderItems: newOrder.items,
+          orderId: newOrder.id,
+          orderDate: newOrder.createdAt,
+          onConvert: ({ points: convertedPoints, rupees, ledgerEntryId }) => {
+            const employees = resolvedEmployee.employees || getEmployees();
+            const employee = employees[resolvedEmployee.index ?? employees.findIndex((emp) => String(emp.id) === String(employeeId))];
+            if (!employee) return null;
+            ensureWalletFields(employee);
+            const tx = recordWalletTransaction(employees, employee, {
+              type: 'credit',
+              reason: 'points-conversion',
+              amount: rupees,
+              metadata: { pointsConverted: convertedPoints, pointsLedgerId: ledgerEntryId },
+            });
+            saveEmployees(employees);
+            return { walletTxId: tx?.id || null };
+          },
+        });
+        appendAuditEntry({
+          type: 'points:order-processed',
+          actor: { type: 'system', source: 'order.create' },
+          employeeId,
+          orderId: newOrder.id,
+          pointsEarned: orderPoints.earnEntry?.points || 0,
+          streakBonuses: orderPoints.streakIssued,
+          pointsConverted: orderPoints.conversion?.converted || 0,
+        });
+      } catch (pointsError) {
+        console.warn('Failed to process streak points', pointsError);
+      }
+    }
 
     const extra = {};
     if (Array.isArray(req._excludedItems) && req._excludedItems.length > 0) {

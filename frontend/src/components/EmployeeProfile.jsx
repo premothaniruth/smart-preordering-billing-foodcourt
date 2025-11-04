@@ -1,14 +1,122 @@
+          {activeTab === 'points' && (
+            <div style={{ display: 'grid', gap: 16 }}>
+              <div className="points-summary-card">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <div style={{ fontSize: 13, color: '#7f8c8d' }}>Active Points</div>
+                    <div style={{ fontSize: 32, fontWeight: 700 }}>
+                      {pointsLoading ? '…' : Number(pointsSummary?.summary?.activePoints || 0).toFixed(0)}
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 12, color: '#95a5a6', maxWidth: 220 }}>
+                    Earn points on every order and streak bonuses. 30 points auto-convert into ₹3 wallet credit.
+                  </div>
+                </div>
+              </div>
+
+              <div className="points-grid" style={{ display: 'grid', gap: 16 }}>
+                <div className="card" style={{ padding: 16 }}>
+                  <div style={{ fontWeight: 600, marginBottom: 8 }}>Lifetime Overview</div>
+                  {pointsLoading ? (
+                    <div>Loading points…</div>
+                  ) : (
+                    <div style={{ display: 'grid', gap: 6, fontSize: 13, color: '#2c3e50' }}>
+                      <div>Lifetime Points Earned: <strong>{Number(pointsSummary?.summary?.lifetimePoints || 0).toFixed(0)}</strong></div>
+                      <div>Total Points Converted: <strong>{Number(pointsSummary?.summary?.lifetimeConvertedPoints || 0).toFixed(0)}</strong></div>
+                      <div>Total Points Expired: <strong>{Number(pointsSummary?.summary?.lifetimeExpiredPoints || 0).toFixed(0)}</strong></div>
+                      <div>Last Earned On: <strong>{pointsSummary?.summary?.lastEarnedAt ? new Date(pointsSummary.summary.lastEarnedAt).toLocaleString('en-IN') : '—'}</strong></div>
+                      <div>Last Conversion: <strong>{pointsSummary?.summary?.lastConvertedAt ? new Date(pointsSummary.summary.lastConvertedAt).toLocaleString('en-IN') : '—'}</strong></div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="card" style={{ padding: 16 }}>
+                  <div style={{ fontWeight: 600, marginBottom: 8 }}>Upcoming Expiries</div>
+                  {pointsLoading ? (
+                    <div>Loading expiries…</div>
+                  ) : (Array.isArray(pointsSummary?.expiryPreview) && pointsSummary.expiryPreview.length > 0 ? (
+                    <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13 }}>
+                      {pointsSummary.expiryPreview.map((entry) => (
+                        <li key={entry.ledgerId} style={{ marginBottom: 6 }}>
+                          {Number(entry.points).toFixed(0)} pts expiring on{' '}
+                          <strong>{new Date(entry.expiresAt).toLocaleDateString('en-IN', { dateStyle: 'medium' })}</strong>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div style={{ fontSize: 13, color: '#7f8c8d' }}>No upcoming expiries.</div>
+                  ))}
+                </div>
+
+                <div className="card" style={{ padding: 16 }}>
+                  <div style={{ fontWeight: 600, marginBottom: 8 }}>Recent Conversions</div>
+                  {pointsLoading ? (
+                    <div>Loading conversions…</div>
+                  ) : (Array.isArray(pointsSummary?.conversionHistory) && pointsSummary.conversionHistory.length > 0 ? (
+                    <div style={{ maxHeight: 220, overflowY: 'auto', border: '1px solid #eef2f6', borderRadius: 8 }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                        <thead>
+                          <tr style={{ background: '#f6f9fb', textAlign: 'left', fontSize: 12, color: '#7f8c8d' }}>
+                            <th style={{ padding: '8px 10px' }}>Date</th>
+                            <th style={{ padding: '8px 10px' }}>Points</th>
+                            <th style={{ padding: '8px 10px' }}>Wallet Credit</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {pointsSummary.conversionHistory.map((entry) => (
+                            <tr key={entry.id} style={{ borderBottom: '1px solid #eef2f6', fontSize: 13 }}>
+                              <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>{new Date(entry.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</td>
+                              <td style={{ padding: '8px 10px' }}>{Number(entry.points).toFixed(0)}</td>
+                              <td style={{ padding: '8px 10px' }}>₹{Math.abs(Number(entry.points) * 0.1).toFixed(2)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: 13, color: '#7f8c8d' }}>No conversions yet.</div>
+                  ))}
+                </div>
+
+                <div className="card" style={{ padding: 16 }}>
+                  <div style={{ fontWeight: 600, marginBottom: 8 }}>Streak Highlights</div>
+                  {pointsLoading ? (
+                    <div>Loading streaks…</div>
+                  ) : (Array.isArray(pointsSummary?.streakAchievements) && pointsSummary.streakAchievements.length > 0 ? (
+                    <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13 }}>
+                      {pointsSummary.streakAchievements.map((entry) => (
+                        <li key={entry.date} style={{ marginBottom: 6 }}>
+                          {entry.points} pts on <strong>{entry.date}</strong>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div style={{ fontSize: 13, color: '#7f8c8d' }}>No streak bonuses earned yet. Place orders on consecutive days to earn daily streak points.</div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <button type="button" className="secondary-button" onClick={loadPoints} disabled={pointsLoading}>
+                  {pointsLoading ? 'Refreshing…' : 'Refresh Points Summary'}
+                </button>
+              </div>
+            </div>
+          )}
 import React, { useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
-import { employeeProfile, employeeProfileRequestOtp, employeeProfileUpdate, walletTopUp } from '../api';
+import { employeeProfile, employeeProfileRequestOtp, employeeProfileUpdate, walletTopUp, fetchEmployeePointsSummary } from '../api';
 
 const MIN_TOPUP = 100;
 const MAX_TOPUP = 5000;
 
-const EmployeeProfile = ({ token, wallet = { balance: 0, transactions: [] }, onWalletChange = () => {}, onRequestWalletRefresh = () => {} }) => {
+const EmployeeProfile = ({ token, wallet = { balance: 0, transactions: [] }, onWalletChange = () => {}, onRequestWalletRefresh = () => {}, pointsRefreshNonce = 0 }) => {
   const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState(null);
   const [activeTab, setActiveTab] = useState('account');
+
+  const [pointsLoading, setPointsLoading] = useState(false);
+  const [pointsSummary, setPointsSummary] = useState(null);
 
   const [email, setEmail] = useState('');
   const [mobile, setMobile] = useState('');
@@ -56,7 +164,30 @@ const EmployeeProfile = ({ token, wallet = { balance: 0, transactions: [] }, onW
     }
   };
 
+  const loadPoints = async () => {
+    if (!token) {
+      setPointsSummary(null);
+      return;
+    }
+    try {
+      setPointsLoading(true);
+      const res = await fetchEmployeePointsSummary(token);
+      if (res?.status === 'ok') {
+        setPointsSummary(res.points || null);
+      } else {
+        toast.error(res?.message || 'Failed to load points summary');
+        setPointsSummary(null);
+      }
+    } catch {
+      toast.error('Failed to load points summary');
+      setPointsSummary(null);
+    } finally {
+      setPointsLoading(false);
+    }
+  };
+
   useEffect(() => { load(); }, [token]);
+  useEffect(() => { loadPoints(); }, [token, pointsRefreshNonce]);
 
   useEffect(() => {
     // reset input when wallet tab revisited
@@ -199,6 +330,13 @@ const EmployeeProfile = ({ token, wallet = { balance: 0, transactions: [] }, onW
               onClick={() => setActiveTab('wallet')}
             >
               Wallet
+            </button>
+            <button
+              type="button"
+              className={activeTab === 'points' ? 'primary-button' : 'secondary-button'}
+              onClick={() => setActiveTab('points')}
+            >
+              Points
             </button>
           </div>
 
