@@ -44,6 +44,21 @@ const Menu = ({
   const [interestPending, setInterestPending] = useState(false);
   const interestCooldownsRef = useRef(new Map()); // key -> timestamp
 
+  const favoriteIds = useMemo(() => {
+    if (!Array.isArray(favorites)) return new Set();
+    return new Set(favorites.map((fav) => (typeof fav === 'object' ? fav.id ?? fav : fav)));
+  }, [favorites]);
+
+  const isFavorite = useCallback((itemId) => favoriteIds.has(itemId), [favoriteIds]);
+
+  const handleFavoriteClick = useCallback((itemId, event) => {
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+    if (typeof onFavoriteToggle === 'function') {
+      onFavoriteToggle(itemId);
+    }
+  }, [onFavoriteToggle]);
+
   const currentShop = useMemo(() => {
     if (!menu || !Array.isArray(menu)) return null;
     if (!selectedShop) return null;
