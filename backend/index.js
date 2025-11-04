@@ -3691,7 +3691,7 @@ app.post("/order", (req, res) => {
           itemName: item.name || null,
           delta,
           orderId: newOrder.id,
-          billingId: newBillingId,
+          billingId,
           reason: "order-created",
           actor: {
             type: "system",
