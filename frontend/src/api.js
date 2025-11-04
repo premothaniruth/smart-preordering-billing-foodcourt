@@ -742,6 +742,27 @@ export const downloadAnalyticsExport = async (token, format = "json") => {
   return res;
 };
 
+export const uploadHistoricAnalytics = async (token, file) => {
+  if (!file) {
+    throw new Error("Please choose a file to upload");
+  }
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const res = await fetch(`${API_URL}/analytics/import`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  });
+
+  const payload = await res.json().catch(() => null);
+  if (!res.ok) {
+    const message = payload?.message || `Failed to upload analytics: ${res.status}`;
+    throw new Error(message);
+  }
+  return payload;
+};
+
 export const fetchRecommendations = async (token) => {
   const res = await fetch(`${API_URL}/analytics/recommendations`, {
     headers: { Authorization: `Bearer ${token}` }

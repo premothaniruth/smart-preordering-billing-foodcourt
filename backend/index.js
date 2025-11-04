@@ -497,7 +497,13 @@ const employeesFile = __dirname + "/data/employees.json";
 const combosFile = __dirname + "/data/combos.json";
 const offersFile = __dirname + "/data/offers.json";
 const sectionWindowsFile = __dirname + "/data/section_windows.json";
+const itemInterestFile = path.join(__dirname, 'data', 'item_interest.json');
+const vendorInterestThresholdsFile = path.join(__dirname, 'data', 'vendor_interest_thresholds.json');
 const bulkOrdersFile = path.join(__dirname, 'data', 'bulk_orders.json');
+
+const DEFAULT_INTEREST_THRESHOLD = 15;
+const INTEREST_DEDUP_WINDOW_MS = 6 * 60 * 60 * 1000; // 6 hours
+const MAX_INTEREST_RECORDS = 5000;
 
 // Simple admin credentials (can be overridden via env)
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "infybhojans";
@@ -728,7 +734,7 @@ const sanitizeEmployeeProfile = (employee) => ({
   role: employee.role || DEFAULT_EMPLOYEE_ROLE_LABEL,
   roleSlug: employee.roleSlug || DEFAULT_EMPLOYEE_ROLE_SLUG,
   department: employee.department || '',
-  bulkOrderEligible: Boolean(employee.bulkOrderEligible),
+  bulkOrderEligible: Boolean(employee.bulkOrderEligible)
 });
 
 const resolveEmployeeFromToken = (token) => {
@@ -782,6 +788,16 @@ const resolveEmployeeFromToken = (token) => {
 const resolveEmployeeFromRequest = (req) => {
   const token = req?.body?.token || req?.query?.token || req?.headers?.['x-employee-token'] || req?.headers?.['authorization'];
   return resolveEmployeeFromToken(token);
+};
+
+const authenticateEmployee = (req, res, next) => {
+  const resolved = resolveEmployeeFromRequest(req);
+  if (!resolved) {
+    return res.status(401).json({ message: 'Invalid or expired session' });
+  }
+  req.employeeSession = resolved;
+  req.employee = resolved.employee;
+  next();
 };
 
 const resolveVendorFromRequest = (req) => {
@@ -2044,6 +2060,208 @@ const getVendors = () => JSON.parse(fs.readFileSync(vendorsFile, "utf8"));
 
 const saveVendors = (vendors) => {
   fs.writeFileSync(vendorsFile, JSON.stringify(Array.isArray(vendors) ? vendors : [], null, 2));
+};
+
+const getItemInterestRecords = () => {
+  try {
+    const raw = fs.readFileSync(itemInterestFile, 'utf8');
+    const parsed = JSON.parse(raw || '[]');
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
+const saveItemInterestRecords = (records) => {
+  const payload = Array.isArray(records) ? records : [];
+  fs.writeFileSync(itemInterestFile, JSON.stringify(payload, null, 2));
+};
+
+const getVendorInterestThresholds = () => {
+  try {
+    const raw = fs.readFileSync(vendorInterestThresholdsFile, 'utf8');
+    const parsed = JSON.parse(raw || '{}');
+    return (parsed && typeof parsed === 'object') ? parsed : {};
+  } catch {
+    return {};
+  }
+};
+
+const saveVendorInterestThresholds = (map) => {
+  const payload = (map && typeof map === 'object') ? map : {};
+  fs.writeFileSync(vendorInterestThresholdsFile, JSON.stringify(payload, null, 2));
+};
+
+const getVendorThresholdValue = (vendorId, thresholdsMap = null) => {
+  const map = thresholdsMap && typeof thresholdsMap === 'object' ? thresholdsMap : getVendorInterestThresholds();
+  if (vendorId == null) {
+    return DEFAULT_INTEREST_THRESHOLD;
+  }
+  const key = String(vendorId);
+  const raw = map[key] ?? map[vendorId];
+  const parsed = Number(raw);
+  if (Number.isFinite(parsed) && parsed > 0) {
+    return Math.round(parsed);
+  }
+  return DEFAULT_INTEREST_THRESHOLD;
+};
+
+const buildInterestKey = ({ shopId, itemId }) => `${shopId || 'unknown'}:${itemId || 'unknown'}`;
+
+const aggregateInterest = (records) => {
+  const byItem = new Map();
+  for (const record of Array.isArray(records) ? records : []) {
+    if (!record || record.itemId == null || record.shopId == null) continue;
+    const key = buildInterestKey(record);
+    if (!byItem.has(key)) {
+      byItem.set(key, {
+        shopId: String(record.shopId),
+        itemId: String(record.itemId),
+        uniqueEmployees: new Set(),
+        totalClicks: 0,
+        history: [],
+        vendorId: record.vendorId != null ? String(record.vendorId) : null,
+      });
+    }
+    const entry = byItem.get(key);
+    if (record.vendorId != null && !entry.vendorId) {
+      entry.vendorId = String(record.vendorId);
+    }
+    entry.totalClicks += 1;
+    if (record.employeeId != null) {
+      entry.uniqueEmployees.add(String(record.employeeId));
+    } else if (record.employeeMobile) {
+      entry.uniqueEmployees.add(String(record.employeeMobile));
+    }
+    entry.history.push({
+      employeeId: record.employeeId ?? null,
+      employeeMobile: record.employeeMobile ?? null,
+      timestamp: record.timestamp,
+    });
+  }
+
+  return Array.from(byItem.values()).map((entry) => {
+    const sortedHistory = entry.history.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    const firstExpressedAt = sortedHistory.length ? sortedHistory[0].timestamp : null;
+    const lastExpressedAt = sortedHistory.length ? sortedHistory[sortedHistory.length - 1].timestamp : null;
+    return {
+      shopId: entry.shopId,
+      itemId: entry.itemId,
+      vendorId: entry.vendorId,
+      uniqueEmployees: entry.uniqueEmployees.size,
+      totalClicks: entry.totalClicks,
+      history: sortedHistory,
+      firstExpressedAt,
+      lastExpressedAt,
+    };
+  });
+};
+
+const findMenuItemMetadata = (shopId, itemId) => {
+  if (shopId == null || itemId == null) return null;
+  const rawMenu = getMenu();
+  const normalized = normalizeMenuShops(rawMenu);
+  const shop = normalized.find((s) => String(s.shopId) === String(shopId));
+  if (!shop) return null;
+  const item = Array.isArray(shop.items) ? shop.items.find((it) => String(it.id) === String(itemId)) : null;
+  if (!item) return null;
+  const inventory = Number(item.inventory ?? 0);
+  const lowStockThreshold = item.lowStockThreshold ?? item.lowStockLimit ?? item.lowStock ?? null;
+  return {
+    shopId: shop.shopId,
+    shopName: shop.shopName || shop.name || null,
+    itemId: item.id,
+    itemName: item.name || null,
+    inventory: Number.isFinite(inventory) ? inventory : 0,
+    section: item.section || null,
+    image: item.image || null,
+    price: item.price ?? null,
+    lowStockThreshold: Number.isFinite(Number(lowStockThreshold)) ? Number(lowStockThreshold) : null,
+  };
+};
+
+const getInterestEntry = (aggregated, shopId, itemId) => {
+  if (!Array.isArray(aggregated)) return null;
+  return aggregated.find((entry) => String(entry.shopId) === String(shopId) && String(entry.itemId) === String(itemId)) || null;
+};
+
+const isSoldOut = (metadata) => {
+  if (!metadata) return false;
+  const inventory = Number(metadata.inventory ?? 0);
+  return Number.isFinite(inventory) ? inventory <= 0 : false;
+};
+
+const isLowStock = (metadata) => {
+  if (!metadata) return false;
+  const inventory = Number(metadata.inventory ?? 0);
+  if (!Number.isFinite(inventory)) return false;
+  const threshold = Number(metadata.lowStockThreshold ?? 5);
+  if (!Number.isFinite(threshold) || threshold <= 0) {
+    return inventory > 0 && inventory <= 5;
+  }
+  return inventory > 0 && inventory <= threshold;
+};
+
+const normalizeIdentityValue = (value) => {
+  if (value == null) return null;
+  const str = String(value).trim().toLowerCase();
+  return str || null;
+};
+
+const buildIdentitySetFromValues = (values = []) => {
+  const set = new Set();
+  for (const value of values) {
+    const normalized = normalizeIdentityValue(value);
+    if (normalized) {
+      set.add(normalized);
+    }
+  }
+  return set;
+};
+
+const getEmployeeIdentitySet = (employee = {}, session = null) => {
+  const values = [
+    employee.id,
+    employee.employeeId,
+    employee.mobile,
+    employee.contact,
+    employee.email,
+    employee.username,
+    session?.mobile,
+    session?.contact,
+    session?.employeeId,
+  ];
+  return buildIdentitySetFromValues(values);
+};
+
+const getRecordIdentitySet = (record = {}) => {
+  const values = [
+    record.employeeId,
+    record.employeeMobile,
+    record.employeeContact,
+    record.employeeEmail,
+    record.employeeUsername,
+  ];
+  return buildIdentitySetFromValues(values);
+};
+
+const hasIdentityOverlap = (record, identitySet) => {
+  if (!(identitySet instanceof Set) || identitySet.size === 0) return false;
+  const recordSet = getRecordIdentitySet(record);
+  if (recordSet.size === 0) return false;
+  for (const value of identitySet.values()) {
+    if (recordSet.has(value)) {
+      return true;
+    }
+  }
+  return false;
+};
+
+const ensureInterestCapacity = (records) => {
+  if (!Array.isArray(records)) return;
+  if (records.length <= MAX_INTEREST_RECORDS) return;
+  const excess = records.length - MAX_INTEREST_RECORDS;
+  records.splice(0, excess);
 };
 
 /**

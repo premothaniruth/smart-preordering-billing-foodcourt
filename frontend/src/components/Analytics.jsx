@@ -1,7 +1,21 @@
 import React, { useEffect, useMemo, useState } from "react";
 import PropTypes from "prop-types";
 import { fetchAnalytics, downloadAnalyticsExport } from "../api";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from "recharts";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+} from "recharts";
 
 /**
  * Analytics
@@ -34,6 +48,7 @@ const Analytics = ({ token }) => {
   const [error, setError] = useState(null);
   const [exporting, setExporting] = useState(false);
   const [exportFormat, setExportFormat] = useState("json");
+  const [historyChartType, setHistoryChartType] = useState("bar");
   const vendorShopId = useMemo(() => {
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
@@ -88,6 +103,80 @@ const Analytics = ({ token }) => {
 
   const ordersSeries = useMemo(() => data.timeSeries.map((row) => ({ ...row, orders: row.orders || 0 })), [data.timeSeries]);
   const revenueSeries = useMemo(() => data.timeSeries.map((row) => ({ ...row, revenue: row.revenue || 0 })), [data.timeSeries]);
+  const historyDataset = useMemo(
+    () =>
+      (data.history || []).map((row) => ({
+        ...row,
+        label: new Date(row.period).toLocaleString("en-IN", { month: "short", year: "numeric" }),
+        orders: Number(row.orders || 0),
+        revenue: Number(row.revenue || 0),
+      })),
+    [data.history]
+  );
+  const piePalette = ["#4f46e5", "#8b5cf6", "#0ea5e9", "#14b8a6", "#f97316", "#f43f5e", "#facc15", "#22c55e"];
+
+  const renderHistoryChart = () => {
+    if (!historyDataset.length) {
+      return (
+        <div className="history-chart-empty">No history yet. Upload or generate data to view trends.</div>
+      );
+    }
+
+    if (historyChartType === "line") {
+      return (
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={historyDataset} margin={{ top: 10, right: 12, left: 0, bottom: 10 }}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+            <YAxis yAxisId="orders" orientation="left" tick={{ fontSize: 11 }} />
+            <YAxis yAxisId="revenue" orientation="right" tickFormatter={(value) => `₹${Number(value).toLocaleString("en-IN", { maximumFractionDigits: 0 })}`} tick={{ fontSize: 11 }} />
+            <Tooltip formatter={(value, name) => (name === "Revenue" ? formatCurrency(value) : formatNumber(value))} />
+            <Legend />
+            <Line yAxisId="orders" type="monotone" dataKey="orders" name="Orders" stroke="#2563eb" strokeWidth={2} activeDot={{ r: 6 }} />
+            <Line yAxisId="revenue" type="monotone" dataKey="revenue" name="Revenue" stroke="#7c3aed" strokeWidth={2} />
+          </LineChart>
+        </ResponsiveContainer>
+      );
+    }
+
+    if (historyChartType === "pie") {
+      return (
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Tooltip formatter={(value) => formatCurrency(value)} />
+            <Legend />
+            <Pie
+              data={historyDataset}
+              dataKey="revenue"
+              nameKey="label"
+              cx="50%"
+              cy="50%"
+              outerRadius="75%"
+              label={(entry) => `${entry.label}`}
+            >
+              {historyDataset.map((entry, index) => (
+                <Cell key={entry.period} fill={piePalette[index % piePalette.length]} />
+              ))}
+            </Pie>
+          </PieChart>
+        </ResponsiveContainer>
+      );
+    }
+
+    return (
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={historyDataset} margin={{ top: 10, right: 12, left: 0, bottom: 10 }}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+          <YAxis tick={{ fontSize: 11 }} />
+          <Tooltip formatter={(value, name) => (name === "Revenue" ? formatCurrency(value) : formatNumber(value))} />
+          <Legend />
+          <Bar dataKey="orders" name="Orders" fill="#2563eb" radius={[6, 6, 0, 0]} />
+          <Bar dataKey="revenue" name="Revenue" fill="#7c3aed" radius={[6, 6, 0, 0]} />
+        </BarChart>
+      </ResponsiveContainer>
+    );
+  };
 
   const handleExport = async () => {
     setExporting(true);
@@ -260,7 +349,17 @@ const Analytics = ({ token }) => {
 
         <div>
           <h3>Historical Performance</h3>
-          <div style={{ maxHeight: 260, overflowY: 'auto', border: '1px solid #eee', borderRadius: 6 }}>
+          <div className="history-chart-controls">
+            <div className="chart-toggle">
+              <button type="button" className={historyChartType === "bar" ? "active" : ""} onClick={() => setHistoryChartType("bar")}>Bar</button>
+              <button type="button" className={historyChartType === "line" ? "active" : ""} onClick={() => setHistoryChartType("line")}>Line</button>
+              <button type="button" className={historyChartType === "pie" ? "active" : ""} onClick={() => setHistoryChartType("pie")}>Pie</button>
+            </div>
+          </div>
+          <div className="history-chart" style={{ width: "100%", height: 260, marginBottom: 12 }}>
+            {renderHistoryChart()}
+          </div>
+          <div style={{ maxHeight: 220, overflowY: 'auto', border: '1px solid #eee', borderRadius: 6 }}>
             <table width="100%" cellPadding="8" style={{ fontSize: 13 }}>
               <thead style={{ background: '#f7f9fc' }}>
                 <tr>

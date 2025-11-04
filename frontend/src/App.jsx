@@ -10,6 +10,7 @@ import AdminDashboard from "./components/AdminDashboard.jsx";
 import VendorCombos from "./components/VendorCombos.jsx";
 import VendorOffers from "./components/VendorOffers.jsx";
 import VendorFeedbacks from "./components/VendorFeedbacks.jsx";
+import VendorDataUpload from "./components/VendorDataUpload.jsx";
 import Analytics from "./components/Analytics.jsx";
 import ProcurementManager from "./components/ProcurementManager.jsx";
 import OrderHistory from "./components/OrderHistory.jsx";
@@ -1058,6 +1059,7 @@ function App() {
                 <button onClick={() => setView("dashboard")}>Dashboard</button>
                 <button onClick={() => setView("menu-editor")}>Edit Menu</button>
                 <button onClick={() => setView("analytics")}>Analytics</button>
+                <button onClick={() => setView("vendor-data-upload")}>Historic Upload</button>
                 <button onClick={() => setView("procurement")}>Procurement</button>
                 <button onClick={() => setView("vendor-combos")}>Combos</button>
                 <button onClick={() => setView("vendor-offers")}>Offers</button>
@@ -1082,6 +1084,7 @@ function App() {
             )}
             {view === "dashboard" && <AdminDashboard token={vendorToken} />}
             {view === "analytics" && <Analytics token={vendorToken} />}
+            {view === "vendor-data-upload" && <VendorDataUpload token={vendorToken} />}
             {view === "procurement" && <ProcurementManager token={vendorToken} />}
             {view === "vendor-combos" && <VendorCombos token={vendorToken} />}
             {view === "vendor-offers" && <VendorOffers token={vendorToken} />}
