@@ -1,17 +1,18 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import PropTypes from "prop-types";
 import { toast } from "react-toastify";
-import { 
-  fetchAdminBulkOrders, 
-  sendBulkOrderToVendor, 
-  submitAdminBulkDecision, 
-  fetchAdminVendors, 
-  updateVendor as updateVendorApi, 
-  createVendor as createVendorApi, 
-  deleteAdminVendor, 
-  fetchArchivedVendors, 
-  restoreArchivedVendor 
+import {
+  fetchAdminBulkOrders,
+  sendBulkOrderToVendor,
+  submitAdminBulkDecision,
+  fetchAdminVendors,
+  updateVendor as updateVendorApi,
+  createVendor as createVendorApi,
+  deleteAdminVendor,
+  fetchArchivedVendors,
+  restoreArchivedVendor
 } from "../api";
+import AdminVendorGrievances from "./AdminVendorGrievances";
 
 const initialCreateState = {
   shopName: "",
@@ -45,6 +46,7 @@ function AdminControl({
   const [archivedVendors, setArchivedVendors] = useState([]);
   const [archivedLoading, setArchivedLoading] = useState(false);
   const [archivedError, setArchivedError] = useState(null);
+  const [activePanel, setActivePanel] = useState("bulk");
 
   const sortedVendors = useMemo(() => {
     return [...vendors].sort((a, b) => a.shopName.localeCompare(b.shopName));
@@ -541,13 +543,22 @@ function AdminControl({
     );
   }
 
-  return (
-    <div className="admin-control">
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-        <h2 style={{ margin: 0 }}>Admin Control Center</h2>
-        <span style={{ fontSize: 13, color: "#6c7a89" }}>Signed in as {adminSession.username}</span>
-      </div>
+  const navButtonStyle = (isActive) => ({
+    width: "100%",
+    textAlign: "left",
+    padding: "12px 16px",
+    borderRadius: 10,
+    border: `1px solid ${isActive ? "#3867d6" : "#dcdde1"}`,
+    background: isActive ? "#f0f6ff" : "#ffffff",
+    color: "#2c3e50",
+    fontWeight: isActive ? 600 : 500,
+    cursor: "pointer",
+    boxShadow: isActive ? "inset 0 0 0 1px #d6e4ff" : "none",
+    transition: "background 0.2s ease, border-color 0.2s ease",
+  });
 
+  const bulkOrdersPanel = (
+    <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
         <div>
           <label style={{ fontSize: 13, color: "#7f8c8d", marginRight: 8 }}>Filter bulk orders</label>
@@ -557,11 +568,9 @@ function AdminControl({
             ))}
           </select>
         </div>
-        <div>
-          <button className="secondary-button" onClick={() => loadBulkOrders(adminSession, bulkStatus)} disabled={bulkLoading}>
-            Refresh
-          </button>
-        </div>
+        <button className="secondary-button" onClick={() => loadBulkOrders(adminSession, bulkStatus)} disabled={bulkLoading}>
+          Refresh
+        </button>
       </div>
 
       <div className="card" style={{ marginBottom: 24 }}>
@@ -813,7 +822,11 @@ function AdminControl({
           </div>
         </div>
       </div>
+    </div>
+  );
 
+  const vendorManagementPanel = (
+    <div>
       <div className="grid" style={{ display: "grid", gap: 20, gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
         <div className="card">
           <div className="card-header">Create New Vendor</div>
@@ -981,6 +994,44 @@ function AdminControl({
               ))}
             </ul>
           )}
+        </div>
+      </div>
+
+      {adminSession && (
+        <AdminVendorGrievances adminSession={adminSession} />
+      )}
+    </div>
+  );
+
+  return (
+    <div className="admin-control">
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+        <h2 style={{ margin: 0 }}>Admin Control Center</h2>
+        <span style={{ fontSize: 13, color: "#6c7a89" }}>Signed in as {adminSession.username}</span>
+      </div>
+
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 24 }}>
+        <div style={{ width: 220, display: "flex", flexDirection: "column", gap: 12 }}>
+          <button
+            type="button"
+            style={navButtonStyle(activePanel === "bulk")}
+            onClick={() => setActivePanel("bulk")}
+          >
+            Bulk Orders
+          </button>
+          <button
+            type="button"
+            style={navButtonStyle(activePanel === "vendors")}
+            onClick={() => setActivePanel("vendors")}
+          >
+            Manage Vendors
+          </button>
+          <div style={{ fontSize: 12, color: "#95a5a6", marginTop: 8 }}>
+            Select an option to view actions on the right.
+          </div>
+        </div>
+        <div style={{ flex: 1 }}>
+          {activePanel === "bulk" ? bulkOrdersPanel : vendorManagementPanel}
         </div>
       </div>
     </div>

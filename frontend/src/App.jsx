@@ -21,7 +21,6 @@ import VendorGrievanceForm from "./components/VendorGrievanceForm.jsx";
 import VendorGrievanceList from "./components/VendorGrievanceList.jsx";
 import VendorConcernsMenu from "./components/VendorConcernsMenu.jsx";
 import SosButton from "./components/SosButton.jsx";
-import AdminVendorGrievances from "./components/AdminVendorGrievances.jsx";
 import BulkOrderPortal from "./components/BulkOrderPortal.jsx";
 import PaymentPage from "./components/PaymentPage.jsx";
 import { ToastContainer, toast } from "react-toastify";
@@ -1395,12 +1394,12 @@ function App() {
                     onTriggerSos={() => handleSosTrigger("admin")}
                     onResolveSos={() => handleSosResolve("admin")}
                   />
-                  {adminSession && (
-                    <AdminVendorGrievances adminSession={adminSession} />
-                  )}
                 </div>
                 {adminSession && (
-                  <div className="admin-sos-footer">
+                  <div
+                    className="admin-sos-footer"
+                    style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 12, marginTop: 16 }}
+                  >
                     <SosButton
                       isActive={Boolean(sosState?.active)}
                       onTrigger={() => handleSosTrigger("admin")}
