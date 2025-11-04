@@ -212,20 +212,33 @@ const Menu = ({
     if (!item) {
       return { allowAction: false, allowedNow: false, sectionWindow: null, itemWindow: null, nextDayOnly: false };
     }
+
     const now = new Date();
     const currentTime = toHM(now);
     const sectionWindow = sectionWindows[item.sectionName];
-    const itemWindow = Array.isArray(item.availableTimeWindows)
-      ? item.availableTimeWindows.find((win) => win.start <= currentTime && win.end >= currentTime)
-      : null;
-    const allowAction = !!sectionWindow && !!itemWindow;
-    const allowedNow =
-      allowAction &&
-      sectionWindow.start <= currentTime &&
-      sectionWindow.end >= currentTime &&
-      itemWindow.start <= currentTime &&
-      itemWindow.end >= currentTime;
+
+    // Items default to the full section window unless they define narrower availability windows
+    const hasItemWindows = Array.isArray(item.availableTimeWindows) && item.availableTimeWindows.length > 0;
+    const itemWindow = hasItemWindows
+      ? item.availableTimeWindows.find((win) => win.start <= currentTime && win.end >= currentTime) || null
+      : sectionWindow || null;
+
+    // Allow action when either window exists (section or item-level)
+    const allowAction = Boolean(sectionWindow || itemWindow);
+
+    const withinWindow = (win) => {
+      if (!win || !win.start || !win.end) return true;
+      if (win.start === win.end) return true;
+      if (win.start < win.end) {
+        return currentTime >= win.start && currentTime <= win.end;
+      }
+      // Handles ranges that span past midnight
+      return currentTime >= win.start || currentTime <= win.end;
+    };
+
+    const allowedNow = allowAction && withinWindow(sectionWindow) && withinWindow(itemWindow);
     const nextDayOnly = Boolean(item.nextDayOnly) && !allowedNow;
+
     return { allowAction, allowedNow, sectionWindow, itemWindow, nextDayOnly };
   }, [sectionWindows]);
 
