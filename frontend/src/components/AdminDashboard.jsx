@@ -504,6 +504,7 @@ const AdminDashboard = ({ token }) => {
   const [interestSummary, setInterestSummary] = useState(null);
   const [interestLoading, setInterestLoading] = useState(false);
   const [interestError, setInterestError] = useState(null);
+  const [interestVisible, setInterestVisible] = useState(false);
   const [thresholdDraft, setThresholdDraft] = useState("");
   const OVERDUE_SOUND = "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBDWM0/K/gC4EH29+3WgyBCk4XoCWJhcBTnLcWswB";
   // Low stock toggle
@@ -564,13 +565,12 @@ const AdminDashboard = ({ token }) => {
   useEffect(() => {
     loadOrders();
     fetchMenu().then(setMenu);
-    loadInterest();
     if (!localStorage.getItem('vendorSoundFirstLoginDone')) {
       try { localStorage.setItem('vendorSoundFirstLoginDone', '1'); } catch {}
     }
     const interval = setInterval(() => loadOrders(), 5000);
     return () => clearInterval(interval);
-  }, [loadOrders, loadInterest]);
+  }, [loadOrders]);
 
   // tick every second for countdown rendering
   const [tick, setTick] = useState(0);
@@ -803,98 +803,112 @@ const AdminDashboard = ({ token }) => {
           {showLowStock ? 'Hide Low Stock' : `Low Stock Items (${lowStockItems.length})`}
         </button>
         <button
-          onClick={() => toast.info('Connect vendorPrinterBridge.printOrderTicket(ticket) to your thermal printer. Use individual order print buttons below to test.')}>
+          onClick={() => toast.info('Connect vendorPrinterBridge.printOrderTicket(ticket) to your thermal printer. Use individual order print buttons below to test.')}> 
           Printer Setup Help
         </button>
-        <button onClick={loadInterest} disabled={interestLoading}>
-          {interestLoading ? 'Refreshing…' : 'Refresh Interest'}
+        <button
+          onClick={() => {
+            if (!interestVisible) {
+              loadInterest();
+            }
+            setInterestVisible((visible) => !visible);
+          }}
+        >
+          {interestVisible ? 'Hide Interest Details' : 'Show Interest Details'}
         </button>
       </div>
-      <div className="card" style={{ marginBottom: 12 }}>
-        <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-          <span>Interest Tracking</span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <input
-              type="number"
-              min="1"
-              value={thresholdDraft}
-              onChange={(e) => setThresholdDraft(e.target.value)}
-              style={{ width: 80 }}
-              placeholder="Threshold"
-            />
-            <button onClick={handleThresholdSave} disabled={interestLoading}>Save Threshold</button>
-          </div>
-        </div>
-        {interestError && (
-          <div style={{ padding: 10, color: '#e74c3c', fontSize: 13 }}>{interestError}</div>
-        )}
-        {(!interestSummary && !interestError) && (
-          <div style={{ padding: 10, color: '#666', fontSize: 13 }}>{interestLoading ? 'Loading interest summary…' : 'No interest data yet.'}</div>
-        )}
-        {interestSummary && (
-          <div style={{ padding: 10, display: 'grid', gap: 12 }}>
-            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-              <div className="card" style={{ padding: 12, flex: '1 1 180px' }}>
-                <div style={{ fontSize: 12, color: '#666' }}>Threshold</div>
-                <div style={{ fontSize: 20, fontWeight: 700 }}>{(interestSummary.threshold ?? thresholdDraft) || '--'}</div>
-              </div>
-              <div className="card" style={{ padding: 12, flex: '1 1 180px' }}>
-                <div style={{ fontSize: 12, color: '#666' }}>Unique Employees</div>
-                <div style={{ fontSize: 20, fontWeight: 700 }}>{interestSummary.totals?.uniqueEmployees ?? 0}</div>
-              </div>
-              <div className="card" style={{ padding: 12, flex: '1 1 180px' }}>
-                <div style={{ fontSize: 12, color: '#666' }}>Restock Suggestions</div>
-                <div style={{ fontSize: 20, fontWeight: 700, color: '#7c3aed' }}>{interestSummary.totals?.restockSuggestions ?? 0}</div>
-              </div>
+      {interestVisible && (
+        <div className="card" style={{ marginBottom: 12 }}>
+          <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+            <span>Interest Tracking</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <input
+                type="number"
+                min="1"
+                value={thresholdDraft}
+                onChange={(e) => setThresholdDraft(e.target.value)}
+                style={{ width: 80 }}
+                placeholder="Threshold"
+              />
+              <button onClick={handleThresholdSave} disabled={interestLoading}>Save Threshold</button>
+              <button onClick={loadInterest} disabled={interestLoading}>
+                {interestLoading ? 'Refreshing…' : 'Refresh'}
+              </button>
             </div>
-            <div style={{ overflowX: 'auto' }}>
-              <table border="1" cellPadding="8" width="100%">
-                <thead>
-                  <tr>
-                    <th>Item</th>
-                    <th>Shop</th>
-                    <th>Interested Employees</th>
-                    <th>Status</th>
-                    <th>Last Interest</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {Array.isArray(interestSummary.items) && interestSummary.items.length > 0 ? (
-                    interestSummary.items.map((item) => (
-                      <tr key={`${item.shopId}:${item.itemId}`} style={{ background: item.restockSuggested ? '#f5f3ff' : undefined }}>
-                        <td>
-                          <strong>{item.metadata?.itemName || `Item ${item.itemId}`}</strong>
-                          <div style={{ fontSize: 11, color: '#666' }}>ID: {item.itemId}</div>
-                        </td>
-                        <td>{item.metadata?.shopName || item.shopId}</td>
-                        <td style={{ fontWeight: 600 }}>{item.uniqueEmployees ?? 0}</td>
-                        <td>
-                          {item.restockSuggested ? (
-                            <span style={{ color: '#7c3aed', fontWeight: 600 }}>Threshold reached</span>
-                          ) : item.soldOut ? (
-                            <span style={{ color: '#e74c3c' }}>Sold out</span>
-                          ) : item.lowStock ? (
-                            <span style={{ color: '#e67e22' }}>Low stock</span>
-                          ) : (
-                            <span style={{ color: '#2c3e50' }}>Monitoring</span>
-                          )}
-                        </td>
-                        <td style={{ fontSize: 12, color: '#555' }}>
-                          {item.lastExpressedAt ? new Date(item.lastExpressedAt).toLocaleString('en-IN', { hour12: true }) : '—'}
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
+          </div>
+          {interestError && (
+            <div style={{ padding: 10, color: '#e74c3c', fontSize: 13 }}>{interestError}</div>
+          )}
+          {!interestError && !interestSummary && (
+            <div style={{ padding: 10, color: '#666', fontSize: 13 }}>
+              {interestLoading ? 'Loading interest summary…' : 'No interest data yet.'}
+            </div>
+          )}
+          {interestSummary && (
+            <div style={{ padding: 10, display: 'grid', gap: 12 }}>
+              <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                <div className="card" style={{ padding: 12, flex: '1 1 180px' }}>
+                  <div style={{ fontSize: 12, color: '#666' }}>Threshold</div>
+                  <div style={{ fontSize: 20, fontWeight: 700 }}>{(interestSummary.threshold ?? thresholdDraft) || '--'}</div>
+                </div>
+                <div className="card" style={{ padding: 12, flex: '1 1 180px' }}>
+                  <div style={{ fontSize: 12, color: '#666' }}>Unique Employees</div>
+                  <div style={{ fontSize: 20, fontWeight: 700 }}>{interestSummary.totals?.uniqueEmployees ?? 0}</div>
+                </div>
+                <div className="card" style={{ padding: 12, flex: '1 1 180px' }}>
+                  <div style={{ fontSize: 12, color: '#666' }}>Restock Suggestions</div>
+                  <div style={{ fontSize: 20, fontWeight: 700, color: '#7c3aed' }}>{interestSummary.totals?.restockSuggestions ?? 0}</div>
+                </div>
+              </div>
+              <div style={{ overflowX: 'auto' }}>
+                <table border="1" cellPadding="8" width="100%">
+                  <thead>
                     <tr>
-                      <td colSpan="6" style={{ textAlign: 'center', padding: 16, color: '#777' }}>No interest recorded yet.</td>
+                      <th>Item</th>
+                      <th>Shop</th>
+                      <th>Interested Employees</th>
+                      <th>Status</th>
+                      <th>Last Interest</th>
                     </tr>
-                  )}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {Array.isArray(interestSummary.items) && interestSummary.items.length > 0 ? (
+                      interestSummary.items.map((item) => (
+                        <tr key={`${item.shopId}:${item.itemId}`} style={{ background: item.restockSuggested ? '#f5f3ff' : undefined }}>
+                          <td>
+                            <strong>{item.metadata?.itemName || `Item ${item.itemId}`}</strong>
+                            <div style={{ fontSize: 11, color: '#666' }}>ID: {item.itemId}</div>
+                          </td>
+                          <td>{item.metadata?.shopName || item.shopId}</td>
+                          <td style={{ fontWeight: 600 }}>{item.uniqueEmployees ?? 0}</td>
+                          <td>
+                            {item.restockSuggested ? (
+                              <span style={{ color: '#7c3aed', fontWeight: 600 }}>Threshold reached</span>
+                            ) : item.soldOut ? (
+                              <span style={{ color: '#e74c3c' }}>Sold out</span>
+                            ) : item.lowStock ? (
+                              <span style={{ color: '#e67e22' }}>Low stock</span>
+                            ) : (
+                              <span style={{ color: '#2c3e50' }}>Monitoring</span>
+                            )}
+                          </td>
+                          <td style={{ fontSize: 12, color: '#555' }}>
+                            {item.lastExpressedAt ? new Date(item.lastExpressedAt).toLocaleString('en-IN', { hour12: true }) : '—'}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="5" style={{ textAlign: 'center', padding: 16, color: '#777' }}>No interest recorded yet.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
       {showLowStock && (
         <div className="card" style={{ marginBottom: 12 }}>
           <div className="card-header">Low Stock Items (≤ {lowStockThreshold})</div>

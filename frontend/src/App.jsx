@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
-import { fetchMenu, placeOrder, fetchUserOrders, fetchFavorites, submitRating, cancelOrder, employeeProfile, triggerSosAlert, resolveSosAlert, fetchSosStatus, previewOffers, createVendor, updateVendor, fetchAdminVendors } from "./api";
+import { fetchMenu, placeOrder, fetchUserOrders, fetchFavorites, toggleFavorite, submitRating, cancelOrder, employeeProfile, triggerSosAlert, resolveSosAlert, fetchSosStatus, previewOffers, createVendor, updateVendor, fetchAdminVendors } from "./api";
 import Menu from "./components/Menu.jsx";
 import Cart from "./components/Cart.jsx";
 import Login from "./components/Login.jsx";
@@ -401,6 +401,20 @@ function App() {
     if (!userId) return;
     fetchFavorites(userId).then(setFavorites);
   }, [userId]);
+
+  const handleFavoriteToggle = useCallback(async (itemId) => {
+    if (!userId) {
+      toast.info('Login to manage favourites', { autoClose: 3000 });
+      return;
+    }
+    try {
+      await toggleFavorite(userId, itemId);
+      loadFavorites();
+    } catch (error) {
+      console.error('Failed to toggle favorite', error);
+      toast.error('Could not update favourites. Please try again.');
+    }
+  }, [userId, loadFavorites]);
 
   const applyWalletPayload = useCallback((payload = {}) => {
     const balance = Number(payload.balance || 0);
@@ -1214,7 +1228,7 @@ function App() {
                         setSelectedShop={setSelectedShop}
                         favorites={favorites}
                         cartShopMismatch={cartShopMismatch}
-                        onFavoriteToggle={loadFavorites}
+                        onFavoriteToggle={handleFavoriteToggle}
                         userId={userId}
                         employeeToken={employeeToken}
                         scheduledTime={scheduledTime}
