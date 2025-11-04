@@ -843,10 +843,6 @@ const AdminDashboard = ({ token }) => {
                 <div style={{ fontSize: 20, fontWeight: 700 }}>{interestSummary.totals?.uniqueEmployees ?? 0}</div>
               </div>
               <div className="card" style={{ padding: 12, flex: '1 1 180px' }}>
-                <div style={{ fontSize: 12, color: '#666' }}>Total Interest</div>
-                <div style={{ fontSize: 20, fontWeight: 700 }}>{interestSummary.totals?.totalClicks ?? 0}</div>
-              </div>
-              <div className="card" style={{ padding: 12, flex: '1 1 180px' }}>
                 <div style={{ fontSize: 12, color: '#666' }}>Restock Suggestions</div>
                 <div style={{ fontSize: 20, fontWeight: 700, color: '#7c3aed' }}>{interestSummary.totals?.restockSuggestions ?? 0}</div>
               </div>
@@ -858,7 +854,6 @@ const AdminDashboard = ({ token }) => {
                     <th>Item</th>
                     <th>Shop</th>
                     <th>Interested Employees</th>
-                    <th>Total Clicks</th>
                     <th>Status</th>
                     <th>Last Interest</th>
                   </tr>
@@ -873,7 +868,6 @@ const AdminDashboard = ({ token }) => {
                         </td>
                         <td>{item.metadata?.shopName || item.shopId}</td>
                         <td style={{ fontWeight: 600 }}>{item.uniqueEmployees ?? 0}</td>
-                        <td>{item.totalClicks ?? 0}</td>
                         <td>
                           {item.restockSuggested ? (
                             <span style={{ color: '#7c3aed', fontWeight: 600 }}>Threshold reached</span>
