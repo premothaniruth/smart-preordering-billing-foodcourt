@@ -706,5 +706,85 @@
     "readyAt": "2025-11-04T05:03:25.451Z",
     "pickedAt": "2025-11-04T05:03:31.872Z",
     "completedAt": "2025-11-04T05:03:31.872Z"
+  },
+  {
+    "id": 21,
+    "items": [
+      {
+        "id": 64,
+        "name": "Kathi Roll",
+        "price": 50,
+        "quantity": 93,
+        "option": null,
+        "prepTime": 9
+      }
+    ],
+    "shopId": 1,
+    "user": "+919952911560",
+    "scheduledTime": null,
+    "status": "pending",
+    "createdAt": "2025-11-04T06:48:43.206Z",
+    "billingId": "00003",
+    "estimatedReadyTime": "2025-11-04T06:57:43.205Z",
+    "prepTime": 9,
+    "baseEstimatedReadyTime": "2025-11-04T06:57:43.205Z",
+    "basePrepTime": 9,
+    "rating": null,
+    "feedback": null,
+    "totalAmount": 4650,
+    "subtotalBeforeDiscount": 4650,
+    "discountTotal": 0,
+    "offerSummary": {
+      "subtotalBeforeDiscount": 4650,
+      "discountTotal": 0,
+      "totalPayable": 4650,
+      "appliedOffers": [],
+      "extraItems": []
+    },
+    "notes": null,
+    "payment": {
+      "method": "cash",
+      "amount": 4650
+    }
+  },
+  {
+    "id": 22,
+    "items": [
+      {
+        "id": 64,
+        "name": "Kathi Roll",
+        "price": 50,
+        "quantity": 7,
+        "option": null,
+        "prepTime": 9
+      }
+    ],
+    "shopId": 1,
+    "user": "+919952911560",
+    "scheduledTime": null,
+    "status": "pending",
+    "createdAt": "2025-11-04T06:49:12.041Z",
+    "billingId": "00004",
+    "estimatedReadyTime": "2025-11-04T07:00:12.041Z",
+    "prepTime": 11,
+    "baseEstimatedReadyTime": "2025-11-04T07:00:12.041Z",
+    "basePrepTime": 11,
+    "rating": null,
+    "feedback": null,
+    "totalAmount": 350,
+    "subtotalBeforeDiscount": 350,
+    "discountTotal": 0,
+    "offerSummary": {
+      "subtotalBeforeDiscount": 350,
+      "discountTotal": 0,
+      "totalPayable": 350,
+      "appliedOffers": [],
+      "extraItems": []
+    },
+    "notes": null,
+    "payment": {
+      "method": "cash",
+      "amount": 350
+    }
   }
 ]

@@ -9,5 +9,16 @@
         "timestamp": "2025-11-04T05:47:06.796Z"
       }
     ]
+  },
+  {
+    "vendorId": 4,
+    "shopId": 4,
+    "entries": [
+      {
+        "headcount": 700,
+        "source": "manual",
+        "timestamp": "2025-11-04T06:45:00.549Z"
+      }
+    ]
   }
 ]

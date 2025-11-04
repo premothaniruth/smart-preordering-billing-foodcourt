@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 
 const PAYMENT_GROUPS = [
   {
@@ -19,6 +19,7 @@ const PAYMENT_GROUPS = [
       { id: "upi_app_bhim", label: "BHIM" },
       { id: "upi_app_gpay", label: "Google Pay" },
       { id: "upi_app_paytm", label: "Paytm" },
+      { id: "upi_app_amazonpay", label: "Amazon Pay" },
       { id: "upi_app_phonepe", label: "PhonePe" }
     ]
   },
@@ -68,8 +69,10 @@ const PaymentPage = ({
   const [cardDetails, setCardDetails] = useState({
     number: "",
     expiry: "",
-    holder: ""
+    holder: "",
+    cvv: ""
   });
+  const [step, setStep] = useState("select");
 
   const total = Number(draft?.totals?.totalPayable ?? 0).toFixed(2);
   const subtotal = Number(draft?.totals?.subtotalBeforeDiscount ?? total).toFixed(2);
@@ -80,24 +83,44 @@ const PaymentPage = ({
     []
   );
 
+  const steps = useMemo(() => ([
+    {
+      id: "select",
+      title: "Payment Method",
+      caption: "Choose how you'd like to pay"
+    },
+    {
+      id: "details",
+      title: "Payment Details",
+      caption: "Provide secure payment information"
+    }
+  ]), []);
+
+  const currentStepIndex = steps.findIndex((s) => s.id === step);
+
+  const notify = useCallback((message, type = "error") => {
+    if (typeof emitToast === "function") {
+      emitToast(type, message);
+      return;
+    }
+    if (type === "error") {
+      alert(message);
+    } else {
+      console.log(message);
+    }
+  }, [emitToast]);
+
   const handleOptionSelect = (optionId) => {
     if (typeof onPaymentMethodChange === "function") {
       onPaymentMethodChange(optionId);
     }
+    setUpiId("");
+    setCardDetails({ number: "", expiry: "", holder: "", cvv: "" });
   };
 
   const handlePlace = () => {
     const method = inferMethod(paymentMethod);
     const payload = {};
-
-    const notify = (message, type = "error") => {
-      if (typeof emitToast === "function") {
-        emitToast(type, message);
-      } else {
-        if (type === "error") alert(message);
-        else console.log(message);
-      }
-    };
 
     if (!paymentMethod) {
       notify("Select a payment option to continue");
@@ -153,6 +176,18 @@ const PaymentPage = ({
     onPlaceOrder({ method, payload });
   };
 
+  const handleContinue = () => {
+    if (!paymentMethod) {
+      notify("Select a payment option to continue");
+      return;
+    }
+    setStep("details");
+  };
+
+  const handleEditMethod = () => {
+    setStep("select");
+  };
+
   if (!draft) {
     return (
       <div className="payment-page">
@@ -165,16 +200,135 @@ const PaymentPage = ({
     );
   }
 
-  return (
-    <div className="payment-page">
-      <div className="payment-layout">
-        <div className="payment-card">
-          <button className="link-button" onClick={onBack}>&larr; Back to Cart</button>
-          <h2>Choose Payment Method</h2>
-          <p className="payment-intro">
-            We support a wide range of open-source friendly payment options. Pick what works best for you and complete the order via our internal gateway powered by Razorpay open-source SDK integrations.
-          </p>
+  const methodTitle = PAYMENT_TITLES[paymentMethod] || "Select a method";
+  const isGateway = paymentMethod ? inferMethod(paymentMethod) === "gateway" : false;
+  const isUpiApp = paymentMethod?.startsWith("upi_app");
 
+  const renderPaymentDetails = () => {
+    if (!paymentMethod) {
+      return (
+        <div className="payment-extra hint">
+          Pick a payment option to proceed. We securely handle your details with Stripe-style tokenization.
+        </div>
+      );
+    }
+
+    if (paymentMethod === "upi_id") {
+      return (
+        <div className="payment-extra">
+          <label>Enter UPI ID</label>
+          <input
+            type="text"
+            value={upiId}
+            onChange={(e) => setUpiId(e.target.value)}
+            placeholder="example@upi"
+            autoFocus
+          />
+          <div className="payment-extra hint">We'll trigger a collect request to your UPI app once you confirm.</div>
+        </div>
+      );
+    }
+
+    if (isUpiApp) {
+      const label = upiApps.find((app) => app.id === paymentMethod)?.label || "UPI App";
+      return (
+        <div className="payment-extra hint">
+          <div style={{ fontWeight: 600, marginBottom: 6 }}>{label}</div>
+          Approve the payment inside your {label} application after we redirect you. No sensitive data is stored on our servers.
+        </div>
+      );
+    }
+
+    if (paymentMethod === "upi_qr") {
+      return (
+        <div className="payment-extra hint">
+          Scan the onsite QR code to complete the payment. Once scanned, tap "Place Order" and our team will verify instantly.
+        </div>
+      );
+    }
+
+    if (paymentMethod === "wallet") {
+      return (
+        <div className="payment-extra hint">
+          Wallet balance available: ₹{Number(draft?.wallet?.balance || 0).toFixed(2)}
+          {!draft?.wallet?.enabled && <span style={{ color: '#c0392b', marginLeft: 6 }}>• Login required</span>}
+        </div>
+      );
+    }
+
+    if (paymentMethod === "cash") {
+      return (
+        <div className="payment-extra hint">
+          Bring the exact cash amount to the counter. We'll reference your billing ID for quick pickup.
+        </div>
+      );
+    }
+
+    if (isGateway) {
+      return (
+        <div className="payment-extra">
+          <label>Card Details</label>
+          <div
+            style={{
+              border: '1px solid #e3e8ee',
+              borderRadius: 12,
+              padding: '16px 18px',
+              boxShadow: '0 1px 2px rgba(15, 23, 42, 0.08)',
+              background: '#fff'
+            }}
+          >
+            <input
+              type="text"
+              value={cardDetails.number}
+              onChange={(e) => setCardDetails((prev) => ({ ...prev, number: e.target.value }))}
+              placeholder="Card Number"
+              maxLength={19}
+              style={{ fontSize: 16, letterSpacing: 0.5 }}
+            />
+            <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
+              <input
+                type="text"
+                value={cardDetails.expiry}
+                onChange={(e) => setCardDetails((prev) => ({ ...prev, expiry: e.target.value }))}
+                placeholder="MM/YY"
+                maxLength={5}
+                style={{ width: '90px' }}
+              />
+              <input
+                type="text"
+                value={cardDetails.cvv}
+                onChange={(e) => setCardDetails((prev) => ({ ...prev, cvv: e.target.value }))}
+                placeholder="CVC"
+                maxLength={4}
+                style={{ width: '80px' }}
+              />
+              <input
+                type="text"
+                value={cardDetails.holder}
+                onChange={(e) => setCardDetails((prev) => ({ ...prev, holder: e.target.value }))}
+                placeholder="Name on Card"
+                style={{ flex: 1 }}
+              />
+            </div>
+            <div className="payment-extra hint" style={{ marginTop: 12 }}>
+              We never store card data. Details are tokenized with gateway-compliant encryption just like Stripe Elements.
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
+  const renderStepContent = () => {
+    if (step === "select") {
+      return (
+        <>
+          <h2 style={{ marginBottom: 8 }}>How would you like to pay?</h2>
+          <p className="payment-intro" style={{ marginBottom: 24 }}>
+            Select a payment method to continue. You'll enter the secure details on the next step.
+          </p>
           {PAYMENT_GROUPS.map((group) => (
             <div className="payment-group" key={group.id}>
               <div className="payment-group-title">{group.label}</div>
@@ -185,6 +339,7 @@ const PaymentPage = ({
                     <label
                       key={option.id}
                       className={`payment-option ${selected ? "selected" : ""}`}
+                      style={{ padding: '12px 16px', borderRadius: 10 }}
                     >
                       <input
                         type="radio"
@@ -201,74 +356,82 @@ const PaymentPage = ({
             </div>
           ))}
 
-          {paymentMethod === "upi_id" && (
-            <div className="payment-extra">
-              <label>Enter UPI ID</label>
-              <input
-                type="text"
-                value={upiId}
-                onChange={(e) => setUpiId(e.target.value)}
-                placeholder="example@upi"
-              />
-            </div>
-          )}
+          <div style={{ marginTop: 32, display: 'flex', justifyContent: 'flex-end' }}>
+            <button
+              className="primary-button"
+              style={{ minWidth: 160 }}
+              onClick={handleContinue}
+            >
+              Continue
+            </button>
+          </div>
+        </>
+      );
+    }
 
-          {paymentMethod.startsWith("upi_app") && (
-            <div className="payment-extra hint">
-              Selected UPI App: {upiApps.find((app) => app.id === paymentMethod)?.label || "UPI App"}. You will be prompted on the selected app to authorize this payment.
-            </div>
-          )}
+    return (
+      <div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <div>
+            <h2 style={{ marginBottom: 4 }}>{methodTitle}</h2>
+            <div style={{ color: '#64748b', fontSize: 13 }}>Securely complete the payment below.</div>
+          </div>
+          <button className="link-button" onClick={handleEditMethod} style={{ fontSize: 13 }}>
+            Change method
+          </button>
+        </div>
+        {renderPaymentDetails()}
+      </div>
+    );
+  };
 
-          {paymentMethod === "upi_qr" && (
-            <div className="payment-extra hint">
-              Scan the QR code displayed on the kiosk to complete the payment. Our staff will confirm the transaction.
-            </div>
-          )}
+  return (
+    <div className="payment-page">
+      <div className="payment-layout">
+        <div className="payment-card" style={{ flex: 1 }}>
+          <button className="link-button" onClick={onBack}>&larr; Back to Cart</button>
 
-          {paymentMethod === "wallet" && (
-            <div className="payment-extra hint">
-              Wallet balance available: ₹{Number(draft?.wallet?.balance || 0).toFixed(2)}
-              {!draft?.wallet?.enabled && <span style={{ color: '#c0392b', marginLeft: 6 }}>• Login required</span>}
-            </div>
-          )}
+          <div style={{ display: 'flex', gap: 16, margin: '20px 0 28px 0' }}>
+            {steps.map((s, index) => {
+              const active = index <= currentStepIndex;
+              return (
+                <div
+                  key={s.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12,
+                    opacity: active ? 1 : 0.4
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: '50%',
+                      background: active ? '#635bff' : '#e2e8f0',
+                      color: active ? '#fff' : '#475569',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 600
+                    }}
+                  >
+                    {index + 1}
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 600 }}>{s.title}</div>
+                    <div style={{ fontSize: 12, color: '#64748b' }}>{s.caption}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
 
-          {paymentMethod === "cash" && (
-            <div className="payment-extra hint">
-              Please carry the exact amount and hand it over at pickup. A receipt will be provided.
-            </div>
-          )}
-
-          {inferMethod(paymentMethod) === "gateway" && (
-            <div className="payment-extra">
-              <label>Card Details</label>
-              <input
-                type="text"
-                value={cardDetails.number}
-                onChange={(e) => setCardDetails((prev) => ({ ...prev, number: e.target.value }))}
-                placeholder="Card Number"
-                maxLength={19}
-              />
-              <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
-                <input
-                  type="text"
-                  value={cardDetails.expiry}
-                  onChange={(e) => setCardDetails((prev) => ({ ...prev, expiry: e.target.value }))}
-                  placeholder="MM/YY"
-                  maxLength={5}
-                  style={{ width: '80px' }}
-                />
-                <input
-                  type="text"
-                  value={cardDetails.holder}
-                  onChange={(e) => setCardDetails((prev) => ({ ...prev, holder: e.target.value }))}
-                  placeholder="Name on Card"
-                />
-              </div>
-            </div>
-          )}
+          {renderStepContent()}
         </div>
 
-        <div className="payment-card summary">
+        <div className="payment-card summary" style={{ maxWidth: 360 }}>
           <h3>Order Summary</h3>
           <div className="summary-line">
             <span>Subtotal</span>
@@ -309,7 +472,7 @@ const PaymentPage = ({
 
           <button
             className="primary-button"
-            disabled={isPlacingOrder}
+            disabled={step !== "details" || isPlacingOrder}
             onClick={handlePlace}
           >
             {isPlacingOrder ? "Processing..." : `Place Order (₹${total})`}

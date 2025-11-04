@@ -14,7 +14,10 @@
               "isVeg": true,
               "image": "/images/aloo-paratha.jpg",
               "prepTime": 10,
-              "inventory": 99
+              "inventory": 99,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 2,
@@ -23,7 +26,10 @@
               "isVeg": true,
               "image": "/images/poha.jpg",
               "prepTime": 8,
-              "inventory": 99
+              "inventory": 99,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 3,
@@ -32,7 +38,10 @@
               "isVeg": true,
               "image": "/images/chole-bhature.jpg",
               "prepTime": 12,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 4,
@@ -41,7 +50,10 @@
               "isVeg": true,
               "image": "/images/aloo-puri.jpg",
               "prepTime": 10,
-              "inventory": 99
+              "inventory": 99,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 5,
@@ -50,7 +62,10 @@
               "isVeg": true,
               "image": "/images/paneer-paratha.jpg",
               "prepTime": 12,
-              "inventory": 99
+              "inventory": 99,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 6,
@@ -59,7 +74,10 @@
               "isVeg": true,
               "image": "/images/moongdal-chilla.jpg",
               "prepTime": 9,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 7,
@@ -68,7 +86,10 @@
               "isVeg": true,
               "image": "/images/sabudana-khichdi.jpg",
               "prepTime": 12,
-              "inventory": 99
+              "inventory": 99,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 8,
@@ -77,7 +98,10 @@
               "isVeg": true,
               "image": "/images/gobi-paratha.jpg",
               "prepTime": 10,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 9,
@@ -86,7 +110,10 @@
               "isVeg": true,
               "image": "/images/upma.jpg",
               "prepTime": 7,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 10,
@@ -95,7 +122,10 @@
               "isVeg": true,
               "image": "/images/dhokla.jpg",
               "prepTime": 14,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 11,
@@ -104,7 +134,10 @@
               "isVeg": true,
               "image": "/images/litti-chokha.jpg",
               "prepTime": 15,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 12,
@@ -113,7 +146,10 @@
               "isVeg": true,
               "image": "/images/kachori-aloo.jpg",
               "prepTime": 13,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 13,
@@ -122,7 +158,10 @@
               "isVeg": true,
               "image": "/images/dal-baati-churma.jpg",
               "prepTime": 20,
-              "inventory": 99
+              "inventory": 99,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 14,
@@ -131,7 +170,10 @@
               "isVeg": true,
               "image": "/images/methi-thepla.jpg",
               "prepTime": 10,
-              "inventory": 99
+              "inventory": 99,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 15,
@@ -140,7 +182,10 @@
               "isVeg": true,
               "image": "/images/missi-roti.jpg",
               "prepTime": 8,
-              "inventory": 99
+              "inventory": 99,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 16,
@@ -149,7 +194,10 @@
               "isVeg": true,
               "image": "/images/besan-bread-toast.jpg",
               "prepTime": 7,
-              "inventory": 99
+              "inventory": 99,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 17,
@@ -168,6 +216,17 @@
                   "name": "With Veggies",
                   "priceModifier": 10
                 }
+              ],
+              "section": "Breakfast",
+              "options": [
+                {
+                  "name": "Egg only",
+                  "priceModifier": 0
+                },
+                {
+                  "name": "With Veggies",
+                  "priceModifier": 10
+                }
               ]
             },
             {
@@ -177,7 +236,10 @@
               "isVeg": true,
               "image": "/images/daliya.jpg",
               "prepTime": 9,
-              "inventory": 99
+              "inventory": 99,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 19,
@@ -186,7 +248,10 @@
               "isVeg": true,
               "image": "/images/stuffed-kachori.jpg",
               "prepTime": 13,
-              "inventory": 99
+              "inventory": 99,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 20,
@@ -197,6 +262,17 @@
               "prepTime": 5,
               "inventory": 99,
               "hasOptions": [
+                {
+                  "name": "Classic",
+                  "priceModifier": 0
+                },
+                {
+                  "name": "Mango",
+                  "priceModifier": 10
+                }
+              ],
+              "section": "Breakfast",
+              "options": [
                 {
                   "name": "Classic",
                   "priceModifier": 0
@@ -219,7 +295,10 @@
               "isVeg": true,
               "image": "/images/aloo-gobi.jpg",
               "prepTime": 14,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 22,
@@ -228,7 +307,10 @@
               "isVeg": true,
               "image": "/images/palak-paneer.jpg",
               "prepTime": 15,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 23,
@@ -237,7 +319,10 @@
               "isVeg": true,
               "image": "/images/chana-masala.jpg",
               "prepTime": 14,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 24,
@@ -246,7 +331,10 @@
               "isVeg": true,
               "image": "/images/dal-makhani.jpg",
               "prepTime": 15,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 25,
@@ -255,7 +343,10 @@
               "isVeg": true,
               "image": "/images/rajma-chawal.jpg",
               "prepTime": 16,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 26,
@@ -264,7 +355,10 @@
               "isVeg": true,
               "image": "/images/kadai-paneer.jpg",
               "prepTime": 13,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 27,
@@ -273,7 +367,10 @@
               "isVeg": true,
               "image": "/images/malai-kofta.jpg",
               "prepTime": 18,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 28,
@@ -292,6 +389,17 @@
                   "name": "Boneless",
                   "priceModifier": 15
                 }
+              ],
+              "section": "Lunch",
+              "options": [
+                {
+                  "name": "With Bone",
+                  "priceModifier": 0
+                },
+                {
+                  "name": "Boneless",
+                  "priceModifier": 15
+                }
               ]
             },
             {
@@ -301,7 +409,10 @@
               "isVeg": true,
               "image": "/images/shahi-paneer.jpg",
               "prepTime": 15,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 30,
@@ -310,7 +421,10 @@
               "isVeg": true,
               "image": "/images/baingan-bharta.jpg",
               "prepTime": 11,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 31,
@@ -319,7 +433,10 @@
               "isVeg": false,
               "image": "/images/rogan-josh.jpg",
               "prepTime": 21,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 32,
@@ -328,7 +445,10 @@
               "isVeg": true,
               "image": "/images/paneer-tikka.jpg",
               "prepTime": 13,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 33,
@@ -337,7 +457,10 @@
               "isVeg": true,
               "image": "/images/dal-tadka.jpg",
               "prepTime": 12,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 34,
@@ -346,7 +469,10 @@
               "isVeg": true,
               "image": "/images/matar-paneer.jpg",
               "prepTime": 12,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 35,
@@ -355,7 +481,10 @@
               "isVeg": true,
               "image": "/images/dum-aloo.jpg",
               "prepTime": 13,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 36,
@@ -364,7 +493,10 @@
               "isVeg": true,
               "image": "/images/chole-bhature.jpg",
               "prepTime": 14,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 37,
@@ -373,7 +505,10 @@
               "isVeg": true,
               "image": "/images/aloo-paratha.jpg",
               "prepTime": 9,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 38,
@@ -392,6 +527,17 @@
                   "name": "Paneer",
                   "priceModifier": 15
                 }
+              ],
+              "section": "Lunch",
+              "options": [
+                {
+                  "name": "Classic",
+                  "priceModifier": 0
+                },
+                {
+                  "name": "Paneer",
+                  "priceModifier": 15
+                }
               ]
             },
             {
@@ -401,7 +547,10 @@
               "isVeg": true,
               "image": "/images/kadhi-pakora.jpg",
               "prepTime": 13,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 40,
@@ -410,7 +559,10 @@
               "isVeg": true,
               "image": "/images/gatte-ki-sabzi.jpg",
               "prepTime": 14,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": []
             }
           ]
         },
@@ -424,7 +576,10 @@
               "isVeg": true,
               "image": "/images/dal-makhani.jpg",
               "prepTime": 15,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 42,
@@ -433,7 +588,10 @@
               "isVeg": true,
               "image": "/images/rajma-chawal.jpg",
               "prepTime": 11,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 43,
@@ -452,6 +610,17 @@
                   "name": "Boneless",
                   "priceModifier": 15
                 }
+              ],
+              "section": "Dinner",
+              "options": [
+                {
+                  "name": "With Bone",
+                  "priceModifier": 0
+                },
+                {
+                  "name": "Boneless",
+                  "priceModifier": 15
+                }
               ]
             },
             {
@@ -461,7 +630,10 @@
               "isVeg": true,
               "image": "/images/paneer-butter-masala.jpg",
               "prepTime": 13,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 45,
@@ -470,7 +642,10 @@
               "isVeg": false,
               "image": "/images/chicken-tikka-masala.jpg",
               "prepTime": 22,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 46,
@@ -479,7 +654,10 @@
               "isVeg": true,
               "image": "/images/shahi-paneer.jpg",
               "prepTime": 13,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 47,
@@ -488,7 +666,10 @@
               "isVeg": false,
               "image": "/images/rogan-josh.jpg",
               "prepTime": 24,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 48,
@@ -497,7 +678,10 @@
               "isVeg": true,
               "image": "/images/chole-bhature.jpg",
               "prepTime": 14,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 49,
@@ -506,7 +690,10 @@
               "isVeg": true,
               "image": "/images/palak-paneer.jpg",
               "prepTime": 12,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 50,
@@ -515,7 +702,10 @@
               "isVeg": true,
               "image": "/images/malai-kofta.jpg",
               "prepTime": 15,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 51,
@@ -524,7 +714,10 @@
               "isVeg": true,
               "image": "/images/aloo-gobi.jpg",
               "prepTime": 10,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 52,
@@ -533,7 +726,10 @@
               "isVeg": true,
               "image": "/images/bhindi-masala.jpg",
               "prepTime": 11,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 53,
@@ -542,7 +738,10 @@
               "isVeg": true,
               "image": "/images/kadhi-pakora.jpg",
               "prepTime": 15,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 54,
@@ -551,7 +750,10 @@
               "isVeg": false,
               "image": "/images/tandoori-chicken.jpg",
               "prepTime": 22,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 55,
@@ -560,7 +762,10 @@
               "isVeg": false,
               "image": "/images/mutton-curry.jpg",
               "prepTime": 27,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 56,
@@ -569,7 +774,10 @@
               "isVeg": true,
               "image": "/images/sarson-ka-saag.jpg",
               "prepTime": 17,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 57,
@@ -578,7 +786,10 @@
               "isVeg": true,
               "image": "/images/makki-di-roti.jpg",
               "prepTime": 9,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 58,
@@ -587,7 +798,10 @@
               "isVeg": true,
               "image": "/images/dum-aloo.jpg",
               "prepTime": 13,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 59,
@@ -596,7 +810,10 @@
               "isVeg": true,
               "image": "/images/baingan-bharta.jpg",
               "prepTime": 13,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 60,
@@ -605,7 +822,10 @@
               "isVeg": true,
               "image": "/images/veg-biryani.jpg",
               "prepTime": 17,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": []
             }
           ]
         },
@@ -619,7 +839,10 @@
               "isVeg": true,
               "image": "/images/samosa.jpg",
               "prepTime": 5,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 62,
@@ -628,7 +851,10 @@
               "isVeg": true,
               "image": "/images/paneer-roll.jpg",
               "prepTime": 7,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 63,
@@ -637,7 +863,10 @@
               "isVeg": false,
               "image": "/images/chicken-roll.jpg",
               "prepTime": 8,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 64,
@@ -646,7 +875,11 @@
               "isVeg": false,
               "image": "/images/kathi-roll.jpg",
               "prepTime": 9,
-              "inventory": 100
+              "inventory": 11,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": [],
+              "restockedAt": "2025-11-04T06:49:56.325Z"
             },
             {
               "id": 65,
@@ -655,7 +888,10 @@
               "isVeg": true,
               "image": "/images/veg-puff.jpg",
               "prepTime": 5,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 66,
@@ -664,7 +900,10 @@
               "isVeg": false,
               "image": "/images/egg-puff.jpg",
               "prepTime": 6,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 67,
@@ -673,7 +912,10 @@
               "isVeg": true,
               "image": "/images/aloo-tikki.jpg",
               "prepTime": 5,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 68,
@@ -682,7 +924,10 @@
               "isVeg": true,
               "image": "/images/pav-bhaji-slider.jpg",
               "prepTime": 7,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 69,
@@ -701,6 +946,17 @@
                   "name": "Chicken",
                   "priceModifier": 10
                 }
+              ],
+              "section": "Quick Bites",
+              "options": [
+                {
+                  "name": "Veg",
+                  "priceModifier": 0
+                },
+                {
+                  "name": "Chicken",
+                  "priceModifier": 10
+                }
               ]
             },
             {
@@ -710,7 +966,10 @@
               "isVeg": true,
               "image": "/images/kachori.jpg",
               "prepTime": 7,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 71,
@@ -719,7 +978,10 @@
               "isVeg": true,
               "image": "/images/paneer-tikka-roll.jpg",
               "prepTime": 10,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 72,
@@ -728,7 +990,10 @@
               "isVeg": true,
               "image": "/images/veg-cutlet.jpg",
               "prepTime": 8,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 73,
@@ -737,7 +1002,10 @@
               "isVeg": false,
               "image": "/images/chicken-cutlet.jpg",
               "prepTime": 9,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 74,
@@ -746,7 +1014,10 @@
               "isVeg": true,
               "image": "/images/corn-bhel.jpg",
               "prepTime": 6,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 75,
@@ -755,7 +1026,10 @@
               "isVeg": true,
               "image": "/images/cheese-balls.jpg",
               "prepTime": 7,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 76,
@@ -764,7 +1038,10 @@
               "isVeg": true,
               "image": "/images/french-fries.jpg",
               "prepTime": 5,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 77,
@@ -773,7 +1050,10 @@
               "isVeg": true,
               "image": "/images/cheese-toast.jpg",
               "prepTime": 7,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 78,
@@ -782,7 +1062,10 @@
               "isVeg": true,
               "image": "/images/veg-sandwich.jpg",
               "prepTime": 8,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 79,
@@ -791,7 +1074,10 @@
               "isVeg": false,
               "image": "/images/egg-sandwich.jpg",
               "prepTime": 9,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 80,
@@ -800,7 +1086,10 @@
               "isVeg": false,
               "image": "/images/chicken-sandwich.jpg",
               "prepTime": 9,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": []
             }
           ]
         },
@@ -814,7 +1103,10 @@
               "isVeg": true,
               "image": "/images/pani-puri.jpg",
               "prepTime": 5,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Chat Specials",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 82,
@@ -823,7 +1115,10 @@
               "isVeg": true,
               "image": "/images/dahi-puri.jpg",
               "prepTime": 6,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Chat Specials",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 83,
@@ -832,7 +1127,10 @@
               "isVeg": true,
               "image": "/images/sev-puri.jpg",
               "prepTime": 5,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Chat Specials",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 84,
@@ -841,7 +1139,10 @@
               "isVeg": true,
               "image": "/images/bhel-puri.jpg",
               "prepTime": 5,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Chat Specials",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 85,
@@ -850,7 +1151,10 @@
               "isVeg": true,
               "image": "/images/aloo-tikki-chaat.jpg",
               "prepTime": 7,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Chat Specials",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 86,
@@ -859,7 +1163,10 @@
               "isVeg": true,
               "image": "/images/papdi-chaat.jpg",
               "prepTime": 6,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Chat Specials",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 87,
@@ -868,7 +1175,10 @@
               "isVeg": true,
               "image": "/images/raj-kachori.jpg",
               "prepTime": 8,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Chat Specials",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 88,
@@ -877,7 +1187,10 @@
               "isVeg": true,
               "image": "/images/matar-kulcha-chaat.jpg",
               "prepTime": 7,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Chat Specials",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 89,
@@ -886,7 +1199,10 @@
               "isVeg": true,
               "image": "/images/fruit-chaat.jpg",
               "prepTime": 6,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Chat Specials",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 90,
@@ -895,7 +1211,10 @@
               "isVeg": true,
               "image": "/images/dahi-bhalla.jpg",
               "prepTime": 7,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Chat Specials",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 91,
@@ -904,7 +1223,10 @@
               "isVeg": true,
               "image": "/images/ram-ladoo.jpg",
               "prepTime": 7,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Chat Specials",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 92,
@@ -913,7 +1235,10 @@
               "isVeg": true,
               "image": "/images/samosa-chaat.jpg",
               "prepTime": 8,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Chat Specials",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 93,
@@ -922,7 +1247,10 @@
               "isVeg": true,
               "image": "/images/shakarkandi-chaat.jpg",
               "prepTime": 7,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Chat Specials",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 94,
@@ -931,7 +1259,10 @@
               "isVeg": true,
               "image": "/images/tamatar-chaat.jpg",
               "prepTime": 6,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Chat Specials",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 95,
@@ -940,7 +1271,10 @@
               "isVeg": true,
               "image": "/images/tikki-chaat.jpg",
               "prepTime": 7,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Chat Specials",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 96,
@@ -949,7 +1283,10 @@
               "isVeg": true,
               "image": "/images/katori-chaat.jpg",
               "prepTime": 7,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Chat Specials",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 97,
@@ -958,7 +1295,10 @@
               "isVeg": true,
               "image": "/images/chana-chaat.jpg",
               "prepTime": 6,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Chat Specials",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 98,
@@ -967,7 +1307,10 @@
               "isVeg": true,
               "image": "/images/papri-chaat.jpg",
               "prepTime": 6,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Chat Specials",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 99,
@@ -976,7 +1319,10 @@
               "isVeg": true,
               "image": "/images/pudhina-chutney-chaat.jpg",
               "prepTime": 6,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Chat Specials",
+              "options": [],
+              "hasOptions": []
             },
             {
               "id": 100,
@@ -985,7 +1331,10 @@
               "isVeg": true,
               "image": "/images/masala-corn.jpg",
               "prepTime": 5,
-              "inventory": 100
+              "inventory": 100,
+              "section": "Chat Specials",
+              "options": [],
+              "hasOptions": []
             }
           ]
         }
