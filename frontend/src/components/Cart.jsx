@@ -14,10 +14,8 @@ import { fetchSectionsMeta } from "../api";
  *  onProceedToPayment: (details?:{ notes?:string })=>void,
  *  shopItems?: any[],
  *  inventoryById?: Map<number, any> | Record<string, any>,
- *  paymentMethod?: 'wallet' | 'gateway' | 'cash',
- *  setPaymentMethod?: (method: 'wallet' | 'gateway' | 'cash')=>void,
- *  walletBalance?: number,
- *  walletEnabled?: boolean
+ *  initialNotes?: string,
+ *  onNotesChange?: (value:string)=>void
  * }} props
  */
 
@@ -31,11 +29,23 @@ const Cart = ({
   onProceedToPayment,
   shopItems = [],
   inventoryById = new Map(),
+  initialNotes = "",
+  onNotesChange,
   cartShopMismatch = false,
   offerPreview = null,
   offersLoading = false
 }) => {
-  const [customNotes, setCustomNotes] = useState("");
+  const [customNotes, setCustomNotes] = useState(() => initialNotes || "");
+
+  useEffect(() => {
+    setCustomNotes(initialNotes || "");
+  }, [initialNotes]);
+
+  useEffect(() => {
+    if (typeof onNotesChange === "function") {
+      onNotesChange(customNotes);
+    }
+  }, [customNotes, onNotesChange]);
   const getTodayStr = () => {
     const d = new Date();
     const y = d.getFullYear();

@@ -22,6 +22,7 @@ import VendorConcernsMenu from "./components/VendorConcernsMenu.jsx";
 import SosButton from "./components/SosButton.jsx";
 import AdminVendorGrievances from "./components/AdminVendorGrievances.jsx";
 import BulkOrderPortal from "./components/BulkOrderPortal.jsx";
+import PaymentPage from "./components/PaymentPage.jsx";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -74,7 +75,10 @@ function App() {
   const [userOrders, setUserOrders] = useState([]);
   const [favorites, setFavorites] = useState([]);
   const [wallet, setWallet] = useState({ balance: 0, transactions: [] });
-  const [paymentMethod, setPaymentMethod] = useState('gateway');
+  const [paymentMethod, setPaymentMethod] = useState('upi_app');
+  const [cartNotes, setCartNotes] = useState("");
+  const [checkoutDraft, setCheckoutDraft] = useState(null);
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [activeMenuSection, setActiveMenuSection] = useState(null);
   const readyNotifiedRef = useRef(new Set());
   const [inlineRating, setInlineRating] = useState(0);
@@ -469,6 +473,77 @@ function App() {
    */
   const currentCartShop = cart.length > 0 ? cart[0]?.shopId : null;
 
+  const buildOrderItemsFromCart = useCallback(() => {
+    return cart.map((c) => ({
+      id: c.item.id,
+      name: c.item.name,
+      price: c.item.finalPrice,
+      quantity: c.quantity,
+      comboId: c.item.comboId || null,
+      option: c.item.selectedOption?.name || null,
+      customization: c.item.customization,
+      prepTime: c.item.prepTime
+    }));
+  }, [cart]);
+
+  const calculateCartTotals = useCallback(() => {
+    const items = buildOrderItemsFromCart();
+    const rawSubtotal = items.reduce((sum, it) => sum + (Number(it.price) || 0) * (Number(it.quantity) || 0), 0);
+    const discountTotal = offerPreview?.discountTotal != null ? Number(offerPreview.discountTotal) : 0;
+    const totalPayable = offerPreview?.totalPayable != null ? Number(offerPreview.totalPayable) : rawSubtotal;
+    return {
+      items,
+      rawSubtotal,
+      discountTotal,
+      totalPayable,
+      offerSummary: offerPreview && offerPreview.status === 'ok' ? {
+        subtotalBeforeDiscount: offerPreview.subtotalBeforeDiscount,
+        discountTotal: offerPreview.discountTotal,
+        totalPayable: offerPreview.totalPayable,
+        appliedOffers: offerPreview.appliedOffers,
+        extraItems: offerPreview.extraItems
+      } : undefined
+    };
+  }, [buildOrderItemsFromCart, offerPreview]);
+
+  const handleProceedToPayment = useCallback(() => {
+    if (!cart.length) {
+      toast.info('Add some delicious treats before heading to payment!');
+      return;
+    }
+
+    const checkoutShopId = cart[0]?.shopId ?? selectedShop;
+    if (!checkoutShopId) {
+      toast.error('Unable to determine shop for this order. Please select a shop and try again.');
+      return;
+    }
+    if (selectedShop !== checkoutShopId) {
+      setSelectedShop(checkoutShopId);
+    }
+
+    const totals = calculateCartTotals();
+
+    const draft = {
+      shopId: checkoutShopId,
+      scheduledTime: scheduledTime || null,
+      notes: cartNotes || '',
+      items: totals.items,
+      totals: {
+        subtotalBeforeDiscount: totals.offerSummary?.subtotalBeforeDiscount ?? totals.rawSubtotal,
+        discountTotal: totals.discountTotal,
+        totalPayable: totals.totalPayable
+      },
+      offerPreview: totals.offerSummary,
+      wallet: {
+        balance: wallet.balance,
+        enabled: Boolean(employeeToken)
+      }
+    };
+
+    setCheckoutDraft(draft);
+    setView('payment');
+  }, [cart, selectedShop, scheduledTime, cartNotes, calculateCartTotals, wallet.balance, employeeToken, setSelectedShop]);
+
   useEffect(() => {
     if (!cart.length) {
       setCartShopMismatch(false);
@@ -819,7 +894,10 @@ function App() {
       department: department || null,
       bulkOrderEligible: Boolean(bulkOrderEligible),
     });
-    setPaymentMethod('gateway');
+    setPaymentMethod('upi_app');
+    setCartNotes("");
+    setCheckoutDraft(null);
+    setIsPlacingOrder(false);
     setView("user");
     playSound(READY_SOUND);
     toast.success("Employee logged in");
@@ -832,7 +910,10 @@ function App() {
     setCart([]);
     setOrderSummary(null);
     applyWalletPayload({ balance: 0, transactions: [] });
-    setPaymentMethod('gateway');
+    setPaymentMethod('upi_app');
+    setCartNotes("");
+    setCheckoutDraft(null);
+    setIsPlacingOrder(false);
     readyNotifiedRef.current.clear();
     etaNotifiedRef.current.clear();
     readySeededRef.current = false;
@@ -1124,13 +1205,11 @@ function App() {
                         incrementFromCart={incrementFromCart}
                         scheduledTime={scheduledTime}
                         setScheduledTime={setScheduledTime}
-                        onPayment={handlePaymentSuccess}
+                        onProceedToPayment={handleProceedToPayment}
                         shopItems={selectedShopItems}
                         inventoryById={currentShopInventory}
-                        paymentMethod={paymentMethod}
-                        setPaymentMethod={setPaymentMethod}
-                        walletBalance={wallet.balance}
-                        walletEnabled={Boolean(employeeToken)}
+                        initialNotes={cartNotes}
+                        onNotesChange={setCartNotes}
                         cartShopMismatch={cartShopMismatch}
                         offerPreview={offerPreview}
                         offersLoading={offersLoading}
