@@ -1,8 +1,10 @@
   import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toggleFavorite, fetchActiveOffers, fetchCombos, fetchMenuSections, fetchSectionsMeta, expressInterest } from "../api";
+import { API_URL } from "../config";
 import { toast } from "react-toastify";
 
 const toHM = (date = new Date()) => `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+const FALLBACK_IMAGE = "https://dummyimage.com/200x150/95a5a6/ffffff&text=No+Image";
 
 const Menu = ({
   menu,
@@ -44,6 +46,116 @@ const Menu = ({
   const interestCooldownsRef = useRef(new Map()); // key -> timestamp
   const shopMenuRef = useRef(null);
   const [shopMenuOpen, setShopMenuOpen] = useState(false);
+
+  const getItemImageSrc = useCallback((item) => {
+    const raw = item?.image;
+    if (!raw || typeof raw !== "string") return null;
+    if (/^https?:\/\//i.test(raw) || raw.startsWith("data:")) return raw;
+    const normalized = raw.startsWith("/") ? raw : `/${raw}`;
+    return `${API_URL}${normalized}`;
+  }, [API_URL]);
+
+  useEffect(() => {
+    let ignore = false;
+
+    const loadMeta = async () => {
+      try {
+        const meta = await fetchSectionsMeta();
+        if (!ignore) {
+          setSectionWindows(meta?.windows || {});
+        }
+      } catch (error) {
+        console.error("Failed to load section metadata", error);
+        if (!ignore) {
+          setSectionWindows({});
+        }
+      }
+    };
+
+    loadMeta();
+
+    const ticker = setInterval(() => {
+      setCurrentHm(toHM());
+    }, 60000);
+
+    return () => {
+      ignore = true;
+      clearInterval(ticker);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!selectedShop) {
+      setSectioned(null);
+      setOffers([]);
+      setCombos([]);
+      setActiveSection(activeSectionProp || null);
+      return;
+    }
+
+    let ignore = false;
+    const scheduledDate = scheduledTime ? new Date(scheduledTime) : null;
+    const at = scheduledDate && !Number.isNaN(scheduledDate.getTime()) ? scheduledDate : null;
+
+    const loadShopData = async () => {
+      try {
+        const [sectionsData, offersData, combosData] = await Promise.all([
+          fetchMenuSections(selectedShop, at || undefined),
+          fetchActiveOffers(selectedShop),
+          fetchCombos(selectedShop, true),
+        ]);
+
+        if (ignore) return;
+
+        setSectioned(sectionsData || null);
+        setOffers(Array.isArray(offersData) ? offersData : []);
+        setCombos(Array.isArray(combosData) ? combosData : []);
+
+        const sections = Array.isArray(sectionsData?.sections) ? sectionsData.sections : [];
+        setActiveSection((prev) => {
+          if (activeSectionProp && sections.some((sec) => sec.name === activeSectionProp)) {
+            return activeSectionProp;
+          }
+          if (prev && sections.some((sec) => sec.name === prev)) {
+            return prev;
+          }
+          return sections.length > 0 ? sections[0].name : null;
+        });
+      } catch (error) {
+        console.error("Failed to load menu data for shop", selectedShop, error);
+        if (ignore) return;
+        setSectioned(null);
+        setOffers([]);
+        setCombos([]);
+        setActiveSection(activeSectionProp || null);
+      }
+    };
+
+    loadShopData();
+
+    return () => {
+      ignore = true;
+    };
+  }, [selectedShop, scheduledTime, activeSectionProp]);
+
+  useEffect(() => {
+    if (activeSectionProp === undefined) return;
+    setActiveSection((prev) => {
+      if (activeSectionProp == null) {
+        return null;
+      }
+      if (prev === activeSectionProp) {
+        return prev;
+      }
+      return activeSectionProp;
+    });
+  }, [activeSectionProp]);
+
+  useEffect(() => {
+    if (typeof onActiveSectionChange === "function") {
+      onActiveSectionChange(activeSection ?? null);
+    }
+  }, [activeSection, onActiveSectionChange]);
 
   const currentShop = useMemo(() => {
     if (!menu || !Array.isArray(menu)) return null;
@@ -196,11 +308,12 @@ const Menu = ({
         <div key={item.id} className="menu-item-card" style={totalQty > 0 ? { border: '2px solid #111', boxShadow: '0 0 0 3px rgba(0,0,0,0.05)' } : {}}>
           <div style={{ position: "relative" }}>
             <img
-              src={item.image && item.image.startsWith('http') ? item.image : `http://localhost:3001${item.image}`}
+              src={getItemImageSrc(item) || FALLBACK_IMAGE}
               alt={item.name}
               className="menu-item-image"
               onError={(e) => {
-                e.target.src = "https://dummyimage.com/200x150/95a5a6/ffffff&text=No+Image";
+                e.target.onerror = null;
+                e.target.src = FALLBACK_IMAGE;
               }}
             />
             {!hideFavorites && (
