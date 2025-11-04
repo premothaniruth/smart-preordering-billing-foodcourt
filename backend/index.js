@@ -5074,6 +5074,9 @@ app.get("/analytics/export/current", authenticateVendor, asyncHandler(async (req
   const { contentType, payload } = await realtimeAnalyticsService.exportCurrent(req.vendor.shopId, format);
   res.setHeader("Content-Type", contentType);
   res.setHeader("Content-Disposition", `attachment; filename=analytics-${req.vendor.shopId}.${format === "csv" ? "csv" : "json"}`);
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
   recordAuditEvent({
     actorType: "vendor",
     actorId: req.vendor.vendorId,

@@ -99,22 +99,34 @@ class RealtimeAnalyticsService extends EventEmitter {
   }
 
   async getSummary(shopId, fallback = true) {
-    const state = this.state.get(String(shopId));
+    const key = String(shopId);
+    const state = this.state.get(key);
     if (state) {
       return this._serializeState(state);
     }
     if (!fallback) return this._serializeState(defaultState(shopId));
-    const summary = await analyticsQueryService.getVendorSummary({ shopId });
-    this._hydrateFromSummary(String(shopId), summary);
-    return summary;
+    try {
+      const summary = await analyticsQueryService.getVendorSummary({ shopId });
+      this._hydrateFromSummary(key, summary);
+      return summary;
+    } catch (error) {
+      console.warn("[RealtimeAnalyticsService] Failed to hydrate summary from analytics store", { shopId, error: error?.message });
+      const fallbackState = ensureMap(this.state, key, () => defaultState(shopId));
+      return this._serializeState(fallbackState);
+    }
   }
 
   async getTimeSeries(shopId, granularity = "hour") {
-    const state = this.state.get(String(shopId));
-    if (!state) {
-      await this.getSummary(shopId); // hydrate
+    const key = String(shopId);
+    if (!this.state.has(key)) {
+      try {
+        await this.getSummary(shopId); // hydrate
+      } catch (error) {
+        console.warn("[RealtimeAnalyticsService] Falling back to empty time series", { shopId, error: error?.message });
+        ensureMap(this.state, key, () => defaultState(shopId));
+      }
     }
-    const snapshot = this.state.get(String(shopId)) || defaultState(shopId);
+    const snapshot = this.state.get(key) || ensureMap(this.state, key, () => defaultState(shopId));
     const granularityKey = GRANULARITIES[granularity] ? granularity : "hour";
     const entries = Array.from(snapshot.timeSeries[granularityKey].entries())
       .sort((a, b) => a[0] - b[0])
@@ -131,11 +143,16 @@ class RealtimeAnalyticsService extends EventEmitter {
   }
 
   async getInventory(shopId) {
-    const state = this.state.get(String(shopId));
-    if (!state) {
-      await this.getSummary(shopId);
+    const key = String(shopId);
+    if (!this.state.has(key)) {
+      try {
+        await this.getSummary(shopId);
+      } catch (error) {
+        console.warn("[RealtimeAnalyticsService] Falling back to empty inventory snapshot", { shopId, error: error?.message });
+        ensureMap(this.state, key, () => defaultState(shopId));
+      }
     }
-    const snapshot = this.state.get(String(shopId)) || defaultState(shopId);
+    const snapshot = this.state.get(key) || ensureMap(this.state, key, () => defaultState(shopId));
     const items = Array.from(snapshot.inventory.items.values()).map((item) => ({
       itemId: item.itemId,
       itemName: item.itemName,
@@ -154,9 +171,30 @@ class RealtimeAnalyticsService extends EventEmitter {
   }
 
   async exportCurrent(shopId, format = "json") {
-    const summary = await this.getSummary(shopId);
-    const timeseries = await this.getTimeSeries(shopId, "hour");
-    const inventory = await this.getInventory(shopId);
+    const summary = await this.getSummary(shopId).catch((error) => {
+      console.warn("[RealtimeAnalyticsService] Export summary fallback", { shopId, error: error?.message });
+      return this._serializeState(defaultState(shopId));
+    });
+    const timeseries = await this.getTimeSeries(shopId, "hour").catch((error) => {
+      console.warn("[RealtimeAnalyticsService] Export time series fallback", { shopId, error: error?.message });
+      return {
+        shopId: String(shopId),
+        granularity: "hour",
+        series: [],
+      };
+    });
+    const inventory = await this.getInventory(shopId).catch((error) => {
+      console.warn("[RealtimeAnalyticsService] Export inventory fallback", { shopId, error: error?.message });
+      return {
+        shopId: String(shopId),
+        totals: {
+          distinctItems: 0,
+          netDelta: 0,
+        },
+        recentAdjustments: [],
+        items: [],
+      };
+    });
 
     if (format === "csv") {
       const rows = [

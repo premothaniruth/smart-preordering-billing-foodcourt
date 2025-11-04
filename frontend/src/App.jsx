@@ -188,10 +188,15 @@ function App() {
   })();
 
   const loadMenu = useCallback(() => {
+    let cancelled = false;
     fetchMenu().then((data) => {
+      if (cancelled) return;
       setMenu(data);
       if (data.length > 0 && !selectedShop) setSelectedShop(data[0].shopId);
     });
+    return () => {
+      cancelled = true;
+    };
   }, [selectedShop]);
 
   const refreshAdminManagedVendors = useCallback(async () => {
@@ -208,7 +213,10 @@ function App() {
 
   useEffect(() => {
     document.title = "Infy Bhojans";
-    loadMenu();
+    const cleanup = loadMenu();
+    return () => {
+      if (typeof cleanup === "function") cleanup();
+    };
   }, [loadMenu]);
 
   // Refresh menu when other parts of app (e.g., AdminDashboard) update inventory
