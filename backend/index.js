@@ -54,6 +54,12 @@ const {
   removeArchiveById,
   findArchiveByVendorId,
 } = require("./lib/vendorArchiveStore");
+const {
+  processOrderPoints,
+  getEmployeePointsSummary,
+  getPointsAdminReport,
+  ensurePointsDataFiles,
+} = require("./lib/pointsService");
 const multer = require("multer");
 
 // App setup
