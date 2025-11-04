@@ -45,29 +45,29 @@ Key personas supported today:
 
 ## ✨ Current Capabilities
 
-### 1. Employee Ordering & Engagement
 - OTP-based login with saved mobiles, countdown resend, and audio cues.
 - Fine-grained cart management with variant pricing, inventory guards, and flexible scheduling to **today or tomorrow** (08:00–22:30, 5-minute resolution).
 - Section-based ordering windows ensure breakfast/lunch/snacks items are surfaced only when available; UI guides employees to valid pickup times.
 - Real-time inventory overlays (SOLD OUT, FEW LEFT, RESTOCKED) with per-item caps ensure orders never exceed current stock.
-- Sold-out and low-stock items expose a “Show Interest” action so employees can request restock; vendor thresholds trigger procurement nudges.
+- Sold-out and low-stock items expose a “Show Interest” action so employees can request restock; interest counts persist to analytics and auto-trigger vendor restock notifications when thresholds are crossed.
+- Employees can flag low-stock holdings directly to vendors and receive lock-stock notifications when inventory stabilizes.
 - Dedicated **PaymentPage** handling cards, UPI apps, wallets, cash, and vendor wallet balance with inline validation.
 - Favorites, inline ratings/reviews, grievances, and SOS panic button with campus broadcast.
 - Wallet ledger + Infy streak coins loyalty accrual via `pointsService`.
 - Rich order history supporting cancellations (policy-aware) and instant refunds to wallets/cards, plus reorder shortcuts and profile management.
 
-### 2. Vendor Control Center
 - Role-based JWT login with hashed credentials (`bcrypt`).
 - Live order board (Current/Ready/Completed) with timers, bulk prep extensions, audio alerts, and one-click parcel/takeaway toggles.
-- Real-time inventory console synced with Redis to adjust stock, honor restock interest, and view depletion trends.
+- Real-time inventory console synced with Redis to adjust stock, respond to rising interest demand, and view depletion trends.
+- Vendor notifications for lock-stock scenarios and low-stock alerts surface ahead of outages.
 - Menu editor, combo builder, offer preview service, and grievance/feedback workflows.
 - Procurement Manager: template catalogs, automated task generation, vendor archives, and headcount planning.
 - Historic data import/export (CSV, XLSX) for analytics bootstrapping via `multer`, `csv-parse`, `exceljs`.
 - Refund dashboard highlights cancellation events, auto-calculates refund channel (wallet/card), and logs adjustments for audits.
 
-### 3. Admin & Operations Tools
-- Extensive admin control center for onboarding vendors, bulk-managing users, and configuring section windows across shops.
+- Extensive admin control center for onboarding vendors, managing user accounts/roles, and configuring section windows across shops.
 - Bulk order orchestration: HR/events teams raise large requests with vendor coordination, pricing hooks, and custom pickup windows.
+- Central grievance desk: employees raise concerns directly to management; admins route/resolve and maintain audit logs.
 - SOS monitoring with resolve workflows and push-toasts across logged-in clients.
 - Metrics endpoint (`/metrics`) enabling Prometheus-compatible scraping via `metricsRegistry`.
 
@@ -116,7 +116,7 @@ Key personas supported today:
 2. Employee interest for sold-out/low-stock items is captured, aggregated per vendor, and stored in DuckDB for AI restock scoring.
 3. `analyticsIngestor` consumes, enriches context (holidays/weather), writes to InfluxDB & DuckDB.
 4. `analyticsQueryService` aggregates KPIs, time series, inventory depletion, interest trends, and rolling demand features.
-5. Forecasting + procurement automation generate vendor tasks, notify when interest exceeds thresholds, and recommend restocks.
+5. Forecasting + procurement automation generate vendor tasks, notify when interest exceeds thresholds, broadcast low-stock alerts, and recommend restocks.
 6. Vendors export snapshots or download trend reports via analytics endpoints.
 
 ---
@@ -206,22 +206,28 @@ Jest + Supertest cover API behavior (order flow, payment edge cases, etc.). Exte
 ```
 smart-preordering-billing-foodcourt/
 ├─ backend/
-│  ├─ __tests__/                 # Integration coverage (orders, payments, analytics)
-│  ├─ data/                      # Mock data, DuckDB snapshots, logs
-│  ├─ lib/                       # Analytics, procurement, forecasting services
-│  ├─ index.js                   # Express entrypoint + WebSockets
-│  └─ package.json
+│  ├─ __tests__/                 # Jest + Supertest integration specs
+│  ├─ data/                      # Mock JSON stores, archives, analytics bootstrap
+│  ├─ lib/                       # Analytics, forecasting, procurement, points, etc.
+│  ├─ uploads/                   # Vendor-uploaded files (CSV/XLSX, images)
+│  ├─ index.js                   # Express entry point + WebSocket server
+│  ├─ package.json
+│  └─ package-lock.json
 │
 ├─ frontend/
+│  ├─ public/                    # Static HTML and favicons
 │  ├─ src/
-│  │  ├─ components/             # UI modules (Menu, Cart, AdminDashboard, etc.)
-│  │  ├─ api.js                  # Fetch helpers
-│  │  └─ App.jsx                 # Root orchestration
-│  └─ package.json
+│  │  ├─ components/             # UI modules (Menu, Cart, PaymentPage, Admin tools)
+│  │  ├─ api.js                  # Client fetch helpers
+│  │  ├─ App.jsx                 # Root orchestration and state machine
+│  │  ├─ main.jsx                # React/Vite bootstrap
+│  │  └─ style.css               # Global styles
+│  ├─ package.json
+│  └─ package-lock.json
 │
-├─ docs/                         # Media/documentation assets
-├─ infra/                        # Local infra assets (Redis persistence)
-├─ scripts/                      # Helper scripts (Redis setup)
+├─ docs/                         # Additional documentation/media hooks
+├─ infra/                        # Local infra artifacts (Redis persistence dir)
+├─ scripts/                      # Automation scripts (e.g., start-redis.ps1)
 └─ README.md
 ```
 
@@ -234,13 +240,16 @@ smart-preordering-billing-foodcourt/
 - Curated diet combos and a dedicated healthy-eating section.
 - Birthday reminders and celebratory offers for employees.
 - Infosys SSO employee login with optional biometric factors (fingerprint and facial recognition).
-- "Infy streak coins" loyalty program rewarding consistent ordering behavior.
 - Engagement notifications nudging users when it's mealtime.
 - Offline-ready fallback page featuring a food-themed mini game.
 - Parcel/takeaway checkout mode with vendor handoff tracking.
 - Split billing workflows across multiple payment methods and gateways.
 - Public food reviews and star ratings surfaced per menu item.
 - AI-driven restock predictions leveraging historic sales trends.
+- Book-a-table reservations for dine-in experiences.
+- Theme customization so shops can switch seasonal/brand skins dynamically.
+- Manager-driven coupons and gifting so team leads can issue meal credits to staff.
+- Exclusive recipe submission flow allowing signature dishes to be featured across restaurants.
 
 ---
 
