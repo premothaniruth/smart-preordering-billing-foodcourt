@@ -64,3 +64,10 @@
 {"timestamp":"2025-11-04T19:03:06.051Z","actorType":"vendor","actorId":1,"shopId":1,"vendorId":1,"action":"interest.summary.viewed","metadata":{"itemCount":1}}
 {"timestamp":"2025-11-04T19:03:08.808Z","actorType":"vendor","actorId":1,"shopId":1,"vendorId":1,"action":"interest.summary.viewed","metadata":{"itemCount":1}}
 {"timestamp":"2025-11-04T19:03:08.904Z","actorType":"vendor","actorId":1,"shopId":1,"vendorId":1,"action":"interest.summary.viewed","metadata":{"itemCount":1}}
+{"timestamp":"2025-11-04T19:39:47.800Z","actorType":"vendor","actorId":1,"shopId":1,"vendorId":1,"action":"vendor.login.success","metadata":{"username":"northfoods"}}
+{"timestamp":"2025-11-04T19:39:55.285Z","actorType":"vendor","actorId":1,"shopId":1,"vendorId":1,"action":"interest.summary.viewed","metadata":{"itemCount":1}}
+{"timestamp":"2025-11-04T19:40:01.215Z","actorType":"vendor","actorId":1,"shopId":1,"vendorId":1,"action":"interest.threshold.updated","metadata":{"previous":1,"next":10}}
+{"timestamp":"2025-11-04T19:40:01.235Z","actorType":"vendor","actorId":1,"shopId":1,"vendorId":1,"action":"interest.summary.viewed","metadata":{"itemCount":1}}
+{"timestamp":"2025-11-04T19:40:04.219Z","actorType":"vendor","actorId":1,"shopId":1,"vendorId":1,"action":"interest.summary.viewed","metadata":{"itemCount":1}}
+{"timestamp":"2025-11-04T19:40:05.407Z","actorType":"vendor","actorId":1,"shopId":1,"vendorId":1,"action":"interest.summary.viewed","metadata":{"itemCount":1}}
+{"timestamp":"2025-11-04T19:40:12.434Z","actorType":"vendor","actorId":1,"shopId":1,"vendorId":1,"action":"interest.summary.viewed","metadata":{"itemCount":1}}

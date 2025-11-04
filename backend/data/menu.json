@@ -50,10 +50,11 @@
               "isVeg": true,
               "image": "/images/aloo-puri.jpg",
               "prepTime": 10,
-              "inventory": 3,
+              "inventory": 100,
               "section": "Breakfast",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "restockedAt": "2025-11-04T19:40:35.532Z"
             },
             {
               "id": 5,
