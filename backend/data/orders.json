@@ -722,7 +722,7 @@
     "shopId": 1,
     "user": "+919952911560",
     "scheduledTime": null,
-    "status": "pending",
+    "status": "completed",
     "createdAt": "2025-11-04T06:48:43.206Z",
     "billingId": "00003",
     "estimatedReadyTime": "2025-11-04T06:57:43.205Z",
@@ -745,7 +745,10 @@
     "payment": {
       "method": "cash",
       "amount": 4650
-    }
+    },
+    "readyAt": "2025-11-04T17:50:37.713Z",
+    "pickedAt": "2025-11-04T17:50:49.220Z",
+    "completedAt": "2025-11-04T17:50:49.220Z"
   },
   {
     "id": 22,
@@ -762,7 +765,7 @@
     "shopId": 1,
     "user": "+919952911560",
     "scheduledTime": null,
-    "status": "pending",
+    "status": "completed",
     "createdAt": "2025-11-04T06:49:12.041Z",
     "billingId": "00004",
     "estimatedReadyTime": "2025-11-04T07:00:12.041Z",
@@ -785,7 +788,10 @@
     "payment": {
       "method": "cash",
       "amount": 350
-    }
+    },
+    "readyAt": "2025-11-04T17:50:39.365Z",
+    "pickedAt": "2025-11-04T17:50:48.033Z",
+    "completedAt": "2025-11-04T17:50:48.033Z"
   },
   {
     "id": 23,
@@ -802,7 +808,7 @@
     "shopId": 1,
     "user": "+919952911560",
     "scheduledTime": null,
-    "status": "pending",
+    "status": "completed",
     "createdAt": "2025-11-04T06:57:44.450Z",
     "billingId": "00005",
     "estimatedReadyTime": "2025-11-04T07:15:44.450Z",
@@ -827,6 +833,889 @@
       "amount": 100,
       "provider": "razorpay-open",
       "reference": "PG-1762239464450"
+    },
+    "readyAt": "2025-11-04T17:50:40.756Z",
+    "pickedAt": "2025-11-04T17:50:46.930Z",
+    "completedAt": "2025-11-04T17:50:46.930Z"
+  },
+  {
+    "id": 24,
+    "items": [
+      {
+        "id": 4,
+        "name": "Aloo Puri",
+        "price": 70,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 10
+      },
+      {
+        "id": 17,
+        "name": "Anda Bhurji",
+        "price": 60,
+        "quantity": 1,
+        "option": "Egg only",
+        "prepTime": 7
+      },
+      {
+        "id": 17,
+        "name": "Anda Bhurji",
+        "price": 70,
+        "quantity": 1,
+        "option": "With Veggies",
+        "prepTime": 7
+      }
+    ],
+    "shopId": 1,
+    "user": "+919952911560",
+    "scheduledTime": "2025-11-05T09:10",
+    "status": "pending",
+    "createdAt": "2025-11-04T17:52:30.043Z",
+    "billingId": "00006",
+    "estimatedReadyTime": "2025-11-04T18:16:30.043Z",
+    "prepTime": 24,
+    "baseEstimatedReadyTime": "2025-11-04T18:16:30.043Z",
+    "basePrepTime": 24,
+    "rating": null,
+    "feedback": null,
+    "totalAmount": 200,
+    "subtotalBeforeDiscount": 200,
+    "discountTotal": 0,
+    "offerSummary": {
+      "subtotalBeforeDiscount": 200,
+      "discountTotal": 0,
+      "totalPayable": 200,
+      "appliedOffers": [],
+      "extraItems": []
+    },
+    "notes": null,
+    "payment": {
+      "method": "gateway",
+      "amount": 200,
+      "provider": "razorpay-open",
+      "reference": "PG-1762278750043"
+    }
+  },
+  {
+    "id": 25,
+    "items": [
+      {
+        "id": 4,
+        "name": "Aloo Puri",
+        "price": 70,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 10
+      },
+      {
+        "id": 3,
+        "name": "Chole Bhature",
+        "price": 80,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 12
+      },
+      {
+        "id": 2,
+        "name": "Poha",
+        "price": 45,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 8
+      }
+    ],
+    "shopId": 1,
+    "user": "+919952911560",
+    "scheduledTime": "2025-11-05T08:00",
+    "status": "pending",
+    "createdAt": "2025-11-04T17:53:12.801Z",
+    "billingId": "00007",
+    "estimatedReadyTime": "2025-11-04T18:25:12.801Z",
+    "prepTime": 32,
+    "baseEstimatedReadyTime": "2025-11-04T18:25:12.801Z",
+    "basePrepTime": 32,
+    "rating": null,
+    "feedback": null,
+    "totalAmount": 195,
+    "subtotalBeforeDiscount": 195,
+    "discountTotal": 0,
+    "offerSummary": {
+      "subtotalBeforeDiscount": 195,
+      "discountTotal": 0,
+      "totalPayable": 195,
+      "appliedOffers": [],
+      "extraItems": []
+    },
+    "notes": null,
+    "payment": {
+      "method": "gateway",
+      "amount": 195,
+      "provider": "razorpay-open",
+      "reference": "PG-1762278792801"
+    }
+  },
+  {
+    "id": 26,
+    "items": [
+      {
+        "id": 4,
+        "name": "Aloo Puri",
+        "price": 70,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 10
+      },
+      {
+        "id": 3,
+        "name": "Chole Bhature",
+        "price": 80,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 12
+      },
+      {
+        "id": 2,
+        "name": "Poha",
+        "price": 45,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 8
+      },
+      {
+        "id": 1,
+        "name": "Aloo Paratha",
+        "price": 60,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 10
+      },
+      {
+        "id": 5,
+        "name": "Paneer Paratha",
+        "price": 75,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 12
+      }
+    ],
+    "shopId": 1,
+    "user": "+919952911560",
+    "scheduledTime": "2025-11-05T08:00",
+    "status": "pending",
+    "createdAt": "2025-11-04T17:53:49.216Z",
+    "billingId": "00008",
+    "estimatedReadyTime": "2025-11-04T18:49:49.216Z",
+    "prepTime": 56,
+    "baseEstimatedReadyTime": "2025-11-04T18:49:49.216Z",
+    "basePrepTime": 56,
+    "rating": null,
+    "feedback": null,
+    "totalAmount": 330,
+    "subtotalBeforeDiscount": 330,
+    "discountTotal": 0,
+    "offerSummary": {
+      "subtotalBeforeDiscount": 330,
+      "discountTotal": 0,
+      "totalPayable": 330,
+      "appliedOffers": [],
+      "extraItems": []
+    },
+    "notes": null,
+    "payment": {
+      "method": "gateway",
+      "amount": 330,
+      "provider": "razorpay-open",
+      "reference": "PG-1762278829216"
+    }
+  },
+  {
+    "id": 27,
+    "items": [
+      {
+        "id": 4,
+        "name": "Aloo Puri",
+        "price": 70,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 10
+      },
+      {
+        "id": 3,
+        "name": "Chole Bhature",
+        "price": 80,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 12
+      },
+      {
+        "id": 2,
+        "name": "Poha",
+        "price": 45,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 8
+      }
+    ],
+    "shopId": 1,
+    "user": "+919952911560",
+    "scheduledTime": "2025-11-05T08:00",
+    "status": "pending",
+    "createdAt": "2025-11-04T17:54:24.549Z",
+    "billingId": "00009",
+    "estimatedReadyTime": "2025-11-04T18:30:24.549Z",
+    "prepTime": 36,
+    "baseEstimatedReadyTime": "2025-11-04T18:30:24.549Z",
+    "basePrepTime": 36,
+    "rating": null,
+    "feedback": null,
+    "totalAmount": 195,
+    "subtotalBeforeDiscount": 195,
+    "discountTotal": 0,
+    "offerSummary": {
+      "subtotalBeforeDiscount": 195,
+      "discountTotal": 0,
+      "totalPayable": 195,
+      "appliedOffers": [],
+      "extraItems": []
+    },
+    "notes": null,
+    "payment": {
+      "method": "gateway",
+      "amount": 195,
+      "provider": "razorpay-open",
+      "reference": "PG-1762278864549"
+    }
+  },
+  {
+    "id": 28,
+    "items": [
+      {
+        "id": 44,
+        "name": "Paneer Butter Masala",
+        "price": 125,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 13
+      },
+      {
+        "id": 43,
+        "name": "Butter Chicken",
+        "price": 165,
+        "quantity": 1,
+        "option": "With Bone",
+        "prepTime": 20
+      },
+      {
+        "id": 43,
+        "name": "Butter Chicken",
+        "price": 180,
+        "quantity": 1,
+        "option": "Boneless",
+        "prepTime": 20
+      }
+    ],
+    "shopId": 1,
+    "user": "+919952911560",
+    "scheduledTime": "2025-11-05T18:00",
+    "status": "pending",
+    "createdAt": "2025-11-04T17:55:00.335Z",
+    "billingId": "00010",
+    "estimatedReadyTime": "2025-11-04T18:56:00.335Z",
+    "prepTime": 61,
+    "baseEstimatedReadyTime": "2025-11-04T18:56:00.335Z",
+    "basePrepTime": 61,
+    "rating": null,
+    "feedback": null,
+    "totalAmount": 470,
+    "subtotalBeforeDiscount": 470,
+    "discountTotal": 0,
+    "offerSummary": {
+      "subtotalBeforeDiscount": 470,
+      "discountTotal": 0,
+      "totalPayable": 470,
+      "appliedOffers": [],
+      "extraItems": []
+    },
+    "notes": null,
+    "payment": {
+      "method": "gateway",
+      "amount": 470,
+      "provider": "razorpay-open",
+      "reference": "PG-1762278900335"
+    }
+  },
+  {
+    "id": 29,
+    "items": [
+      {
+        "id": 2,
+        "name": "Poha",
+        "price": 45,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 8
+      },
+      {
+        "id": 1,
+        "name": "Aloo Paratha",
+        "price": 60,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 10
+      },
+      {
+        "id": 3,
+        "name": "Chole Bhature",
+        "price": 80,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 12
+      }
+    ],
+    "shopId": 1,
+    "user": "+919952911560",
+    "scheduledTime": "2025-11-05T08:00",
+    "status": "pending",
+    "createdAt": "2025-11-04T17:55:18.096Z",
+    "billingId": "00011",
+    "estimatedReadyTime": "2025-11-04T18:35:18.096Z",
+    "prepTime": 40,
+    "baseEstimatedReadyTime": "2025-11-04T18:35:18.096Z",
+    "basePrepTime": 40,
+    "rating": null,
+    "feedback": null,
+    "totalAmount": 185,
+    "subtotalBeforeDiscount": 185,
+    "discountTotal": 0,
+    "offerSummary": {
+      "subtotalBeforeDiscount": 185,
+      "discountTotal": 0,
+      "totalPayable": 185,
+      "appliedOffers": [],
+      "extraItems": []
+    },
+    "notes": null,
+    "payment": {
+      "method": "gateway",
+      "amount": 185,
+      "provider": "razorpay-open",
+      "reference": "PG-1762278918096"
+    }
+  },
+  {
+    "id": 30,
+    "items": [
+      {
+        "id": 4,
+        "name": "Aloo Puri",
+        "price": 70,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 10
+      },
+      {
+        "id": 3,
+        "name": "Chole Bhature",
+        "price": 80,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 12
+      },
+      {
+        "id": 2,
+        "name": "Poha",
+        "price": 45,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 8
+      }
+    ],
+    "shopId": 1,
+    "user": "+919952911560",
+    "scheduledTime": "2025-11-05T08:00",
+    "status": "pending",
+    "createdAt": "2025-11-04T17:55:30.290Z",
+    "billingId": "00012",
+    "estimatedReadyTime": "2025-11-04T18:37:30.290Z",
+    "prepTime": 42,
+    "baseEstimatedReadyTime": "2025-11-04T18:37:30.290Z",
+    "basePrepTime": 42,
+    "rating": null,
+    "feedback": null,
+    "totalAmount": 195,
+    "subtotalBeforeDiscount": 195,
+    "discountTotal": 0,
+    "offerSummary": {
+      "subtotalBeforeDiscount": 195,
+      "discountTotal": 0,
+      "totalPayable": 195,
+      "appliedOffers": [],
+      "extraItems": []
+    },
+    "notes": null,
+    "payment": {
+      "method": "gateway",
+      "amount": 195,
+      "provider": "razorpay-open",
+      "reference": "PG-1762278930290"
+    }
+  },
+  {
+    "id": 31,
+    "items": [
+      {
+        "id": 8,
+        "name": "Gobi Paratha",
+        "price": 65,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 10
+      },
+      {
+        "id": 6,
+        "name": "Moong Dal Chilla",
+        "price": 60,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 9
+      },
+      {
+        "id": 7,
+        "name": "Sabudana Khichdi",
+        "price": 55,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 12
+      }
+    ],
+    "shopId": 1,
+    "user": "+919952911560",
+    "scheduledTime": "2025-11-05T08:00",
+    "status": "pending",
+    "createdAt": "2025-11-04T17:55:42.916Z",
+    "billingId": "00013",
+    "estimatedReadyTime": "2025-11-04T18:40:42.916Z",
+    "prepTime": 45,
+    "baseEstimatedReadyTime": "2025-11-04T18:40:42.916Z",
+    "basePrepTime": 45,
+    "rating": null,
+    "feedback": null,
+    "totalAmount": 180,
+    "subtotalBeforeDiscount": 180,
+    "discountTotal": 0,
+    "offerSummary": {
+      "subtotalBeforeDiscount": 180,
+      "discountTotal": 0,
+      "totalPayable": 180,
+      "appliedOffers": [],
+      "extraItems": []
+    },
+    "notes": null,
+    "payment": {
+      "method": "gateway",
+      "amount": 180,
+      "provider": "razorpay-open",
+      "reference": "PG-1762278942916"
+    }
+  },
+  {
+    "id": 32,
+    "items": [
+      {
+        "id": 3,
+        "name": "Chole Bhature",
+        "price": 80,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 12
+      },
+      {
+        "id": 2,
+        "name": "Poha",
+        "price": 45,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 8
+      },
+      {
+        "id": 1,
+        "name": "Aloo Paratha",
+        "price": 60,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 10
+      }
+    ],
+    "shopId": 1,
+    "user": "+919952911560",
+    "scheduledTime": "2025-11-05T08:00",
+    "status": "pending",
+    "createdAt": "2025-11-04T17:56:51.704Z",
+    "billingId": "00014",
+    "estimatedReadyTime": "2025-11-04T18:42:51.704Z",
+    "prepTime": 46,
+    "baseEstimatedReadyTime": "2025-11-04T18:42:51.704Z",
+    "basePrepTime": 46,
+    "rating": null,
+    "feedback": null,
+    "totalAmount": 185,
+    "subtotalBeforeDiscount": 185,
+    "discountTotal": 0,
+    "offerSummary": {
+      "subtotalBeforeDiscount": 185,
+      "discountTotal": 0,
+      "totalPayable": 185,
+      "appliedOffers": [],
+      "extraItems": []
+    },
+    "notes": null,
+    "payment": {
+      "method": "gateway",
+      "amount": 185,
+      "provider": "razorpay-open",
+      "reference": "PG-1762279011704"
+    }
+  },
+  {
+    "id": 33,
+    "items": [
+      {
+        "id": 4,
+        "name": "Aloo Puri",
+        "price": 70,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 10
+      },
+      {
+        "id": 3,
+        "name": "Chole Bhature",
+        "price": 80,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 12
+      },
+      {
+        "id": 2,
+        "name": "Poha",
+        "price": 45,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 8
+      }
+    ],
+    "shopId": 1,
+    "user": "+919952911560",
+    "scheduledTime": "2025-11-05T08:00",
+    "status": "pending",
+    "createdAt": "2025-11-04T17:57:05.190Z",
+    "billingId": "00015",
+    "estimatedReadyTime": "2025-11-04T18:45:05.190Z",
+    "prepTime": 48,
+    "baseEstimatedReadyTime": "2025-11-04T18:45:05.190Z",
+    "basePrepTime": 48,
+    "rating": null,
+    "feedback": null,
+    "totalAmount": 195,
+    "subtotalBeforeDiscount": 195,
+    "discountTotal": 0,
+    "offerSummary": {
+      "subtotalBeforeDiscount": 195,
+      "discountTotal": 0,
+      "totalPayable": 195,
+      "appliedOffers": [],
+      "extraItems": []
+    },
+    "notes": null,
+    "payment": {
+      "method": "wallet",
+      "amount": 195,
+      "walletBalance": 305
+    }
+  },
+  {
+    "id": 34,
+    "items": [
+      {
+        "id": 4,
+        "name": "Aloo Puri",
+        "price": 70,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 10
+      },
+      {
+        "id": 3,
+        "name": "Chole Bhature",
+        "price": 80,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 12
+      },
+      {
+        "id": 2,
+        "name": "Poha",
+        "price": 45,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 8
+      }
+    ],
+    "shopId": 1,
+    "user": "+919952911560",
+    "scheduledTime": "2025-11-05T08:00",
+    "status": "pending",
+    "createdAt": "2025-11-04T17:57:25.408Z",
+    "billingId": "00016",
+    "estimatedReadyTime": "2025-11-04T18:47:25.408Z",
+    "prepTime": 50,
+    "baseEstimatedReadyTime": "2025-11-04T18:47:25.408Z",
+    "basePrepTime": 50,
+    "rating": null,
+    "feedback": null,
+    "totalAmount": 195,
+    "subtotalBeforeDiscount": 195,
+    "discountTotal": 0,
+    "offerSummary": {
+      "subtotalBeforeDiscount": 195,
+      "discountTotal": 0,
+      "totalPayable": 195,
+      "appliedOffers": [],
+      "extraItems": []
+    },
+    "notes": null,
+    "payment": {
+      "method": "wallet",
+      "amount": 195,
+      "walletBalance": 110
+    }
+  },
+  {
+    "id": 35,
+    "items": [
+      {
+        "id": 8,
+        "name": "Gobi Paratha",
+        "price": 65,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 10
+      },
+      {
+        "id": 7,
+        "name": "Sabudana Khichdi",
+        "price": 55,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 12
+      },
+      {
+        "id": 6,
+        "name": "Moong Dal Chilla",
+        "price": 60,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 9
+      }
+    ],
+    "shopId": 1,
+    "user": "+919952911560",
+    "scheduledTime": "2025-11-05T08:00",
+    "status": "pending",
+    "createdAt": "2025-11-04T17:57:52.774Z",
+    "billingId": "00017",
+    "estimatedReadyTime": "2025-11-04T18:50:52.774Z",
+    "prepTime": 53,
+    "baseEstimatedReadyTime": "2025-11-04T18:50:52.774Z",
+    "basePrepTime": 53,
+    "rating": null,
+    "feedback": null,
+    "totalAmount": 180,
+    "subtotalBeforeDiscount": 180,
+    "discountTotal": 0,
+    "offerSummary": {
+      "subtotalBeforeDiscount": 180,
+      "discountTotal": 0,
+      "totalPayable": 180,
+      "appliedOffers": [],
+      "extraItems": []
+    },
+    "notes": null,
+    "payment": {
+      "method": "cash",
+      "amount": 180
+    }
+  },
+  {
+    "id": 36,
+    "items": [
+      {
+        "id": 4,
+        "name": "Aloo Puri",
+        "price": 70,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 10
+      },
+      {
+        "id": 3,
+        "name": "Chole Bhature",
+        "price": 80,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 12
+      },
+      {
+        "id": 2,
+        "name": "Poha",
+        "price": 45,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 8
+      }
+    ],
+    "shopId": 1,
+    "user": "+919952911560",
+    "scheduledTime": "2025-11-05T08:00",
+    "status": "pending",
+    "createdAt": "2025-11-04T17:58:38.156Z",
+    "billingId": "00018",
+    "estimatedReadyTime": "2025-11-04T18:52:38.156Z",
+    "prepTime": 54,
+    "baseEstimatedReadyTime": "2025-11-04T18:52:38.156Z",
+    "basePrepTime": 54,
+    "rating": null,
+    "feedback": null,
+    "totalAmount": 195,
+    "subtotalBeforeDiscount": 195,
+    "discountTotal": 0,
+    "offerSummary": {
+      "subtotalBeforeDiscount": 195,
+      "discountTotal": 0,
+      "totalPayable": 195,
+      "appliedOffers": [],
+      "extraItems": []
+    },
+    "notes": null,
+    "payment": {
+      "method": "cash",
+      "amount": 195
+    }
+  },
+  {
+    "id": 37,
+    "items": [
+      {
+        "id": 4,
+        "name": "Aloo Puri",
+        "price": 70,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 10
+      },
+      {
+        "id": 3,
+        "name": "Chole Bhature",
+        "price": 80,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 12
+      },
+      {
+        "id": 2,
+        "name": "Poha",
+        "price": 45,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 8
+      }
+    ],
+    "shopId": 1,
+    "user": "+919952911560",
+    "scheduledTime": "2025-11-05T08:00",
+    "status": "pending",
+    "createdAt": "2025-11-04T17:58:52.201Z",
+    "billingId": "00019",
+    "estimatedReadyTime": "2025-11-04T18:54:52.201Z",
+    "prepTime": 56,
+    "baseEstimatedReadyTime": "2025-11-04T18:54:52.201Z",
+    "basePrepTime": 56,
+    "rating": null,
+    "feedback": null,
+    "totalAmount": 195,
+    "subtotalBeforeDiscount": 195,
+    "discountTotal": 0,
+    "offerSummary": {
+      "subtotalBeforeDiscount": 195,
+      "discountTotal": 0,
+      "totalPayable": 195,
+      "appliedOffers": [],
+      "extraItems": []
+    },
+    "notes": null,
+    "payment": {
+      "method": "gateway",
+      "amount": 195,
+      "provider": "razorpay-open",
+      "reference": "qr-scan"
+    }
+  },
+  {
+    "id": 38,
+    "items": [
+      {
+        "id": 4,
+        "name": "Aloo Puri",
+        "price": 70,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 10
+      },
+      {
+        "id": 3,
+        "name": "Chole Bhature",
+        "price": 80,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 12
+      },
+      {
+        "id": 2,
+        "name": "Poha",
+        "price": 45,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 8
+      }
+    ],
+    "shopId": 1,
+    "user": "+919952911560",
+    "scheduledTime": "2025-11-05T08:00",
+    "status": "pending",
+    "createdAt": "2025-11-04T17:59:06.047Z",
+    "billingId": "00020",
+    "estimatedReadyTime": "2025-11-04T18:57:06.047Z",
+    "prepTime": 58,
+    "baseEstimatedReadyTime": "2025-11-04T18:57:06.047Z",
+    "basePrepTime": 58,
+    "rating": null,
+    "feedback": null,
+    "totalAmount": 195,
+    "subtotalBeforeDiscount": 195,
+    "discountTotal": 0,
+    "offerSummary": {
+      "subtotalBeforeDiscount": 195,
+      "discountTotal": 0,
+      "totalPayable": 195,
+      "appliedOffers": [],
+      "extraItems": []
+    },
+    "notes": null,
+    "payment": {
+      "method": "gateway",
+      "amount": 195,
+      "provider": "razorpay-open",
+      "reference": "PG-1762279146047"
     }
   }
 ]

@@ -86,6 +86,11 @@ const isPreOrderSectionName = (sectionName) => {
 const getItemSectionName = (item = {}) =>
   item.sectionName || item.section || item.categoryName || item.category || item.sectionLabel || item.sectionTitle || "";
 
+const formatWindow = (win) => {
+  if (!win || !win.start || !win.end) return null;
+  return `${win.start}-${win.end}`;
+};
+
 const FALLBACK_IMAGE = "https://dummyimage.com/200x150/95a5a6/ffffff&text=No+Image";
 
 const Menu = ({
@@ -338,10 +343,11 @@ const Menu = ({
 
   const computeAvailabilityState = useCallback((sectionName) => {
     const sectionWindow = sectionWindows[sectionName] || null;
+    const isPreOrderSection = isPreOrderSectionName(sectionName);
     const nowHm = currentHm;
     const scheduleHm = scheduleInfo.valid ? scheduleInfo.hm : null;
 
-    const baseWindow = sectionWindow || null;
+    const baseWindow = sectionWindow || (isPreOrderSection ? PREORDER_WINDOW : null);
     const activeWindow = baseWindow;
 
     const preorderWindow = PREORDER_WINDOW;
@@ -357,7 +363,6 @@ const Menu = ({
     const nowBeforeSection = isBeforeWindow(activeWindow, nowHm);
     const nowAfterSection = isAfterWindow(activeWindow, nowHm);
 
-    const isPreOrderSection = isPreOrderSectionName(sectionName);
     const schedulePermissible = scheduleInfo.enabled
       ? (scheduleInfo.isToday || scheduleInfo.isTomorrow) && scheduleInfo.valid && scheduleWithinPreorder
       : false;
@@ -426,6 +431,12 @@ const Menu = ({
       reason,
       chosenHm,
       schedule: scheduleInfo,
+      nowBeforeSection,
+      nowAfterSection,
+      scheduleWithinSection,
+      scheduleWithinPreorder,
+      schedulePermissible,
+      isPreOrderSection,
     };
   }, [currentHm, scheduleInfo, sectionWindows]);
 
@@ -485,6 +496,7 @@ const Menu = ({
       reason: sectionState.reason,
       freezeToNext: sectionState.freezeToNext,
       lockedToNextDay: sectionState.lockedToNextDay,
+      sectionState,
     };
   }, [computeAvailabilityState, scheduleInfo.enabled]);
 
@@ -539,6 +551,64 @@ const Menu = ({
     return `₹${item.price}${hasMods ? '+' : ''}`;
   }, []);
 
+  const computeComboAvailability = useCallback((combo) => {
+    if (!combo) {
+      return {
+        allowAction: false,
+        sectionWindow: null,
+        nextDayOnly: false,
+        message: "Unavailable",
+        reason: "unknown",
+        freezeToNext: false,
+        lockedToNextDay: false,
+        sectionState: null,
+      };
+    }
+
+    const sectionName = getItemSectionName(combo);
+    const sectionState = computeAvailabilityState(sectionName);
+
+    const allowAction = sectionState.allowAction;
+    const nextDayOnly = sectionState.lockedToNextDay;
+
+    let message = null;
+    if (!allowAction) {
+      switch (sectionState.reason) {
+        case "invalid-schedule":
+          message = "Invalid schedule time";
+          break;
+        case "preorder-window":
+          message = "Outside preorder window";
+          break;
+        case "section-window":
+          message = "Outside section window";
+          break;
+        case "pre-window":
+          message = "Opens later";
+          break;
+        case "post-window":
+          message = "Closed for today";
+          break;
+        case "next-window":
+          message = "Next window";
+          break;
+        default:
+          message = "Unavailable";
+      }
+    }
+
+    return {
+      allowAction,
+      sectionWindow: sectionState.sectionWindow,
+      nextDayOnly,
+      message,
+      reason: sectionState.reason,
+      freezeToNext: sectionState.freezeToNext,
+      lockedToNextDay: sectionState.lockedToNextDay,
+      sectionState,
+    };
+  }, [computeAvailabilityState]);
+
   const handleAddClick = useCallback(
     (item) => {
       if (!item) return;
@@ -562,7 +632,11 @@ const Menu = ({
       const stockLeft = Math.max(0, inventory);
       const thisQty = qtyNoOption(item);
       const itemAvail = computeItemAvailability(item);
-      const { allowAction, allowedNow, sectionWindow, itemWindow, nextDayOnly } = itemAvail;
+      const { allowAction, nextDayOnly, message, sectionState } = itemAvail;
+      const windowLabel = formatWindow(sectionState?.sectionWindow);
+      const scheduleMeta = sectionState?.schedule;
+      const showNextBadge = !allowAction;
+      const badgeText = nextDayOnly ? 'NEXT DAY' : 'NEXT WINDOW';
       return (
         <div key={item.id} className="menu-item-card" style={totalQty > 0 ? { border: '2px solid #111', boxShadow: '0 0 0 3px rgba(0,0,0,0.05)' } : {}}>
           <div style={{ position: "relative" }}>
@@ -584,9 +658,9 @@ const Menu = ({
                 {isFavorite(item.id) ? "❤️" : "🤍"}
               </button>
             )}
-            {!allowAction && (
+            {showNextBadge && (
               <div style={{ position: 'absolute', top: 8, left: 8, background: '#7f8c8d', color: '#fff', padding: '2px 8px', borderRadius: 4, fontSize: 12, fontWeight: 700 }}>
-                {nextDayOnly ? 'NEXT DAY' : 'NEXT WINDOW'}
+                {badgeText}
               </div>
             )}
             {stockLeft === 0 && allowAction && (
@@ -667,14 +741,29 @@ const Menu = ({
                 ) : (
                   <button
                     className="icon-btn"
-                    onClick={() => handleAddClick(item)}
+                    onClick={() => {
+                      if (!item.hasOptions) {
+                        if (cartRemaining <= 0) { toast.error('No more items available to order'); return; }
+                        if (cartShopMismatch) {
+                          toast.warn("Cart already has items from another shop. Please place separate orders.");
+                          return;
+                        }
+                        if (!allowAction) {
+                          toast.info(nextDayOnly ? 'Available from next day' : 'Currently unavailable');
+                          return;
+                        }
+                        incItemNoOption(item, selectedShop);
+                        return;
+                      }
+                      handleAddClick(item);
+                    }}
                     disabled={!allowAction || cartRemaining <= 0 || cartShopMismatch}
                     style={{
                       width: "100%",
                       padding: '10px 12px',
                       background: '#fff',
                       color: '#111',
-                      border: '1px solid #111',
+                      border: "1px solid #111",
                       borderRadius: 6,
                       display: 'flex',
                       alignItems: 'center',
@@ -686,9 +775,9 @@ const Menu = ({
                     {stockLeft === 0 ? 'Sold Out' : (
                       <>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                          <circle cx="10" cy="20" r="1" />
-                          <circle cx="18" cy="20" r="1" />
-                          <path d="M2 2h2l3.6 7.59a2 2 0 0 0 1.8 1.17H17a2 2 0 0 0 2-1.5l1.38-5.5H6" />
+                          <circle cx="10" cy="20" r="1"/>
+                          <circle cx="18" cy="20" r="1"/>
+                          <path d="M2 2h2l3.6 7.59a2 2 0 0 0 1.8 1.17H17a2 2 0 0 0 2-1.5l1.38-5.5H6"/>
                         </svg>
                         Add to Cart
                       </>
@@ -702,12 +791,161 @@ const Menu = ({
                 )}
               </div>
             )}
+            {(!message && !allowAction && windowLabel && (
+              <div>Available during {windowLabel}</div>
+            ))}
           </div>
         </div>
       );
     },
     [qtyInCart, qtyNoOption, getItemPrice, handleAddClick, computeItemAvailability]
   );
+
+  const renderComboCard = useCallback((combo) => {
+    const components = Array.isArray(combo?.components) ? combo.components : [];
+    const comboAvail = computeComboAvailability(combo);
+    const { allowAction, nextDayOnly, message, sectionState } = comboAvail;
+    const windowLabel = formatWindow(sectionState?.sectionWindow);
+    const scheduleMeta = sectionState?.schedule;
+    const showBadge = !allowAction;
+    const badgeText = nextDayOnly ? 'NEXT DAY' : 'NEXT WINDOW';
+
+    const shopItems = Array.isArray(currentShop?.items) ? currentShop.items : [];
+    const findItem = (id) => shopItems.find((i) => Number(i.id) === Number(id)) || null;
+
+    const consumedByItemId = (() => {
+      const map = new Map();
+      for (const line of cart) {
+        if (line.item?.comboId && Array.isArray(line.item?.comboComponents)) {
+          for (const comp of line.item.comboComponents) {
+            const need = Math.max(1, Number(comp.quantity || 1));
+            map.set(comp.itemId, (map.get(comp.itemId) || 0) + need * Number(line.quantity || 0));
+          }
+        } else if (line.item && line.item.id != null) {
+          map.set(Number(line.item.id), (map.get(Number(line.item.id)) || 0) + Number(line.quantity || 0));
+        }
+      }
+      return map;
+    })();
+
+    const capacity = (() => {
+      if (!components.length) return 0;
+      let cap = Infinity;
+      for (const c of components) {
+        const it = findItem(c.itemId);
+        const inv = Number(it?.inventory ?? 0);
+        const need = Math.max(1, Number(c?.quantity || 1));
+        const consumed = Number(consumedByItemId.get(Number(c.itemId)) || 0);
+        const remainingUnits = Math.max(0, inv - consumed);
+        const possible = Math.floor(remainingUnits / need);
+        cap = Math.min(cap, possible);
+      }
+      return Number.isFinite(cap) ? cap : 0;
+    })();
+
+    const inCartCombo = cart.filter(c => c.shopId === selectedShop && c.item?.comboId === combo.id).reduce((s, c) => s + c.quantity, 0);
+    const stockLeft = Math.max(0, capacity - inCartCombo);
+
+    const compLines = components.map((c, idx) => {
+      const fallbackName = shopItems.find(i => Number(i.id) === Number(c?.itemId))?.name;
+      const base = c && (c.name || fallbackName || 'Item');
+      const qty = Number(c?.quantity || 1);
+      const opt = c?.option ? ` (${c.option})` : '';
+      return (
+        <div key={idx} style={{ display:'flex', justifyContent:'space-between', gap:8, fontSize:12, color:'#555' }}>
+          <span style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{base}{opt}</span>
+          <span style={{ color:'#333' }}>×{qty}</span>
+        </div>
+      );
+    });
+
+    const handleAddCombo = () => {
+      if (cartShopMismatch) { toast.warn("Cart already has items from another shop. Please place separate orders."); return; }
+      if (stockLeft <= 0) { toast.error('No more combos available to order'); return; }
+      if (!allowAction) { toast.info(nextDayOnly ? 'Order opens next day' : 'Next order window not open yet'); return; }
+      const synthetic = {
+        id: 1000000 + Number(combo.id || 0),
+        comboId: combo.id,
+        name: combo.name || 'Combo',
+        price: Number(combo.price || 0),
+        available: stockLeft,
+        image: '',
+        prepTime: 10,
+        inventory: stockLeft,
+        comboComponents: components.map(c => ({ itemId: Number(c.itemId)||0, quantity: Number(c.quantity)||1 }))
+      };
+      addToCart(synthetic, selectedShop, null, {});
+      toast.success(`${combo.name} combo added to cart!`);
+    };
+
+    return (
+      <div key={combo.id} className="menu-item-card" style={{ position: 'relative' }}>
+        <div className="menu-item-content">
+          <div className="menu-item-name">{combo.name}</div>
+          <div className="menu-item-price">
+            ₹{combo.price}
+            {(sectionState?.sectionWindow?.start && sectionState?.sectionWindow?.end) && (
+              <span style={{ fontSize: 12, color: '#666', marginLeft: 8 }}>({sectionState.sectionWindow.start}-{sectionState.sectionWindow.end})</span>
+            )}
+          </div>
+          {showBadge && (
+            <div style={{ position: 'absolute', top: 8, left: 8, background: '#7f8c8d', color: '#fff', padding: '2px 8px', borderRadius: 4, fontSize: 12, fontWeight: 700 }}>
+              {badgeText}
+            </div>
+          )}
+          {stockLeft === 0 && allowAction && (
+            <div style={{ position: 'absolute', top: 8, left: 8, background: '#e74c3c', color: '#fff', padding: '2px 8px', borderRadius: 4, fontSize: 12, fontWeight: 700 }}>
+              SOLD OUT
+            </div>
+          )}
+          <div style={{ fontSize: 12, color: '#666', margin: '6px 0' }}>Combo Offer</div>
+          {components.length > 0 && (
+            <div className="card" style={{ background:'#fafafa', border:'1px solid #eee', padding:8, margin:'6px 0' }}>
+              <div style={{ fontWeight:600, fontSize:12, color:'#333', marginBottom:6 }}>Includes</div>
+              <div style={{ display:'grid', gap:4 }}>
+                {compLines}
+              </div>
+            </div>
+          )}
+          {showInventory && (
+            <div style={{ fontSize: 11, color: stockLeft === 0 ? '#e74c3c' : '#666', marginBottom: 6 }}>Left: {stockLeft}</div>
+          )}
+          {(!allowAction || scheduleMeta?.enabled) && (
+            <div style={{ marginBottom: 8, fontSize: 12, color: allowAction ? '#666' : '#c0392b', lineHeight: 1.4 }}>
+              {message && <div>{message}{windowLabel ? ` (${windowLabel})` : ''}</div>}
+              {allowAction && scheduleMeta?.enabled && scheduleMeta.valid && (
+                <div>
+                  Scheduled for {scheduleMeta.isTomorrow ? 'tomorrow' : 'today'} at {scheduleMeta.hm}
+                  {windowLabel ? ` (${windowLabel})` : ''}
+                </div>
+              )}
+              {!message && !allowAction && windowLabel && (
+                <div>Available during {windowLabel}</div>
+              )}
+            </div>
+          )}
+          {!readOnly && (
+            <button
+              className="icon-btn"
+              onClick={handleAddCombo}
+              disabled={!allowAction || stockLeft <= 0 || cartShopMismatch}
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                background: '#fff',
+                color: '#111',
+                border: "1px solid #111",
+                borderRadius: 6,
+                opacity: allowAction && stockLeft > 0 ? 1 : 0.6
+              }}
+            >
+              {allowAction ? (stockLeft > 0 ? 'Add Combo' : 'Sold Out') : 'Next order is from tomorrow'}
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }, [addToCart, cart, cartShopMismatch, computeComboAvailability, currentShop, selectedShop, showInventory]);
 
   const handleExpressInterest = useCallback(async (item) => {
     if (!item || interestPending) return;

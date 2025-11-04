@@ -54,11 +54,33 @@ const Cart = ({
     return `${y}-${m}-${day}`;
   };
   const todayStr = getTodayStr();
-  const todayDisplay = (() => {
-    const [y,m,d] = todayStr.split('-');
-    return `${d}-${m}-${y}`; // dd-mm-yyyy
+  const formatDisplayDate = (dateId) => {
+    if (!dateId) return "";
+    const [y, m, d] = dateId.split('-');
+    return `${d}-${m}-${y}`;
+  };
+  const todayDisplay = formatDisplayDate(todayStr);
+  const tomorrowStr = (() => {
+    const base = new Date();
+    base.setDate(base.getDate() + 1);
+    const y = base.getFullYear();
+    const m = String(base.getMonth() + 1).padStart(2, '0');
+    const d = String(base.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
   })();
-  const [scheduledDate, setScheduledDate] = useState(() => todayStr); // YYYY-MM-DD, locked to today
+  const tomorrowDisplay = formatDisplayDate(tomorrowStr);
+  const initialScheduledDate = (() => {
+    if (scheduledTime) {
+      try {
+        const [d] = scheduledTime.split("T");
+        if (d === tomorrowStr) return tomorrowStr;
+        if (d === todayStr) return todayStr;
+        if (d) return d;
+      } catch {}
+    }
+    return todayStr;
+  })();
+  const [scheduledDate, setScheduledDate] = useState(initialScheduledDate);
   const [scheduledHM, setScheduledHM] = useState(""); // HH:MM
   const [scheduleEnabled, setScheduleEnabled] = useState(Boolean(scheduledTime));
   const MIN_HM = "08:00";
@@ -100,13 +122,13 @@ const Cart = ({
   }, [scheduledTime, todayStr, setScheduledTime]);
 
   // scheduling helpers are defined after current time calculations
-  const clampHM = (hm) => {
+  const clampHM = (hm, available) => {
     if (!hm) return hm;
-    const idx = slots.indexOf(hm);
+    const source = Array.isArray(available) && available.length ? available : slots;
+    const idx = source.indexOf(hm);
     if (idx >= 0) return hm;
     if (hm < MIN_HM) return MIN_HM;
     if (hm > MAX_HM) return MAX_HM;
-    // round to nearest future slot
     const [hours, minutes] = hm.split(":").map(Number);
     const roundedMinutes = Math.ceil(minutes / 5) * 5;
     let h = hours;
@@ -116,13 +138,14 @@ const Cart = ({
       m = 0;
     }
     const candidate = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-    if (slots.includes(candidate)) return candidate;
-    return slots.find((slot) => slot > hm) || slots[slots.length - 1] || MIN_HM;
+    if (source.includes(candidate)) return candidate;
+    return source.find((slot) => slot > hm) || source[source.length - 1] || MIN_HM;
   };
 
-  const findNextSlot = (hm) => {
-    if (!slots.length) return null;
-    const futureSlot = slots.find((slot) => slot > hm);
+  const findNextSlot = (hm, available) => {
+    const source = Array.isArray(available) && available.length ? available : slots;
+    if (!source.length) return null;
+    const futureSlot = source.find((slot) => slot > hm);
     return futureSlot || null;
   };
 
@@ -132,33 +155,41 @@ const Cart = ({
     const id = setInterval(() => setCurrentHM(toHM(new Date())), 1000);
     return () => clearInterval(id);
   }, []);
-  const availableSlots = useMemo(() => {
-    return slots.filter((slot) => slot > currentHM);
-  }, [slots, currentHM]);
+  const todaySlots = useMemo(() => slots.filter((slot) => slot > currentHM), [slots, currentHM]);
+  const tomorrowSlots = useMemo(() => slots.slice(), [slots]);
+  const slotsForDate = scheduledDate === tomorrowStr ? tomorrowSlots : todaySlots;
+
+  const pickFirstAvailableDate = useCallback(() => {
+    const candidateDates = [scheduledDate, todayStr, tomorrowStr].filter(Boolean);
+    for (const dateId of candidateDates) {
+      const normalized = dateId === tomorrowStr ? tomorrowStr : todayStr;
+      const pool = normalized === tomorrowStr ? tomorrowSlots : todaySlots;
+      if (Array.isArray(pool) && pool.length > 0) {
+        return { dateId: normalized, slots: pool };
+      }
+    }
+    return { dateId: todayStr, slots: [] };
+  }, [scheduledDate, todayStr, tomorrowStr, todaySlots, tomorrowSlots]);
 
   const syncScheduled = useCallback((nextDate, nextHM) => {
-    let effectiveDate = nextDate;
-    if (effectiveDate && effectiveDate !== todayStr) effectiveDate = todayStr;
-    const nowHM = currentHM;
-    let adjustedHM = nextHM ? clampHM(nextHM) : findNextSlot(nowHM);
-    if (!adjustedHM || adjustedHM <= nowHM) {
-      adjustedHM = findNextSlot(nowHM);
+    const dateId = nextDate === tomorrowStr ? tomorrowStr : todayStr;
+    const available = dateId === tomorrowStr ? tomorrowSlots : todaySlots;
+    const referenceHM = dateId === tomorrowStr ? MIN_HM : currentHM;
+    let adjustedHM = nextHM ? clampHM(nextHM, available) : findNextSlot(referenceHM, available);
+    if (dateId === todayStr && adjustedHM && adjustedHM <= currentHM) {
+      adjustedHM = findNextSlot(currentHM, available);
     }
     if (!adjustedHM) {
-      setScheduledDate(todayStr);
+      setScheduledDate(dateId);
       setScheduledHM("");
       setScheduledTime("");
       setScheduleEnabled(false);
       return;
     }
-    setScheduledDate(effectiveDate);
+    setScheduledDate(dateId);
     setScheduledHM(adjustedHM);
-    if (effectiveDate && adjustedHM) {
-      setScheduledTime(`${effectiveDate}T${adjustedHM}`);
-    } else {
-      setScheduledTime("");
-    }
-  }, [todayStr, currentHM, clampHM, findNextSlot, setScheduledDate, setScheduledHM, setScheduledTime, setScheduleEnabled]);
+    setScheduledTime(`${dateId}T${adjustedHM}`);
+  }, [todayStr, tomorrowStr, currentHM, clampHM, findNextSlot, todaySlots, tomorrowSlots, setScheduledDate, setScheduledHM, setScheduledTime, setScheduleEnabled]);
 
   const [sectionWindows, setSectionWindows] = useState({}); // name -> { start, end }
   useEffect(() => {
@@ -169,16 +200,17 @@ const Cart = ({
   const handleToggleSchedule = (e) => {
     const enabled = e.target.checked;
     if (enabled) {
-      if (!availableSlots.length) {
+      const { dateId, slots: defaultSlots } = pickFirstAvailableDate();
+      if (!defaultSlots.length) {
         setScheduleEnabled(false);
         setScheduledHM("");
         setScheduledDate(todayStr);
         setScheduledTime("");
         return;
       }
-      const defaultHM = availableSlots[0];
+      const defaultHM = defaultSlots[0];
       setScheduleEnabled(true);
-      syncScheduled(todayStr, defaultHM || MIN_HM);
+      syncScheduled(dateId, defaultHM || MIN_HM);
     } else {
       setScheduleEnabled(false);
       setScheduledHM("");
@@ -189,17 +221,21 @@ const Cart = ({
 
   useEffect(() => {
     if (!scheduleEnabled) return;
-    if (!availableSlots.length) {
+    if (!slotsForDate.length) {
       setScheduleEnabled(false);
       setScheduledHM("");
       setScheduledDate(todayStr);
       setScheduledTime("");
       return;
     }
-    if (!scheduledHM || scheduledHM <= currentHM || !availableSlots.includes(scheduledHM)) {
-      syncScheduled(todayStr, availableSlots[0]);
+    if (scheduledDate === todayStr && (!scheduledHM || scheduledHM <= currentHM)) {
+      syncScheduled(todayStr, slotsForDate[0]);
+      return;
     }
-  }, [scheduleEnabled, availableSlots, scheduledHM, currentHM, todayStr, syncScheduled, setScheduledTime]);
+    if (!scheduledHM || !slotsForDate.includes(scheduledHM)) {
+      syncScheduled(scheduledDate, slotsForDate[0]);
+    }
+  }, [scheduleEnabled, slotsForDate, scheduledHM, currentHM, todayStr, scheduledDate, syncScheduled, setScheduledTime]);
   const inWindow = (secName, hm) => {
     const w = sectionWindows[secName];
     if (!w || !w.start || !w.end) return true;
@@ -376,33 +412,36 @@ const Cart = ({
             checked={scheduleEnabled}
             onChange={handleToggleSchedule}
           />
-          <span>Schedule this order for later today</span>
+          <span>Schedule this order</span>
         </label>
         {scheduleEnabled ? (
           <>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8 }}>
-              <input
-                type="text"
-                value={todayDisplay}
-                readOnly
-                aria-label="Scheduled date"
-                style={{ flex: 1, background: '#f8f9fa', border: '1px solid #ddd', padding: '8px 10px', borderRadius: 6 }}
-              />
               <select
-                value={scheduledHM || availableSlots[0] || ""}
+                value={scheduledDate}
+                onChange={(e) => syncScheduled(e.target.value, MIN_HM)}
+                style={{ flex: 1, background: '#f8f9fa', border: '1px solid #ddd', padding: '8px 10px', borderRadius: 6 }}
+              >
+                <option value={todayStr}>Today ({todayDisplay})</option>
+                <option value={tomorrowStr}>Tomorrow ({tomorrowDisplay})</option>
+              </select>
+              <select
+                value={slotsForDate.length ? (scheduledHM || slotsForDate[0]) : ""}
                 onChange={(e) => syncScheduled(scheduledDate, e.target.value)}
                 style={{ width: 160 }}
-                disabled={!availableSlots.length}
+                disabled={!slotsForDate.length}
               >
-                {availableSlots.map((t) => (
+                {slotsForDate.map((t) => (
                   <option key={t} value={t}>{t}</option>
                 ))}
               </select>
             </div>
             <small style={{ display: 'block', marginTop: 6, color: '#7f8c8d' }}>
-              {availableSlots.length
-                ? ''
-                : 'No future slots available today. Please place an immediate order.'}
+              {slotsForDate.length
+                ? `Select a ${scheduledDate === todayStr ? 'later today' : 'tomorrow'} slot between ${MIN_HM}-${MAX_HM}.`
+                : scheduledDate === todayStr
+                  ? 'No future slots available today. Switch to tomorrow to pre-order.'
+                  : 'No slots available tomorrow.'}
             </small>
           </>
         ) : (
