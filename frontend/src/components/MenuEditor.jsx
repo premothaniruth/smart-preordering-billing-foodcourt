@@ -63,6 +63,12 @@ const MenuEditor = ({ token, menu, onUpdate, targetItemId }) => {
   // Generic handler to update item fields (number/boolean coercion included)
   const handleChange = (index, field, value) => {
     const next = [...items];
+    if (field === "calories") {
+      const trimmed = typeof value === 'string' ? value.trim() : String(value || '').trim();
+      next[index] = { ...next[index], [field]: trimmed || null };
+      setItems(next);
+      return;
+    }
     if (field === "price" || field === "prepTime" || field === "inventory") value = Number(value) || 0;
     if (field === "available" || field === "isRecommended" || field === "isHotSeller" || field === "isVeg") value = Boolean(value);
     if (field === "inventory") {
@@ -82,15 +88,16 @@ const MenuEditor = ({ token, menu, onUpdate, targetItemId }) => {
   // Add a new blank item to the top of the list
   const handleAdd = () => {
     setItems([{ 
-      id: Date.now(), 
-      name: "", 
-      price: 0, 
-      available: true, 
-      image: "", 
-      isRecommended: false, 
+      id: Date.now(),
+      name: "",
+      price: 0,
+      available: true,
+      image: "",
+      isRecommended: false,
       isHotSeller: false,
       isVeg: true,
       prepTime: 10,
+      calories: null,
       inventory: 0,
       hasOptions: false,
       options: [],
@@ -273,10 +280,19 @@ const MenuEditor = ({ token, menu, onUpdate, targetItemId }) => {
               />
             </div>
             <div>
+              <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>Calories / Energy Info</div>
+              <input
+                placeholder="Calories (e.g., ~250-300 kcal)"
+                type="text"
+                value={it.calories ?? ''}
+                onChange={(e) => handleChange(idx, 'calories', e.target.value)}
+              />
+            </div>
+            <div>
               <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>Inventory Count</div>
               <input 
                 placeholder="Inventory Count"
-                type="number"
+                type="number" 
                 value={it.inventory || 0}
                 onChange={(e) => handleChange(idx, "inventory", e.target.value)}
               />

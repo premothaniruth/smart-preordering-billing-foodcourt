@@ -5,6 +5,41 @@ import { employeeProfile, employeeProfileRequestOtp, employeeProfileUpdate, wall
 const MIN_TOPUP = 100;
 const MAX_TOPUP = 5000;
 
+const TAB_PLACEHOLDERS = {
+  friendCircle: {
+    title: 'Friend Circle',
+    description: 'Invite and manage your cafeteria friends to plan group orders and share recommendations.',
+  },
+  nutrition: {
+    title: 'Nutrition Plan',
+    description: 'Track calories, macros, and get tailored meal plans based on your dietary preferences.',
+  },
+  security: {
+    title: 'Security',
+    description: 'Manage trusted devices, activity logs, and additional authentication options for your account.',
+  },
+  coupons: {
+    title: 'Create Coupons',
+    description: 'Design personalized coupon codes and share them with your team for exclusive cafeteria perks.',
+  },
+  bookTable: {
+    title: 'Book a Table',
+    description: 'Reserve seats in advance for your group at participating cafeteria partners.',
+  },
+  concern: {
+    title: 'Raise Concern',
+    description: 'Submit feedback or report issues directly to cafeteria support for quick assistance.',
+  },
+  recipe: {
+    title: 'Special Recipe',
+    description: 'Discover curated chef specials and submit your own creations for the weekly showcase.',
+  },
+  theme: {
+    title: 'Theme Options',
+    description: 'Personalize your dashboard with color themes, accessibility presets, and layout choices.',
+  }
+};
+
 const EmployeeProfile = ({ token, wallet = { balance: 0, transactions: [] }, onWalletChange = () => {}, onRequestWalletRefresh = () => {}, pointsRefreshNonce = 0 }) => {
   const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState(null);
@@ -210,11 +245,25 @@ const EmployeeProfile = ({ token, wallet = { balance: 0, transactions: [] }, onW
       <h2>My Profile</h2>
       {!profile && loading && <div>Loading...</div>}
       {profile && (
-        <div className="card" style={{ padding: 16 }}>
-          <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+        <div className="card" style={{ display: 'flex', padding: 0, minHeight: 420 }}>
+          <div
+            style={{
+              width: 220,
+              borderRight: '1px solid #eef2f6',
+              background: '#f9fbfd',
+              padding: '22px 18px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 12
+            }}
+          >
+            <div style={{ fontSize: 12, color: '#7f8c8d', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+              Manage Profile
+            </div>
             <button
               type="button"
               className={activeTab === 'account' ? 'primary-button' : 'secondary-button'}
+              style={{ width: '100%', textAlign: 'left' }}
               onClick={() => setActiveTab('account')}
             >
               Manage Account
@@ -222,19 +271,86 @@ const EmployeeProfile = ({ token, wallet = { balance: 0, transactions: [] }, onW
             <button
               type="button"
               className={activeTab === 'wallet' ? 'primary-button' : 'secondary-button'}
+              style={{ width: '100%', textAlign: 'left' }}
               onClick={() => setActiveTab('wallet')}
             >
-              Wallet
+              Infy Wallet
             </button>
             <button
               type="button"
               className={activeTab === 'points' ? 'primary-button' : 'secondary-button'}
+              style={{ width: '100%', textAlign: 'left' }}
               onClick={() => setActiveTab('points')}
             >
-              Points
+              Infy streak Points
+            </button>
+            <button
+              type="button"
+              className={activeTab === 'friendCircle' ? 'primary-button' : 'secondary-button'}
+              style={{ width: '100%', textAlign: 'left' }}
+              onClick={() => setActiveTab('friendCircle')}
+            >
+              Friend Circle
+            </button>
+            <button
+              type="button"
+              className={activeTab === 'nutrition' ? 'primary-button' : 'secondary-button'}
+              style={{ width: '100%', textAlign: 'left' }}
+              onClick={() => setActiveTab('nutrition')}
+            >
+              Nutrition Plan
+            </button>
+            <button
+              type="button"
+              className={activeTab === 'security' ? 'primary-button' : 'secondary-button'}
+              style={{ width: '100%', textAlign: 'left' }}
+              onClick={() => setActiveTab('security')}
+            >
+              Security
+            </button>
+            <button
+              type="button"
+              className={activeTab === 'coupons' ? 'primary-button' : 'secondary-button'}
+              style={{ width: '100%', textAlign: 'left' }}
+              onClick={() => setActiveTab('coupons')}
+            >
+              Create Coupons
+            </button>
+            <button
+              type="button"
+              className={activeTab === 'bookTable' ? 'primary-button' : 'secondary-button'}
+              style={{ width: '100%', textAlign: 'left' }}
+              onClick={() => setActiveTab('bookTable')}
+            >
+              Book a Table
+            </button>
+            <button
+              type="button"
+              className={activeTab === 'concern' ? 'primary-button' : 'secondary-button'}
+              style={{ width: '100%', textAlign: 'left' }}
+              onClick={() => setActiveTab('concern')}
+            >
+              Raise Concern
+            </button>
+            <button
+              type="button"
+              className={activeTab === 'recipe' ? 'primary-button' : 'secondary-button'}
+              style={{ width: '100%', textAlign: 'left' }}
+              onClick={() => setActiveTab('recipe')}
+            >
+              Special Recipe
+            </button>
+            <button
+              type="button"
+              className={activeTab === 'theme' ? 'primary-button' : 'secondary-button'}
+              style={{ width: '100%', textAlign: 'left' }}
+              onClick={() => setActiveTab('theme')}
+            >
+              Theme Options
             </button>
           </div>
 
+          <div style={{ flex: 1, padding: '24px 28px' }}>
           {activeTab === 'account' && (
           <div>
             <div className="employee-profile-header">
@@ -616,6 +732,16 @@ const EmployeeProfile = ({ token, wallet = { balance: 0, transactions: [] }, onW
               </div>
             </div>
           )}
+          {TAB_PLACEHOLDERS[activeTab] && (
+            <div style={{ display: 'grid', gap: 16 }}>
+              <div className="card" style={{ padding: 20, background: '#f9fbfd', border: '1px dashed #cbd4de' }}>
+                <h3 style={{ margin: '0 0 8px' }}>{TAB_PLACEHOLDERS[activeTab].title}</h3>
+                <p style={{ margin: 0, color: '#5f6c7b', lineHeight: 1.6 }}>{TAB_PLACEHOLDERS[activeTab].description}</p>
+                <div style={{ marginTop: 16, fontSize: 12, color: '#95a5a6' }}>Detailed tools for this section will appear here soon.</div>
+              </div>
+            </div>
+          )}
+          </div>
         </div>
       )}
     </div>

@@ -17,7 +17,8 @@
               "inventory": 96,
               "section": "Breakfast",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": "222 kcal"
             },
             {
               "id": 2,
@@ -29,7 +30,8 @@
               "inventory": 88,
               "section": "Breakfast",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": "130-140 kcal"
             },
             {
               "id": 3,
@@ -41,7 +43,8 @@
               "inventory": 89,
               "section": "Breakfast",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": "427 kcal"
             },
             {
               "id": 4,

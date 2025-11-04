@@ -419,8 +419,14 @@ ul {
 .menu-item-price {
   color: #27ae60;
   font-size: 16px;
-  font-weight: bold;
+  font-weight: 600;
   margin-bottom: 8px;
+}
+
+.menu-item-calories {
+  color: #8e44ad;
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .menu-item-badge {

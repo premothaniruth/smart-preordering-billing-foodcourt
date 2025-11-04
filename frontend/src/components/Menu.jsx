@@ -812,11 +812,16 @@ const Menu = ({
             <div className="menu-item-price">
               {getItemPrice(item)}
             </div>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 4 }}>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginBottom: 4 }}>
               {item.isVeg ? (
                 <span className="menu-item-badge" style={{ color: "#27ae60", border: "1px solid #27ae60" }}>🟢 VEG</span>
               ) : (
                 <span className="menu-item-badge" style={{ color: "#e74c3c", border: "1px solid #e74c3c" }}>🔴 NON-VEG</span>
+              )}
+              {item.calories != null && (
+                <span className="menu-item-calories" title="Approximate calories">
+                  ~ {item.calories}
+                </span>
               )}
             </div>
             <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 8 }}>

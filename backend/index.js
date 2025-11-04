@@ -2097,6 +2097,12 @@ const normalizeMenuShops = (raw) => {
  * @param {any} it
  * @returns {any}
  */
+const normalizeCaloriesValue = (value) => {
+  if (value == null) return null;
+  const str = String(value).trim();
+  return str ? str : null;
+};
+
 const normalizeItem = (it) => {
   const options = Array.isArray(it.hasOptions) ? it.hasOptions : (Array.isArray(it.options) ? it.options : []);
   const hasOptionsFlag = Array.isArray(options) && options.length > 0;
@@ -2104,7 +2110,8 @@ const normalizeItem = (it) => {
     ...it,
     options,
     hasOptions: hasOptionsFlag,
-    inventory: (it.inventory == null || isNaN(Number(it.inventory))) ? 100 : Number(it.inventory)
+    inventory: (it.inventory == null || isNaN(Number(it.inventory))) ? 100 : Number(it.inventory),
+    calories: normalizeCaloriesValue(it?.calories)
   };
 };
 
@@ -4829,7 +4836,13 @@ app.put("/menu", authenticateVendor, (req, res) => {
       if (shopIndex === -1) {
         return res.status(404).json({ message: "Vendor shop menu not found" });
       }
-      raw[shopIndex].items = updatedItems;
+      raw[shopIndex].items = updatedItems.map((it) => {
+        const record = { ...it };
+        if (Object.prototype.hasOwnProperty.call(record, 'calories')) {
+          record.calories = normalizeCaloriesValue(record.calories);
+        }
+        return record;
+      });
       saveMenu(raw);
       return res.json({ status: "success", message: "Menu updated successfully" });
     }
@@ -4850,6 +4863,9 @@ app.put("/menu", authenticateVendor, (req, res) => {
       const record = { ...it };
       if (Array.isArray(it.options)) {
         record.hasOptions = it.options;
+      }
+      if (Object.prototype.hasOwnProperty.call(record, 'calories')) {
+        record.calories = normalizeCaloriesValue(record.calories);
       }
       bySection.get(sec).push(record);
     }
