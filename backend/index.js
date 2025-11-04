@@ -5068,6 +5068,9 @@ app.get("/analytics/inventory", authenticateVendor, asyncHandler(async (req, res
 app.get("/analytics/export/current", authenticateVendor, asyncHandler(async (req, res) => {
   assertAnalyticsAccess(req);
   const format = String(req.query.format || "json").toLowerCase();
+  if (req.vendor.shopId == null) {
+    return res.status(404).json({ message: "Vendor shop not found" });
+  }
   const { contentType, payload } = await realtimeAnalyticsService.exportCurrent(req.vendor.shopId, format);
   res.setHeader("Content-Type", contentType);
   res.setHeader("Content-Disposition", `attachment; filename=analytics-${req.vendor.shopId}.${format === "csv" ? "csv" : "json"}`);
