@@ -593,13 +593,6 @@ const recordWalletTransaction = (employees, employee, tx = {}) => {
   return entry;
 };
 
-const {
-  processOrderPoints,
-  getEmployeePointsSummary,
-  getPointsAdminReport,
-  ensurePointsDataFiles,
-} = require("./lib/pointsService");
-
 const validatePin = (pin) => /^\d{4}$/.test(String(pin || ''));
 
 const DEFAULT_EMPLOYEE_ROLE_LABEL = 'Employee';
