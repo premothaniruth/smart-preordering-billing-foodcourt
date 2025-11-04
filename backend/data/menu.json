@@ -50,7 +50,7 @@
               "isVeg": true,
               "image": "/images/aloo-puri.jpg",
               "prepTime": 10,
-              "inventory": 89,
+              "inventory": 3,
               "section": "Breakfast",
               "options": [],
               "hasOptions": []

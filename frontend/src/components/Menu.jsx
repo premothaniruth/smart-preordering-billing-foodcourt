@@ -624,6 +624,61 @@ const Menu = ({
     [cartShopMismatch, variantDrafts]
   );
 
+  const canShowInterest = useCallback((item) => {
+    if (!item || readOnly) return false;
+    if (!employeeToken) return false;
+    if (!currentShop || String(item.shopId ?? selectedShop) !== String(selectedShop)) return false;
+    const { lowStock, soldOut } = isLowStockOrSoldOut(item);
+    return lowStock || soldOut;
+  }, [employeeToken, currentShop, selectedShop, isLowStockOrSoldOut, readOnly]);
+
+  const handleExpressInterest = useCallback(async (item) => {
+    if (!item || interestPending) return;
+    if (!employeeToken) {
+      toast.info('Please sign in as an employee to express interest.');
+      return;
+    }
+
+    const key = interestKey(item);
+    const now = Date.now();
+    const cooldownUntil = interestCooldownsRef.current.get(key) || 0;
+    if (now < cooldownUntil) {
+      const delta = Math.ceil((cooldownUntil - now) / 1000);
+      toast.info(`Please wait ${delta}s before expressing interest again.`);
+      return;
+    }
+
+    try {
+      setInterestPending(true);
+      const response = await expressInterest({ token: employeeToken, shopId: selectedShop, itemId: item.id });
+      const status = response?.status;
+      const summary = response?.summary;
+      const cooldownMs = Number(response?.cooldownMs || 0);
+      if (cooldownMs > 0) {
+        interestCooldownsRef.current.set(key, now + cooldownMs);
+      }
+
+      if (status === 'duplicate') {
+        toast.info('Interest already recorded recently.');
+      } else {
+        toast.success('Interest recorded!');
+      }
+
+      if (summary) {
+        const interestedCount = summary.uniqueEmployees ?? summary.totalClicks ?? 0;
+        setInterestSummaries((prev) => ({ ...prev, [key]: summary, lastUpdated: Date.now() }));
+        if (interestedCount > 0) {
+          toast.info(`${interestedCount} employee${interestedCount === 1 ? '' : 's'} interested in ${summary.metadata?.itemName || item.name}`);
+        }
+      }
+    } catch (error) {
+      console.error('Express interest failed', error);
+      toast.error('Failed to express interest. Please try again.');
+    } finally {
+      setInterestPending(false);
+    }
+  }, [employeeToken, selectedShop, interestKey, interestPending]);
+
   const renderItem = useCallback(
     (item) => {
       const totalQty = qtyInCart(item);
@@ -1012,61 +1067,6 @@ const Menu = ({
       </div>
     );
   }, [addToCart, cart, cartShopMismatch, computeComboAvailability, currentShop, selectedShop, showInventory]);
-
-  const handleExpressInterest = useCallback(async (item) => {
-    if (!item || interestPending) return;
-    if (!employeeToken) {
-      toast.info('Please sign in as an employee to express interest.');
-      return;
-    }
-
-    const key = interestKey(item);
-    const now = Date.now();
-    const cooldownUntil = interestCooldownsRef.current.get(key) || 0;
-    if (now < cooldownUntil) {
-      const delta = Math.ceil((cooldownUntil - now) / 1000);
-      toast.info(`Please wait ${delta}s before expressing interest again.`);
-      return;
-    }
-
-    try {
-      setInterestPending(true);
-      const response = await expressInterest({ token: employeeToken, shopId: selectedShop, itemId: item.id });
-      const status = response?.status;
-      const summary = response?.summary;
-      const cooldownMs = Number(response?.cooldownMs || 0);
-      if (cooldownMs > 0) {
-        interestCooldownsRef.current.set(key, now + cooldownMs);
-      }
-
-      if (status === 'duplicate') {
-        toast.info('Interest already recorded recently.');
-      } else {
-        toast.success('Interest recorded!');
-      }
-
-      if (summary) {
-        const interestedCount = summary.uniqueEmployees ?? summary.totalClicks ?? 0;
-        setInterestSummaries((prev) => ({ ...prev, [key]: summary, lastUpdated: Date.now() }));
-        if (interestedCount > 0) {
-          toast.info(`${interestedCount} employee${interestedCount === 1 ? '' : 's'} interested in ${summary.metadata?.itemName || item.name}`);
-        }
-      }
-    } catch (error) {
-      console.error('Express interest failed', error);
-      toast.error('Failed to express interest. Please try again.');
-    } finally {
-      setInterestPending(false);
-    }
-  }, [employeeToken, selectedShop, interestKey, interestPending]);
-
-  const canShowInterest = useCallback((item) => {
-    if (!item || readOnly) return false;
-    if (!employeeToken) return false;
-    if (!currentShop || String(item.shopId ?? selectedShop) !== String(selectedShop)) return false;
-    const { lowStock, soldOut } = isLowStockOrSoldOut(item);
-    return lowStock || soldOut;
-  }, [employeeToken, currentShop, selectedShop, isLowStockOrSoldOut, readOnly]);
 
   return (
     <div>

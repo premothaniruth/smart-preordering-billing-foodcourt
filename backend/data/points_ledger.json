@@ -268,5 +268,20 @@
     "expiresAt": "2026-01-03T17:59:06.049Z",
     "walletTxId": null,
     "createdAt": "2025-11-04T17:59:06.049Z"
+  },
+  {
+    "id": "pts_1762281639989_ynr2",
+    "employeeId": "1",
+    "type": "earn",
+    "subType": "order",
+    "points": 15,
+    "rupees": null,
+    "orderId": 39,
+    "itemCount": 86,
+    "streakDate": null,
+    "metadata": null,
+    "expiresAt": "2026-01-03T18:40:39.989Z",
+    "walletTxId": null,
+    "createdAt": "2025-11-04T18:40:39.989Z"
   }
 ]

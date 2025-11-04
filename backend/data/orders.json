@@ -1723,5 +1723,47 @@
       "provider": "razorpay-open",
       "reference": "PG-1762279146047"
     }
+  },
+  {
+    "id": 39,
+    "items": [
+      {
+        "id": 4,
+        "name": "Aloo Puri",
+        "price": 70,
+        "quantity": 86,
+        "option": null,
+        "prepTime": 10
+      }
+    ],
+    "shopId": 1,
+    "user": "+919952911560",
+    "scheduledTime": "2025-11-05T08:00",
+    "status": "pending",
+    "createdAt": "2025-11-04T18:40:39.983Z",
+    "billingId": "00001",
+    "estimatedReadyTime": "2025-11-04T19:16:39.983Z",
+    "prepTime": 36,
+    "baseEstimatedReadyTime": "2025-11-04T19:16:39.983Z",
+    "basePrepTime": 36,
+    "rating": null,
+    "feedback": null,
+    "totalAmount": 6020,
+    "subtotalBeforeDiscount": 6020,
+    "discountTotal": 0,
+    "offerSummary": {
+      "subtotalBeforeDiscount": 6020,
+      "discountTotal": 0,
+      "totalPayable": 6020,
+      "appliedOffers": [],
+      "extraItems": []
+    },
+    "notes": null,
+    "payment": {
+      "method": "gateway",
+      "amount": 6020,
+      "provider": "razorpay-open",
+      "reference": "PG-1762281639983"
+    }
   }
 ]
