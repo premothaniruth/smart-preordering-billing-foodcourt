@@ -836,7 +836,7 @@ const AdminDashboard = ({ token }) => {
             <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
               <div className="card" style={{ padding: 12, flex: '1 1 180px' }}>
                 <div style={{ fontSize: 12, color: '#666' }}>Threshold</div>
-                <div style={{ fontSize: 20, fontWeight: 700 }}>{interestSummary.threshold ?? thresholdDraft || '--'}</div>
+                <div style={{ fontSize: 20, fontWeight: 700 }}>{(interestSummary.threshold ?? thresholdDraft) || '--'}</div>
               </div>
               <div className="card" style={{ padding: 12, flex: '1 1 180px' }}>
                 <div style={{ fontSize: 12, color: '#666' }}>Unique Employees</div>
