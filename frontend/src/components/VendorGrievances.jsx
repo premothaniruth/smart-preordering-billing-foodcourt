@@ -7,7 +7,7 @@ import { fetchGrievances } from "../api";
  * Vendor view of customer grievances with auto-refresh and resolve action.
  * @param {{ token:string }} props
  */
-const VendorGrievances = ({ token, onClose, isModal }) => {
+const VendorGrievances = ({ token, onClose = null, isModal = false }) => {
   const [grievances, setGrievances] = useState([]);
 
   const loadGrievances = useCallback(() => {
@@ -140,11 +140,6 @@ VendorGrievances.propTypes = {
   token: PropTypes.string.isRequired,
   onClose: PropTypes.func,
   isModal: PropTypes.bool
-};
-
-VendorGrievances.defaultProps = {
-  onClose: null,
-  isModal: false
 };
 
 export default VendorGrievances;

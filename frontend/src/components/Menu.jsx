@@ -44,6 +44,12 @@ const Menu = ({
   const [interestPending, setInterestPending] = useState(false);
   const interestCooldownsRef = useRef(new Map()); // key -> timestamp
 
+  const currentShop = useMemo(() => {
+    if (!menu || !Array.isArray(menu)) return null;
+    if (!selectedShop) return null;
+    return menu.find((shop) => String(shop.shopId) === String(selectedShop)) || null;
+  }, [menu, selectedShop]);
+
   const interestKey = (item) => `${selectedShop}:${item?.id}`;
 
   const isLowStockOrSoldOut = (item) => {
@@ -59,7 +65,7 @@ const Menu = ({
   const canShowInterest = (item) => {
     if (!item || readOnly) return false;
     if (!employeeToken) return false;
-    if (!shop || String(item.shopId ?? selectedShop) !== String(selectedShop)) return false;
+    if (!currentShop || String(item.shopId ?? selectedShop) !== String(selectedShop)) return false;
     const { lowStock, soldOut } = isLowStockOrSoldOut(item);
     return lowStock || soldOut;
   };
@@ -111,7 +117,7 @@ const Menu = ({
     }
   };
 
-  let filteredItems = shop.items;
+  let filteredItems = Array.isArray(currentShop?.items) ? currentShop.items : [];
   if (vegOnly) filteredItems = filteredItems.filter(item => item.isVeg);
   else if (nonVegOnly) filteredItems = filteredItems.filter(item => !item.isVeg);
 
