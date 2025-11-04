@@ -1,9 +1,91 @@
-  import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toggleFavorite, fetchActiveOffers, fetchCombos, fetchMenuSections, fetchSectionsMeta, expressInterest } from "../api";
 import { API_URL } from "../config";
 import { toast } from "react-toastify";
 
 const toHM = (date = new Date()) => `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+
+const hmToMinutes = (hm) => {
+  if (!hm || typeof hm !== "string") return null;
+  const [hours, minutes] = hm.split(":").map(Number);
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) return null;
+  return hours * 60 + minutes;
+};
+
+const compareHM = (a, b) => {
+  const aMinutes = hmToMinutes(a);
+  const bMinutes = hmToMinutes(b);
+  if (aMinutes == null && bMinutes == null) return 0;
+  if (aMinutes == null) return -1;
+  if (bMinutes == null) return 1;
+  return aMinutes - bMinutes;
+};
+
+const windowSpansMidnight = (win) => {
+  if (!win || !win.start || !win.end) return false;
+  return compareHM(win.start, win.end) > 0;
+};
+
+const isHMWithinWindow = (win, hm) => {
+  if (!win || !win.start || !win.end || !hm) return true;
+  if (win.start === win.end) return true;
+  if (!windowSpansMidnight(win)) {
+    return compareHM(hm, win.start) >= 0 && compareHM(hm, win.end) <= 0;
+  }
+  return compareHM(hm, win.start) >= 0 || compareHM(hm, win.end) <= 0;
+};
+
+const isBeforeWindow = (win, hm) => {
+  if (!win || !win.start || !win.end || !hm) return false;
+  if (win.start === win.end) return false;
+  if (!windowSpansMidnight(win)) {
+    return compareHM(hm, win.start) < 0;
+  }
+  return compareHM(hm, win.start) < 0 && compareHM(hm, win.end) > 0;
+};
+
+const isAfterWindow = (win, hm) => {
+  if (!win || !win.start || !win.end || !hm) return false;
+  if (win.start === win.end) return false;
+  if (!windowSpansMidnight(win)) {
+    return compareHM(hm, win.end) > 0;
+  }
+  return compareHM(hm, win.end) > 0 && compareHM(hm, win.start) < 0;
+};
+
+const getDateId = (date) => {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return null;
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+};
+
+const diffDateIds = (a, b) => {
+  if (!a || !b) return null;
+  const parse = (id) => {
+    const [y, m, d] = id.split("-").map(Number);
+    if ([y, m, d].some((n) => Number.isNaN(n))) return null;
+    return new Date(y, m - 1, d, 0, 0, 0, 0);
+  };
+  const dateA = parse(a);
+  const dateB = parse(b);
+  if (!dateA || !dateB) return null;
+  const diffMs = dateA.getTime() - dateB.getTime();
+  return Math.round(diffMs / (24 * 60 * 60 * 1000));
+};
+
+const PREORDER_WINDOW = { start: "08:00", end: "22:30" };
+const PREORDER_SECTION_ALIASES = ["pre-order", "pre order", "preorder", "pre-order items", "pre order items"];
+const isPreOrderSectionName = (sectionName) => {
+  if (!sectionName) return false;
+  const normalized = String(sectionName).trim().toLowerCase();
+  return PREORDER_SECTION_ALIASES.includes(normalized);
+};
+
+const getItemSectionName = (item = {}) =>
+  item.sectionName || item.section || item.categoryName || item.category || item.sectionLabel || item.sectionTitle || "";
+
 const FALLBACK_IMAGE = "https://dummyimage.com/200x150/95a5a6/ffffff&text=No+Image";
 
 const Menu = ({
@@ -46,6 +128,52 @@ const Menu = ({
   const interestCooldownsRef = useRef(new Map()); // key -> timestamp
   const shopMenuRef = useRef(null);
   const [shopMenuOpen, setShopMenuOpen] = useState(false);
+
+  const todayDateId = useMemo(() => getDateId(new Date()), [currentHm]);
+
+  const scheduleInfo = useMemo(() => {
+    if (!scheduledTime) {
+      return {
+        enabled: false,
+        valid: false,
+        hm: null,
+        dateId: null,
+        dayDiff: null,
+        raw: "",
+        isToday: false,
+        isTomorrow: false
+      };
+    }
+
+    const parsed = new Date(scheduledTime);
+    if (Number.isNaN(parsed.getTime())) {
+      return {
+        enabled: true,
+        valid: false,
+        hm: null,
+        dateId: null,
+        dayDiff: null,
+        raw: scheduledTime,
+        isToday: false,
+        isTomorrow: false
+      };
+    }
+
+    const dateId = getDateId(parsed);
+    const hm = toHM(parsed);
+    const dayDiff = dateId && todayDateId ? diffDateIds(dateId, todayDateId) : null;
+
+    return {
+      enabled: true,
+      valid: true,
+      hm,
+      dateId,
+      dayDiff,
+      raw: scheduledTime,
+      isToday: dayDiff === 0,
+      isTomorrow: dayDiff === 1
+    };
+  }, [scheduledTime, todayDateId]);
 
   const getItemImageSrc = useCallback((item) => {
     const raw = item?.image;
@@ -208,39 +336,157 @@ const Menu = ({
     });
   }, [offers, activeSection]);
 
-  const computeItemAvailability = useCallback((item) => {
-    if (!item) {
-      return { allowAction: false, allowedNow: false, sectionWindow: null, itemWindow: null, nextDayOnly: false };
+  const computeAvailabilityState = useCallback((sectionName) => {
+    const sectionWindow = sectionWindows[sectionName] || null;
+    const nowHm = currentHm;
+    const scheduleHm = scheduleInfo.valid ? scheduleInfo.hm : null;
+
+    const baseWindow = sectionWindow || null;
+    const activeWindow = baseWindow;
+
+    const preorderWindow = PREORDER_WINDOW;
+    const scheduleWithinPreorder = scheduleInfo.enabled
+      ? scheduleInfo.valid && isHMWithinWindow(preorderWindow, scheduleInfo.hm) && (scheduleInfo.isToday || scheduleInfo.isTomorrow)
+      : false;
+
+    const scheduleWithinSection = scheduleInfo.enabled
+      ? scheduleInfo.valid && isHMWithinWindow(activeWindow, scheduleInfo.hm)
+      : false;
+
+    const nowWithinSection = isHMWithinWindow(activeWindow, nowHm);
+    const nowBeforeSection = isBeforeWindow(activeWindow, nowHm);
+    const nowAfterSection = isAfterWindow(activeWindow, nowHm);
+
+    const isPreOrderSection = isPreOrderSectionName(sectionName);
+    const schedulePermissible = scheduleInfo.enabled
+      ? (scheduleInfo.isToday || scheduleInfo.isTomorrow) && scheduleInfo.valid && scheduleWithinPreorder
+      : false;
+
+    const allowForSchedule = scheduleInfo.enabled && schedulePermissible && scheduleWithinSection;
+
+    let allowAction = false;
+    let lockedToNextDay = false;
+    let freezeToNext = false;
+    let chosenHm = scheduleInfo.enabled ? scheduleHm : nowHm;
+
+    if (!activeWindow) {
+      allowAction = true;
+    } else if (scheduleInfo.enabled) {
+      if (allowForSchedule) {
+        allowAction = true;
+      } else if (schedulePermissible) {
+        allowAction = false;
+        freezeToNext = true;
+        lockedToNextDay = scheduleInfo.isToday;
+      } else {
+        allowAction = false;
+      }
+    } else if (nowWithinSection) {
+      allowAction = true;
+    } else if (nowAfterSection) {
+      allowAction = false;
+      freezeToNext = true;
+      lockedToNextDay = true;
+    } else if (nowBeforeSection) {
+      allowAction = false;
     }
 
-    const now = new Date();
-    const currentTime = toHM(now);
-    const sectionWindow = sectionWindows[item.sectionName];
-
-    // Items default to the full section window unless they define narrower availability windows
-    const hasItemWindows = Array.isArray(item.availableTimeWindows) && item.availableTimeWindows.length > 0;
-    const itemWindow = hasItemWindows
-      ? item.availableTimeWindows.find((win) => win.start <= currentTime && win.end >= currentTime) || null
-      : sectionWindow || null;
-
-    // Allow action when either window exists (section or item-level)
-    const allowAction = Boolean(sectionWindow || itemWindow);
-
-    const withinWindow = (win) => {
-      if (!win || !win.start || !win.end) return true;
-      if (win.start === win.end) return true;
-      if (win.start < win.end) {
-        return currentTime >= win.start && currentTime <= win.end;
+    if (!scheduleInfo.enabled && isPreOrderSection) {
+      if (nowWithinSection && isHMWithinWindow(preorderWindow, nowHm)) {
+        allowAction = true;
+      } else {
+        allowAction = false;
+        if (nowAfterSection) {
+          lockedToNextDay = true;
+          freezeToNext = true;
+        }
       }
-      // Handles ranges that span past midnight
-      return currentTime >= win.start || currentTime <= win.end;
+    }
+
+    const reason = (() => {
+      if (allowAction) return null;
+      if (freezeToNext) return "next-window";
+      if (scheduleInfo.enabled) {
+        if (!scheduleInfo.valid) return "invalid-schedule";
+        if (!scheduleWithinPreorder) return "preorder-window";
+        if (!scheduleWithinSection) return "section-window";
+      } else {
+        if (nowBeforeSection) return "pre-window";
+        if (nowAfterSection) return "post-window";
+      }
+      return "unknown";
+    })();
+
+    return {
+      allowAction,
+      sectionWindow: activeWindow,
+      nowWithinSection,
+      freezeToNext,
+      lockedToNextDay,
+      reason,
+      chosenHm,
+      schedule: scheduleInfo,
     };
+  }, [currentHm, scheduleInfo, sectionWindows]);
 
-    const allowedNow = allowAction && withinWindow(sectionWindow) && withinWindow(itemWindow);
-    const nextDayOnly = Boolean(item.nextDayOnly) && !allowedNow;
+  const computeItemAvailability = useCallback((item) => {
+    if (!item) {
+      return {
+        allowAction: false,
+        allowedNow: false,
+        sectionWindow: null,
+        nextDayOnly: false,
+        message: "Unavailable",
+        reason: "unknown",
+        freezeToNext: false,
+        lockedToNextDay: false,
+      };
+    }
 
-    return { allowAction, allowedNow, sectionWindow, itemWindow, nextDayOnly };
-  }, [sectionWindows]);
+    const sectionName = getItemSectionName(item);
+    const sectionState = computeAvailabilityState(sectionName);
+
+    const allowAction = sectionState.allowAction;
+    const allowedNow = allowAction && !scheduleInfo.enabled;
+    const nextDayOnly = sectionState.lockedToNextDay;
+
+    let message = null;
+    if (!allowAction) {
+      switch (sectionState.reason) {
+        case "invalid-schedule":
+          message = "Invalid schedule time";
+          break;
+        case "preorder-window":
+          message = "Outside preorder window";
+          break;
+        case "section-window":
+          message = "Outside section window";
+          break;
+        case "pre-window":
+          message = "Opens later";
+          break;
+        case "post-window":
+          message = "Closed for today";
+          break;
+        case "next-window":
+          message = "Next window";
+          break;
+        default:
+          message = "Unavailable";
+      }
+    }
+
+    return {
+      allowAction,
+      allowedNow,
+      sectionWindow: sectionState.sectionWindow,
+      nextDayOnly,
+      message,
+      reason: sectionState.reason,
+      freezeToNext: sectionState.freezeToNext,
+      lockedToNextDay: sectionState.lockedToNextDay,
+    };
+  }, [computeAvailabilityState, scheduleInfo.enabled]);
 
   const filteredItems = useMemo(() => {
     const items = Array.isArray(currentShop?.items) ? currentShop.items : [];
