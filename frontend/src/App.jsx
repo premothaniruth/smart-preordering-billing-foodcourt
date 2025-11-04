@@ -1216,6 +1216,7 @@ function App() {
                         cartShopMismatch={cartShopMismatch}
                         onFavoriteToggle={loadFavorites}
                         userId={userId}
+                        employeeToken={employeeToken}
                         scheduledTime={scheduledTime}
                         activeSection={activeMenuSection}
                         onActiveSectionChange={setActiveMenuSection}

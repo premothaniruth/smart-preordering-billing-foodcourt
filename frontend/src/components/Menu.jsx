@@ -130,6 +130,7 @@ const Menu = ({
   const [currentHm, setCurrentHm] = useState(toHM());
   const [interestSummaries, setInterestSummaries] = useState({});
   const [interestPending, setInterestPending] = useState(false);
+  const [expressedInterest, setExpressedInterest] = useState({});
   const interestCooldownsRef = useRef(new Map()); // key -> timestamp
   const shopMenuRef = useRef(null);
   const [shopMenuOpen, setShopMenuOpen] = useState(false);
@@ -643,8 +644,7 @@ const Menu = ({
     const now = Date.now();
     const cooldownUntil = interestCooldownsRef.current.get(key) || 0;
     if (now < cooldownUntil) {
-      const delta = Math.ceil((cooldownUntil - now) / 1000);
-      toast.info(`Please wait ${delta}s before expressing interest again.`);
+      toast.info('Your interest is already submitted to the vendor.');
       return;
     }
 
@@ -659,10 +659,12 @@ const Menu = ({
       }
 
       if (status === 'duplicate') {
-        toast.info('Interest already recorded recently.');
+        toast.info('Your interest is already submitted to the vendor.');
       } else {
         toast.success('Interest recorded!');
       }
+
+      setExpressedInterest((prev) => ({ ...prev, [key]: true }));
 
       if (summary) {
         const interestedCount = summary.uniqueEmployees ?? summary.totalClicks ?? 0;
@@ -696,6 +698,7 @@ const Menu = ({
       const interestKeyValue = interestKey(item);
       const interestSummary = interestKeyValue ? interestSummaries[interestKeyValue] : null;
       const interestCount = Math.max(0, Number(interestSummary?.uniqueEmployees ?? 0));
+      const hasExpressedInterest = Boolean(interestKeyValue && expressedInterest[interestKeyValue]);
       return (
         <div key={item.id} className="menu-item-card" style={totalQty > 0 ? { border: '2px solid #111', boxShadow: '0 0 0 3px rgba(0,0,0,0.05)' } : {}}>
           <div style={{ position: "relative" }}>
@@ -715,6 +718,64 @@ const Menu = ({
                 style={{ background: 'transparent', border: 'none', padding: 4 }}
               >
                 {isFavorite(item.id) ? "❤️" : "🤍"}
+              </button>
+            )}
+            {showInterest && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleExpressInterest(item);
+                }}
+                disabled={interestPending}
+                style={{
+                  position: 'absolute',
+                  top: hideFavorites ? 8 : 48,
+                  right: 8,
+                  width: 36,
+                  height: 36,
+                  borderRadius: '50%',
+                  border: hasExpressedInterest ? '1px solid #d35400' : '1px solid rgba(0,0,0,0.2)',
+                  background: hasExpressedInterest ? '#f39c12' : '#fff',
+                  color: hasExpressedInterest ? '#fff' : '#f39c12',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 18,
+                  cursor: interestPending ? 'not-allowed' : 'pointer',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                  opacity: interestPending ? 0.75 : 1,
+                  transition: 'transform 0.15s ease, background 0.15s ease, color 0.15s ease',
+                }}
+                title={hasExpressedInterest ? 'Interest recorded' : 'Express interest'}
+              >
+                <span style={{ position: 'relative', lineHeight: 1 }}>
+                  👍
+                  {interestCount > 0 && (
+                    <span
+                      style={{
+                        position: 'absolute',
+                        top: -6,
+                        right: -10,
+                        background: '#e67e22',
+                        color: '#fff',
+                        minWidth: 18,
+                        height: 18,
+                        borderRadius: 999,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: 10,
+                        fontWeight: 700,
+                        padding: '0 4px',
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.15)',
+                      }}
+                    >
+                      {interestCount}
+                    </span>
+                  )}
+                </span>
               </button>
             )}
             {showNextBadge && (
@@ -848,68 +909,6 @@ const Menu = ({
                     No more items available to order
                   </div>
                 )}
-                {showInterest && (
-                  <div style={{ display: 'flex', justifyContent: 'center', width: '100%', marginTop: 8 }}>
-                    <button
-                      type="button"
-                      onClick={() => handleExpressInterest(item)}
-                      disabled={interestPending}
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 6,
-                        padding: '6px 12px',
-                        borderRadius: 6,
-                        border: '1px solid #3498db',
-                        background: '#f0f8ff',
-                        color: '#2c3e50',
-                        fontSize: 13,
-                        fontWeight: 600,
-                        cursor: interestPending ? 'not-allowed' : 'pointer',
-                        opacity: interestPending ? 0.6 : 1,
-                      }}
-                    >
-                      <span
-                        aria-hidden
-                        style={{
-                          position: 'relative',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: 18,
-                          width: 28,
-                          height: 28,
-                        }}
-                      >
-                        <span>👍</span>
-                        {interestCount > 0 && (
-                          <span
-                            style={{
-                              position: 'absolute',
-                              top: -6,
-                              right: -10,
-                              background: '#3498db',
-                              color: '#fff',
-                              minWidth: 18,
-                              height: 18,
-                              borderRadius: 999,
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              fontSize: 10,
-                              fontWeight: 700,
-                              padding: '0 4px',
-                              boxShadow: '0 1px 2px rgba(0,0,0,0.15)',
-                            }}
-                          >
-                            {interestCount}
-                          </span>
-                        )}
-                      </span>
-                      <span>Interested</span>
-                    </button>
-                  </div>
-                )}
               </div>
             )}
             {(!message && !allowAction && windowLabel && (
@@ -919,7 +918,7 @@ const Menu = ({
         </div>
       );
     },
-    [qtyInCart, qtyNoOption, getItemPrice, handleAddClick, computeItemAvailability, canShowInterest, interestKey, interestSummaries, handleExpressInterest, interestPending]
+    [qtyInCart, qtyNoOption, getItemPrice, handleAddClick, computeItemAvailability, canShowInterest, interestKey, interestSummaries, handleExpressInterest, interestPending, expressedInterest]
   );
 
   const renderComboCard = useCallback((combo) => {
