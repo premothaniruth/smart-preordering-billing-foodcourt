@@ -2,6 +2,8 @@
 import { toggleFavorite, fetchActiveOffers, fetchCombos, fetchMenuSections, fetchSectionsMeta, expressInterest } from "../api";
 import { toast } from "react-toastify";
 
+const toHM = (date = new Date()) => `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+
 const Menu = ({
   menu,
   addToCart,

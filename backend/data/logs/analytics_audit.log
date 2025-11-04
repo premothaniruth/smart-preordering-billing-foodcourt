@@ -15,3 +15,6 @@
 {"timestamp":"2025-11-04T06:44:26.844Z","actorType":"vendor","actorId":4,"shopId":4,"vendorId":4,"action":"vendor.login.success","metadata":{"username":"fastfoods"}}
 {"timestamp":"2025-11-04T06:45:00.552Z","actorType":"vendor","actorId":4,"shopId":4,"vendorId":4,"action":"analytics.headcount.update","metadata":{"headcount":700}}
 {"timestamp":"2025-11-04T06:49:38.726Z","actorType":"vendor","actorId":1,"shopId":1,"vendorId":1,"action":"vendor.login.success","metadata":{"username":"northfoods"}}
+{"timestamp":"2025-11-04T12:52:37.398Z","actorType":"vendor","actorId":2,"shopId":2,"vendorId":2,"action":"vendor.login.success","metadata":{"username":"southfoods"}}
+{"timestamp":"2025-11-04T12:52:37.578Z","actorType":"vendor","actorId":2,"shopId":2,"vendorId":2,"action":"interest.summary.viewed","metadata":{"itemCount":0}}
+{"timestamp":"2025-11-04T12:52:37.633Z","actorType":"vendor","actorId":2,"shopId":2,"vendorId":2,"action":"interest.summary.viewed","metadata":{"itemCount":0}}
