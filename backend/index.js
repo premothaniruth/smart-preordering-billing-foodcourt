@@ -156,19 +156,8 @@ const enrichVendorContext = (decoded) => {
   const vendorCtx = { ...decoded };
   vendorCtx.vendorId = vendorCtx.vendorId ?? vendorCtx.id ?? vendorCtx.vendorID ?? null;
   vendorCtx.shopId = vendorCtx.shopId ?? vendorCtx.shopID ?? vendorCtx.shop ?? null;
-  vendorCtx.role = vendorCtx.role || "vendor";
-  const permissions = new Set(Array.isArray(vendorCtx.permissions) ? vendorCtx.permissions : []);
-  if (vendorCtx.role === "vendor-admin") {
-    permissions.add("analytics:read");
-    permissions.add("analytics:write");
-    permissions.add("procurement:manage");
-  } else if (vendorCtx.role === "vendor-analyst") {
-    permissions.add("analytics:read");
-  } else {
-    permissions.add("analytics:read");
-    permissions.add("analytics:write");
-    permissions.add("procurement:manage");
-  }
+  vendorCtx.role = "vendor-admin";
+  const permissions = new Set(["analytics:read", "analytics:write", "procurement:manage"]);
   vendorCtx.permissions = Array.from(permissions);
   return vendorCtx;
 };

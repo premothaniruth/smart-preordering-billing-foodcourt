@@ -1,1 +1,13 @@
-[]
+[
+  {
+    "vendorId": 1,
+    "shopId": 1,
+    "entries": [
+      {
+        "headcount": 500,
+        "source": "manual",
+        "timestamp": "2025-11-04T05:47:06.796Z"
+      }
+    ]
+  }
+]
