@@ -44,6 +44,7 @@ const PAYMENT_TITLES = {
   upi_app_gpay: "Google Pay",
   upi_app_paytm: "Paytm",
   upi_app_phonepe: "PhonePe",
+  upi_app_amazonpay: "Amazon Pay",
   upi_qr: "UPI QR",
   cash: "Cash",
   wallet: "Infy Wallet"
