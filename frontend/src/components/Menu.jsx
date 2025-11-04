@@ -637,6 +637,10 @@ const Menu = ({
       const scheduleMeta = sectionState?.schedule;
       const showNextBadge = !allowAction;
       const badgeText = nextDayOnly ? 'NEXT DAY' : 'NEXT WINDOW';
+      const showInterest = canShowInterest(item);
+      const interestKeyValue = interestKey(item);
+      const interestSummary = interestKeyValue ? interestSummaries[interestKeyValue] : null;
+      const interestCount = Math.max(0, Number(interestSummary?.uniqueEmployees ?? 0));
       return (
         <div key={item.id} className="menu-item-card" style={totalQty > 0 ? { border: '2px solid #111', boxShadow: '0 0 0 3px rgba(0,0,0,0.05)' } : {}}>
           <div style={{ position: "relative" }}>
@@ -789,6 +793,68 @@ const Menu = ({
                     No more items available to order
                   </div>
                 )}
+                {showInterest && (
+                  <div style={{ display: 'flex', justifyContent: 'center', width: '100%', marginTop: 8 }}>
+                    <button
+                      type="button"
+                      onClick={() => handleExpressInterest(item)}
+                      disabled={interestPending}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        padding: '6px 12px',
+                        borderRadius: 6,
+                        border: '1px solid #3498db',
+                        background: '#f0f8ff',
+                        color: '#2c3e50',
+                        fontSize: 13,
+                        fontWeight: 600,
+                        cursor: interestPending ? 'not-allowed' : 'pointer',
+                        opacity: interestPending ? 0.6 : 1,
+                      }}
+                    >
+                      <span
+                        aria-hidden
+                        style={{
+                          position: 'relative',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: 18,
+                          width: 28,
+                          height: 28,
+                        }}
+                      >
+                        <span>👍</span>
+                        {interestCount > 0 && (
+                          <span
+                            style={{
+                              position: 'absolute',
+                              top: -6,
+                              right: -10,
+                              background: '#3498db',
+                              color: '#fff',
+                              minWidth: 18,
+                              height: 18,
+                              borderRadius: 999,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: 10,
+                              fontWeight: 700,
+                              padding: '0 4px',
+                              boxShadow: '0 1px 2px rgba(0,0,0,0.15)',
+                            }}
+                          >
+                            {interestCount}
+                          </span>
+                        )}
+                      </span>
+                      <span>Interested</span>
+                    </button>
+                  </div>
+                )}
               </div>
             )}
             {(!message && !allowAction && windowLabel && (
@@ -798,7 +864,7 @@ const Menu = ({
         </div>
       );
     },
-    [qtyInCart, qtyNoOption, getItemPrice, handleAddClick, computeItemAvailability]
+    [qtyInCart, qtyNoOption, getItemPrice, handleAddClick, computeItemAvailability, canShowInterest, interestKey, interestSummaries, handleExpressInterest, interestPending]
   );
 
   const renderComboCard = useCallback((combo) => {

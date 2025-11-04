@@ -930,8 +930,8 @@
     "status": "pending",
     "createdAt": "2025-11-04T17:53:12.801Z",
     "billingId": "00007",
-    "estimatedReadyTime": "2025-11-04T18:25:12.801Z",
-    "prepTime": 32,
+    "estimatedReadyTime": "2025-11-04T18:30:12.801Z",
+    "prepTime": 37,
     "baseEstimatedReadyTime": "2025-11-04T18:25:12.801Z",
     "basePrepTime": 32,
     "rating": null,
@@ -952,7 +952,9 @@
       "amount": 195,
       "provider": "razorpay-open",
       "reference": "PG-1762278792801"
-    }
+    },
+    "etaExtendedAt": "2025-11-04T18:01:16.056Z",
+    "etaExtensionMinutes": 5
   },
   {
     "id": 26,
@@ -1004,8 +1006,8 @@
     "status": "pending",
     "createdAt": "2025-11-04T17:53:49.216Z",
     "billingId": "00008",
-    "estimatedReadyTime": "2025-11-04T18:49:49.216Z",
-    "prepTime": 56,
+    "estimatedReadyTime": "2025-11-04T18:54:49.216Z",
+    "prepTime": 61,
     "baseEstimatedReadyTime": "2025-11-04T18:49:49.216Z",
     "basePrepTime": 56,
     "rating": null,
@@ -1026,7 +1028,9 @@
       "amount": 330,
       "provider": "razorpay-open",
       "reference": "PG-1762278829216"
-    }
+    },
+    "etaExtendedAt": "2025-11-04T18:01:17.410Z",
+    "etaExtensionMinutes": 5
   },
   {
     "id": 27,
@@ -1059,7 +1063,7 @@
     "shopId": 1,
     "user": "+919952911560",
     "scheduledTime": "2025-11-05T08:00",
-    "status": "pending",
+    "status": "ready",
     "createdAt": "2025-11-04T17:54:24.549Z",
     "billingId": "00009",
     "estimatedReadyTime": "2025-11-04T18:30:24.549Z",
@@ -1084,7 +1088,8 @@
       "amount": 195,
       "provider": "razorpay-open",
       "reference": "PG-1762278864549"
-    }
+    },
+    "readyAt": "2025-11-04T18:01:23.099Z"
   },
   {
     "id": 28,
@@ -1175,7 +1180,7 @@
     "shopId": 1,
     "user": "+919952911560",
     "scheduledTime": "2025-11-05T08:00",
-    "status": "pending",
+    "status": "ready",
     "createdAt": "2025-11-04T17:55:18.096Z",
     "billingId": "00011",
     "estimatedReadyTime": "2025-11-04T18:35:18.096Z",
@@ -1200,7 +1205,8 @@
       "amount": 185,
       "provider": "razorpay-open",
       "reference": "PG-1762278918096"
-    }
+    },
+    "readyAt": "2025-11-04T18:01:23.812Z"
   },
   {
     "id": 30,
