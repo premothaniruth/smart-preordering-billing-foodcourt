@@ -53,7 +53,11 @@ const MenuEditor = ({ token, menu, onUpdate, targetItemId }) => {
     }
   }, [targetItemId, items]);
 
-  const original = useMemo(() => JSON.stringify(items), [selectedShop]);
+  const original = useMemo(() => {
+    const shop = menu.find((s) => s.shopId === selectedShop);
+    const sourceItems = shop && Array.isArray(shop.items) ? shop.items : [];
+    return JSON.stringify(sourceItems);
+  }, [menu, selectedShop]);
   const isDirty = useMemo(() => JSON.stringify(items) !== original, [items, original]);
 
   // Generic handler to update item fields (number/boolean coercion included)

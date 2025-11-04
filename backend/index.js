@@ -166,6 +166,7 @@ const enrichVendorContext = (decoded) => {
     permissions.add("analytics:read");
   } else {
     permissions.add("analytics:read");
+    permissions.add("analytics:write");
     permissions.add("procurement:manage");
   }
   vendorCtx.permissions = Array.from(permissions);
