@@ -786,5 +786,47 @@
       "method": "cash",
       "amount": 350
     }
+  },
+  {
+    "id": 23,
+    "items": [
+      {
+        "id": 23,
+        "name": "Chana Masala",
+        "price": 100,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 14
+      }
+    ],
+    "shopId": 1,
+    "user": "+919952911560",
+    "scheduledTime": null,
+    "status": "pending",
+    "createdAt": "2025-11-04T06:57:44.450Z",
+    "billingId": "00005",
+    "estimatedReadyTime": "2025-11-04T07:15:44.450Z",
+    "prepTime": 18,
+    "baseEstimatedReadyTime": "2025-11-04T07:15:44.450Z",
+    "basePrepTime": 18,
+    "rating": null,
+    "feedback": null,
+    "totalAmount": 100,
+    "subtotalBeforeDiscount": 100,
+    "discountTotal": 0,
+    "offerSummary": {
+      "subtotalBeforeDiscount": 100,
+      "discountTotal": 0,
+      "totalPayable": 100,
+      "appliedOffers": [],
+      "extraItems": []
+    },
+    "notes": null,
+    "payment": {
+      "method": "gateway",
+      "amount": 100,
+      "provider": "razorpay-open",
+      "reference": "PG-1762239464450"
+    }
   }
 ]

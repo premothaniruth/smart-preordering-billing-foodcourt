@@ -319,7 +319,7 @@
               "isVeg": true,
               "image": "/images/chana-masala.jpg",
               "prepTime": 14,
-              "inventory": 100,
+              "inventory": 99,
               "section": "Lunch",
               "options": [],
               "hasOptions": []
