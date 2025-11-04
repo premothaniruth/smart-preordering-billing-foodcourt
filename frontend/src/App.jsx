@@ -75,7 +75,7 @@ function App() {
   const [userOrders, setUserOrders] = useState([]);
   const [favorites, setFavorites] = useState([]);
   const [wallet, setWallet] = useState({ balance: 0, transactions: [] });
-  const [paymentMethod, setPaymentMethod] = useState('upi_app');
+  const [paymentMethod, setPaymentMethod] = useState('upi_app_gpay');
   const [cartNotes, setCartNotes] = useState("");
   const [checkoutDraft, setCheckoutDraft] = useState(null);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
@@ -544,6 +544,21 @@ function App() {
     setView('payment');
   }, [cart, selectedShop, scheduledTime, cartNotes, calculateCartTotals, wallet.balance, employeeToken, setSelectedShop]);
 
+  const handlePaymentNotesChange = (notes) => {
+    setCartNotes(notes);
+    setCheckoutDraft((prev) => (prev ? { ...prev, notes } : prev));
+  };
+
+  const handlePaymentBack = () => {
+    setView('user');
+    setCheckoutDraft(null);
+    setIsPlacingOrder(false);
+  };
+
+  const handlePaymentMethodChange = (optionId) => {
+    setPaymentMethod(optionId);
+  };
+
   useEffect(() => {
     if (!cart.length) {
       setCartShopMismatch(false);
@@ -679,57 +694,59 @@ function App() {
     });
   };
 
-  const handlePaymentSuccess = () => {
-    const orderItems = cart.map((c) => ({
-      id: c.item.id,
-      name: c.item.name,
-      price: c.item.finalPrice,
-      quantity: c.quantity,
-      comboId: c.item.comboId || null,
-      option: c.item.selectedOption?.name || null,
-      customization: c.item.customization,
-      prepTime: c.item.prepTime
-    }));
+  const placeOrderWithMethod = async ({ method, payload = {} }) => {
+    if (!checkoutDraft) {
+      toast.error('Payment session expired. Please review your cart.');
+      setView('user');
+      return;
+    }
 
-    const checkoutShopId = cart[0]?.shopId ?? selectedShop;
+    if (isPlacingOrder) return;
+
+    const orderItems = Array.isArray(checkoutDraft.items) ? checkoutDraft.items : [];
+    const checkoutShopId = checkoutDraft.shopId || selectedShop;
+
     if (!checkoutShopId) {
       toast.error('Unable to determine shop for this order. Please select a shop and try again.');
-      return;
-    }
-    if (selectedShop !== checkoutShopId) {
-      setSelectedShop(checkoutShopId);
-    }
-
-    const rawTotalCharge = orderItems.reduce((sum, it) => sum + it.price * it.quantity, 0);
-    const totalCharge = offerPreview?.totalPayable != null
-      ? Number(offerPreview.totalPayable)
-      : rawTotalCharge;
-    if (paymentMethod === 'wallet' && wallet.balance < totalCharge) {
-      toast.error('Your wallet is hungry too! Top-up needed!');
+      setView('user');
       return;
     }
 
-    placeOrder({
-      items: orderItems,
-      scheduledTime,
-      user: userId,
-      shopId: checkoutShopId,
-      paymentMethod,
-      paymentPayload: paymentMethod === 'gateway' ? { provider: 'google-pay' } : undefined,
-      offerPreview: offerPreview && offerPreview.status === 'ok' ? {
-        subtotalBeforeDiscount: offerPreview.subtotalBeforeDiscount,
-        discountTotal: offerPreview.discountTotal,
-        totalPayable: offerPreview.totalPayable,
-        appliedOffers: offerPreview.appliedOffers,
-        extraItems: offerPreview.extraItems
-      } : undefined,
-    }).then((response) => {
+    const totalCharge = Number(checkoutDraft?.totals?.totalPayable ?? orderItems.reduce((sum, it) => sum + (Number(it.price) || 0) * (Number(it.quantity) || 0), 0));
+
+    if (method === 'wallet') {
+      if (!employeeToken) {
+        toast.error('Wallet payments require an employee login.');
+        return;
+      }
+      if (wallet.balance < totalCharge) {
+        toast.error('Your wallet is hungry too! Top-up needed!');
+        return;
+      }
+    }
+
+    setIsPlacingOrder(true);
+
+    try {
+      const response = await placeOrder({
+        items: orderItems,
+        scheduledTime: checkoutDraft.scheduledTime,
+        user: userId,
+        shopId: checkoutShopId,
+        paymentMethod: method,
+        paymentPayload: {
+          ...payload,
+          notes: checkoutDraft.notes || undefined,
+        },
+        offerPreview: checkoutDraft.offerPreview,
+        orderNotes: checkoutDraft.notes || undefined,
+      });
+
       if (!response || response.status !== 'success') {
         const msg = response?.message || 'Order failed. Please try again';
-        // If backend sent notAvailable details for scheduled orders, show them
         if (Array.isArray(response?.notAvailable) && response.notAvailable.length > 0) {
           toast.error(msg);
-          response.notAvailable.slice(0,5).forEach((na) => {
+          response.notAvailable.slice(0, 5).forEach((na) => {
             const win = na.window ? ` (${na.window})` : '';
             toast.info(`${na.name} is available only during ${na.section}${win}`);
           });
@@ -738,53 +755,61 @@ function App() {
         toast.error(msg);
         return;
       }
+
       setCart([]);
       setScheduledTime("");
       setOrderSummary(response.orderSummary);
-      // refresh menu to reflect decremented inventory
+      setCheckoutDraft(null);
+      setCartNotes("");
+      setPaymentMethod('upi_app_gpay');
+      setView('user');
+
       loadMenu();
-      if (paymentMethod === 'wallet') {
+      if (method === 'wallet') {
         loadWallet();
       }
 
-      // If some items were excluded for immediate orders, inform the user
-      if (Array.isArray(response.excludedItems) && response.excludedItems.length > 0) {
+      const excluded = response.excludedItems || response.extra?.excludedItems;
+      if (Array.isArray(excluded) && excluded.length > 0) {
         toast.warn('Some items were excluded as they are not available at this time.');
-        response.excludedItems.slice(0,5).forEach(ex => {
+        excluded.slice(0, 5).forEach((ex) => {
           const win = ex.window ? ` (${ex.window})` : '';
           toast.info(`${ex.name} is available only during ${ex.section}${win}`);
         });
       }
 
-      // Compute how many orders placed today for this user (to show "View recent orders")
       if (userId) {
         fetchUserOrders(userId).then((orders) => {
           try {
             const today = new Date();
             const isSameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
-            const countToday = (orders || []).filter(o => {
+            const countToday = (orders || []).filter((o) => {
               const d = o.createdAt ? new Date(o.createdAt) : null;
               return d ? isSameDay(d, today) : false;
             }).length;
             setRecentOrdersTodayCount(countToday);
-          } catch { setRecentOrdersTodayCount(0); }
+          } catch {
+            setRecentOrdersTodayCount(0);
+          }
         });
       }
 
       playSound(ORDER_PLACED_SOUND);
       toast.success(`Order placed! Billing ID: ${response.billingId}`);
 
-      // Set timer for ready sound
-      const prepTime = response.orderSummary.prepTime || 5;
+      const prepTime = response.orderSummary?.prepTime || 5;
       setTimeout(() => {
         playSound(READY_SOUND);
         toast.info(` Order ${response.billingId} is ready for pickup!`, {
           autoClose: 10000,
         });
       }, prepTime * 60000);
-    }).catch(() => {
+    } catch (error) {
+      console.error('Failed to place order', error);
       toast.error('Order failed. Please try again');
-    });
+    } finally {
+      setIsPlacingOrder(false);
+    }
   };
 
   const handleReorder = (order) => {
@@ -894,7 +919,7 @@ function App() {
       department: department || null,
       bulkOrderEligible: Boolean(bulkOrderEligible),
     });
-    setPaymentMethod('upi_app');
+    setPaymentMethod('upi_app_gpay');
     setCartNotes("");
     setCheckoutDraft(null);
     setIsPlacingOrder(false);
@@ -1282,6 +1307,23 @@ function App() {
                 onClearHistory={handleClearHistory}
                 onReportIssue={handleReportIssue}
                 onCancel={handleCancelScheduledOrder}
+              />
+            )}
+
+            {view === "payment" && (
+              <PaymentPage
+                draft={checkoutDraft}
+                paymentMethod={paymentMethod}
+                onPaymentMethodChange={handlePaymentMethodChange}
+                onPlaceOrder={placeOrderWithMethod}
+                onBack={handlePaymentBack}
+                onNotesChange={handlePaymentNotesChange}
+                isPlacingOrder={isPlacingOrder}
+                emitToast={(type, message) => {
+                  if (type === 'error') toast.error(message);
+                  else if (type === 'info') toast.info(message);
+                  else toast(message);
+                }}
               />
             )}
 

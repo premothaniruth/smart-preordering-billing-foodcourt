@@ -528,5 +528,183 @@
     "readyAt": "2025-11-03T16:32:27.408Z",
     "pickedAt": "2025-11-03T16:32:29.926Z",
     "completedAt": "2025-11-03T16:32:29.926Z"
+  },
+  {
+    "id": 19,
+    "items": [
+      {
+        "id": 20,
+        "name": "Sweet Lassi",
+        "price": 65,
+        "quantity": 1,
+        "option": "Mango",
+        "prepTime": 5
+      }
+    ],
+    "shopId": 1,
+    "user": "+919952911560",
+    "scheduledTime": null,
+    "status": "completed",
+    "createdAt": "2025-11-04T05:00:56.110Z",
+    "billingId": "00001",
+    "estimatedReadyTime": "2025-11-04T05:05:56.109Z",
+    "prepTime": 5,
+    "baseEstimatedReadyTime": "2025-11-04T05:05:56.109Z",
+    "basePrepTime": 5,
+    "rating": null,
+    "feedback": null,
+    "totalAmount": 65,
+    "subtotalBeforeDiscount": 65,
+    "discountTotal": 0,
+    "offerSummary": {
+      "subtotalBeforeDiscount": 65,
+      "discountTotal": 0,
+      "totalPayable": 65,
+      "appliedOffers": [],
+      "extraItems": []
+    },
+    "notes": null,
+    "payment": {
+      "method": "cash",
+      "amount": 65
+    },
+    "readyAt": "2025-11-04T05:03:26.691Z",
+    "pickedAt": "2025-11-04T05:03:33.740Z",
+    "completedAt": "2025-11-04T05:03:33.740Z"
+  },
+  {
+    "id": 20,
+    "items": [
+      {
+        "id": 18,
+        "name": "Daliya",
+        "price": 45,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 9
+      },
+      {
+        "id": 17,
+        "name": "Anda Bhurji",
+        "price": 70,
+        "quantity": 1,
+        "option": "With Veggies",
+        "prepTime": 7
+      },
+      {
+        "id": 15,
+        "name": "Missi Roti",
+        "price": 40,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 8
+      },
+      {
+        "id": 14,
+        "name": "Methi Thepla",
+        "price": 55,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 10
+      },
+      {
+        "id": 13,
+        "name": "Dal Baati Churma",
+        "price": 85,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 20
+      },
+      {
+        "id": 16,
+        "name": "Besan Bread Toast",
+        "price": 45,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 7
+      },
+      {
+        "id": 19,
+        "name": "Stuffed Kachori",
+        "price": 65,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 13
+      },
+      {
+        "id": 7,
+        "name": "Sabudana Khichdi",
+        "price": 55,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 12
+      },
+      {
+        "id": 2,
+        "name": "Poha",
+        "price": 45,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 8
+      },
+      {
+        "id": 1,
+        "name": "Aloo Paratha",
+        "price": 60,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 10
+      },
+      {
+        "id": 4,
+        "name": "Aloo Puri",
+        "price": 70,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 10
+      },
+      {
+        "id": 5,
+        "name": "Paneer Paratha",
+        "price": 75,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 12
+      }
+    ],
+    "shopId": 1,
+    "user": "+919952911560",
+    "scheduledTime": null,
+    "status": "completed",
+    "createdAt": "2025-11-04T05:01:49.846Z",
+    "billingId": "00002",
+    "estimatedReadyTime": "2025-11-04T07:14:49.846Z",
+    "prepTime": 133,
+    "baseEstimatedReadyTime": "2025-11-04T07:09:49.846Z",
+    "basePrepTime": 128,
+    "rating": null,
+    "feedback": null,
+    "totalAmount": 710,
+    "subtotalBeforeDiscount": 710,
+    "discountTotal": 0,
+    "offerSummary": {
+      "subtotalBeforeDiscount": 710,
+      "discountTotal": 0,
+      "totalPayable": 710,
+      "appliedOffers": [],
+      "extraItems": []
+    },
+    "notes": null,
+    "payment": {
+      "method": "gateway",
+      "amount": 710,
+      "provider": "razorpay-open",
+      "reference": "PG-1762232509846"
+    },
+    "etaExtendedAt": "2025-11-04T05:02:55.536Z",
+    "etaExtensionMinutes": 5,
+    "readyAt": "2025-11-04T05:03:25.451Z",
+    "pickedAt": "2025-11-04T05:03:31.872Z",
+    "completedAt": "2025-11-04T05:03:31.872Z"
   }
 ]

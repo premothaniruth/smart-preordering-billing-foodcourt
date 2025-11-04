@@ -3321,7 +3321,7 @@ app.get("/vendor/feedbacks", authenticateVendor, (req, res) => {
  */
 app.post("/order", (req, res) => {
   try {
-    const { items, user, scheduledTime, shopId, paymentMethod = 'gateway', paymentPayload = {} } = req.body;
+    const { items, user, scheduledTime, shopId, paymentMethod = 'gateway', paymentPayload = {}, orderNotes = '' } = req.body;
     // Validate inventory and decrement (supports combo expansion)
     const raw = getMenu();
     const normalizedShops = normalizeMenuShops(raw);
@@ -3610,6 +3610,8 @@ app.post("/order", (req, res) => {
     const prepTime = calculatePreparationTime(items, shopId);
     const estimatedReadyTime = new Date(Date.now() + prepTime * 60000).toISOString();
 
+    const normalizedNotes = clampString(orderNotes || paymentPayload?.notes || '', 400);
+
     const newOrder = {
       id: orders.length + 1,
       items: flatItems,
@@ -3628,7 +3630,8 @@ app.post("/order", (req, res) => {
       totalAmount,
       subtotalBeforeDiscount,
       discountTotal,
-      offerSummary
+      offerSummary,
+      notes: normalizedNotes || null
     };
 
     if (req.body?.bulkOrderId != null) {
@@ -3666,7 +3669,7 @@ app.post("/order", (req, res) => {
       paymentSummary = {
         method: 'gateway',
         amount: totalAmount,
-        provider: paymentPayload?.provider || 'google-pay',
+        provider: paymentPayload?.provider || 'razorpay-open',
         reference: paymentPayload?.reference || `PG-${Date.now()}`
       };
     }
@@ -5298,42 +5301,44 @@ app.post("/grievance/resolve/:id", authenticateVendor, (req, res) => {
   }
 });
 
-server.listen(PORT, async () => {
-  console.log(`Backend running on http://localhost:${PORT}`);
-  console.log(`Images served from: http://localhost:${PORT}/images/`);
+if (process.env.RUN_SERVER !== 'false') {
+  server.listen(PORT, async () => {
+    console.log(`Backend running on http://localhost:${PORT}`);
+    console.log(`Images served from: http://localhost:${PORT}/images/`);
 
-  try {
-    if (analyticsConfig.ANALYTICS_INGESTOR_ENABLED) {
-      await analyticsIngestor.start();
-      console.log("Analytics ingestor started");
-    } else {
-      console.log("Analytics ingestor disabled via configuration");
+    try {
+      if (analyticsConfig.ANALYTICS_INGESTOR_ENABLED) {
+        await analyticsIngestor.start();
+        console.log("Analytics ingestor started");
+      } else {
+        console.log("Analytics ingestor disabled via configuration");
+      }
+    } catch (error) {
+      console.error("Failed to start analytics ingestor", error);
     }
-  } catch (error) {
-    console.error("Failed to start analytics ingestor", error);
-  }
 
-  try {
-    await realtimeAnalyticsService.start();
-    console.log("Realtime analytics service started");
-  } catch (error) {
-    console.error("Failed to start realtime analytics", error);
-  }
+    try {
+      await realtimeAnalyticsService.start();
+      console.log("Realtime analytics service started");
+    } catch (error) {
+      console.error("Failed to start realtime analytics", error);
+    }
 
-  try {
-    await bootstrapAnalyticsFromOrders();
-    console.log("Analytics bootstrap completed");
-  } catch (error) {
-    console.error("Failed to bootstrap historical analytics", error);
-  }
+    try {
+      await bootstrapAnalyticsFromOrders();
+      console.log("Analytics bootstrap completed");
+    } catch (error) {
+      console.error("Failed to bootstrap historical analytics", error);
+    }
 
-  try {
-    startNightlyJobs();
-    console.log("Nightly jobs scheduled");
-  } catch (error) {
-    console.error("Failed to start nightly jobs", error);
-  }
-});
+    try {
+      startNightlyJobs();
+      console.log("Nightly jobs scheduled");
+    } catch (error) {
+      console.error("Failed to start nightly jobs", error);
+    }
+  });
+}
 
 const shutdown = async () => {
   stopNightlyJobs();
@@ -5392,3 +5397,5 @@ wss.on("connection", async (ws, req) => {
   const snapshot = await realtimeAnalyticsService.getSummary(vendor.shopId);
   ws.send(JSON.stringify({ type: "analytics:init", data: snapshot }));
 });
+
+module.exports = { app, server };
