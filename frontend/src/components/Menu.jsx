@@ -1,4 +1,4 @@
-  import React, { useEffect, useMemo, useRef, useState } from "react";
+  import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toggleFavorite, fetchActiveOffers, fetchCombos, fetchMenuSections, fetchSectionsMeta, expressInterest } from "../api";
 import { toast } from "react-toastify";
 
@@ -31,7 +31,6 @@ const Menu = ({
   const [nonVegOnly, setNonVegOnly] = useState(false);
   const [showOptionsModal, setShowOptionsModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
-  const [selectedOption, setSelectedOption] = useState(null);
   const [multiOptionQuantities, setMultiOptionQuantities] = useState({});
   const [variantDrafts, setVariantDrafts] = useState({});
   const [offers, setOffers] = useState([]);
@@ -43,6 +42,8 @@ const Menu = ({
   const [interestSummaries, setInterestSummaries] = useState({});
   const [interestPending, setInterestPending] = useState(false);
   const interestCooldownsRef = useRef(new Map()); // key -> timestamp
+  const shopMenuRef = useRef(null);
+  const [shopMenuOpen, setShopMenuOpen] = useState(false);
 
   const currentShop = useMemo(() => {
     if (!menu || !Array.isArray(menu)) return null;
@@ -50,10 +51,19 @@ const Menu = ({
     return menu.find((shop) => String(shop.shopId) === String(selectedShop)) || null;
   }, [menu, selectedShop]);
 
+  const availableShops = useMemo(() => {
+    if (!Array.isArray(menu)) return [];
+    return menu.map((shop) => ({
+      shopId: shop.shopId,
+      shopName: shop.shopName || shop.name || `Shop ${shop.shopId}`,
+    }));
+  }, [menu]);
+
   const interestKey = (item) => `${selectedShop}:${item?.id}`;
 
   const isLowStockOrSoldOut = (item) => {
     if (!item) return { lowStock: false, soldOut: false };
+
     const inventory = Number(item.inventory ?? 0);
     if (!Number.isFinite(inventory)) return { lowStock: false, soldOut: false };
     const threshold = Number(item.lowStockThreshold ?? item.lowStockLimit ?? item.lowStock ?? 5);
@@ -62,15 +72,272 @@ const Menu = ({
     return { lowStock, soldOut };
   };
 
-  const canShowInterest = (item) => {
-    if (!item || readOnly) return false;
-    if (!employeeToken) return false;
-    if (!currentShop || String(item.shopId ?? selectedShop) !== String(selectedShop)) return false;
-    const { lowStock, soldOut } = isLowStockOrSoldOut(item);
-    return lowStock || soldOut;
-  };
+  const favoriteIds = useMemo(() => {
+    if (!Array.isArray(favorites)) return new Set();
+    return new Set(favorites.map((fav) => (typeof fav === 'object' ? fav.id ?? fav : fav)));
+  }, [favorites]);
 
-  const handleExpressInterest = async (item) => {
+  const isFavorite = useCallback((itemId) => favoriteIds.has(itemId), [favoriteIds]);
+
+  const handleFavoriteClick = useCallback((itemId, event) => {
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+    if (typeof onFavoriteToggle === 'function') {
+      onFavoriteToggle(itemId);
+    }
+  }, [onFavoriteToggle]);
+
+  const offersForActiveSection = useMemo(() => {
+    if (!Array.isArray(offers)) return [];
+    if (!activeSection) return offers;
+    return offers.filter((offer) => {
+      if (!offer?.sections || !Array.isArray(offer.sections)) return true;
+      return offer.sections.includes(activeSection);
+    });
+  }, [offers, activeSection]);
+
+  const computeItemAvailability = useCallback((item) => {
+    if (!item) {
+      return { allowAction: false, allowedNow: false, sectionWindow: null, itemWindow: null, nextDayOnly: false };
+    }
+    const now = new Date();
+    const currentTime = toHM(now);
+    const sectionWindow = sectionWindows[item.sectionName];
+    const itemWindow = Array.isArray(item.availableTimeWindows)
+      ? item.availableTimeWindows.find((win) => win.start <= currentTime && win.end >= currentTime)
+      : null;
+    const allowAction = !!sectionWindow && !!itemWindow;
+    const allowedNow =
+      allowAction &&
+      sectionWindow.start <= currentTime &&
+      sectionWindow.end >= currentTime &&
+      itemWindow.start <= currentTime &&
+      itemWindow.end >= currentTime;
+    const nextDayOnly = Boolean(item.nextDayOnly) && !allowedNow;
+    return { allowAction, allowedNow, sectionWindow, itemWindow, nextDayOnly };
+  }, [sectionWindows]);
+
+  const filteredItems = useMemo(() => {
+    const items = Array.isArray(currentShop?.items) ? currentShop.items : [];
+    if (vegOnly) return items.filter((item) => item.isVeg);
+    if (nonVegOnly) return items.filter((item) => !item.isVeg);
+    return items;
+  }, [currentShop, vegOnly, nonVegOnly]);
+
+  const sectionItems = useMemo(() => {
+    if (!sectioned || !Array.isArray(sectioned.sections) || !activeSection) return filteredItems;
+    const sec = sectioned.sections.find((s) => s.name === activeSection);
+    if (!sec) return filteredItems;
+    let items = Array.isArray(sec.items) ? sec.items : [];
+    if (vegOnly) items = items.filter((item) => item.isVeg);
+    else if (nonVegOnly) items = items.filter((item) => !item.isVeg);
+    return items;
+  }, [sectioned, activeSection, filteredItems, vegOnly, nonVegOnly]);
+
+  const favoriteItems = useMemo(() => sectionItems.filter((item) => isFavorite(item.id)), [sectionItems, isFavorite]);
+  const recommended = useMemo(() => sectionItems.filter((item) => item.isRecommended && !isFavorite(item.id)), [sectionItems, isFavorite]);
+  const hotSellers = useMemo(
+    () => sectionItems.filter((item) => item.isHotSeller && !item.isRecommended && !isFavorite(item.id)),
+    [sectionItems, isFavorite]
+  );
+  const regularItems = useMemo(
+    () => sectionItems.filter((item) => !item.isRecommended && !item.isHotSeller && !isFavorite(item.id)),
+    [sectionItems, isFavorite]
+  );
+
+  const qtyInCart = useCallback(
+    (item) => {
+      return cart
+        .filter((c) => c.shopId === selectedShop && c.item.id === item.id)
+        .reduce((sum, c) => sum + c.quantity, 0);
+    },
+    [cart, selectedShop]
+  );
+
+  const qtyNoOption = useCallback(
+    (item) => {
+      const entry = cart.find((c) => c.shopId === selectedShop && c.item.id === item.id && !c.item.selectedOption);
+      return entry ? entry.quantity : 0;
+    },
+    [cart, selectedShop]
+  );
+
+  const getItemPrice = useCallback((item) => {
+    if (!item) return '₹0';
+    const hasMods = item.hasOptions && Array.isArray(item.options) && item.options.some((o) => Number(o.priceModifier || 0) > 0);
+    return `₹${item.price}${hasMods ? '+' : ''}`;
+  }, []);
+
+  const handleAddClick = useCallback(
+    (item) => {
+      if (!item) return;
+      if (cartShopMismatch) {
+        toast.warn("Cart already has items from another shop. Please place separate orders.");
+        return;
+      }
+      setSelectedItem(item);
+      setShowOptionsModal(true);
+      const draft = variantDrafts[item.id] || {};
+      setMultiOptionQuantities(draft);
+    },
+    [cartShopMismatch, variantDrafts]
+  );
+
+  const renderItem = useCallback(
+    (item) => {
+      const totalQty = qtyInCart(item);
+      const inventory = Number(item.inventory ?? 100);
+      const cartRemaining = Math.max(0, inventory - totalQty);
+      const stockLeft = Math.max(0, inventory);
+      const thisQty = qtyNoOption(item);
+      const itemAvail = computeItemAvailability(item);
+      const { allowAction, allowedNow, sectionWindow, itemWindow, nextDayOnly } = itemAvail;
+      return (
+        <div key={item.id} className="menu-item-card" style={totalQty > 0 ? { border: '2px solid #111', boxShadow: '0 0 0 3px rgba(0,0,0,0.05)' } : {}}>
+          <div style={{ position: "relative" }}>
+            <img
+              src={item.image && item.image.startsWith('http') ? item.image : `http://localhost:3001${item.image}`}
+              alt={item.name}
+              className="menu-item-image"
+              onError={(e) => {
+                e.target.src = "https://dummyimage.com/200x150/95a5a6/ffffff&text=No+Image";
+              }}
+            />
+            {!hideFavorites && (
+              <button
+                className="favorite-btn"
+                onClick={(e) => handleFavoriteClick(item.id, e)}
+                style={{ background: 'transparent', border: 'none', padding: 4 }}
+              >
+                {isFavorite(item.id) ? "❤️" : "🤍"}
+              </button>
+            )}
+            {!allowAction && (
+              <div style={{ position: 'absolute', top: 8, left: 8, background: '#7f8c8d', color: '#fff', padding: '2px 8px', borderRadius: 4, fontSize: 12, fontWeight: 700 }}>
+                {nextDayOnly ? 'NEXT DAY' : 'NEXT WINDOW'}
+              </div>
+            )}
+            {stockLeft === 0 && allowAction && (
+              <div style={{ position: 'absolute', top: 8, left: 8, background: '#e74c3c', color: '#fff', padding: '2px 8px', borderRadius: 4, fontSize: 12, fontWeight: 700 }}>
+                SOLD OUT
+              </div>
+            )}
+            {stockLeft > 0 && stockLeft <= 10 && allowAction && (
+              <div style={{ position: 'absolute', top: 8, left: 8, background: '#e67e22', color: '#fff', padding: '2px 8px', borderRadius: 4, fontSize: 12, fontWeight: 700 }}>
+                FEW LEFT
+              </div>
+            )}
+            {(() => {
+              if (!item.restockedAt) return null;
+              if (stockLeft === 0) return null;
+              const d = new Date(item.restockedAt);
+              const now = new Date();
+              const sameDay = d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
+              if (!sameDay) return null;
+              return (
+                <div style={{ position: 'absolute', top: 8, right: 8, background: '#2ecc71', color: '#fff', padding: '2px 8px', borderRadius: 4, fontSize: 12, fontWeight: 700 }}>
+                  RESTOCKED
+                </div>
+              );
+            })()}
+          </div>
+          <div className="menu-item-content">
+            <div className="menu-item-name">{item.name}</div>
+            <div className="menu-item-price">
+              {getItemPrice(item)}
+            </div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 4 }}>
+              {item.isVeg ? (
+                <span className="menu-item-badge" style={{ color: "#27ae60", border: "1px solid #27ae60" }}>🟢 VEG</span>
+              ) : (
+                <span className="menu-item-badge" style={{ color: "#e74c3c", border: "1px solid #e74c3c" }}>🔴 NON-VEG</span>
+              )}
+            </div>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 8 }}>
+              <span style={{ fontSize: "11px", color: "#666" }}>⏱️ {item.prepTime || 5} mins prep time</span>
+              {showInventory && (
+                <span style={{ fontSize: 11, color: stockLeft === 0 ? '#e74c3c' : '#666' }}>Left: {stockLeft}</span>
+              )}
+            </div>
+            {item.hasOptions && (
+              <div style={{ fontSize: "11px", color: "#666", marginBottom: 4 }}>
+                {item.options.length} options available
+              </div>
+            )}
+            {!readOnly && (
+              <div className="menu-item-actions" style={{ minHeight: 48, display: 'flex', alignItems: 'center' }}>
+                {(!item.hasOptions && thisQty > 0 && allowAction) ? (
+                  <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                    <button
+                      className="icon-btn"
+                      onClick={() => decItemNoOption(item, selectedShop)}
+                      style={{ width: 32, height: 32, background: '#fff', color: '#111', border: '1px solid #111', borderRadius: 6 }}
+                    >−</button>
+                    <span style={{ minWidth: 24, textAlign: 'center', fontWeight: 700 }}>{thisQty}</span>
+                    <button
+                      className="icon-btn"
+                      onClick={() => {
+                        if (cartRemaining <= 0) { toast.error('No more items available to order'); return; }
+                        if (cartShopMismatch) {
+                          toast.warn("Cart already has items from another shop. Please place separate orders.");
+                          return;
+                        }
+                        if (!allowAction) {
+                          toast.info(nextDayOnly ? 'Available from next day' : 'Currently unavailable');
+                          return;
+                        }
+                        incItemNoOption(item, selectedShop);
+                      }}
+                      disabled={cartRemaining <= 0 || cartShopMismatch || !allowAction}
+                      style={{ width: 32, height: 32, background: '#fff', color: '#111', border: '1px solid #111', borderRadius: 6 }}
+                    >+</button>
+                  </div>
+                ) : (
+                  <button
+                    className="icon-btn"
+                    onClick={() => handleAddClick(item)}
+                    disabled={!allowAction || cartRemaining <= 0 || cartShopMismatch}
+                    style={{
+                      width: "100%",
+                      padding: '10px 12px',
+                      background: '#fff',
+                      color: '#111',
+                      border: '1px solid #111',
+                      borderRadius: 6,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 6,
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    {stockLeft === 0 ? 'Sold Out' : (
+                      <>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                          <circle cx="10" cy="20" r="1" />
+                          <circle cx="18" cy="20" r="1" />
+                          <path d="M2 2h2l3.6 7.59a2 2 0 0 0 1.8 1.17H17a2 2 0 0 0 2-1.5l1.38-5.5H6" />
+                        </svg>
+                        Add to Cart
+                      </>
+                    )}
+                  </button>
+                )}
+                {cartRemaining <= 0 && stockLeft > 0 && (
+                  <div style={{ marginTop: 6, fontSize: 12, color: '#e74c3c', textAlign: 'center', width: '100%' }}>
+                    No more items available to order
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    },
+    [qtyInCart, qtyNoOption, getItemPrice, handleAddClick, computeItemAvailability]
+  );
+
+  const handleExpressInterest = useCallback(async (item) => {
     if (!item || interestPending) return;
     if (!employeeToken) {
       toast.info('Please sign in as an employee to express interest.');
@@ -115,193 +382,15 @@ const Menu = ({
     } finally {
       setInterestPending(false);
     }
-  };
+  }, [employeeToken, selectedShop, interestKey, interestPending]);
 
-  let filteredItems = Array.isArray(currentShop?.items) ? currentShop.items : [];
-  if (vegOnly) filteredItems = filteredItems.filter(item => item.isVeg);
-  else if (nonVegOnly) filteredItems = filteredItems.filter(item => !item.isVeg);
-
-  const sectionItems = (() => {
-    if (!sectioned || !Array.isArray(sectioned.sections) || !activeSection) return filteredItems;
-    const sec = sectioned.sections.find((s) => s.name === activeSection);
-    if (!sec) return filteredItems;
-    let items = sec.items || [];
-    if (vegOnly) items = items.filter(it => it.isVeg);
-    else if (nonVegOnly) items = items.filter(it => !it.isVeg);
-    return items;
-  })();
-
-  const favoriteItems = sectionItems.filter(item => isFavorite(item.id));
-  const recommended = sectionItems.filter(item => item.isRecommended && !isFavorite(item.id));
-  const hotSellers = sectionItems.filter(item => item.isHotSeller && !item.isRecommended && !isFavorite(item.id));
-  const regularItems = sectionItems.filter(item => !item.isRecommended && !item.isHotSeller && !isFavorite(item.id));
-
-  // total qty of this item across all variants for selected shop
-  const qtyInCart = (item) => {
-    return cart
-      .filter(c => c.shopId === selectedShop && c.item.id === item.id)
-      .reduce((sum, c) => sum + c.quantity, 0);
-  };
-
-  // qty for this item without any selected option
-  const qtyNoOption = (item) => {
-    const entry = cart.find(c => c.shopId === selectedShop && c.item.id === item.id && !c.item.selectedOption);
-    return entry ? entry.quantity : 0;
-  };
-
-  const renderItem = (item) => {
-    const totalQty = qtyInCart(item);
-    const inventory = Number(item.inventory ?? 100);
-    const cartRemaining = Math.max(0, inventory - totalQty);
-    const stockLeft = Math.max(0, inventory);
-    const thisQty = qtyNoOption(item);
-    const itemAvail = computeItemAvailability(item);
-    const { allowAction, allowedNow, sectionWindow, itemWindow, nextDayOnly } = itemAvail;
-    return (
-      <div key={item.id} className="menu-item-card" style={totalQty > 0 ? { border: '2px solid #111', boxShadow: '0 0 0 3px rgba(0,0,0,0.05)' } : {}}>
-        <div style={{ position: "relative" }}>
-          <img 
-            src={item.image && item.image.startsWith('http') ? item.image : `http://localhost:3001${item.image}`}
-            alt={item.name} 
-            className="menu-item-image"
-            onError={(e) => {
-              e.target.src = "https://dummyimage.com/200x150/95a5a6/ffffff&text=No+Image";
-            }}
-          />
-          {!hideFavorites && (
-            <button
-              className="favorite-btn"
-              onClick={(e) => handleFavoriteClick(item.id, e)}
-              style={{ background: 'transparent', border: 'none', padding: 4 }}
-            >
-              {isFavorite(item.id) ? "❤️" : "🤍"}
-            </button>
-          )}
-          {!allowAction && (
-            <div style={{ position: 'absolute', top: 8, left: 8, background: '#7f8c8d', color: '#fff', padding: '2px 8px', borderRadius: 4, fontSize: 12, fontWeight: 700 }}>
-              {nextDayOnly ? 'NEXT DAY' : 'NEXT WINDOW'}
-            </div>
-          )}
-          {stockLeft === 0 && allowAction && (
-            <div style={{ position: 'absolute', top: 8, left: 8, background: '#e74c3c', color: '#fff', padding: '2px 8px', borderRadius: 4, fontSize: 12, fontWeight: 700 }}>
-              SOLD OUT
-            </div>
-          )}
-          {stockLeft > 0 && stockLeft <= 10 && allowAction && (
-            <div style={{ position: 'absolute', top: 8, left: 8, background: '#e67e22', color: '#fff', padding: '2px 8px', borderRadius: 4, fontSize: 12, fontWeight: 700 }}>
-              FEW LEFT
-            </div>
-          )}
-          {(() => {
-            if (!item.restockedAt) return null;
-            if (stockLeft === 0) return null;
-            const d = new Date(item.restockedAt);
-            const now = new Date();
-            const sameDay = d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
-            if (!sameDay) return null;
-            return (
-              <div style={{ position: 'absolute', top: 8, right: 8, background: '#2ecc71', color: '#fff', padding: '2px 8px', borderRadius: 4, fontSize: 12, fontWeight: 700 }}>
-                RESTOCKED
-              </div>
-            );
-          })()}
-        </div>
-        <div className="menu-item-content">
-          <div className="menu-item-name">{item.name}</div>
-          <div className="menu-item-price">
-            {(() => {
-              const hasMods = item.hasOptions && Array.isArray(item.options) && item.options.some(o => Number(o.priceModifier || 0) > 0);
-              return `₹${item.price}${hasMods ? '+' : ''}`;
-            })()}
-          </div>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 4 }}>
-            {item.isVeg ? (
-              <span className="menu-item-badge" style={{ color: "#27ae60", border: "1px solid #27ae60" }}>🟢 VEG</span>
-            ) : (
-              <span className="menu-item-badge" style={{ color: "#e74c3c", border: "1px solid #e74c3c" }}>🔴 NON-VEG</span>
-            )}
-          </div>
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 8 }}>
-            <span style={{ fontSize: "11px", color: "#666" }}>⏱️ {item.prepTime || 5} mins prep time</span>
-            {showInventory && (
-              <span style={{ fontSize: 11, color: stockLeft === 0 ? '#e74c3c' : '#666' }}>Left: {stockLeft}</span>
-            )}
-          </div>
-          {item.hasOptions && (
-            <div style={{ fontSize: "11px", color: "#666", marginBottom: 4 }}>
-              {item.options.length} options available
-            </div>
-          )}
-          {!readOnly && (
-          <div className="menu-item-actions" style={{ minHeight: 48, display: 'flex', alignItems: 'center' }}>
-            {(!item.hasOptions && thisQty > 0 && allowAction) ? (
-              <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                <button
-                  className="icon-btn"
-                  onClick={() => decItemNoOption(item, selectedShop)}
-                  style={{ width: 32, height: 32, background: '#fff', color: '#111', border: '1px solid #111', borderRadius: 6 }}
-                >−</button>
-                <span style={{ minWidth: 24, textAlign: 'center', fontWeight: 700 }}>{thisQty}</span>
-                <button
-                  className="icon-btn"
-                  onClick={() => {
-                    if (cartRemaining <= 0) { toast.error('No more items available to order'); return; }
-                    if (cartShopMismatch) {
-                      toast.warn("Cart already has items from another shop. Please place separate orders.");
-                      return;
-                    }
-                    if (!allowAction) {
-                      toast.info(nextDayOnly ? 'Available from next day' : 'Currently unavailable');
-                      return;
-                    }
-                    incItemNoOption(item, selectedShop);
-                  }}
-                  disabled={cartRemaining <= 0 || cartShopMismatch || !allowAction}
-                  style={{ width: 32, height: 32, background: '#fff', color: '#111', border: '1px solid #111', borderRadius: 6 }}
-                >+</button>
-              </div>
-            ) : (
-              <button 
-                className="icon-btn" 
-                onClick={() => handleAddClick(item)}
-                disabled={!allowAction || cartRemaining <= 0 || cartShopMismatch}
-                style={{
-                  width: "100%",
-                  padding: '10px 12px',
-                  background: '#fff',
-                  color: '#111',
-                  border: '1px solid #111',
-                  borderRadius: 6,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 6,
-                  whiteSpace: 'nowrap'
-                }}
-              >
-                {stockLeft === 0 ? 'Sold Out' : (
-                  <>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                      <circle cx="10" cy="20" r="1"/>
-                      <circle cx="18" cy="20" r="1"/>
-                      <path d="M2 2h2l3.6 7.59a2 2 0 0 0 1.8 1.17H17a2 2 0 0 0 2-1.5l1.38-5.5H6"/>
-                    </svg>
-                    Add to Cart
-                  </>
-                )}
-              </button>
-            )}
-            {cartRemaining <= 0 && stockLeft > 0 && (
-              <div style={{ marginTop: 6, fontSize: 12, color: '#e74c3c', textAlign: 'center', width: '100%' }}>
-                No more items available to order
-              </div>
-            )}
-          </div>
-          )}
-        </div>
-      </div>
-    );
-  };
+  const canShowInterest = useCallback((item) => {
+    if (!item || readOnly) return false;
+    if (!employeeToken) return false;
+    if (!currentShop || String(item.shopId ?? selectedShop) !== String(selectedShop)) return false;
+    const { lowStock, soldOut } = isLowStockOrSoldOut(item);
+    return lowStock || soldOut;
+  }, [employeeToken, currentShop, selectedShop, isLowStockOrSoldOut, readOnly]);
 
   return (
     <div>
