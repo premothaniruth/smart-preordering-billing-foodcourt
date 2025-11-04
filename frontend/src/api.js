@@ -233,6 +233,50 @@ export const employeeVerifyOtp = async (mobile, otp) => {
   return res.json();
 };
 
+export const expressInterest = async ({ token, shopId, itemId }) => {
+  const res = await fetch(`${API_URL}/interest`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: token,
+      'x-employee-token': token,
+    },
+    body: JSON.stringify({ shopId, itemId }),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || `Failed to express interest: ${res.status}`);
+  }
+  return res.json();
+};
+
+export const fetchInterestSummary = async (token) => {
+  const res = await fetch(`${API_URL}/vendor/interest/summary`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || `Failed to load interest summary: ${res.status}`);
+  }
+  return res.json();
+};
+
+export const updateInterestThreshold = async (token, threshold) => {
+  const res = await fetch(`${API_URL}/vendor/interest/threshold`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ threshold }),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || `Failed to update interest threshold: ${res.status}`);
+  }
+  return res.json();
+};
+
 // Employee profile
 export const employeeProfile = async (token) => {
   const res = await fetch(`${API_URL}/employee/profile`, {

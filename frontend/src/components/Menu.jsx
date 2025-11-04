@@ -1,436 +1,113 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { toggleFavorite, fetchActiveOffers, fetchCombos, fetchMenuSections, fetchSectionsMeta } from "../api";
+  import React, { useEffect, useMemo, useRef, useState } from "react";
+import { toggleFavorite, fetchActiveOffers, fetchCombos, fetchMenuSections, fetchSectionsMeta, expressInterest } from "../api";
 import { toast } from "react-toastify";
 
-const toHM = (date = new Date()) => {
-  const h = String(date.getHours()).padStart(2, '0');
-  const m = String(date.getMinutes()).padStart(2, '0');
-  return `${h}:${m}`;
-};
-
-const isHmWithinWindow = (hm, windowInfo) => {
-  if (!windowInfo || !windowInfo.start || !windowInfo.end) return true;
-  const { start, end } = windowInfo;
-  if (!start || !end) return true;
-  if (start === end) return true;
-  if (start < end) {
-    return hm >= start && hm <= end;
-  }
-  // Window spans midnight (e.g., 22:00 - 02:00)
-  return hm >= start || hm <= end;
-};
-
-/**
- * Menu
- * Renders the user menu: sections, item cards, and variant selection modal.
- * Keeps per-item variant selections in a draft until checkout.
- * @param {{
- *  menu: Array,
- *  addToCart: (item:any, shopId:number, selectedOption?:any, customization?:any)=>void,
- *  cart: Array,
- *  incItemNoOption?: (item:any, shopId:number)=>void,
- *  decItemNoOption?: (item:any, shopId:number)=>void,
- *  incItemVariant?: (item:any, shopId:number, option:any)=>void,
- *  decItemVariant?: (item:any, shopId:number, option:any)=>void,
- *  selectedShop: number,
- *  setSelectedShop: (shopId:number)=>void,
- *  favorites: number[],
- *  onFavoriteToggle: ()=>void,
- *  userId: string,
- *  hideFavorites?: boolean,
- *  hideShopSelector?: boolean,
- *  showInventory?: boolean,
- *  activeSection?: string | null,
- *  onActiveSectionChange?: (section: string | null) => void
- * }} props
- */
-const Menu = ({ menu, addToCart, cart = [], incItemNoOption = () => {}, decItemNoOption = () => {}, incItemVariant = () => {}, decItemVariant = () => {}, selectedShop, setSelectedShop, favorites = [], cartShopMismatch = false, onFavoriteToggle, userId, hideFavorites = false, hideShopSelector = false, showInventory = false, readOnly = false, scheduledTime = '', activeSection: activeSectionProp = null, onActiveSectionChange }) => {
+const Menu = ({
+  menu,
+  addToCart,
+  cart = [],
+  incItemNoOption = () => {},
+  decItemNoOption = () => {},
+  incItemVariant = () => {},
+  decItemVariant = () => {},
+  selectedShop,
+  setSelectedShop,
+  favorites = [],
+  cartShopMismatch = false,
+  onFavoriteToggle,
+  userId,
+  hideFavorites = false,
+  hideShopSelector = false,
+  showInventory = false,
+  readOnly = false,
+  scheduledTime = '',
+  activeSection: activeSectionProp = null,
+  onActiveSectionChange,
+  employeeToken = null,
+}) => {
   const [vegOnly, setVegOnly] = useState(false);
   const [nonVegOnly, setNonVegOnly] = useState(false);
   const [showOptionsModal, setShowOptionsModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [selectedOption, setSelectedOption] = useState(null);
-  const [multiOptionQuantities, setMultiOptionQuantities] = useState({}); // optionName -> qty (working state)
-  const [variantDrafts, setVariantDrafts] = useState({}); // itemId -> { optionName -> qty }
+  const [multiOptionQuantities, setMultiOptionQuantities] = useState({});
+  const [variantDrafts, setVariantDrafts] = useState({});
   const [offers, setOffers] = useState([]);
   const [combos, setCombos] = useState([]);
-  const [sectioned, setSectioned] = useState(null); // { shopId, shopName, sections }
+  const [sectioned, setSectioned] = useState(null);
   const [activeSection, setActiveSection] = useState(activeSectionProp || null);
-  const [sectionWindows, setSectionWindows] = useState({}); // name -> { start, end }
+  const [sectionWindows, setSectionWindows] = useState({});
   const [currentHm, setCurrentHm] = useState(toHM());
+  const [interestSummaries, setInterestSummaries] = useState({});
+  const [interestPending, setInterestPending] = useState(false);
+  const interestCooldownsRef = useRef(new Map()); // key -> timestamp
 
-  useEffect(() => {
-    if (activeSectionProp === undefined) return;
-    if (activeSectionProp !== activeSection) {
-      setActiveSection(activeSectionProp || null);
-    }
-  }, [activeSectionProp]);
+  const interestKey = (item) => `${selectedShop}:${item?.id}`;
 
-  useEffect(() => {
-    if (typeof onActiveSectionChange === 'function') {
-      onActiveSectionChange(activeSection || null);
-    }
-  }, [activeSection, onActiveSectionChange]);
-
-  useEffect(() => {
-    const id = setInterval(() => setCurrentHm(toHM()), 60000);
-    return () => clearInterval(id);
-  }, []);
-
-  const scheduledDate = useMemo(() => {
-    if (!scheduledTime) return null;
-    const parsed = new Date(scheduledTime);
-    return Number.isNaN(parsed.getTime()) ? null : parsed;
-  }, [scheduledTime]);
-
-  const scheduledHm = useMemo(() => (scheduledDate ? toHM(scheduledDate) : null), [scheduledDate]);
-  const scheduledInFuture = useMemo(() => (scheduledDate ? scheduledDate.getTime() > Date.now() : false), [scheduledDate]);
-
-  const resolveSectionWindow = (item) => {
-    const candidates = [item?.section, item?.sectionName, item?.category, item?.categoryName];
-    for (const key of candidates) {
-      if (!key) continue;
-      const win = sectionWindows[key];
-      if (win) return win;
-    }
-    return null;
+  const isLowStockOrSoldOut = (item) => {
+    if (!item) return { lowStock: false, soldOut: false };
+    const inventory = Number(item.inventory ?? 0);
+    if (!Number.isFinite(inventory)) return { lowStock: false, soldOut: false };
+    const threshold = Number(item.lowStockThreshold ?? item.lowStockLimit ?? item.lowStock ?? 5);
+    const soldOut = inventory <= 0;
+    const lowStock = !soldOut && (Number.isFinite(threshold) ? inventory <= threshold : inventory <= 5);
+    return { lowStock, soldOut };
   };
 
-  const hasSameDayAvailability = (windowInfo, nowHm) => {
-    if (!windowInfo || !windowInfo.start || !windowInfo.end) return true;
-    const { start, end } = windowInfo;
-    if (!start || !end) return true;
-    if (start === end) return true;
-    if (start < end) {
-      return nowHm <= end;
-    }
-    // window spans midnight (e.g., 22:00 - 02:00)
-    return true;
+  const canShowInterest = (item) => {
+    if (!item || readOnly) return false;
+    if (!employeeToken) return false;
+    if (!shop || String(item.shopId ?? selectedShop) !== String(selectedShop)) return false;
+    const { lowStock, soldOut } = isLowStockOrSoldOut(item);
+    return lowStock || soldOut;
   };
 
-  const computeItemAvailability = (item) => {
-    const hm = scheduledHm || currentHm;
-    const sectionWindow = resolveSectionWindow(item);
-    const withinSectionWindow = isHmWithinWindow(hm, sectionWindow);
-    const itemWindow = item?.availableStart && item?.availableEnd ? { start: item.availableStart, end: item.availableEnd } : null;
-    const withinItemWindow = itemWindow ? isHmWithinWindow(hm, itemWindow) : true;
-    const isAvailableFlag = item?.available !== false;
-    const allowedNow = isAvailableFlag && withinSectionWindow && withinItemWindow;
-
-    const sectionSameDay = hasSameDayAvailability(sectionWindow, currentHm);
-    const itemSameDay = hasSameDayAvailability(itemWindow, currentHm);
-    const sameDayAvailable = sectionSameDay && itemSameDay;
-
-    const scheduledWithinWindow = scheduledHm
-      ? (!sectionWindow || isHmWithinWindow(scheduledHm, sectionWindow)) && (!itemWindow || isHmWithinWindow(scheduledHm, itemWindow))
-      : false;
-
-    const canPreOrder = scheduledInFuture && scheduledWithinWindow && sameDayAvailable;
-    const allowAction = allowedNow || canPreOrder;
-    const nextDayOnly = !sameDayAvailable;
-    return { hm, sectionWindow, itemWindow, allowedNow, canPreOrder, allowAction, nextDayOnly };
-  };
-
-  useEffect(() => {
-    if (!selectedShop) return;
-    fetchActiveOffers(selectedShop).then(setOffers).catch(()=>setOffers([]));
-    fetchCombos(selectedShop, true).then(setCombos).catch(()=>setCombos([]));
-    fetchMenuSections(selectedShop)
-      .then((data) => {
-        setSectioned(data);
-        if (data && Array.isArray(data.sections) && data.sections.length > 0) {
-          setActiveSection((current) => {
-            if (current && data.sections.some((sec) => sec.name === current)) {
-              return current;
-            }
-            if (activeSectionProp && data.sections.some((sec) => sec.name === activeSectionProp)) {
-              return activeSectionProp;
-            }
-            return data.sections[0].name;
-          });
-        } else {
-          setActiveSection(null);
-        }
-      })
-      .catch(()=>{ setSectioned(null); setActiveSection(null); });
-    fetchSectionsMeta().then((d)=> setSectionWindows(d?.windows || {})).catch(()=>setSectionWindows({}));
-  }, [selectedShop]);
-
-  useEffect(() => {
-    if (cart.length !== 0) return;
-    setVariantDrafts((prev) => (prev && Object.keys(prev).length ? {} : prev));
-    setMultiOptionQuantities((prev) => (prev && Object.keys(prev).length ? {} : prev));
-    setSelectedOption(null);
-    setSelectedItem(null);
-    setShowOptionsModal(false);
-  }, [cart.length]);
-
-  const availableShops = useMemo(() => menu || [], [menu]);
-  const [shopMenuOpen, setShopMenuOpen] = useState(false);
-  const shopMenuRef = useRef(null);
-
-  useEffect(() => {
-    if (!shopMenuOpen) return;
-    const handleClickOutside = (event) => {
-      if (shopMenuRef.current && !shopMenuRef.current.contains(event.target)) {
-        setShopMenuOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [shopMenuOpen]);
-
-  const currentShop = useMemo(() => {
-    return availableShops.find((shop) => String(shop.shopId) === String(selectedShop)) || null;
-  }, [availableShops, selectedShop]);
-
-  const shop = useMemo(() => {
-    if (!Array.isArray(menu) || menu.length === 0) return null;
-    return menu.find((s) => s.shopId === selectedShop) || null;
-  }, [menu, selectedShop]);
-
-  const offersBySection = useMemo(() => {
-    if (!Array.isArray(offers) || offers.length === 0) return new Map();
-    const map = new Map();
-    const push = (sectionName, offer) => {
-      const key = sectionName || '__ALL__';
-      if (!map.has(key)) map.set(key, []);
-      map.get(key).push(offer);
-    };
-    for (const offer of offers) {
-      const sections = Array.isArray(offer.applicableSections) ? offer.applicableSections : [];
-      if (sections.length === 0) {
-        push('__ALL__', offer);
-        continue;
-      }
-      sections.forEach((sectionName) => push(sectionName, offer));
-    }
-    return map;
-  }, [offers]);
-
-  const offersForActiveSection = useMemo(() => {
-    if (!offersBySection.size) return [];
-    const globalOffers = offersBySection.get('__ALL__') || [];
-    if (!activeSection) {
-      return globalOffers.length ? globalOffers : Array.from(offersBySection.values()).flat();
-    }
-    const scoped = offersBySection.get(activeSection) || [];
-    if (globalOffers.length === 0) return scoped;
-    const merged = [...globalOffers];
-    for (const offer of scoped) {
-      if (!merged.some((existing) => existing.id === offer.id)) {
-        merged.push(offer);
-      }
-    }
-    return merged;
-  }, [offersBySection, activeSection]);
-
-  if (!Array.isArray(menu) || menu.length === 0) return <p>Loading menu...</p>;
-  if (!shop) return <p>Shop not found.</p>;
-  const shopIcon = null;
-
-  // Open modal for variant items; otherwise add immediately
-  const handleAddClick = (item) => {
-    const { allowAction, nextDayOnly } = computeItemAvailability(item);
-
-    if (cartShopMismatch) {
-      toast.warn("Cart already has items from another shop. Please place separate orders.");
-      return;
-    }
-    if (!allowAction) {
-      toast.info(nextDayOnly ? 'Available from next day' : 'Currently unavailable');
-      return;
-    }
-    setSelectedItem(item);
-
-    // Inventory guard
-    const inv = Number(item.inventory ?? 100);
-    const remaining = Math.max(0, inv - qtyInCart(item));
-    if (remaining <= 0) {
-      toast.error("This item is sold out");
+  const handleExpressInterest = async (item) => {
+    if (!item || interestPending) return;
+    if (!employeeToken) {
+      toast.info('Please sign in as an employee to express interest.');
       return;
     }
 
-    if (item.hasOptions && item.options) {
-      // Open modal to select multiple variants and quantities, persist per-item until checkout
-      const existing = variantDrafts[item.id];
-      if (existing) {
-        setMultiOptionQuantities(existing);
-      } else {
-        const init = {};
-        item.options.forEach(o => { init[o.name] = 0; });
-        setVariantDrafts(prev => ({ ...prev, [item.id]: init }));
-        setMultiOptionQuantities(init);
-      }
-      setShowOptionsModal(true);
-    } else {
-      // Add directly without customization modal
-      addToCart(item, selectedShop, null, {});
-      toast.success(`${item.name} added to cart!`);
+    const key = interestKey(item);
+    const now = Date.now();
+    const cooldownUntil = interestCooldownsRef.current.get(key) || 0;
+    if (now < cooldownUntil) {
+      const delta = Math.ceil((cooldownUntil - now) / 1000);
+      toast.info(`Please wait ${delta}s before expressing interest again.`);
+      return;
     }
-  };
 
-  const renderComboCard = (combo) => {
-    const components = Array.isArray(combo.components) ? combo.components : [];
-    const comboAvail = computeItemAvailability({
-      section: combo?.section,
-      sectionName: combo?.sectionName,
-      category: combo?.category,
-      categoryName: combo?.categoryName,
-      availableStart: combo?.availableStart,
-      availableEnd: combo?.availableEnd,
-      available: combo?.available
-    });
-    const { sectionWindow, itemWindow, nextDayOnly: comboNextDayOnly } = comboAvail;
-    const comboAllowed = comboAvail.allowAction;
-    // Derive combo capacity from component inventories
-    const findItem = (id) => (shop && Array.isArray(shop.items)) ? shop.items.find(i => Number(i.id) === Number(id)) : null;
-    // Build consumed counts per item id from current cart (singles and combos)
-    const consumedByItemId = (() => {
-      const map = new Map();
-      for (const line of cart) {
-        if (line.item?.comboId && Array.isArray(line.item?.comboComponents)) {
-          for (const comp of line.item.comboComponents) {
-            const need = Math.max(1, Number(comp.quantity || 1));
-            map.set(comp.itemId, (map.get(comp.itemId) || 0) + need * Number(line.quantity || 0));
-          }
-        } else if (line.item && line.item.id != null) {
-          map.set(Number(line.item.id), (map.get(Number(line.item.id)) || 0) + Number(line.quantity || 0));
-        }
-      }
-      return map;
-    })();
-    const capacity = (() => {
-      if (!components.length) return 0;
-      let cap = Infinity;
-      for (const c of components) {
-        const it = findItem(c.itemId);
-        const inv = Number(it?.inventory ?? 0);
-        const need = Math.max(1, Number(c?.quantity || 1));
-        const consumed = Number(consumedByItemId.get(Number(c.itemId)) || 0);
-        const remainingUnits = Math.max(0, inv - consumed);
-        const possible = Math.floor(remainingUnits / need);
-        cap = Math.min(cap, possible);
-      }
-      return Number.isFinite(cap) ? cap : 0;
-    })();
-    const inCartCombo = cart.filter(c => c.shopId === selectedShop && c.item?.comboId === combo.id).reduce((s, c) => s + c.quantity, 0);
-    const stockLeft = Math.max(0, capacity - inCartCombo);
-    const compLines = components.map((c, idx) => {
-      const base = c && (c.name || ((shop && Array.isArray(shop.items)) ? (shop.items.find(i => Number(i.id) === Number(c.itemId))?.name) : null) || 'Item');
-      const qty = Number(c?.quantity || 1);
-      const opt = c?.option ? ` (${c.option})` : '';
-      return (
-        <div key={idx} style={{ display:'flex', justifyContent:'space-between', gap:8, fontSize:12, color:'#555' }}>
-          <span style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{base}{opt}</span>
-          <span style={{ color:'#333' }}>×{qty}</span>
-        </div>
-      );
-    });
-    const handleAddCombo = () => {
-      if (cartShopMismatch) { toast.warn("Cart already has items from another shop. Please place separate orders."); return; }
-      if (stockLeft <= 0) { toast.error('No more combos available to order'); return; }
-      if (!comboAllowed) { toast.info(comboNextDayOnly ? 'Order opens next day' : 'Next order window not open yet'); return; }
-      const synthetic = {
-        id: 1000000 + Number(combo.id || 0),
-        comboId: combo.id,
-        name: combo.name || 'Combo',
-        price: Number(combo.price || 0),
-        available: stockLeft > 0,
-        image: '',
-        prepTime: 10,
-        inventory: stockLeft,
-        comboComponents: components.map(c => ({ itemId: Number(c.itemId)||0, quantity: Number(c.quantity)||1 }))
-      };
-      addToCart(synthetic, selectedShop, null, {});
-      toast.success(`${combo.name} combo added to cart!`);
-    };
-    return (
-      <div key={combo.id} className="menu-item-card">
-        <div className="menu-item-content">
-          <div className="menu-item-name">{combo.name}</div>
-          <div className="menu-item-price">
-            ₹{combo.price}
-            {(comboAvail.itemWindow?.start && comboAvail.itemWindow?.end) && (
-              <span style={{ fontSize: 12, color: '#666', marginLeft: 8 }}>({comboAvail.itemWindow.start}-{comboAvail.itemWindow.end})</span>
-            )}
-          </div>
-          {(() => {
-            if (!comboAllowed) {
-              return (
-                <div style={{ position: 'absolute', top: 8, left: 8, background: '#7f8c8d', color: '#fff', padding: '2px 8px', borderRadius: 4, fontSize: 12, fontWeight: 700 }}>
-                  {comboNextDayOnly ? 'NEXT DAY' : 'NEXT WINDOW'}
-                </div>
-              );
-            }
-            if (stockLeft === 0) {
-              return (
-                <div style={{ position: 'relative' }}>
-                  <div style={{ position: 'absolute', top: 8, left: 0, background: '#e74c3c', color: '#fff', padding: '2px 8px', borderRadius: 4, fontSize: 12, fontWeight: 700 }}>
-                    SOLD OUT
-                  </div>
-                </div>
-              );
-            }
-          })()}
-          <div style={{ fontSize: 12, color: '#666', margin: '6px 0' }}>Combo Offer</div>
-          {components.length > 0 && (
-            <div className="card" style={{ background:'#fafafa', border:'1px solid #eee', padding:8, margin:'6px 0' }}>
-              <div style={{ fontWeight:600, fontSize:12, color:'#333', marginBottom:6 }}>Includes</div>
-              <div style={{ display:'grid', gap:4 }}>
-                {compLines}
-              </div>
-            </div>
-          )}
-          {showInventory && (
-            <div style={{ fontSize: 11, color: stockLeft === 0 ? '#e74c3c' : '#666', marginBottom: 6 }}>Left: {stockLeft}</div>
-          )}
-          {!readOnly && (
-            <button
-              className="icon-btn"
-              onClick={handleAddCombo}
-              disabled={!comboAllowed || stockLeft <= 0 || cartShopMismatch}
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                background: '#fff',
-                color: '#111',
-                border: "1px solid #111",
-                borderRadius: 6,
-                opacity: comboAllowed && stockLeft > 0 ? 1 : 0.6
-              }}
-            >
-              {comboAllowed ? (stockLeft > 0 ? 'Add Combo' : 'Sold Out') : 'Next order is from tomorrow'}
-            </button>
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  const handleOptionConfirm = () => {
-    if (selectedItem && selectedOption) {
-      addToCart(selectedItem, selectedShop, selectedOption, {});
-      setShowOptionsModal(false);
-      setSelectedItem(null);
-      setSelectedOption(null);
-      toast.success(`${selectedItem.name} added to cart!`);
-    }
-  };
-
-  // Toggle favorite state (uses backend), stops card click propagation
-  const handleFavoriteClick = async (itemId, e) => {
-    e.stopPropagation();
     try {
-      const result = await toggleFavorite(userId, itemId);
-      onFavoriteToggle();
-      toast.success(result.message);
+      setInterestPending(true);
+      const response = await expressInterest({ token: employeeToken, shopId: selectedShop, itemId: item.id });
+      const status = response?.status;
+      const summary = response?.summary;
+      const cooldownMs = Number(response?.cooldownMs || 0);
+      if (cooldownMs > 0) {
+        interestCooldownsRef.current.set(key, now + cooldownMs);
+      }
+
+      if (status === 'duplicate') {
+        toast.info('Interest already recorded recently.');
+      } else {
+        toast.success('Interest recorded!');
+      }
+
+      if (summary) {
+        const interestedCount = summary.uniqueEmployees ?? summary.totalClicks ?? 0;
+        setInterestSummaries((prev) => ({ ...prev, [key]: summary, lastUpdated: Date.now() }));
+        if (interestedCount > 0) {
+          toast.info(`${interestedCount} employee${interestedCount === 1 ? '' : 's'} interested in ${summary.metadata?.itemName || item.name}`);
+        }
+      }
     } catch (error) {
-      toast.error("Failed to update favorite");
+      console.error('Express interest failed', error);
+      toast.error('Failed to express interest. Please try again.');
+    } finally {
+      setInterestPending(false);
     }
   };
-
-  const isFavorite = (itemId) => favorites.includes(itemId);
 
   let filteredItems = shop.items;
   if (vegOnly) filteredItems = filteredItems.filter(item => item.isVeg);

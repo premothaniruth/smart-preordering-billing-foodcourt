@@ -2264,6 +2264,58 @@ const ensureInterestCapacity = (records) => {
   records.splice(0, excess);
 };
 
+const getVendorIdForShop = (shopId) => {
+  if (shopId == null) return null;
+  try {
+    const directory = getVendorDirectoryMap();
+    const entry = directory.get(String(shopId));
+    return entry?.vendorId != null ? String(entry.vendorId) : null;
+  } catch (error) {
+    console.warn('Failed to resolve vendorId for shop', shopId, error);
+    return null;
+  }
+};
+
+const buildInterestSummary = ({ entry, metadata, threshold }) => {
+  const shopId = String(entry?.shopId ?? metadata?.shopId ?? '');
+  const itemId = String(entry?.itemId ?? metadata?.itemId ?? '');
+  const vendorId = entry?.vendorId ?? getVendorIdForShop(shopId) ?? null;
+  const uniqueEmployees = Number(entry?.uniqueEmployees || 0);
+  const totalClicks = Number(entry?.totalClicks || 0);
+  const history = Array.isArray(entry?.history) ? entry.history.slice(-50) : [];
+  const soldOut = isSoldOut(metadata);
+  const lowStock = isLowStock(metadata);
+  const restockSuggested = Boolean(
+    Number.isFinite(threshold) && threshold > 0 && uniqueEmployees >= threshold && (soldOut || lowStock)
+  );
+
+  return {
+    shopId,
+    itemId,
+    vendorId,
+    threshold,
+    uniqueEmployees,
+    totalClicks,
+    firstExpressedAt: entry?.firstExpressedAt || null,
+    lastExpressedAt: entry?.lastExpressedAt || null,
+    soldOut,
+    lowStock,
+    restockSuggested,
+    metadata: metadata
+      ? {
+          shopName: metadata.shopName || null,
+          itemName: metadata.itemName || null,
+          inventory: Number.isFinite(metadata.inventory) ? metadata.inventory : null,
+          section: metadata.section || null,
+          lowStockThreshold: metadata.lowStockThreshold ?? null,
+          image: metadata.image || null,
+          price: metadata.price ?? null,
+        }
+      : null,
+    history,
+  };
+};
+
 /**
  * Read favorites from disk.
  * @returns {Array<{userId:string,itemId:number}>}
@@ -3515,6 +3567,205 @@ app.get("/vendor/feedbacks", authenticateVendor, (req, res) => {
     res.json(feedbacks);
   } catch (error) {
     res.status(500).json({ message: "Error fetching feedbacks" });
+  }
+});
+
+// ===== Interest Tracking =====
+
+app.post('/interest', authenticateEmployee, (req, res) => {
+  try {
+    const { shopId, itemId } = req.body || {};
+    const shopIdStr = shopId != null ? String(shopId).trim() : '';
+    const itemIdStr = itemId != null ? String(itemId).trim() : '';
+
+    if (!shopIdStr || !itemIdStr) {
+      return res.status(400).json({ message: 'shopId and itemId are required' });
+    }
+
+    const metadata = findMenuItemMetadata(shopIdStr, itemIdStr);
+    if (!metadata) {
+      return res.status(404).json({ message: 'Menu item not found' });
+    }
+
+    if (!isSoldOut(metadata) && !isLowStock(metadata)) {
+      return res.status(409).json({ message: 'Interest can only be expressed for sold-out or low-stock items' });
+    }
+
+    const vendorId = getVendorIdForShop(shopIdStr);
+    const identitySet = getEmployeeIdentitySet(req.employee || {}, req.employeeSession || null);
+    const records = getItemInterestRecords();
+    const nowMs = Date.now();
+    const nowIso = new Date(nowMs).toISOString();
+
+    let deduped = false;
+    const relevantRecords = records.filter((record) => String(record.shopId) === shopIdStr && String(record.itemId) === itemIdStr);
+    for (const record of relevantRecords) {
+      if (!hasIdentityOverlap(record, identitySet)) continue;
+      const ts = record.timestamp ? new Date(record.timestamp).getTime() : null;
+      if (Number.isFinite(ts) && nowMs - ts < INTEREST_DEDUP_WINDOW_MS) {
+        deduped = true;
+        break;
+      }
+    }
+
+    if (!deduped) {
+      const employee = req.employee || {};
+      const session = req.employeeSession || {};
+      const employeeId = employee.id != null ? String(employee.id) : (session.employeeId != null ? String(session.employeeId) : null);
+      const employeeMobile = employee.mobile || session.mobile || null;
+      const employeeContact = employee.contact || session.contact || null;
+      const employeeEmail = employee.email || session.email || null;
+      const employeeUsername = employee.username || session.username || null;
+
+      const newRecord = {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        shopId: shopIdStr,
+        itemId: itemIdStr,
+        vendorId,
+        timestamp: nowIso,
+        employeeId,
+        employeeMobile: employeeMobile != null ? String(employeeMobile) : null,
+        employeeContact: employeeContact != null ? String(employeeContact) : null,
+        employeeEmail: employeeEmail != null ? String(employeeEmail) : null,
+        employeeUsername: employeeUsername != null ? String(employeeUsername) : null,
+      };
+
+      records.push(newRecord);
+      ensureInterestCapacity(records);
+      saveItemInterestRecords(records);
+
+      recordAuditEvent({
+        actorType: 'employee',
+        actorId: employeeId,
+        shopId: shopIdStr,
+        vendorId: vendorId != null ? Number(vendorId) : null,
+        action: 'interest.expressed',
+        metadata: {
+          itemId: itemIdStr,
+          deduped: false,
+        },
+      });
+    }
+
+    const aggregated = aggregateInterest(records);
+    const entry = getInterestEntry(aggregated, shopIdStr, itemIdStr) || {
+      shopId: shopIdStr,
+      itemId: itemIdStr,
+      vendorId,
+      uniqueEmployees: 0,
+      totalClicks: 0,
+      history: [],
+      firstExpressedAt: null,
+      lastExpressedAt: null,
+    };
+    const threshold = getVendorThresholdValue(entry.vendorId ?? vendorId);
+    const summary = buildInterestSummary({ entry, metadata, threshold });
+
+    res.json({
+      status: deduped ? 'duplicate' : 'ok',
+      summary,
+      cooldownMs: INTEREST_DEDUP_WINDOW_MS,
+    });
+  } catch (error) {
+    console.error('Error recording interest', error);
+    res.status(500).json({ message: 'Failed to record interest' });
+  }
+});
+
+app.get('/vendor/interest/summary', authenticateVendor, requirePermission('analytics:read'), (req, res) => {
+  try {
+    const vendorId = req.vendor.vendorId != null ? String(req.vendor.vendorId) : null;
+    if (!vendorId) {
+      return res.status(400).json({ message: 'Vendor session missing vendorId' });
+    }
+
+    const thresholdsMap = getVendorInterestThresholds();
+    const baseThreshold = getVendorThresholdValue(vendorId, thresholdsMap);
+    const aggregated = aggregateInterest(getItemInterestRecords());
+
+    const items = aggregated
+      .filter((entry) => {
+        const entryVendorId = entry.vendorId != null ? String(entry.vendorId) : getVendorIdForShop(entry.shopId);
+        return entryVendorId != null && String(entryVendorId) === vendorId;
+      })
+      .map((entry) => {
+        const metadata = findMenuItemMetadata(entry.shopId, entry.itemId);
+        const threshold = getVendorThresholdValue(entry.vendorId != null ? entry.vendorId : vendorId, thresholdsMap);
+        return buildInterestSummary({ entry, metadata, threshold });
+      })
+      .sort((a, b) => {
+        const aTs = a.lastExpressedAt ? new Date(a.lastExpressedAt).getTime() : 0;
+        const bTs = b.lastExpressedAt ? new Date(b.lastExpressedAt).getTime() : 0;
+        return bTs - aTs;
+      });
+
+    const totals = items.reduce(
+      (acc, item) => {
+        acc.uniqueEmployees += item.uniqueEmployees;
+        acc.totalClicks += item.totalClicks;
+        if (item.restockSuggested) acc.restockSuggestions += 1;
+        return acc;
+      },
+      { uniqueEmployees: 0, totalClicks: 0, restockSuggestions: 0 }
+    );
+
+    recordAuditEvent({
+      actorType: 'vendor',
+      actorId: req.vendor.vendorId,
+      vendorId: req.vendor.vendorId,
+      shopId: req.vendor.shopId,
+      action: 'interest.summary.viewed',
+      metadata: { itemCount: items.length },
+    });
+
+    res.json({
+      status: 'ok',
+      vendorId: req.vendor.vendorId,
+      shopId: req.vendor.shopId ?? null,
+      threshold: baseThreshold,
+      totals,
+      items,
+      restockSuggestions: items.filter((item) => item.restockSuggested).map((item) => ({ shopId: item.shopId, itemId: item.itemId })),
+    });
+  } catch (error) {
+    console.error('Error generating interest summary', error);
+    res.status(500).json({ message: 'Failed to load interest summary' });
+  }
+});
+
+app.put('/vendor/interest/threshold', authenticateVendor, requirePermission('analytics:write'), (req, res) => {
+  try {
+    const vendorId = req.vendor.vendorId != null ? String(req.vendor.vendorId) : null;
+    if (!vendorId) {
+      return res.status(400).json({ message: 'Vendor session missing vendorId' });
+    }
+
+    const body = req.body || {};
+    const rawValue = body.threshold != null ? body.threshold : body.value;
+    const parsed = Number(rawValue);
+    if (!Number.isFinite(parsed)) {
+      return res.status(400).json({ message: 'threshold must be a number' });
+    }
+
+    const normalized = Math.max(1, Math.min(1000, Math.round(parsed)));
+    const thresholdsMap = getVendorInterestThresholds();
+    const previous = thresholdsMap[vendorId] ?? null;
+    thresholdsMap[vendorId] = normalized;
+    saveVendorInterestThresholds(thresholdsMap);
+
+    recordAuditEvent({
+      actorType: 'vendor',
+      actorId: req.vendor.vendorId,
+      vendorId: req.vendor.vendorId,
+      shopId: req.vendor.shopId,
+      action: 'interest.threshold.updated',
+      metadata: { previous, next: normalized },
+    });
+
+    res.json({ status: 'ok', threshold: normalized });
+  } catch (error) {
+    console.error('Error updating interest threshold', error);
+    res.status(500).json({ message: 'Failed to update threshold' });
   }
 });
 
