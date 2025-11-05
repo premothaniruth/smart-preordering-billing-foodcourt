@@ -17,10 +17,10 @@
     "maxDiscountAmount": 30
   },
   {
-    "id": 1761996699527,
+    "id": 1762361650374,
     "shopId": 2,
-    "title": "snack offer",
-    "bannerText": "buy 1 get 1 free",
+    "title": "Buy 1 get 1",
+    "bannerText": "Buy dosa and get vada for free",
     "description": "",
     "active": true,
     "stackable": false,
@@ -29,7 +29,7 @@
     "discountPercent": 0,
     "discountAmount": null,
     "applicableSections": [
-      "Quick Bites"
+      "Breakfast"
     ],
     "applicableComboIds": [],
     "start": null,
@@ -42,22 +42,23 @@
       {
         "type": "item_quantity",
         "itemIds": [
-          "custom-target-1"
+          102
         ],
-        "minQuantity": 2
+        "minQuantity": 1
       }
     ],
     "rewards": [
       {
         "type": "free_item",
-        "itemId": "custom-1",
+        "itemId": 105,
         "quantity": 1,
-        "description": "Custom 1"
+        "price": 50,
+        "description": "Medu Vada"
       }
     ],
     "metadata": null,
-    "createdAt": "2025-11-01T11:34:56.581Z",
-    "updatedAt": "2025-11-01T16:55:01.520Z"
+    "createdAt": "2025-11-05T16:55:14.759Z",
+    "updatedAt": "2025-11-05T16:55:14.759Z"
   },
   {
     "id": "diwali-sections-10",
@@ -96,6 +97,6 @@
     ],
     "metadata": null,
     "createdAt": "2025-11-01T11:34:56.581Z",
-    "updatedAt": "2025-11-01T16:55:01.520Z"
+    "updatedAt": "2025-11-05T16:55:14.759Z"
   }
 ]

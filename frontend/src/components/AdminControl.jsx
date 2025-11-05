@@ -1003,6 +1003,71 @@ function AdminControl({
     </div>
   );
 
+  const userManagementPanel = (
+    <div className="card">
+      <div className="card-header">User Management</div>
+      <div className="card-body">
+        <p style={{ margin: 0, color: "#7f8c8d" }}>
+          Placeholder area for managing employees, admins, and vendor accounts. Detailed controls coming soon.
+        </p>
+      </div>
+    </div>
+  );
+
+  const analyticsPanel = (
+    <div className="card">
+      <div className="card-header">Analytics Overview</div>
+      <div className="card-body">
+        <p style={{ margin: 0, color: "#7f8c8d" }}>
+          Analytics dashboards and reporting widgets will appear here. Configure KPIs and visualizations later.
+        </p>
+      </div>
+    </div>
+  );
+
+  const procurementPanel = (
+    <div className="card">
+      <div className="card-header">Procurement Console</div>
+      <div className="card-body">
+        <p style={{ margin: 0, color: "#7f8c8d" }}>
+          Upcoming tools for purchase planning, vendor sourcing, and inventory restocking workflows.
+        </p>
+      </div>
+    </div>
+  );
+
+  const sectionWindowPanel = (
+    <div className="card">
+      <div className="card-header">Section Window</div>
+      <div className="card-body">
+        <p style={{ margin: 0, color: "#7f8c8d" }}>
+          Use this space to configure sectional menus, kiosk visibility, and scheduling windows in future updates.
+        </p>
+      </div>
+    </div>
+  );
+
+  const financePanel = (
+    <div className="card">
+      <div className="card-header">Finance Hub</div>
+      <div className="card-body">
+        <p style={{ margin: 0, color: "#7f8c8d" }}>
+          Financial summaries, billing reconciliations, and settlement workflows will be integrated here later.
+        </p>
+      </div>
+    </div>
+  );
+
+  const panelByKey = {
+    bulk: bulkOrdersPanel,
+    vendors: vendorManagementPanel,
+    users: userManagementPanel,
+    analytics: analyticsPanel,
+    procurement: procurementPanel,
+    sections: sectionWindowPanel,
+    finance: financePanel,
+  };
+
   return (
     <div className="admin-control">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
@@ -1026,12 +1091,47 @@ function AdminControl({
           >
             Manage Vendors
           </button>
+          <button
+            type="button"
+            style={navButtonStyle(activePanel === "users")}
+            onClick={() => setActivePanel("users")}
+          >
+            User Management
+          </button>
+          <button
+            type="button"
+            style={navButtonStyle(activePanel === "analytics")}
+            onClick={() => setActivePanel("analytics")}
+          >
+            Analytics
+          </button>
+          <button
+            type="button"
+            style={navButtonStyle(activePanel === "procurement")}
+            onClick={() => setActivePanel("procurement")}
+          >
+            Procurement
+          </button>
+          <button
+            type="button"
+            style={navButtonStyle(activePanel === "sections")}
+            onClick={() => setActivePanel("sections")}
+          >
+            Section Window
+          </button>
+          <button
+            type="button"
+            style={navButtonStyle(activePanel === "finance")}
+            onClick={() => setActivePanel("finance")}
+          >
+            Finance
+          </button>
           <div style={{ fontSize: 12, color: "#95a5a6", marginTop: 8 }}>
             Select an option to view actions on the right.
           </div>
         </div>
         <div style={{ flex: 1 }}>
-          {activePanel === "bulk" ? bulkOrdersPanel : vendorManagementPanel}
+          {panelByKey[activePanel] || panelByKey.bulk}
         </div>
       </div>
     </div>

@@ -5,13 +5,34 @@
     "email": "prem@infosys.com",
     "mobile": "+919952911560",
     "passwordHash": "$2b$10$/e0tSz4K3pEpYL4BcAAsSOaOx0xBw/BhVHcZtZjrUDt5xfR/C84FG",
-    "pinHash": "$2b$10$olFVXAczDWHIimjvT10PkuZQBq5yAFaEvEL/GGdWQqxCIDgkX2AA6",
+    "pinHash": "$2b$10$8DDQ3hCK9jNqPLBC1AxZJOoAtY82tz25huPbZxIRW9nQx885Syr1W",
     "role": "Employee",
     "roleSlug": "employee",
     "department": "",
     "bulkOrderEligible": false,
-    "walletBalance": 110,
+    "walletBalance": 65,
     "walletTransactions": [
+      {
+        "id": "1762361464411-4j8x8f",
+        "timestamp": "2025-11-05T16:51:04.411Z",
+        "type": "credit",
+        "reason": "points-conversion",
+        "amount": 3,
+        "metadata": {
+          "pointsConverted": 30,
+          "pointsLedgerId": "pts_1762361464410_4nv0"
+        },
+        "status": "success"
+      },
+      {
+        "id": "1762361119352-3pcmoy",
+        "timestamp": "2025-11-05T16:45:19.353Z",
+        "type": "debit",
+        "reason": "order-payment",
+        "orderBillingId": "00002",
+        "amount": 45,
+        "status": "success"
+      },
       {
         "id": "1762279132209-26vtq5",
         "timestamp": "2025-11-04T17:58:52.209Z",

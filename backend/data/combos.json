@@ -22,19 +22,23 @@
     "id": "si-breakfast-combo-1",
     "shopId": 2,
     "name": "South Breakfast Combo",
-    "price": 129,
+    "price": 95,
     "active": true,
+    "hidden": false,
+    "availableStart": null,
+    "availableEnd": null,
     "components": [
       {
         "itemId": 107,
         "quantity": 1,
-        "overridePrice": null
+        "overridePrice": 50
       },
       {
-        "itemId": 156,
+        "itemId": 106,
         "quantity": 1,
+        "name": "",
         "option": "",
-        "overridePrice": null
+        "overridePrice": 55
       }
     ]
   },
@@ -44,6 +48,9 @@
     "name": "Dosa Combo",
     "price": 119,
     "active": true,
+    "hidden": false,
+    "availableStart": null,
+    "availableEnd": null,
     "components": [
       {
         "itemId": 102,

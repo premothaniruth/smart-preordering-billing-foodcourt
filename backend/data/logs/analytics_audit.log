@@ -74,3 +74,11 @@
 {"timestamp":"2025-11-04T19:59:09.950Z","actorType":"vendor","actorId":1,"shopId":1,"vendorId":1,"action":"vendor.login.success","metadata":{"username":"northfoods"}}
 {"timestamp":"2025-11-04T20:06:20.431Z","actorType":"vendor","actorId":1,"shopId":1,"vendorId":1,"action":"vendor.login.success","metadata":{"username":"northfoods"}}
 {"timestamp":"2025-11-04T20:09:37.382Z","actorType":"vendor","actorId":1,"shopId":1,"vendorId":1,"action":"vendor.login.success","metadata":{"username":"northfoods"}}
+{"timestamp":"2025-11-05T13:43:27.023Z","actorType":"vendor","actorId":1,"shopId":1,"vendorId":1,"action":"vendor.login.success","metadata":{"username":"northfoods"}}
+{"timestamp":"2025-11-05T13:47:58.003Z","actorType":"vendor","actorId":1,"shopId":1,"vendorId":1,"action":"vendor.login.success","metadata":{"username":"northfoods"}}
+{"type":"points:order-processed","actor":{"type":"system","source":"order.create"},"employeeId":1,"orderId":40,"pointsEarned":0,"streakBonuses":0,"pointsConverted":0}
+{"timestamp":"2025-11-05T16:47:18.146Z","actorType":"vendor","actorId":1,"shopId":1,"vendorId":1,"action":"vendor.login.success","metadata":{"username":"northfoods"}}
+{"timestamp":"2025-11-05T16:48:23.997Z","actorType":"vendor","actorId":2,"shopId":2,"vendorId":2,"action":"vendor.login.success","metadata":{"username":"southfoods"}}
+{"timestamp":"2025-11-05T16:48:50.305Z","actorType":"vendor","actorId":2,"shopId":2,"vendorId":2,"action":"interest.summary.viewed","metadata":{"itemCount":0}}
+{"type":"points:order-processed","actor":{"type":"system","source":"order.create"},"employeeId":1,"orderId":41,"pointsEarned":15,"streakBonuses":1,"pointsConverted":30}
+{"timestamp":"2025-11-05T16:51:22.010Z","actorType":"vendor","actorId":2,"shopId":2,"vendorId":2,"action":"vendor.login.success","metadata":{"username":"southfoods"}}

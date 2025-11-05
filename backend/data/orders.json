@@ -869,7 +869,7 @@
     "shopId": 1,
     "user": "+919952911560",
     "scheduledTime": "2025-11-05T09:10",
-    "status": "pending",
+    "status": "ready",
     "createdAt": "2025-11-04T17:52:30.043Z",
     "billingId": "00006",
     "estimatedReadyTime": "2025-11-04T18:16:30.043Z",
@@ -894,7 +894,8 @@
       "amount": 200,
       "provider": "razorpay-open",
       "reference": "PG-1762278750043"
-    }
+    },
+    "readyAt": "2025-11-05T16:47:53.034Z"
   },
   {
     "id": 25,
@@ -927,7 +928,7 @@
     "shopId": 1,
     "user": "+919952911560",
     "scheduledTime": "2025-11-05T08:00",
-    "status": "pending",
+    "status": "ready",
     "createdAt": "2025-11-04T17:53:12.801Z",
     "billingId": "00007",
     "estimatedReadyTime": "2025-11-04T18:30:12.801Z",
@@ -954,7 +955,8 @@
       "reference": "PG-1762278792801"
     },
     "etaExtendedAt": "2025-11-04T18:01:16.056Z",
-    "etaExtensionMinutes": 5
+    "etaExtensionMinutes": 5,
+    "readyAt": "2025-11-05T16:47:49.035Z"
   },
   {
     "id": 26,
@@ -1003,7 +1005,7 @@
     "shopId": 1,
     "user": "+919952911560",
     "scheduledTime": "2025-11-05T08:00",
-    "status": "pending",
+    "status": "ready",
     "createdAt": "2025-11-04T17:53:49.216Z",
     "billingId": "00008",
     "estimatedReadyTime": "2025-11-04T18:54:49.216Z",
@@ -1030,7 +1032,8 @@
       "reference": "PG-1762278829216"
     },
     "etaExtendedAt": "2025-11-04T18:01:17.410Z",
-    "etaExtensionMinutes": 5
+    "etaExtensionMinutes": 5,
+    "readyAt": "2025-11-05T16:47:49.619Z"
   },
   {
     "id": 27,
@@ -1122,7 +1125,7 @@
     "shopId": 1,
     "user": "+919952911560",
     "scheduledTime": "2025-11-05T18:00",
-    "status": "pending",
+    "status": "ready",
     "createdAt": "2025-11-04T17:55:00.335Z",
     "billingId": "00010",
     "estimatedReadyTime": "2025-11-04T18:56:00.335Z",
@@ -1147,7 +1150,8 @@
       "amount": 470,
       "provider": "razorpay-open",
       "reference": "PG-1762278900335"
-    }
+    },
+    "readyAt": "2025-11-05T16:48:03.415Z"
   },
   {
     "id": 29,
@@ -1187,8 +1191,8 @@
     "prepTime": 40,
     "baseEstimatedReadyTime": "2025-11-04T18:35:18.096Z",
     "basePrepTime": 40,
-    "rating": null,
-    "feedback": null,
+    "rating": 5,
+    "feedback": "",
     "totalAmount": 185,
     "subtotalBeforeDiscount": 185,
     "discountTotal": 0,
@@ -1239,7 +1243,7 @@
     "shopId": 1,
     "user": "+919952911560",
     "scheduledTime": "2025-11-05T08:00",
-    "status": "pending",
+    "status": "ready",
     "createdAt": "2025-11-04T17:55:30.290Z",
     "billingId": "00012",
     "estimatedReadyTime": "2025-11-04T18:37:30.290Z",
@@ -1264,7 +1268,8 @@
       "amount": 195,
       "provider": "razorpay-open",
       "reference": "PG-1762278930290"
-    }
+    },
+    "readyAt": "2025-11-05T16:47:49.796Z"
   },
   {
     "id": 31,
@@ -1297,7 +1302,7 @@
     "shopId": 1,
     "user": "+919952911560",
     "scheduledTime": "2025-11-05T08:00",
-    "status": "pending",
+    "status": "ready",
     "createdAt": "2025-11-04T17:55:42.916Z",
     "billingId": "00013",
     "estimatedReadyTime": "2025-11-04T18:40:42.916Z",
@@ -1322,7 +1327,8 @@
       "amount": 180,
       "provider": "razorpay-open",
       "reference": "PG-1762278942916"
-    }
+    },
+    "readyAt": "2025-11-05T16:47:49.974Z"
   },
   {
     "id": 32,
@@ -1355,7 +1361,7 @@
     "shopId": 1,
     "user": "+919952911560",
     "scheduledTime": "2025-11-05T08:00",
-    "status": "pending",
+    "status": "ready",
     "createdAt": "2025-11-04T17:56:51.704Z",
     "billingId": "00014",
     "estimatedReadyTime": "2025-11-04T18:42:51.704Z",
@@ -1380,7 +1386,8 @@
       "amount": 185,
       "provider": "razorpay-open",
       "reference": "PG-1762279011704"
-    }
+    },
+    "readyAt": "2025-11-05T16:47:50.144Z"
   },
   {
     "id": 33,
@@ -1413,7 +1420,7 @@
     "shopId": 1,
     "user": "+919952911560",
     "scheduledTime": "2025-11-05T08:00",
-    "status": "pending",
+    "status": "ready",
     "createdAt": "2025-11-04T17:57:05.190Z",
     "billingId": "00015",
     "estimatedReadyTime": "2025-11-04T18:45:05.190Z",
@@ -1437,7 +1444,8 @@
       "method": "wallet",
       "amount": 195,
       "walletBalance": 305
-    }
+    },
+    "readyAt": "2025-11-05T16:47:50.314Z"
   },
   {
     "id": 34,
@@ -1470,7 +1478,7 @@
     "shopId": 1,
     "user": "+919952911560",
     "scheduledTime": "2025-11-05T08:00",
-    "status": "pending",
+    "status": "ready",
     "createdAt": "2025-11-04T17:57:25.408Z",
     "billingId": "00016",
     "estimatedReadyTime": "2025-11-04T18:47:25.408Z",
@@ -1494,7 +1502,8 @@
       "method": "wallet",
       "amount": 195,
       "walletBalance": 110
-    }
+    },
+    "readyAt": "2025-11-05T16:47:50.491Z"
   },
   {
     "id": 35,
@@ -1527,7 +1536,7 @@
     "shopId": 1,
     "user": "+919952911560",
     "scheduledTime": "2025-11-05T08:00",
-    "status": "pending",
+    "status": "ready",
     "createdAt": "2025-11-04T17:57:52.774Z",
     "billingId": "00017",
     "estimatedReadyTime": "2025-11-04T18:50:52.774Z",
@@ -1550,7 +1559,8 @@
     "payment": {
       "method": "cash",
       "amount": 180
-    }
+    },
+    "readyAt": "2025-11-05T16:47:50.682Z"
   },
   {
     "id": 36,
@@ -1583,7 +1593,7 @@
     "shopId": 1,
     "user": "+919952911560",
     "scheduledTime": "2025-11-05T08:00",
-    "status": "pending",
+    "status": "ready",
     "createdAt": "2025-11-04T17:58:38.156Z",
     "billingId": "00018",
     "estimatedReadyTime": "2025-11-04T18:52:38.156Z",
@@ -1606,7 +1616,8 @@
     "payment": {
       "method": "cash",
       "amount": 195
-    }
+    },
+    "readyAt": "2025-11-05T16:47:50.899Z"
   },
   {
     "id": 37,
@@ -1639,7 +1650,7 @@
     "shopId": 1,
     "user": "+919952911560",
     "scheduledTime": "2025-11-05T08:00",
-    "status": "pending",
+    "status": "ready",
     "createdAt": "2025-11-04T17:58:52.201Z",
     "billingId": "00019",
     "estimatedReadyTime": "2025-11-04T18:54:52.201Z",
@@ -1664,7 +1675,8 @@
       "amount": 195,
       "provider": "razorpay-open",
       "reference": "qr-scan"
-    }
+    },
+    "readyAt": "2025-11-05T16:47:51.263Z"
   },
   {
     "id": 38,
@@ -1697,7 +1709,7 @@
     "shopId": 1,
     "user": "+919952911560",
     "scheduledTime": "2025-11-05T08:00",
-    "status": "pending",
+    "status": "ready",
     "createdAt": "2025-11-04T17:59:06.047Z",
     "billingId": "00020",
     "estimatedReadyTime": "2025-11-04T18:57:06.047Z",
@@ -1722,7 +1734,8 @@
       "amount": 195,
       "provider": "razorpay-open",
       "reference": "PG-1762279146047"
-    }
+    },
+    "readyAt": "2025-11-05T16:47:51.483Z"
   },
   {
     "id": 39,
@@ -1739,7 +1752,7 @@
     "shopId": 1,
     "user": "+919952911560",
     "scheduledTime": "2025-11-05T08:00",
-    "status": "pending",
+    "status": "ready",
     "createdAt": "2025-11-04T18:40:39.983Z",
     "billingId": "00001",
     "estimatedReadyTime": "2025-11-04T19:16:39.983Z",
@@ -1764,6 +1777,242 @@
       "amount": 6020,
       "provider": "razorpay-open",
       "reference": "PG-1762281639983"
+    },
+    "readyAt": "2025-11-05T16:47:51.842Z"
+  },
+  {
+    "id": 40,
+    "items": [
+      {
+        "id": 105,
+        "name": "Medu Vada",
+        "price": 50,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 8
+      }
+    ],
+    "shopId": 2,
+    "user": "+919952911560",
+    "scheduledTime": "2025-11-06T10:20",
+    "status": "pending",
+    "createdAt": "2025-11-05T16:45:19.350Z",
+    "billingId": "00002",
+    "estimatedReadyTime": "2025-11-05T16:53:19.349Z",
+    "prepTime": 8,
+    "baseEstimatedReadyTime": "2025-11-05T16:53:19.349Z",
+    "basePrepTime": 8,
+    "rating": null,
+    "feedback": null,
+    "totalAmount": 45,
+    "subtotalBeforeDiscount": 50,
+    "discountTotal": 5,
+    "offerSummary": {
+      "subtotalBeforeDiscount": 50,
+      "discountTotal": 5,
+      "totalPayable": 45,
+      "appliedOffers": [
+        {
+          "id": "diwali-sections-10",
+          "title": "🎉 Diwali 10% Off",
+          "description": "",
+          "bannerText": "Diwali Offer: 10% off Breakfast & Lunch",
+          "rewards": [
+            {
+              "type": "percentage_discount",
+              "details": {
+                "percent": 10,
+                "scope": "sections",
+                "sections": [
+                  "Breakfast",
+                  "Lunch"
+                ],
+                "itemIds": null,
+                "baseAmount": 50,
+                "computedDiscount": 5
+              },
+              "description": ""
+            }
+          ],
+          "discountAmount": 5,
+          "metadata": {
+            "id": "diwali-sections-10",
+            "shopId": 2,
+            "title": "🎉 Diwali 10% Off",
+            "bannerText": "Diwali Offer: 10% off Breakfast & Lunch",
+            "description": "",
+            "active": true,
+            "stackable": false,
+            "priority": 0,
+            "maxDiscountAmount": 100,
+            "discountPercent": 10,
+            "discountAmount": null,
+            "applicableSections": [
+              "Breakfast",
+              "Lunch"
+            ],
+            "applicableComboIds": [],
+            "start": "2025-10-01T00:00:00Z",
+            "end": "2025-11-30T23:59:59Z",
+            "timeStart": null,
+            "timeEnd": null,
+            "daysOfWeek": null,
+            "schedule": null,
+            "conditions": [],
+            "rewards": [
+              {
+                "type": "percentage_discount",
+                "percent": 10,
+                "appliesTo": "sections",
+                "sections": [
+                  "Breakfast",
+                  "Lunch"
+                ]
+              }
+            ],
+            "metadata": null,
+            "createdAt": "2025-11-01T11:34:56.581Z",
+            "updatedAt": "2025-11-01T16:55:01.520Z"
+          },
+          "extraItems": []
+        }
+      ],
+      "extraItems": []
+    },
+    "notes": null,
+    "payment": {
+      "method": "wallet",
+      "amount": 45,
+      "walletBalance": 65
+    }
+  },
+  {
+    "id": 41,
+    "items": [
+      {
+        "id": 146,
+        "name": "Uthappam",
+        "price": 60,
+        "quantity": 94,
+        "option": null,
+        "prepTime": 13
+      }
+    ],
+    "shopId": 2,
+    "user": "+919952911560",
+    "scheduledTime": null,
+    "status": "pending",
+    "createdAt": "2025-11-05T16:51:04.399Z",
+    "billingId": "00003",
+    "estimatedReadyTime": "2025-11-05T17:06:04.399Z",
+    "prepTime": 15,
+    "baseEstimatedReadyTime": "2025-11-05T17:06:04.399Z",
+    "basePrepTime": 15,
+    "rating": null,
+    "feedback": null,
+    "totalAmount": 5640,
+    "subtotalBeforeDiscount": 5640,
+    "discountTotal": 0,
+    "offerSummary": {
+      "subtotalBeforeDiscount": 5640,
+      "discountTotal": 0,
+      "totalPayable": 5640,
+      "appliedOffers": [
+        {
+          "id": 1761996699527,
+          "title": "snack offer",
+          "description": "",
+          "bannerText": "buy 1 get 1 free",
+          "rewards": [
+            {
+              "type": "free_item",
+              "details": {
+                "itemId": "custom-1",
+                "quantity": 1,
+                "baseQuantity": 1,
+                "multiplier": 1,
+                "price": 0,
+                "name": "Custom 1",
+                "section": null
+              },
+              "description": "Custom 1"
+            }
+          ],
+          "discountAmount": 0,
+          "metadata": {
+            "id": 1761996699527,
+            "shopId": 2,
+            "title": "snack offer",
+            "bannerText": "buy 1 get 1 free",
+            "description": "",
+            "active": true,
+            "stackable": false,
+            "priority": 0,
+            "maxDiscountAmount": null,
+            "discountPercent": 0,
+            "discountAmount": null,
+            "applicableSections": [
+              "Quick Bites"
+            ],
+            "applicableComboIds": [],
+            "start": null,
+            "end": null,
+            "timeStart": null,
+            "timeEnd": null,
+            "daysOfWeek": null,
+            "schedule": null,
+            "conditions": [
+              {
+                "type": "item_quantity",
+                "itemIds": [
+                  "custom-target-1"
+                ],
+                "minQuantity": 2
+              }
+            ],
+            "rewards": [
+              {
+                "type": "free_item",
+                "itemId": "custom-1",
+                "quantity": 1,
+                "description": "Custom 1"
+              }
+            ],
+            "metadata": null,
+            "createdAt": "2025-11-01T11:34:56.581Z",
+            "updatedAt": "2025-11-01T16:55:01.520Z"
+          },
+          "extraItems": [
+            {
+              "id": "custom-1",
+              "name": "Custom 1",
+              "price": 0,
+              "quantity": 1,
+              "section": null,
+              "fromOfferId": 1761996699527,
+              "fromOfferTitle": "snack offer"
+            }
+          ]
+        }
+      ],
+      "extraItems": [
+        {
+          "id": "custom-1",
+          "name": "Custom 1",
+          "price": 0,
+          "quantity": 1,
+          "section": null,
+          "fromOfferId": 1761996699527,
+          "fromOfferTitle": "snack offer"
+        }
+      ]
+    },
+    "notes": null,
+    "payment": {
+      "method": "gateway",
+      "amount": 5640,
+      "provider": "razorpay-open",
+      "reference": "PG-1762361464399"
     }
   }
 ]
