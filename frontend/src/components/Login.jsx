@@ -13,14 +13,16 @@ const Login = ({ onLogin }) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [foodCourt, setFoodCourt] = useState("fc-1");
 
   // Attempt vendor login via API
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const data = await vendorLogin(username, password);
+      const data = await vendorLogin(username, password, foodCourt);
       if (data.token) {
         onLogin(data.token);
+        toast.success(`Logged into ${data.foodCourt?.toUpperCase?.() || foodCourt.toUpperCase()} successfully`);
       } else {
         toast.error(data.message || "Login failed");
       }
@@ -40,6 +42,29 @@ const Login = ({ onLogin }) => {
           required
         />
         <br />
+        <div style={{ margin: "10px 0" }}>
+          <span style={{ fontSize: 14, fontWeight: 600, display: "block", marginBottom: 6 }}>Food Court</span>
+          <label style={{ marginRight: 12 }}>
+            <input
+              type="radio"
+              name="food-court"
+              value="fc-1"
+              checked={foodCourt === "fc-1"}
+              onChange={(e) => setFoodCourt(e.target.value)}
+            />
+            <span style={{ marginLeft: 6 }}>FC‑1</span>
+          </label>
+          <label>
+            <input
+              type="radio"
+              name="food-court"
+              value="fc-2"
+              checked={foodCourt === "fc-2"}
+              onChange={(e) => setFoodCourt(e.target.value)}
+            />
+            <span style={{ marginLeft: 6 }}>FC‑2</span>
+          </label>
+        </div>
         <div style={{ position: "relative", display: "inline-block" }}>
           <input
             type={showPassword ? "text" : "password"}

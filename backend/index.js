@@ -164,6 +164,7 @@ const enrichVendorContext = (decoded) => {
   vendorCtx.vendorId = vendorCtx.vendorId ?? vendorCtx.id ?? vendorCtx.vendorID ?? null;
   vendorCtx.shopId = vendorCtx.shopId ?? vendorCtx.shopID ?? vendorCtx.shop ?? null;
   vendorCtx.role = "vendor-admin";
+  vendorCtx.foodCourt = FOOD_COURTS.includes(String(vendorCtx.foodCourt)) ? String(vendorCtx.foodCourt) : FC_DEFAULT;
   const permissions = new Set(["analytics:read", "analytics:write", "procurement:manage"]);
   vendorCtx.permissions = Array.from(permissions);
   return vendorCtx;
@@ -224,6 +225,7 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/images", express.static(path.join(__dirname, "uploads")));
 
 ensurePointsDataFiles();
+ensureCourtDataFiles();
 
 app.get("/healthz", (req, res) => {
   const summary = metricsRegistry.getHealthSummary();
@@ -247,7 +249,8 @@ app.delete("/admin/vendor/:id", authenticateAdmin, (req, res) => {
       return res.status(400).json({ message: "Invalid vendor ID" });
     }
 
-    const vendors = getVendors();
+    const foodCourt = getAdminFoodCourt(req);
+    const vendors = getVendors(foodCourt);
     const index = vendors.findIndex((v) => Number(v.vendorId) === vendorId);
     if (index === -1) {
       return res.status(404).json({ message: "Vendor not found" });
@@ -268,14 +271,14 @@ app.delete("/admin/vendor/:id", authenticateAdmin, (req, res) => {
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
       data: {
         vendorRecord: removedVendor,
-        menuSnapshot: getMenu(),
-        combos: getCombos(),
-        offers: getOffers(),
+        menuSnapshot: getMenu(foodCourt),
+        combos: getCombos(foodCourt),
+        offers: getOffers(foodCourt),
         procurementTemplates: listTemplates(removedVendor.vendorId),
         procurementOrders: listOrders(removedVendor.vendorId),
         procurementTasks: listProcurementTasks(removedVendor.vendorId),
         grievances: getVendorGrievances(),
-        orders: getOrders(),
+        orders: getOrders(foodCourt),
         headcount: getVendorHeadcountEntries(removedVendor.vendorId),
       },
     };
@@ -283,9 +286,9 @@ app.delete("/admin/vendor/:id", authenticateAdmin, (req, res) => {
     appendVendorArchive(archivePayload);
 
     vendors.splice(index, 1);
-    saveVendors(vendors);
+    saveVendors(vendors, foodCourt);
 
-    const rawMenu = getMenu();
+    const rawMenu = getMenu(foodCourt);
     const purgeShopFromMenu = (data) => {
       if (Array.isArray(data)) {
         return data.filter((shop) => Number(shop?.shopId) !== Number(removedVendor.shopId));
@@ -302,21 +305,21 @@ app.delete("/admin/vendor/:id", authenticateAdmin, (req, res) => {
 
     const updatedMenu = purgeShopFromMenu(rawMenu);
     if (updatedMenu !== rawMenu) {
-      saveMenu(updatedMenu);
+      saveMenu(updatedMenu, foodCourt);
     }
 
     const filterByShop = (collection) => collection.filter((entry) => Number(entry.shopId) !== shopIdValue);
 
-    const combos = getCombos();
+    const combos = getCombos(foodCourt);
     const nextCombos = filterByShop(combos);
     if (nextCombos.length !== combos.length) {
-      saveCombos(nextCombos);
+      saveCombos(nextCombos, foodCourt);
     }
 
-    const offers = getOffers();
+    const offers = getOffers(foodCourt);
     const nextOffers = filterByShop(offers);
     if (nextOffers.length !== offers.length) {
-      saveOffers(nextOffers);
+      saveOffers(nextOffers, foodCourt);
     }
 
     try {
@@ -401,7 +404,8 @@ app.post("/admin/vendor-archives/:archiveId/restore", authenticateAdmin, async (
       return res.status(410).json({ message: "Archive expired" });
     }
 
-    const vendors = getVendors();
+    const foodCourt = getAdminFoodCourt(req);
+    const vendors = getVendors(foodCourt);
     if (vendors.some((vendor) => Number(vendor.vendorId) === Number(archive.vendorId))) {
       return res.status(409).json({ message: "Vendor already exists" });
     }
@@ -422,10 +426,10 @@ app.post("/admin/vendor-archives/:archiveId/restore", authenticateAdmin, async (
     }
 
     const combos = archive.data.combos || [];
-    saveCombos(combos);
+    saveCombos(combos, foodCourt);
 
     const offers = archive.data.offers || [];
-    saveOffers(offers);
+    saveOffers(offers, foodCourt);
 
     const procurementTemplates = archive.data.procurementTemplates || [];
     procurementTemplates.forEach((tpl) => saveTemplate(tpl));
@@ -445,7 +449,7 @@ app.post("/admin/vendor-archives/:archiveId/restore", authenticateAdmin, async (
 
     const orders = archive.data.orders || [];
     if (Array.isArray(orders)) {
-      saveOrders(orders);
+      saveVendorOrders(req, orders);
     }
 
     const headcountRecord = archive.data.headcountRecord || null;
@@ -496,6 +500,10 @@ app.get("/analytics/status", authenticateVendor, requirePermission("analytics:re
 }));
 
 // File paths
+const FC_DEFAULT = "fc-1";
+const FC_SECONDARY = "fc-2";
+const FOOD_COURTS = [FC_DEFAULT, FC_SECONDARY];
+
 const menuFile = __dirname + "/data/menu.json";
 const ordersFile = __dirname + "/data/orders.json";
 const vendorsFile = __dirname + "/data/vendors.json";
@@ -514,9 +522,76 @@ const itemInterestFile = path.join(__dirname, 'data', 'item_interest.json');
 const vendorInterestThresholdsFile = path.join(__dirname, 'data', 'vendor_interest_thresholds.json');
 const bulkOrdersFile = path.join(__dirname, 'data', 'bulk_orders.json');
 
+const resolveCourtFile = (baseFile, foodCourt) => {
+  const targetCourt = FOOD_COURTS.includes(String(foodCourt)) ? String(foodCourt) : FC_DEFAULT;
+  if (targetCourt === FC_DEFAULT) return baseFile;
+  const parsed = path.parse(baseFile);
+  return path.join(parsed.dir, `${parsed.name}_${targetCourt}${parsed.ext}`);
+};
+
+const readJsonFrom = (filePath, fallback) => {
+  try {
+    const raw = fs.readFileSync(filePath, "utf8");
+    if (!raw) return fallback;
+    return JSON.parse(raw);
+  } catch (error) {
+    return fallback;
+  }
+};
+
+const writeJsonTo = (filePath, payload) => {
+  const data = payload == null ? null : payload;
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+};
+
+const ensureCourtDataFiles = () => {
+  const bases = [menuFile, ordersFile, vendorsFile, combosFile, offersFile];
+  for (const base of bases) {
+    const secondaryPath = resolveCourtFile(base, FC_SECONDARY);
+    if (!fs.existsSync(secondaryPath)) {
+      try {
+        const primaryContent = fs.readFileSync(base, "utf8");
+        fs.writeFileSync(secondaryPath, primaryContent);
+      } catch (error) {
+        const defaultContent = Array.isArray(readJsonFrom(base, [])) ? [] : {};
+        fs.writeFileSync(secondaryPath, JSON.stringify(defaultContent, null, 2));
+      }
+    }
+  }
+};
+
 const DEFAULT_INTEREST_THRESHOLD = 15;
 const INTEREST_DEDUP_WINDOW_MS = 6 * 60 * 60 * 1000; // 6 hours
 const MAX_INTEREST_RECORDS = 5000;
+
+const getVendorFoodCourt = (req) => {
+  const candidate = req?.vendor?.foodCourt;
+  return FOOD_COURTS.includes(String(candidate)) ? String(candidate) : FC_DEFAULT;
+};
+
+const getAdminFoodCourt = (req) => {
+  const candidate = req?.query?.foodCourt || req?.body?.foodCourt || req?.params?.foodCourt;
+  return FOOD_COURTS.includes(String(candidate)) ? String(candidate) : FC_DEFAULT;
+};
+
+const loadVendorMenu = (req) => getMenu(getVendorFoodCourt(req));
+const loadVendorOrders = (req) => getOrders(getVendorFoodCourt(req));
+const saveVendorOrders = (req, orders) => saveOrders(orders, getVendorFoodCourt(req));
+const loadVendorCombos = (req) => getCombos(getVendorFoodCourt(req));
+const saveVendorCombos = (req, combos) => saveCombos(combos, getVendorFoodCourt(req));
+const loadVendorOffers = (req) => getOffers(getVendorFoodCourt(req));
+const saveVendorOffers = (req, offers) => saveOffers(offers, getVendorFoodCourt(req));
+
+const getUserFoodCourt = (req) => {
+  const candidate = req?.query?.foodCourt || req?.body?.foodCourt || req?.headers?.["x-food-court"] || req?.params?.foodCourt;
+  return FOOD_COURTS.includes(String(candidate)) ? String(candidate) : FC_DEFAULT;
+};
+
+const loadUserMenu = (req) => getMenu(getUserFoodCourt(req));
+const loadUserCombos = (req) => getCombos(getUserFoodCourt(req));
+const loadUserOffers = (req) => getOffers(getUserFoodCourt(req));
+const loadUserOrders = (req) => getOrders(getUserFoodCourt(req));
+const saveUserOrders = (req, orders) => saveOrders(orders, getUserFoodCourt(req));
 
 // Simple admin credentials (can be overridden via env)
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "infybhojans";
@@ -1543,10 +1618,10 @@ app.get('/admin/bulk-orders', authenticateAdmin, (req, res) => {
 
 app.get('/admin/vendors', authenticateAdmin, (req, res) => {
   try {
-    const vendors = buildVendorDirectory();
+    const foodCourt = getAdminFoodCourt(req);
+    const vendors = buildVendorDirectory(foodCourt);
     res.json({ status: 'ok', vendors });
   } catch (error) {
-    console.error('Error listing admin vendors', error);
     res.status(500).json({ message: 'Failed to load vendors' });
   }
 });
@@ -1563,7 +1638,8 @@ app.post('/admin/vendor', authenticateAdmin, async (req, res) => {
       return res.status(400).json({ message: 'shopName, username, and password are required' });
     }
 
-    const vendors = getVendors();
+    const foodCourt = getAdminFoodCourt(req);
+    const vendors = getVendors(foodCourt);
     const usernameTaken = vendors.some((v) => String(v.username || '').toLowerCase() === trimmedUsername.toLowerCase());
     if (usernameTaken) {
       return res.status(409).json({ message: 'Username already exists' });
@@ -1571,7 +1647,7 @@ app.post('/admin/vendor', authenticateAdmin, async (req, res) => {
 
     const vendorId = vendors.reduce((max, vendor) => Math.max(max, Number(vendor.vendorId) || 0), 0) + 1;
 
-    const rawMenu = getMenu();
+    const rawMenu = getMenu(foodCourt);
     const collectShopIds = (menuData) => {
       const ids = new Set();
       if (Array.isArray(menuData)) {
@@ -1627,11 +1703,11 @@ app.post('/admin/vendor', authenticateAdmin, async (req, res) => {
     let updatedMenu = rawMenu;
     if (Array.isArray(updatedMenu)) {
       updatedMenu = [...updatedMenu, newShopEntry];
-      saveMenu(updatedMenu);
+      saveMenu(updatedMenu, foodCourt);
     } else {
       const menuObj = updatedMenu && typeof updatedMenu === 'object' ? { ...updatedMenu } : { shops: [] };
       menuObj.shops = Array.isArray(menuObj.shops) ? [...menuObj.shops, newShopEntry] : [newShopEntry];
-      saveMenu(menuObj);
+      saveMenu(menuObj, foodCourt);
     }
 
     vendorDirectoryCache = { map: null, timestamp: 0 };
@@ -2067,16 +2143,11 @@ app.post('/employee/apple-login', async (req, res) => {
 
 // Get menu
 /**
- * Read menu JSON from disk.
- * @returns {Array}
+ * Read menu JSON from disk for a specific food court.
+ * @param {string=} foodCourt
+ * @returns {Array|Object}
  */
-const getMenu = () => {
-  try {
-    return JSON.parse(fs.readFileSync(menuFile, "utf8"));
-  } catch {
-    return [];
-  }
-};
+const getMenu = (foodCourt = FC_DEFAULT) => readJsonFrom(resolveCourtFile(menuFile, foodCourt), []);
 
 /**
  * Normalize menu shops to ensure consistent structure.
@@ -2121,29 +2192,41 @@ const normalizeItem = (it) => {
  * @param {any} menu - Full menu array
  * @returns {void}
  */
-const saveMenu = (menu) => fs.writeFileSync(menuFile, JSON.stringify(menu, null, 2));
+const saveMenu = (menu, foodCourt = FC_DEFAULT) => writeJsonTo(resolveCourtFile(menuFile, foodCourt), menu);
 
 /**
  * Read orders JSON from disk.
  * @returns {Array}
  */
-const getOrders = () => JSON.parse(fs.readFileSync(ordersFile, "utf8"));
+const getOrders = (foodCourt = FC_DEFAULT) => readJsonFrom(resolveCourtFile(ordersFile, foodCourt), []);
 
 /**
  * Persist orders to disk.
  * @param {Array} orders
  * @returns {void}
  */
-const saveOrders = (orders) => fs.writeFileSync(ordersFile, JSON.stringify(orders, null, 2));
+const saveOrders = (orders, foodCourt = FC_DEFAULT) => writeJsonTo(resolveCourtFile(ordersFile, foodCourt), Array.isArray(orders) ? orders : []);
 
 /**
  * Read vendor credentials/data.
  * @returns {Array}
  */
-const getVendors = () => JSON.parse(fs.readFileSync(vendorsFile, "utf8"));
+const getVendors = (foodCourt = FC_DEFAULT) => {
+  const list = readJsonFrom(resolveCourtFile(vendorsFile, foodCourt), []);
+  if (!Array.isArray(list)) return [];
+  return list.map((vendor) => {
+    if (!vendor || typeof vendor !== "object") return vendor;
+    return vendor.foodCourt && vendor.foodCourt !== foodCourt ? vendor : { ...vendor, foodCourt };
+  });
+};
 
-const saveVendors = (vendors) => {
-  fs.writeFileSync(vendorsFile, JSON.stringify(Array.isArray(vendors) ? vendors : [], null, 2));
+const saveVendors = (vendors, foodCourt = FC_DEFAULT) => {
+  const payload = Array.isArray(vendors) ? vendors.map((vendor) => {
+    if (!vendor || typeof vendor !== "object") return vendor;
+    const { foodCourt: _ignoredFoodCourt, ...rest } = vendor;
+    return rest;
+  }) : [];
+  writeJsonTo(resolveCourtFile(vendorsFile, foodCourt), payload);
 };
 
 const getItemInterestRecords = () => {
@@ -2176,18 +2259,16 @@ const saveVendorInterestThresholds = (map) => {
   fs.writeFileSync(vendorInterestThresholdsFile, JSON.stringify(payload, null, 2));
 };
 
-const getVendorThresholdValue = (vendorId, thresholdsMap = null) => {
-  const map = thresholdsMap && typeof thresholdsMap === 'object' ? thresholdsMap : getVendorInterestThresholds();
-  if (vendorId == null) {
-    return DEFAULT_INTEREST_THRESHOLD;
+const getVendorIdForShop = (shopId, foodCourt = FC_DEFAULT) => {
+  if (shopId == null) return null;
+  try {
+    const directory = getVendorDirectoryMap(foodCourt);
+    const entry = directory.get(String(shopId));
+    return entry?.vendorId != null ? String(entry.vendorId) : null;
+  } catch (error) {
+    console.warn('Failed to resolve vendorId for shop', shopId, error);
+    return null;
   }
-  const key = String(vendorId);
-  const raw = map[key] ?? map[vendorId];
-  const parsed = Number(raw);
-  if (Number.isFinite(parsed) && parsed > 0) {
-    return Math.round(parsed);
-  }
-  return DEFAULT_INTEREST_THRESHOLD;
 };
 
 const buildInterestKey = ({ shopId, itemId }) => `${shopId || 'unknown'}:${itemId || 'unknown'}`;
@@ -2241,9 +2322,9 @@ const aggregateInterest = (records) => {
   });
 };
 
-const findMenuItemMetadata = (shopId, itemId) => {
+const findMenuItemMetadata = (shopId, itemId, foodCourt = FC_DEFAULT) => {
   if (shopId == null || itemId == null) return null;
-  const rawMenu = getMenu();
+  const rawMenu = getMenu(foodCourt);
   const normalized = normalizeMenuShops(rawMenu);
   const shop = normalized.find((s) => String(s.shopId) === String(shopId));
   if (!shop) return null;
@@ -2348,22 +2429,38 @@ const ensureInterestCapacity = (records) => {
   records.splice(0, excess);
 };
 
-const getVendorIdForShop = (shopId) => {
-  if (shopId == null) return null;
+const resolveVendorContactForOrder = (order, foodCourt = FC_DEFAULT) => {
+  if (!order) return order?.vendorContact || null;
+  const existing = order.vendorContact && typeof order.vendorContact === 'object'
+    ? { ...order.vendorContact }
+    : null;
+  const vendorShopId = order.vendorShopId != null ? String(order.vendorShopId) : null;
+  if (!vendorShopId) return existing;
+
   try {
-    const directory = getVendorDirectoryMap();
-    const entry = directory.get(String(shopId));
-    return entry?.vendorId != null ? String(entry.vendorId) : null;
+    const directoryMap = getVendorDirectoryMap(foodCourt);
+    const entry = directoryMap.get(vendorShopId);
+    if (!entry) return existing;
+
+    return {
+      vendorId: entry.vendorId ?? existing?.vendorId ?? null,
+      shopId: entry.shopId,
+      shopName: entry.shopName || existing?.shopName || null,
+      email: entry.contactEmail || existing?.email || existing?.contactEmail || null,
+      contactEmail: entry.contactEmail || existing?.contactEmail || null,
+      phone: entry.contactPhone || existing?.phone || existing?.contactPhone || null,
+      contactPhone: entry.contactPhone || existing?.contactPhone || null,
+    };
   } catch (error) {
-    console.warn('Failed to resolve vendorId for shop', shopId, error);
-    return null;
+    console.error('Error resolving vendor contact for bulk order', error);
+    return existing;
   }
 };
 
-const buildInterestSummary = ({ entry, metadata, threshold }) => {
+const buildInterestSummary = ({ entry, metadata, threshold, foodCourt }) => {
   const shopId = String(entry?.shopId ?? metadata?.shopId ?? '');
   const itemId = String(entry?.itemId ?? metadata?.itemId ?? '');
-  const vendorId = entry?.vendorId ?? getVendorIdForShop(shopId) ?? null;
+  const vendorId = entry?.vendorId ?? getVendorIdForShop(shopId, foodCourt) ?? null;
   const uniqueEmployees = Number(entry?.uniqueEmployees || 0);
   const totalClicks = Number(entry?.totalClicks || 0);
   const history = Array.isArray(entry?.history) ? entry.history.slice(-50) : [];
@@ -2816,33 +2913,35 @@ const computeBulkOrderTotals = ({ itemGroups = [], pricing }) => {
 };
 
 const VENDOR_DIRECTORY_CACHE_TTL_MS = 60000;
-let vendorDirectoryCache = {
-  map: null,
-  timestamp: 0,
+const vendorDirectoryCache = new Map();
+
+const invalidateVendorDirectoryCache = (foodCourt = null) => {
+  if (!foodCourt) {
+    vendorDirectoryCache.clear();
+  } else {
+    vendorDirectoryCache.delete(foodCourt);
+  }
 };
 
-const getVendorDirectoryMap = () => {
+const getVendorDirectoryMap = (foodCourt = FC_DEFAULT) => {
   const now = Date.now();
-  if (vendorDirectoryCache.map && now - vendorDirectoryCache.timestamp < VENDOR_DIRECTORY_CACHE_TTL_MS) {
-    return vendorDirectoryCache.map;
+  const cached = vendorDirectoryCache.get(foodCourt);
+  if (cached && now - cached.timestamp < VENDOR_DIRECTORY_CACHE_TTL_MS) {
+    return cached.map;
   }
 
-  const directory = buildVendorDirectory();
+  const directory = buildVendorDirectory(foodCourt);
   const map = new Map();
   directory.forEach((entry) => {
     if (!entry || entry.shopId == null) return;
     map.set(String(entry.shopId), entry);
   });
 
-  vendorDirectoryCache = {
-    map,
-    timestamp: now,
-  };
-
+  vendorDirectoryCache.set(foodCourt, { map, timestamp: now });
   return map;
 };
 
-const resolveVendorContactForOrder = (order) => {
+const resolveVendorContactForOrder = (order, foodCourt = FC_DEFAULT) => {
   if (!order) return order?.vendorContact || null;
   const existing = order.vendorContact && typeof order.vendorContact === 'object'
     ? { ...order.vendorContact }
@@ -2851,7 +2950,7 @@ const resolveVendorContactForOrder = (order) => {
   if (!vendorShopId) return existing;
 
   try {
-    const directoryMap = getVendorDirectoryMap();
+    const directoryMap = getVendorDirectoryMap(foodCourt);
     const entry = directoryMap.get(vendorShopId);
     if (!entry) return existing;
 
@@ -2870,10 +2969,10 @@ const resolveVendorContactForOrder = (order) => {
   }
 };
 
-const sanitizeBulkOrder = (order) => {
+const sanitizeBulkOrder = (order, foodCourt = FC_DEFAULT) => {
   if (!order) return null;
   const { subtotal, discountAmount, totalAmount, pricing } = computeBulkOrderTotals(order);
-  const vendorContact = resolveVendorContactForOrder(order);
+  const vendorContact = resolveVendorContactForOrder(order, foodCourt);
   return {
     ...order,
     subtotal,
@@ -2884,9 +2983,9 @@ const sanitizeBulkOrder = (order) => {
   };
 };
 
-const buildVendorDirectory = () => {
-  const vendors = getVendors();
-  const menu = getMenu();
+const buildVendorDirectory = (foodCourt = FC_DEFAULT) => {
+  const vendors = getVendors(foodCourt);
+  const menu = getMenu(foodCourt);
   const shops = Array.isArray(menu)
     ? menu
     : (menu && Array.isArray(menu.shops) ? menu.shops : []);
@@ -3329,27 +3428,15 @@ const broadcastSosAlert = (state) => {
 
 // Combos
 /** @returns {Array} */
-const getCombos = () => {
-  try {
-    return JSON.parse(fs.readFileSync(combosFile, "utf8"));
-  } catch {
-    return [];
-  }
-};
+const getCombos = (foodCourt = FC_DEFAULT) => readJsonFrom(resolveCourtFile(combosFile, foodCourt), []);
 /** @param {Array} combos */
-const saveCombos = (combos) => fs.writeFileSync(combosFile, JSON.stringify(combos, null, 2));
+const saveCombos = (combos, foodCourt = FC_DEFAULT) => writeJsonTo(resolveCourtFile(combosFile, foodCourt), Array.isArray(combos) ? combos : []);
 
 // Offers
 /** @returns {Array} */
-const getOffers = () => {
-  try {
-    return JSON.parse(fs.readFileSync(offersFile, "utf8"));
-  } catch {
-    return [];
-  }
-};
+const getOffers = (foodCourt = FC_DEFAULT) => readJsonFrom(resolveCourtFile(offersFile, foodCourt), []);
 /** @param {Array} offers */
-const saveOffers = (offers) => fs.writeFileSync(offersFile, JSON.stringify(offers, null, 2));
+const saveOffers = (offers, foodCourt = FC_DEFAULT) => writeJsonTo(resolveCourtFile(offersFile, foodCourt), Array.isArray(offers) ? offers : []);
 
 const normalizeOfferInputForStorage = (offer, vendorShopId) => {
   const safeId = offer?.id || `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
@@ -3623,7 +3710,7 @@ function authenticateAdmin(req, res, next) {
  */
 app.get("/menu", (req, res) => {
   try {
-    const raw = getMenu();
+    const raw = loadUserMenu(req);
     const normalized = normalizeMenuShops(raw);
     // Support optional filtering by shop and section windows time
     const shopId = req.query.shopId ? String(req.query.shopId) : null;
@@ -3701,7 +3788,7 @@ app.get("/feedbacks", (req, res) => {
     const cutoff = days ? new Date(Date.now() - days * 24 * 60 * 60 * 1000) : null;
 
     const ratings = getRatings();
-    const orders = getOrders();
+    const orders = getOrders(foodCourt);
     const orderIndex = new Map(orders.map(o => [o.id, o]));
 
     const result = ratings
@@ -3768,7 +3855,8 @@ app.post('/interest', authenticateEmployee, (req, res) => {
       return res.status(400).json({ message: 'shopId and itemId are required' });
     }
 
-    const metadata = findMenuItemMetadata(shopIdStr, itemIdStr);
+    const foodCourt = getUserFoodCourt(req);
+    const metadata = findMenuItemMetadata(shopIdStr, itemIdStr, foodCourt);
     if (!metadata) {
       return res.status(404).json({ message: 'Menu item not found' });
     }
@@ -3777,7 +3865,8 @@ app.post('/interest', authenticateEmployee, (req, res) => {
       return res.status(409).json({ message: 'Interest can only be expressed for sold-out or low-stock items' });
     }
 
-    const vendorId = getVendorIdForShop(shopIdStr);
+    const foodCourt = getUserFoodCourt(req);
+    const vendorId = getVendorIdForShop(shopIdStr, foodCourt);
     const identitySet = getEmployeeIdentitySet(req.employee || {}, req.employeeSession || null);
     const records = getItemInterestRecords();
     const nowMs = Date.now();
@@ -3871,13 +3960,13 @@ app.get('/vendor/interest/summary', authenticateVendor, requirePermission('analy
 
     const items = aggregated
       .filter((entry) => {
-        const entryVendorId = entry.vendorId != null ? String(entry.vendorId) : getVendorIdForShop(entry.shopId);
+        const entryVendorId = entry.vendorId != null ? String(entry.vendorId) : getVendorIdForShop(entry.shopId, foodCourt);
         return entryVendorId != null && String(entryVendorId) === vendorId;
       })
       .map((entry) => {
-        const metadata = findMenuItemMetadata(entry.shopId, entry.itemId);
+        const metadata = findMenuItemMetadata(entry.shopId, entry.itemId, foodCourt);
         const threshold = getVendorThresholdValue(entry.vendorId != null ? entry.vendorId : vendorId, thresholdsMap);
-        return buildInterestSummary({ entry, metadata, threshold });
+        return buildInterestSummary({ entry, metadata, threshold, foodCourt });
       })
       .sort((a, b) => {
         const aTs = a.lastExpressedAt ? new Date(a.lastExpressedAt).getTime() : 0;
@@ -3967,8 +4056,9 @@ app.put('/vendor/interest/threshold', authenticateVendor, requirePermission('ana
 app.post("/order", (req, res) => {
   try {
     const { items, user, scheduledTime, shopId, paymentMethod = 'gateway', paymentPayload = {}, orderNotes = '', employeeToken: explicitEmployeeToken = null } = req.body;
+    const foodCourt = getUserFoodCourt(req);
     // Validate inventory and decrement (supports combo expansion)
-    const raw = getMenu();
+    const raw = getMenu(foodCourt);
     const normalizedShops = normalizeMenuShops(raw);
     const shopNorm = normalizedShops.find((s) => String(s.shopId) === String(shopId));
     if (!shopNorm) {
@@ -3977,7 +4067,7 @@ app.post("/order", (req, res) => {
     shopNorm.items = Array.isArray(shopNorm.items) ? shopNorm.items : [];
 
     // Expand combos into required item quantities (with combo time window validation)
-    const combos = getCombos();
+    const combos = getCombos(foodCourt);
     const isComboLine = (x) => x && (x.comboId != null);
     const toHM = (d) => `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
     const whenHM = scheduledTime ? toHM(new Date(scheduledTime)) : toHM(new Date());
@@ -4168,15 +4258,15 @@ app.post("/order", (req, res) => {
         reason: "order-placement",
       });
     }
-    saveMenu(raw);
+    saveMenu(raw, foodCourt);
 
-    const orders = getOrders();
+    const orders = getOrders(foodCourt);
 
     const billingId = generateBillingId();
 
     const now = new Date();
     const evaluationDate = scheduledTime ? new Date(scheduledTime) : now;
-    const activeOffers = getOffers().filter((o) => {
+    const activeOffers = getOffers(foodCourt).filter((o) => {
       if (String(o.shopId) !== String(shopId)) return false;
       const start = o.start ? new Date(o.start) : null;
       const end = o.end ? new Date(o.end) : null;
@@ -4322,7 +4412,7 @@ app.post("/order", (req, res) => {
     newOrder.payment = paymentSummary;
 
     orders.push(newOrder);
-    saveOrders(orders);
+    saveOrders(orders, foodCourt);
 
     try {
       (Array.isArray(items) ? items : []).forEach((item) => {
@@ -4871,8 +4961,9 @@ app.patch("/admin/vendor-grievances/:id", authenticateAdmin, (req, res) => {
  */
 app.post("/vendor/login", async (req, res) => {
   try {
-    const { username, password } = req.body;
-    const vendors = getVendors();
+    const { username, password, foodCourt } = req.body || {};
+    const targetCourt = FOOD_COURTS.includes(String(foodCourt)) ? String(foodCourt) : FC_DEFAULT;
+    const vendors = getVendors(targetCourt);
 
     const vendor = vendors.find((v) => v.username === username);
     if (!vendor) {
@@ -4886,12 +4977,14 @@ app.post("/vendor/login", async (req, res) => {
     }
 
     const vendorRole = vendor.role || "vendor";
+    const selectedFoodCourt = targetCourt;
     const token = jwt.sign(
       {
         vendorId: vendor.vendorId,
         shopId: vendor.shopId,
         username: vendor.username,
         role: vendorRole,
+        foodCourt: selectedFoodCourt,
         permissions: Array.isArray(vendor.permissions) ? vendor.permissions : undefined,
       },
       JWT_SECRET,
@@ -4904,10 +4997,10 @@ app.post("/vendor/login", async (req, res) => {
       shopId: vendor.shopId,
       vendorId: vendor.vendorId,
       action: "vendor.login.success",
-      metadata: { username: vendor.username },
+      metadata: { username: vendor.username, foodCourt: selectedFoodCourt },
     });
 
-    res.json({ token, role: vendorRole });
+    res.json({ token, role: vendorRole, foodCourt: selectedFoodCourt });
   } catch (error) {
     recordAuditEvent({
       actorType: "system",
@@ -4930,7 +5023,8 @@ app.post("/vendor/login", async (req, res) => {
 app.put("/menu", authenticateVendor, (req, res) => {
   try {
     const updatedItems = Array.isArray(req.body.items) ? req.body.items : [];
-    const raw = getMenu();
+    const foodCourt = getVendorFoodCourt(req);
+    const raw = getMenu(foodCourt);
     const vendorShopId = req.vendor.shopId;
 
     // Legacy structure: array of shops with items[]
@@ -4946,7 +5040,7 @@ app.put("/menu", authenticateVendor, (req, res) => {
         }
         return record;
       });
-      saveMenu(raw);
+      saveMenu(raw, foodCourt);
       return res.json({ status: "success", message: "Menu updated successfully" });
     }
 
@@ -4975,7 +5069,7 @@ app.put("/menu", authenticateVendor, (req, res) => {
 
     // Replace categories with grouped items
     shop.categories = Array.from(bySection.entries()).map(([categoryName, items]) => ({ categoryName, items }));
-    saveMenu(raw);
+    saveMenu(raw, foodCourt);
     res.json({ status: "success", message: "Menu updated successfully" });
   } catch (error) {
     res.status(500).json({ message: "Error updating menu" });
@@ -4990,12 +5084,12 @@ app.put("/menu", authenticateVendor, (req, res) => {
  */
 app.get("/orders", authenticateVendor, (req, res) => {
   try {
-    const orders = getOrders();
+    const orders = loadVendorOrders(req);
     const vendorShopId = req.vendor.shopId;
     const filteredOrders = orders.filter((order) => order.shopId === vendorShopId);
     res.json(filteredOrders);
   } catch (error) {
-    res.status(500).json({ message: "Error fetching orders" });
+    res.status(500).json({ message: "Failed to load orders" });
   }
 });
 
@@ -5008,7 +5102,8 @@ app.get('/combos', (req, res) => {
   try {
     const shopId = req.query.shopId ? String(req.query.shopId) : null;
     const activeOnly = String(req.query.activeOnly || '').toLowerCase() === '1' || String(req.query.activeOnly || '').toLowerCase() === 'true';
-    let combos = getCombos();
+    const foodCourt = getAdminFoodCourt(req);
+    let combos = getCombos(foodCourt);
     if (shopId) combos = combos.filter(c => String(c.shopId) === shopId);
     if (activeOnly) combos = combos.filter(c => c.active !== false && c.hidden !== true);
     res.json(combos);
@@ -5024,7 +5119,8 @@ app.get('/combos', (req, res) => {
 app.put('/combos', authenticateVendor, (req, res) => {
   try {
     const incoming = Array.isArray(req.body.combos) ? req.body.combos : [];
-    const all = getCombos();
+    const foodCourt = getVendorFoodCourt(req);
+    const all = getCombos(foodCourt);
     const rest = all.filter(c => String(c.shopId) !== String(req.vendor.shopId));
     const normalized = incoming.map(c => ({
       id: c.id || Date.now() + Math.random(),
@@ -5037,7 +5133,7 @@ app.put('/combos', authenticateVendor, (req, res) => {
       availableEnd: c.availableEnd || null,
       components: Array.isArray(c.components) ? c.components : []
     }));
-    saveCombos([...rest, ...normalized]);
+    saveCombos([...rest, ...normalized], foodCourt);
     res.json({ status: 'success', message: 'Combos updated' });
   } catch (e) {
     res.status(500).json({ message: 'Error updating combos' });
@@ -5073,13 +5169,14 @@ app.get('/offers/active', (req, res) => {
 app.put('/offers', authenticateVendor, (req, res) => {
   try {
     const incoming = Array.isArray(req.body.offers) ? req.body.offers : [];
-    const all = getOffers();
+    const foodCourt = getVendorFoodCourt(req);
+    const all = getOffers(foodCourt);
     const rest = all.filter(o => String(o.shopId) !== String(req.vendor.shopId));
     const normalized = incoming.map(o => normalizeOfferInputForStorage(o, req.vendor.shopId));
-    saveOffers([...rest, ...normalized]);
-    res.json({ status: 'success', message: 'Offers updated' });
+    saveOffers([...rest, ...normalized], foodCourt);
+    res.json({ status: 'success' });
   } catch (e) {
-    res.status(500).json({ message: 'Error updating offers' });
+    res.status(500).json({ message: 'Failed to save offers' });
   }
 });
 
@@ -5106,7 +5203,8 @@ app.post('/offers/preview', (req, res) => {
     const itemLookup = new Map((shopNorm.items || []).map((i) => [Number(i.id), i]));
     const sectionLookup = new Map((shopNorm.items || []).map((i) => [Number(i.id), i.section || 'All Items']));
 
-    const combos = getCombos();
+    const foodCourt = getAdminFoodCourt(req);
+    const combos = getCombos(foodCourt);
     const shopCombos = combos.filter((c) => String(c.shopId) === String(shopId) && c.active !== false);
 
     const flatItems = [];
@@ -5160,7 +5258,8 @@ app.post('/offers/preview', (req, res) => {
 
     const now = new Date();
     const evaluationDate = scheduledTime ? new Date(scheduledTime) : now;
-    const activeOffers = getOffers().filter((o) => {
+    const offers = getOffers(foodCourt);
+    const activeOffers = offers.filter((o) => {
       if (String(o.shopId) !== String(shopId)) return false;
       const start = o.start ? new Date(o.start) : null;
       const end = o.end ? new Date(o.end) : null;
@@ -5204,11 +5303,12 @@ app.post('/offers/preview', (req, res) => {
 app.get('/offers', (req, res) => {
   try {
     const shopId = req.query.shopId ? String(req.query.shopId) : null;
-    let offers = getOffers();
+    const foodCourt = getAdminFoodCourt(req);
+    let offers = getOffers(foodCourt);
     if (shopId) offers = offers.filter(o => String(o.shopId) === shopId);
     res.json(offers);
   } catch (e) {
-    res.status(500).json({ message: 'Error fetching offers' });
+    res.status(500).json({ message: 'Failed to fetch offers' });
   }
 });
 
@@ -5218,7 +5318,7 @@ app.get('/offers', (req, res) => {
  */
 app.post("/order/ready/:id", authenticateVendor, (req, res) => {
   try {
-    const orders = getOrders();
+    const orders = loadVendorOrders(req);
     const orderId = parseInt(req.params.id);
     const vendorShopId = req.vendor.shopId;
 
@@ -5254,7 +5354,7 @@ app.post("/order/ready/:id", authenticateVendor, (req, res) => {
  */
 app.post("/order/picked/:id", authenticateVendor, (req, res) => {
   try {
-    const orders = getOrders();
+    const orders = loadVendorOrders(req);
     const orderId = parseInt(req.params.id);
     const vendorShopId = req.vendor.shopId;
 
@@ -5504,7 +5604,7 @@ app.post("/order/extend/:id", authenticateVendor, (req, res) => {
     if (!addMinutes || addMinutes <= 0) {
       return res.status(400).json({ message: "addMinutes must be > 0" });
     }
-    const orders = getOrders();
+    const orders = loadVendorOrders(req);
     const orderId = parseInt(req.params.id);
     const vendorShopId = req.vendor.shopId;
 
@@ -5564,7 +5664,7 @@ app.post("/order/extend/:id", authenticateVendor, (req, res) => {
  */
 app.post("/order/extend-reset/:id", authenticateVendor, (req, res) => {
   try {
-    const orders = getOrders();
+    const orders = loadVendorOrders(req);
     const orderId = parseInt(req.params.id);
     const vendorShopId = req.vendor.shopId;
 

@@ -579,13 +579,13 @@ export const fetchSectionsMeta = async () => {
  * Vendor login
  * @param {string} username
  * @param {string} password
- * @returns {Promise<{token?:string, message?:string}>}
+ * @returns {Promise<{token?:string, message?:string, foodCourt?:string}>}
  */
-export const vendorLogin = async (username, password) => {
+export const vendorLogin = async (username, password, foodCourt = "fc-1") => {
   const res = await fetch(`${API_URL}/vendor/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password }),
+    body: JSON.stringify({ username, password, foodCourt }),
   });
   return res.json();
 };
