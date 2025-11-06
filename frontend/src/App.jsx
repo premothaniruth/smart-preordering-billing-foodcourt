@@ -110,6 +110,57 @@ function App() {
     }
   });
 
+  const userId = employeeMobile || null;
+  const vendorShopId = (() => {
+    try {
+      if (!vendorToken) return null;
+      const payload = JSON.parse(atob(vendorToken.split('.')[1]));
+      return payload.shopId || null;
+    } catch {
+      return null;
+    }
+  })();
+
+  const vendorIdentity = useMemo(() => {
+    if (!vendorToken) return null;
+    try {
+      const payload = JSON.parse(atob(vendorToken.split('.')[1]));
+      return {
+        username: payload.username || payload.vendorName || "Vendor",
+        shopId: payload.shopId || null,
+      };
+    } catch {
+      return {
+        username: "Vendor",
+        shopId: null,
+      };
+    }
+  }, [vendorToken]);
+
+  const loadMenu = useCallback(() => {
+    let cancelled = false;
+    fetchMenu(foodCourt).then((data) => {
+      if (cancelled) return;
+      setMenu(data);
+      setSelectedShop((prev) => {
+        if (vendorShopId) {
+          return vendorShopId;
+        }
+        if (!Array.isArray(data) || data.length === 0) {
+          return null;
+        }
+        const hasPrev = data.some((shop) => String(shop?.shopId) === String(prev));
+        if (hasPrev && prev != null) {
+          return prev;
+        }
+        return data[0]?.shopId ?? null;
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [foodCourt, vendorShopId]);
+
   useEffect(() => {
     try {
       const stored = localStorage.getItem(ADMIN_VENDORS_STORAGE_KEY);
@@ -170,12 +221,6 @@ function App() {
   }, []);
 
   useEffect(() => {
-    try {
-      localStorage.setItem('selectedFoodCourt', foodCourt);
-    } catch {}
-  }, [foodCourt]);
-
-  useEffect(() => {
     const storedSession = adminSession;
     if (!storedSession) return;
     let cancelled = false;
@@ -197,82 +242,29 @@ function App() {
     };
   }, [adminSession]);
 
-  const userId = employeeMobile || null;
-  const vendorShopId = (() => {
-    try {
-      if (!vendorToken) return null;
-      const payload = JSON.parse(atob(vendorToken.split('.')[1]));
-      return payload.shopId || null;
-    } catch {
-      return null;
-    }
-  })();
-
-  const loadMenu = useCallback(() => {
-    let cancelled = false;
-    fetchMenu(foodCourt).then((data) => {
-      if (cancelled) return;
-      setMenu(data);
-      if (data.length > 0 && !selectedShop) setSelectedShop(data[0].shopId);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedShop, foodCourt]);
-
-  const refreshAdminManagedVendors = useCallback(async () => {
-    if (!adminSession) return;
-    try {
-      const res = await fetchAdminVendors(adminSession);
-      if (res?.status === "ok" && Array.isArray(res.vendors)) {
-        setAdminManagedVendors(res.vendors);
-      }
-    } catch (error) {
-      console.error("Failed to refresh admin vendors", error);
-    }
-  }, [adminSession]);
-
-  useEffect(() => {
-    document.title = "Infy Bhojans";
-    const cleanup = loadMenu();
-    return () => {
-      if (typeof cleanup === "function") cleanup();
-    };
-  }, [loadMenu]);
-
-  // Refresh menu when other parts of app (e.g., AdminDashboard) update inventory
-  useEffect(() => {
-    const handler = () => loadMenu();
-    window.addEventListener('menu:updated', handler);
-    return () => window.removeEventListener('menu:updated', handler);
-  }, [loadMenu]);
-
-  // Global navigation events from child components (e.g., AdminDashboard)
-  useEffect(() => {
-    const navHandler = (e) => {
-      const target = e?.detail?.to || 'menu-editor';
-      const itemId = e?.detail?.itemId || null;
-      if (itemId) setTargetItemId(itemId);
-      setView(target);
-    };
-    window.addEventListener('navigate:menu-editor', navHandler);
-    const printerHandler = () => setView('printer-setup');
-    window.addEventListener('navigate:printer-setup', printerHandler);
-    const clearHandler = () => setTargetItemId(null);
-    window.addEventListener('menu:clear-target', clearHandler);
-    return () => {
-      window.removeEventListener('navigate:menu-editor', navHandler);
-      window.removeEventListener('navigate:printer-setup', printerHandler);
-      window.removeEventListener('menu:clear-target', clearHandler);
-    };
-  }, []);
-
-  // When vendor logs in, force selectedShop to their shop
   useEffect(() => {
     if (vendorShopId) setSelectedShop(vendorShopId);
   }, [vendorShopId]);
 
-  // Reset notification tracking whenever the logged-in employee changes
+  useEffect(() => {
+    setMenu([]);
+    setOrderSummary(null);
+    setOfferPreview(null);
+    setOffersLoading(false);
+    setCart([]);
+    setCartShopMismatch(false);
+    if (!vendorShopId) {
+      setSelectedShop(null);
+    }
+  }, [foodCourt, vendorShopId]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('selectedFoodCourt', foodCourt);
+    } catch {}
+    loadMenu();
+  }, [foodCourt, loadMenu]);
+
   useEffect(() => {
     readyNotifiedRef.current.clear();
     etaNotifiedRef.current.clear();
@@ -406,19 +398,6 @@ function App() {
     };
   }, [cart, selectedShop, scheduledTime]);
 
-  const selectedShopItems = useMemo(() => {
-    const mapEntry = shopInventoryMap.get(String(selectedShop));
-    if (!mapEntry) return [];
-    return Array.from(mapEntry.values());
-  }, [shopInventoryMap, selectedShop]);
-
-  const currentShopInventory = useMemo(() => {
-    const entry = shopInventoryMap.get(String(selectedShop));
-    return entry ? entry : new Map();
-  }, [shopInventoryMap, selectedShop]);
-
-  /** Load all shops and their items */
-  /** Load favorites for current user (employee) */
   const loadFavorites = useCallback(() => {
     if (!userId) return;
     fetchFavorites(userId, foodCourt).then(setFavorites);
@@ -477,23 +456,146 @@ function App() {
     }
   }, [employeeToken, loadWallet, applyWalletPayload]);
 
-  const playSound = (soundUrl) => {
-    const audio = new Audio(soundUrl);
-    audio.play().catch(err => console.log("Audio play failed:", err));
-  };
-
-  const vendorIdentity = useMemo(() => {
-    if (!vendorToken) return null;
+  const refreshAdminManagedVendors = useCallback(async () => {
+    if (!adminSession) return;
     try {
-      const payload = JSON.parse(atob(vendorToken.split('.')[1]));
-      return {
-        username: payload.username || payload.vendorName || "Vendor",
-        shopId: payload.shopId || null
-      };
+      const res = await fetchAdminVendors(adminSession);
+      if (res?.status === "ok" && Array.isArray(res.vendors)) {
+        setAdminManagedVendors(res.vendors);
+      }
     } catch (error) {
-      return null;
+      console.error("Failed to refresh admin vendors", error);
     }
-  }, [vendorToken]);
+  }, [adminSession]);
+
+  useEffect(() => {
+    document.title = "Infy Bhojans";
+    const cleanup = loadMenu();
+    return () => {
+      if (typeof cleanup === "function") cleanup();
+    };
+  }, [loadMenu]);
+
+  // Refresh menu when other parts of app (e.g., AdminDashboard) update inventory
+  useEffect(() => {
+    const handler = () => loadMenu();
+    window.addEventListener('menu:updated', handler);
+    return () => window.removeEventListener('menu:updated', handler);
+  }, [loadMenu]);
+
+  // Global navigation events from child components (e.g., AdminDashboard)
+  useEffect(() => {
+    const navHandler = (e) => {
+      const target = e?.detail?.to || 'menu-editor';
+      const itemId = e?.detail?.itemId || null;
+      if (itemId) setTargetItemId(itemId);
+      setView(target);
+    };
+    window.addEventListener('navigate:menu-editor', navHandler);
+    const printerHandler = () => setView('printer-setup');
+    window.addEventListener('navigate:printer-setup', printerHandler);
+    const clearHandler = () => setTargetItemId(null);
+    window.addEventListener('menu:clear-target', clearHandler);
+    return () => {
+      window.removeEventListener('navigate:menu-editor', navHandler);
+      window.removeEventListener('navigate:printer-setup', printerHandler);
+      window.removeEventListener('menu:clear-target', clearHandler);
+    };
+  }, []);
+
+  // When vendor logs in, force selectedShop to their shop
+  useEffect(() => {
+    if (vendorShopId) setSelectedShop(vendorShopId);
+  }, [vendorShopId]);
+
+  useEffect(() => {
+    if (vendorShopId) return;
+    if (!Array.isArray(menu) || menu.length === 0) {
+      setSelectedShop(null);
+      return;
+    }
+    const hasCurrentShop = menu.some((shop) => String(shop?.shopId) === String(selectedShop));
+    if (!hasCurrentShop) {
+      setSelectedShop(menu[0]?.shopId ?? null);
+    }
+  }, [menu, vendorShopId, selectedShop]);
+
+  // Reset notification tracking whenever the logged-in employee changes
+  useEffect(() => {
+    readyNotifiedRef.current.clear();
+    etaNotifiedRef.current.clear();
+    readySeededRef.current = false;
+  }, [userId]);
+
+  useEffect(() => {
+    if (!employeeToken && ["orders", "profile"].includes(view)) {
+      setView("user");
+    }
+  }, [employeeToken, view]);
+
+  useEffect(() => {
+    setPointsRefreshNonce(0);
+  }, [employeeToken]);
+
+  // Employee ready notification: poll orders and alert when status becomes ready
+  useEffect(() => {
+    if (!employeeToken || !userId) return;
+    const poll = async () => {
+      try {
+        const orders = await fetchUserOrders(userId, foodCourt);
+        // On first poll after login, seed the already-ready orders to suppress repeated alerts
+        if (!readySeededRef.current) {
+          orders.filter(o => o.status === 'ready').forEach(o => readyNotifiedRef.current.add(o.billingId));
+          readySeededRef.current = true;
+        }
+
+        orders
+          .filter(o => o.status === 'ready')
+          .forEach(o => {
+            if (!readyNotifiedRef.current.has(o.billingId)) {
+              readyNotifiedRef.current.add(o.billingId);
+              playSound(READY_SOUND);
+              toast.info(`🔔 Order ${o.billingId} is ready for pickup!`, { autoClose: 10000 });
+            }
+          });
+
+        // Detect ETA changes (delay or earlier)
+        orders.forEach(o => {
+          if (!o.estimatedReadyTime) return;
+          const etaMs = new Date(o.estimatedReadyTime).getTime();
+          const key = o.id || o.billingId;
+          const last = etaNotifiedRef.current.get(key);
+          if (last == null) {
+            etaNotifiedRef.current.set(key, etaMs);
+            return;
+          }
+          if (etaMs !== last) {
+            const diffMin = Math.round(Math.abs(etaMs - last) / 60000);
+            if (etaMs > last) {
+              toast.warn(`⚠️ Order ${o.billingId}: ETA extended by ~${diffMin} min`, { autoClose: 6000 });
+            } else {
+              toast.success(`✅ Order ${o.billingId}: ETA improved by ~${diffMin} min`, { autoClose: 6000 });
+            }
+            etaNotifiedRef.current.set(key, etaMs);
+          }
+        });
+      } catch {}
+    };
+    const id = setInterval(poll, 5000);
+    poll();
+    return () => clearInterval(id);
+  }, [employeeToken, userId]);
+
+  const selectedShopItems = useMemo(() => {
+    const mapEntry = shopInventoryMap.get(String(selectedShop));
+    if (!mapEntry) return [];
+    return Array.from(mapEntry.values());
+  }, [shopInventoryMap, selectedShop]);
+
+  const currentShopInventory = useMemo(() => {
+    const entry = shopInventoryMap.get(String(selectedShop));
+    return entry ? entry : new Map();
+  }, [shopInventoryMap, selectedShop]);
 
   const handleSosTrigger = useCallback(async (role) => {
     const actorName = role === "admin" ? (adminSession?.username || "Admin") : (vendorIdentity?.username || "Vendor");
@@ -942,7 +1044,10 @@ function App() {
     }
   };
 
-  const handleLogin = (token) => {
+  const handleLogin = ({ token, foodCourt: vendorCourt }) => {
+    if (vendorCourt) {
+      setFoodCourt(vendorCourt);
+    }
     setVendorToken(token);
     setView("dashboard");
     try { localStorage.removeItem('vendorSoundFirstLoginDone'); } catch {}
@@ -1113,28 +1218,6 @@ function App() {
 
           <div className="app-container">
             <ToastContainer position="top-right" autoClose={3000} />
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'flex-end',
-                alignItems: 'center',
-                gap: 12,
-                marginBottom: 16,
-              }}
-            >
-              <label style={{ fontSize: 13, color: '#2c3e50', fontWeight: 600 }}>
-                Food Court:
-              </label>
-              <select
-                value={foodCourt}
-                onChange={(e) => setFoodCourt(e.target.value)}
-                style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid #ccc', fontSize: 14 }}
-              >
-                <option value="fc-1">FC‑1</option>
-                <option value="fc-2">FC‑2</option>
-              </select>
-            </div>
-
             {vendorToken ? (
               <>
                 <div className="vendor-toolbar">
@@ -1283,6 +1366,26 @@ function App() {
                               My Orders
                             </button>
                           </div>
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 10,
+                              marginLeft: 'auto'
+                            }}
+                          >
+                            <label style={{ fontSize: 13, color: '#2c3e50', fontWeight: 600 }}>
+                              Food Court:
+                            </label>
+                            <select
+                              value={foodCourt}
+                              onChange={(e) => setFoodCourt(e.target.value)}
+                              style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid #ccc', fontSize: 14 }}
+                            >
+                              <option value="fc-1">FC‑1</option>
+                              <option value="fc-2">FC‑2</option>
+                            </select>
+                          </div>
                         </div>
                         <div className="layout-container">
                           <div className="menu-section">
@@ -1374,25 +1477,28 @@ function App() {
                           </div>
                         </div>
                         <div style={{ marginTop: 24, display: 'flex', justifyContent: 'flex-end' }}>
-                          <button onClick={handleEmployeeLogout} style={{ background: '#e74c3c', color: '#fff', minWidth: 140 }}>
+                          <button
+                            onClick={handleEmployeeLogout}
+                            style={{ background: '#e74c3c', color: '#fff', minWidth: 140 }}
+                          >
                             Logout
                           </button>
                         </div>
                       </>
                     ) : (
                       <div className="employee-auth-container">
-                        <EmployeeLogin onSuccess={handleEmployeeLogin} onBack={() => setView("landing")} />
+                        <EmployeeLogin
+                          onSuccess={handleEmployeeLogin}
+                          onBack={() => setView("landing")}
+                        />
                       </div>
                     )
                   )}
 
-                  {view === "login" && (
-                    <>
-                      <button onClick={() => setView("landing")} style={{ marginBottom: 15 }}>
-                        ← Back to Main Login
-                      </button>
+                  {view === "login" && !vendorToken && (
+                    <div className="vendor-auth-container">
                       <Login onLogin={handleLogin} />
-                    </>
+                    </div>
                   )}
 
                   {view === "bulk-portal" && employeeToken && (

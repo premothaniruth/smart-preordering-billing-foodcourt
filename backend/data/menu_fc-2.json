@@ -1,8 +1,8 @@
 {
   "shops": [
     {
-      "shopId": 1,
-      "shopName": "North Indian Dhamaka",
+      "shopId": 5,
+      "shopName": "Central Grill & Curries",
       "categories": [
         {
           "categoryName": "Breakfast",
@@ -1443,8 +1443,8 @@
       ]
     },
     {
-      "shopId": 2,
-      "shopName": "South Indian Delights",
+      "shopId": 6,
+      "shopName": "Havemore Delights",
       "categories": [
         {
           "categoryName": "Breakfast",
@@ -2521,8 +2521,8 @@
       ]
     },
     {
-      "shopId": 3,
-      "shopName": "Beverage Corner",
+      "shopId": 8,
+      "shopName": "Sip n Chill",
       "categories": [
         {
           "categoryName": "Beverages",
@@ -2802,8 +2802,8 @@
       ]
     },
     {
-      "shopId": 4,
-      "shopName": "Fast Food & Desserts",
+      "shopId": 7,
+      "shopName": "The German Breads",
       "categories": [
         {
           "categoryName": "Fast Food",

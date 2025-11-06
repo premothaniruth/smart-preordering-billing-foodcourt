@@ -103,7 +103,6 @@ const EmployeeLogin = ({ onSuccess, onBack }) => {
     } catch {}
   };
 
-
   const formatMobileDigits = (value) => String(value || "").replace(/[^0-9]/g, "").slice(0, 10);
 
   const handlePasswordLogin = async (event) => {
@@ -115,7 +114,7 @@ const EmployeeLogin = ({ onSuccess, onBack }) => {
     try {
       setLoading(true);
       const res = await employeePasswordLogin(uname, pwd);
-      if (res && res.status === "ok" && res.token) {
+      if (res?.token) {
         updateSignInMethod("password", true);
         onSuccess({
           token: res.token,
@@ -125,7 +124,8 @@ const EmployeeLogin = ({ onSuccess, onBack }) => {
           department: res.department,
           bulkOrderEligible: res.bulkOrderEligible,
         });
-        toast.success("Logged in");
+        toast.dismiss();
+        toast.success(res?.message || `Welcome back, ${res.username || uname}!`);
         const identity = {
           username: res.username || uname,
           mobile: res.mobile,
@@ -137,8 +137,9 @@ const EmployeeLogin = ({ onSuccess, onBack }) => {
       } else {
         toast.error(res?.message || "Login failed");
       }
-    } catch {
-      toast.error("Error during login");
+    } catch (error) {
+      const message = error?.message ? `Login error: ${error.message}` : "Login error";
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -157,7 +158,7 @@ const EmployeeLogin = ({ onSuccess, onBack }) => {
     try {
       setLoading(true);
       const res = await employeePinLogin(pinUsername.trim(), pin, pinIdentity?.mobile || pinIdentity?.email);
-      if (res && res.status === "ok" && res.token) {
+      if (res?.token) {
         onSuccess({
           token: res.token,
           mobile: res.mobile,
@@ -166,13 +167,15 @@ const EmployeeLogin = ({ onSuccess, onBack }) => {
           department: res.department,
           bulkOrderEligible: res.bulkOrderEligible,
         });
-        toast.success("Logged in");
+        toast.dismiss();
+        toast.success(res?.message || `Welcome back, ${res.username || pinUsername.trim()}!`);
         persistPinIdentity({ username: pinUsername.trim(), mobile: res.mobile, email: res.email });
       } else {
         toast.error(res?.message || "PIN login failed");
       }
-    } catch {
-      toast.error("Error during PIN login");
+    } catch (error) {
+      const message = error?.message ? `PIN login error: ${error.message}` : "Error during PIN login";
+      toast.error(message);
     } finally {
       setLoading(false);
     }
