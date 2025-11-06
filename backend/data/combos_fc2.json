@@ -1,0 +1,69 @@
+[
+  {
+    "id": "bev-happy-hour-1",
+    "shopId": 3,
+    "name": "Cafe Duo",
+    "price": 89,
+    "active": true,
+    "components": [
+      {
+        "itemId": 50,
+        "quantity": 1
+      },
+      {
+        "itemId": 52,
+        "quantity": 1,
+        "option": "Vanilla",
+        "overridePrice": 50
+      }
+    ]
+  },
+  {
+    "id": "si-breakfast-combo-1",
+    "shopId": 2,
+    "name": "South Breakfast Combo",
+    "price": 95,
+    "active": true,
+    "hidden": false,
+    "availableStart": null,
+    "availableEnd": null,
+    "components": [
+      {
+        "itemId": 107,
+        "quantity": 1,
+        "overridePrice": 50
+      },
+      {
+        "itemId": 106,
+        "quantity": 1,
+        "name": "",
+        "option": "",
+        "overridePrice": 55
+      }
+    ]
+  },
+  {
+    "id": "si-snack-combo-1",
+    "shopId": 2,
+    "name": "Dosa Combo",
+    "price": 119,
+    "active": true,
+    "hidden": false,
+    "availableStart": null,
+    "availableEnd": null,
+    "components": [
+      {
+        "itemId": 102,
+        "quantity": 1,
+        "overridePrice": null
+      },
+      {
+        "itemId": 117,
+        "quantity": 1,
+        "name": "",
+        "option": "",
+        "overridePrice": null
+      }
+    ]
+  }
+]

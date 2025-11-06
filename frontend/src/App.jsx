@@ -102,6 +102,13 @@ function App() {
   const [offerPreview, setOfferPreview] = useState(null);
   const [offersLoading, setOffersLoading] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
+  const [foodCourt, setFoodCourt] = useState(() => {
+    try {
+      return localStorage.getItem('selectedFoodCourt') || 'fc-1';
+    } catch {
+      return 'fc-1';
+    }
+  });
 
   useEffect(() => {
     try {
@@ -163,6 +170,12 @@ function App() {
   }, []);
 
   useEffect(() => {
+    try {
+      localStorage.setItem('selectedFoodCourt', foodCourt);
+    } catch {}
+  }, [foodCourt]);
+
+  useEffect(() => {
     const storedSession = adminSession;
     if (!storedSession) return;
     let cancelled = false;
@@ -197,7 +210,7 @@ function App() {
 
   const loadMenu = useCallback(() => {
     let cancelled = false;
-    fetchMenu().then((data) => {
+    fetchMenu(foodCourt).then((data) => {
       if (cancelled) return;
       setMenu(data);
       if (data.length > 0 && !selectedShop) setSelectedShop(data[0].shopId);
@@ -205,7 +218,7 @@ function App() {
     return () => {
       cancelled = true;
     };
-  }, [selectedShop]);
+  }, [selectedShop, foodCourt]);
 
   const refreshAdminManagedVendors = useCallback(async () => {
     if (!adminSession) return;
@@ -281,7 +294,7 @@ function App() {
     if (!employeeToken || !userId) return;
     const poll = async () => {
       try {
-        const orders = await fetchUserOrders(userId);
+        const orders = await fetchUserOrders(userId, foodCourt);
         // On first poll after login, seed the already-ready orders to suppress repeated alerts
         if (!readySeededRef.current) {
           orders.filter(o => o.status === 'ready').forEach(o => readyNotifiedRef.current.add(o.billingId));
@@ -372,7 +385,7 @@ function App() {
 
     let cancelled = false;
     setOffersLoading(true);
-    previewOffers({ shopId: selectedShop, items: itemsPayload, scheduledTime: scheduledTime || undefined })
+    previewOffers({ shopId: selectedShop, items: itemsPayload, scheduledTime: scheduledTime || undefined, foodCourt })
       .then((data) => {
         if (cancelled) return;
         if (data?.status === 'ok') {
@@ -408,8 +421,8 @@ function App() {
   /** Load favorites for current user (employee) */
   const loadFavorites = useCallback(() => {
     if (!userId) return;
-    fetchFavorites(userId).then(setFavorites);
-  }, [userId]);
+    fetchFavorites(userId, foodCourt).then(setFavorites);
+  }, [userId, foodCourt]);
 
   const handleFavoriteToggle = useCallback(async (itemId) => {
     if (!userId) {
@@ -417,13 +430,13 @@ function App() {
       return;
     }
     try {
-      await toggleFavorite(userId, itemId);
+      await toggleFavorite(userId, itemId, foodCourt);
       loadFavorites();
     } catch (error) {
       console.error('Failed to toggle favorite', error);
-      toast.error('Could not update favourites. Please try again.');
+      toast.error('Failed to update favorites');
     }
-  }, [userId, loadFavorites]);
+  }, [userId, loadFavorites, foodCourt]);
 
   const applyWalletPayload = useCallback((payload = {}) => {
     const balance = Number(payload.balance || 0);
@@ -778,7 +791,7 @@ function App() {
         offerPreview: checkoutDraft.offerPreview,
         orderNotes: checkoutDraft.notes || undefined,
         employeeToken: employeeToken || undefined,
-      });
+      }, foodCourt);
 
       if (!response || response.status !== 'success') {
         const msg = response?.message || 'Order failed. Please try again';
@@ -817,7 +830,7 @@ function App() {
       }
 
       if (userId) {
-        fetchUserOrders(userId).then((orders) => {
+        fetchUserOrders(userId, foodCourt).then((orders) => {
           try {
             const today = new Date();
             const isSameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
@@ -905,7 +918,7 @@ function App() {
     if (!confirmed) return;
     const reason = window.prompt("Optional: share the reason for cancellation", "");
     try {
-      const response = await cancelOrder(order.id, userId, reason || "");
+      const response = await cancelOrder(order.id, userId, reason || "", foodCourt);
       if (!response || response.status !== 'success') {
         toast.error(response?.message || "Could not cancel order");
         return;
@@ -920,7 +933,7 @@ function App() {
   const submitInlineFeedback = async () => {
     try {
       if (!inlineRating) return toast.error("Please select a rating");
-      await submitRating(null, inlineRating, inlineFeedback);
+      await submitRating(null, inlineRating, inlineFeedback, foodCourt);
       setInlineRating(0);
       setInlineFeedback("");
       toast.success("Thanks for your feedback!");
@@ -1100,6 +1113,27 @@ function App() {
 
           <div className="app-container">
             <ToastContainer position="top-right" autoClose={3000} />
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                alignItems: 'center',
+                gap: 12,
+                marginBottom: 16,
+              }}
+            >
+              <label style={{ fontSize: 13, color: '#2c3e50', fontWeight: 600 }}>
+                Food Court:
+              </label>
+              <select
+                value={foodCourt}
+                onChange={(e) => setFoodCourt(e.target.value)}
+                style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid #ccc', fontSize: 14 }}
+              >
+                <option value="fc-1">FC‑1</option>
+                <option value="fc-2">FC‑2</option>
+              </select>
+            </div>
 
             {vendorToken ? (
               <>

@@ -4,8 +4,11 @@ import { API_URL } from "./config";
  * Fetch full menu (all shops and items)
  * @returns {Promise<any[]>}
  */
-export const fetchMenu = async () => {
-  const res = await fetch(`${API_URL}/menu`);
+export const fetchMenu = async (foodCourt) => {
+  const params = new URLSearchParams();
+  if (foodCourt) params.set('foodCourt', foodCourt);
+  const qs = params.toString();
+  const res = await fetch(`${API_URL}/menu${qs ? `?${qs}` : ''}`);
   return res.json();
 };
 
@@ -544,9 +547,10 @@ export const uploadVendorImage = async (file, token, options = {}) => {
  * Fetch all offers for a shop (management UI)
  * @param {string|number} shopId
  */
-export const fetchOffers = async (shopId) => {
+export const fetchOffers = async (shopId, foodCourt) => {
   const params = new URLSearchParams();
   if (shopId != null) params.set('shopId', String(shopId));
+  if (foodCourt) params.set('foodCourt', foodCourt);
   const res = await fetch(`${API_URL}/offers?${params.toString()}`);
   return res.json();
 };
@@ -557,11 +561,12 @@ export const fetchOffers = async (shopId) => {
  * @param {Date=} at
  * @returns {Promise<{shopId:number,shopName:string,sections:Array<{name:string,items:any[]}>}>}
  */
-export const fetchMenuSections = async (shopId, at) => {
+export const fetchMenuSections = async (shopId, at, foodCourt) => {
   const params = new URLSearchParams();
   params.set('includeSections', '1');
   if (shopId != null) params.set('shopId', String(shopId));
-  if (at) params.set('at', at.toISOString());
+  if (at instanceof Date) params.set('at', at.toISOString());
+  if (foodCourt) params.set('foodCourt', foodCourt);
   const res = await fetch(`${API_URL}/menu?${params.toString()}`);
   return res.json();
 };
@@ -610,10 +615,12 @@ export const updateMenu = async (items, token) => {
  * @param {{items:any[], user:string, scheduledTime?:string, shopId:string}} order
  * @returns {Promise<any>}
  */
-export const placeOrder = async (order) => {
+export const placeOrder = async (order, foodCourt) => {
+  const headers = { "Content-Type": "application/json" };
+  if (foodCourt) headers['x-food-court'] = foodCourt;
   const res = await fetch(`${API_URL}/order`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify(order),
   });
   return res.json();
@@ -633,10 +640,12 @@ export const fetchEmployeePointsSummary = async (token) => {
  * @param {string|number} shopId
  * @param {boolean=} activeOnly
  */
-export const fetchCombos = async (shopId, activeOnly = true) => {
+export const fetchCombos = async (shopId, activeOnly = true, foodCourt) =>
+{
   const params = new URLSearchParams();
   if (shopId != null) params.set('shopId', String(shopId));
   if (activeOnly) params.set('activeOnly', '1');
+  if (foodCourt) params.set('foodCourt', foodCourt);
   const res = await fetch(`${API_URL}/combos?${params.toString()}`);
   return res.json();
 };
@@ -659,9 +668,10 @@ export const updateCombos = async (combos, token) => {
  * Fetch active offers for a shop
  * @param {string|number} shopId
  */
-export const fetchActiveOffers = async (shopId) => {
+export const fetchActiveOffers = async (shopId, foodCourt) => {
   const params = new URLSearchParams();
   if (shopId != null) params.set('shopId', String(shopId));
+  if (foodCourt) params.set('foodCourt', foodCourt);
   const res = await fetch(`${API_URL}/offers/active?${params.toString()}`);
   return res.json();
 };
@@ -684,11 +694,11 @@ export const updateOffers = async (offers, token) => {
  * Preview active offers against a hypothetical cart
  * @param {{shopId:string|number, items:any[], scheduledTime?:string}} payload
  */
-export const previewOffers = async ({ shopId, items, scheduledTime }) => {
+export const previewOffers = async ({ shopId, items, scheduledTime, foodCourt }) => {
   const res = await fetch(`${API_URL}/offers/preview`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ shopId, items, scheduledTime })
+    body: JSON.stringify({ shopId, items, scheduledTime, foodCourt })
   });
   return res.json();
 };
@@ -994,8 +1004,11 @@ export const createProcurementOrder = async (token, payload) => {
  * @param {string} userId
  * @returns {Promise<any>}
  */
-export const fetchUserOrders = async (userId) => {
-  const res = await fetch(`${API_URL}/orders/user/${userId}`);
+export const fetchUserOrders = async (userId, foodCourt) => {
+  const params = new URLSearchParams();
+  if (foodCourt) params.set('foodCourt', foodCourt);
+  const qs = params.toString();
+  const res = await fetch(`${API_URL}/orders/user/${userId}${qs ? `?${qs}` : ''}`);
   return res.json();
 };
 
@@ -1006,10 +1019,12 @@ export const fetchUserOrders = async (userId) => {
  * @param {string=} reason
  * @returns {Promise<any>}
  */
-export const cancelOrder = async (orderId, userId, reason = "") => {
+export const cancelOrder = async (orderId, userId, reason = "", foodCourt) => {
+  const headers = { 'Content-Type': 'application/json' };
+  if (foodCourt) headers['x-food-court'] = foodCourt;
   const res = await fetch(`${API_URL}/order/cancel/${orderId}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({ userId, reason })
   });
   return res.json();
@@ -1047,10 +1062,12 @@ export const fetchPublicFeedbacks = async ({ ratingMin, days } = {}) => {
  * @param {number} itemId
  * @returns {Promise<any>}
  */
-export const toggleFavorite = async (userId, itemId) => {
+export const toggleFavorite = async (userId, itemId, foodCourt) => {
+  const headers = { "Content-Type": "application/json" };
+  if (foodCourt) headers['x-food-court'] = foodCourt;
   const res = await fetch(`${API_URL}/favorites`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify({ userId, itemId }),
   });
   return res.json();
@@ -1061,8 +1078,12 @@ export const toggleFavorite = async (userId, itemId) => {
  * @param {string} userId
  * @returns {Promise<any>}
  */
-export const fetchFavorites = async (userId) => {
-  const res = await fetch(`${API_URL}/favorites/${userId}`);
+export const fetchFavorites = async (userId, foodCourt) => {
+  const headers = { "Content-Type": "application/json" };
+  if (foodCourt) headers['x-food-court'] = foodCourt;
+  const res = await fetch(`${API_URL}/favorites/${userId}`, {
+    headers,
+  });
   return res.json();
 };
 
@@ -1073,11 +1094,13 @@ export const fetchFavorites = async (userId) => {
  * @param {string} feedback
  * @returns {Promise<any>}
  */
-export const submitRating = async (orderId, rating, feedback) => {
+export const submitRating = async (orderId, rating, feedback, foodCourt) => {
+  const headers = { "Content-Type": "application/json" };
+  if (foodCourt) headers['x-food-court'] = foodCourt;
   const res = await fetch(`${API_URL}/rating`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ orderId, rating, feedback }),
+    headers,
+    body: JSON.stringify({ orderId, rating, feedback })
   });
   return res.json();
 };

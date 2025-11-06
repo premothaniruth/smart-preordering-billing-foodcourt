@@ -91,52 +91,61 @@ const saveAnalyticsBootstrapState = (state) => {
 
 const bootstrapAnalyticsFromOrders = async () => {
   const state = loadAnalyticsBootstrapState();
-  const lastOrderId = Number(state.lastOrderId || 0);
-  const orders = getOrders();
-  const pending = orders.filter((order) => Number(order.id) > lastOrderId);
-  if (pending.length === 0) {
-    return;
-  }
+  const previousByCourt = state && typeof state === 'object' ? state.byFoodCourt || {} : {};
+  const nextByCourt = { ...previousByCourt };
+  let globalMaxOrderId = Number(state?.lastOrderId || 0);
 
-  const vendors = getVendors();
-  const vendorByShop = new Map();
-  vendors.forEach((vendor) => {
-    if (vendor?.shopId != null) {
-      vendorByShop.set(String(vendor.shopId), vendor);
+  for (const foodCourt of FOOD_COURTS) {
+    const lastOrderId = Number(previousByCourt?.[foodCourt] ?? state?.lastOrderId ?? 0);
+    const orders = getOrders(foodCourt);
+    const pending = orders.filter((order) => Number(order.id) > lastOrderId);
+    if (pending.length === 0) {
+      continue;
     }
-  });
 
-  for (const order of pending) {
-    const vendor = vendorByShop.get(String(order.shopId)) || null;
-    try {
-      await emitOrderCreatedEvent(order, {
-        user: order.user || null,
-        payment: order.payment || null,
-        vendor,
-        meta: { source: "bootstrap" },
-      });
-
-      if (order.status) {
-        await emitOrderStatusEvent(order, {
-          vendor,
-          previousStatus: null,
-          actor: vendor
-            ? {
-                type: "vendor",
-                vendorId: vendor.vendorId,
-                shopId: vendor.shopId,
-                username: vendor.username,
-              }
-            : { type: "system", source: "bootstrap" },
-        });
+    const vendors = getVendors(foodCourt);
+    const vendorByShop = new Map();
+    vendors.forEach((vendor) => {
+      if (vendor?.shopId != null) {
+        vendorByShop.set(String(vendor.shopId), vendor);
       }
-    } catch (error) {
-      console.warn("Failed to bootstrap analytics event for order", order.id, error);
+    });
+
+    for (const order of pending) {
+      const vendor = vendorByShop.get(String(order.shopId)) || null;
+      try {
+        await emitOrderCreatedEvent(order, {
+          user: order.user || null,
+          payment: order.payment || null,
+          vendor,
+          meta: { source: "bootstrap", foodCourt },
+        });
+
+        if (order.status) {
+          await emitOrderStatusEvent(order, {
+            vendor,
+            previousStatus: null,
+            actor: vendor
+              ? {
+                  type: "vendor",
+                  vendorId: vendor.vendorId,
+                  shopId: vendor.shopId,
+                  username: vendor.username,
+                }
+              : { type: "system", source: "bootstrap" },
+          });
+        }
+      } catch (error) {
+        console.warn("Failed to bootstrap analytics event for order", order.id, error);
+      }
     }
+
+    const maxOrderId = pending.reduce((max, order) => Math.max(max, Number(order.id) || 0), lastOrderId);
+    nextByCourt[foodCourt] = maxOrderId;
+    globalMaxOrderId = Math.max(globalMaxOrderId, maxOrderId);
   }
 
-  const maxOrderId = pending.reduce((max, order) => Math.max(max, Number(order.id) || 0), lastOrderId);
-  saveAnalyticsBootstrapState({ lastOrderId: maxOrderId });
+  saveAnalyticsBootstrapState({ byFoodCourt: nextByCourt, lastOrderId: globalMaxOrderId });
 };
 
 const upload = multer({
@@ -346,10 +355,10 @@ app.delete("/admin/vendor/:id", authenticateAdmin, (req, res) => {
       saveVendorGrievances(nextGrievances);
     }
 
-    const historicalOrders = getOrders();
+    const historicalOrders = getOrders(foodCourt);
     const ordersAfterPurge = historicalOrders.filter((order) => Number(order.shopId) !== shopIdValue);
     if (ordersAfterPurge.length !== historicalOrders.length) {
-      saveOrders(ordersAfterPurge);
+      saveOrders(ordersAfterPurge, foodCourt);
     }
 
     try {
@@ -2941,34 +2950,6 @@ const getVendorDirectoryMap = (foodCourt = FC_DEFAULT) => {
   return map;
 };
 
-const resolveVendorContactForOrder = (order, foodCourt = FC_DEFAULT) => {
-  if (!order) return order?.vendorContact || null;
-  const existing = order.vendorContact && typeof order.vendorContact === 'object'
-    ? { ...order.vendorContact }
-    : null;
-  const vendorShopId = order.vendorShopId != null ? String(order.vendorShopId) : null;
-  if (!vendorShopId) return existing;
-
-  try {
-    const directoryMap = getVendorDirectoryMap(foodCourt);
-    const entry = directoryMap.get(vendorShopId);
-    if (!entry) return existing;
-
-    return {
-      vendorId: entry.vendorId ?? existing?.vendorId ?? null,
-      shopId: entry.shopId,
-      shopName: entry.shopName || existing?.shopName || null,
-      email: entry.contactEmail || existing?.email || existing?.contactEmail || null,
-      contactEmail: entry.contactEmail || existing?.contactEmail || null,
-      phone: entry.contactPhone || existing?.phone || existing?.contactPhone || null,
-      contactPhone: entry.contactPhone || existing?.contactPhone || null,
-    };
-  } catch (error) {
-    console.error('Error resolving vendor contact for bulk order', error);
-    return existing;
-  }
-};
-
 const sanitizeBulkOrder = (order, foodCourt = FC_DEFAULT) => {
   if (!order) return null;
   const { subtotal, discountAmount, totalAmount, pricing } = computeBulkOrderTotals(order);
@@ -3537,10 +3518,11 @@ const generateBillingId = () => {
  * Calculate preparation time (mins) based on items and current queue load for a shop.
  * @param {Array<{prepTime?:number}>} items
  * @param {string} shopId
+ * @param {string} foodCourt
  * @returns {number}
  */
-const calculatePreparationTime = (items, shopId) => {
-  const orders = getOrders();
+const calculatePreparationTime = (items, shopId, foodCourt = FC_DEFAULT) => {
+  const orders = getOrders(foodCourt);
   const pendingOrders = orders.filter(o => o.shopId === shopId && o.status === "pending").length;
   
   const totalItemTime = items.reduce((sum, item) => sum + (item.prepTime || 5), 0);
@@ -3820,7 +3802,7 @@ app.get("/feedbacks", (req, res) => {
  */
 app.get("/vendor/feedbacks", authenticateVendor, (req, res) => {
   try {
-    const orders = getOrders();
+    const orders = getOrders(req.vendor.foodCourt || FC_DEFAULT);
     const ratings = getRatings();
     const vendorShopId = req.vendor.shopId;
     const orderIdsForShop = new Set(orders.filter(o => o.shopId === vendorShopId).map(o => o.id));
@@ -3865,7 +3847,6 @@ app.post('/interest', authenticateEmployee, (req, res) => {
       return res.status(409).json({ message: 'Interest can only be expressed for sold-out or low-stock items' });
     }
 
-    const foodCourt = getUserFoodCourt(req);
     const vendorId = getVendorIdForShop(shopIdStr, foodCourt);
     const identitySet = getEmployeeIdentitySet(req.employee || {}, req.employeeSession || null);
     const records = getItemInterestRecords();
@@ -4342,7 +4323,7 @@ app.post("/order", (req, res) => {
 
     let totalAmount = offerSummary.totalPayable;
 
-    const prepTime = calculatePreparationTime(items, shopId);
+    const prepTime = calculatePreparationTime(items, shopId, foodCourt);
     const estimatedReadyTime = new Date(Date.now() + prepTime * 60000).toISOString();
 
     const normalizedNotes = clampString(orderNotes || paymentPayload?.notes || '', 400);
@@ -4587,8 +4568,22 @@ app.post("/order/cancel/:id", (req, res) => {
     if (!userId) {
       return res.status(400).json({ message: "userId is required" });
     }
-    const orders = getOrders();
-    const index = orders.findIndex((o) => Number(o.id) === orderId);
+    let targetFoodCourt = getUserFoodCourt(req);
+    let orders = getOrders(targetFoodCourt);
+    let index = orders.findIndex((o) => Number(o.id) === orderId);
+    if (index === -1) {
+      for (const fc of FOOD_COURTS) {
+        if (fc === targetFoodCourt) continue;
+        const candidateOrders = getOrders(fc);
+        const candidateIndex = candidateOrders.findIndex((o) => Number(o.id) === orderId);
+        if (candidateIndex !== -1) {
+          orders = candidateOrders;
+          index = candidateIndex;
+          targetFoodCourt = fc;
+          break;
+        }
+      }
+    }
     if (index === -1) {
       return res.status(404).json({ message: "Order not found" });
     }
@@ -4611,7 +4606,7 @@ app.post("/order/cancel/:id", (req, res) => {
 
     let rawMenu;
     try {
-      rawMenu = getMenu();
+      rawMenu = getMenu(targetFoodCourt);
     } catch {
       rawMenu = null;
     }
@@ -4635,7 +4630,7 @@ app.post("/order/cancel/:id", (req, res) => {
         });
       }
       try {
-        saveMenu(rawMenu);
+        saveMenu(rawMenu, targetFoodCourt);
       } catch {}
     }
 
@@ -4670,7 +4665,7 @@ app.post("/order/cancel/:id", (req, res) => {
       }
     } catch {}
 
-    saveOrders(orders);
+    saveOrders(orders, targetFoodCourt);
 
     for (const adj of cancelRestocks) {
       emitInventoryAdjustedEvent({
@@ -4714,7 +4709,8 @@ app.post("/order/cancel/:id", (req, res) => {
  */
 app.get("/orders/user/:userId", (req, res) => {
   try {
-    const orders = getOrders();
+    const foodCourt = getUserFoodCourt(req);
+    const orders = getOrders(foodCourt);
     const userOrders = orders.filter(o => o.user === req.params.userId);
     res.json(userOrders);
   } catch (error) {
@@ -4776,12 +4772,26 @@ app.post("/rating", (req, res) => {
     const ratings = getRatings();
 
     if (orderId) {
-      const orders = getOrders();
-      const order = orders.find(o => o.id === orderId);
+      let targetFoodCourt = getUserFoodCourt(req);
+      let orders = getOrders(targetFoodCourt);
+      let order = orders.find(o => o.id === orderId);
+      if (!order) {
+        for (const fc of FOOD_COURTS) {
+          if (fc === targetFoodCourt) continue;
+          const candidateOrders = getOrders(fc);
+          const candidate = candidateOrders.find(o => o.id === orderId);
+          if (candidate) {
+            orders = candidateOrders;
+            order = candidate;
+            targetFoodCourt = fc;
+            break;
+          }
+        }
+      }
       if (order) {
         order.rating = rating;
         order.feedback = feedback;
-        saveOrders(orders);
+        saveOrders(orders, targetFoodCourt);
       }
     }
 

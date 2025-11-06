@@ -565,7 +565,16 @@ const AdminDashboard = ({ token, onOpenPrinterSetup }) => {
 
   useEffect(() => {
     loadOrders();
-    fetchMenu().then(setMenu);
+    const currentFoodCourt = (() => {
+      try {
+        if (!token) return null;
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        return payload.foodCourt || null;
+      } catch {
+        return null;
+      }
+    })();
+    fetchMenu(currentFoodCourt).then(setMenu);
     if (!localStorage.getItem('vendorSoundFirstLoginDone')) {
       try { localStorage.setItem('vendorSoundFirstLoginDone', '1'); } catch {}
     }
