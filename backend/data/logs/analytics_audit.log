@@ -128,3 +128,11 @@
 {"type":"points:order-processed","actor":{"type":"system","source":"order.create"},"employeeId":1,"orderId":47,"pointsEarned":0,"streakBonuses":0,"pointsConverted":0}
 {"timestamp":"2025-11-06T08:01:31.622Z","actorType":"vendor","actorId":2,"shopId":2,"vendorId":2,"action":"vendor.login.success","metadata":{"username":"southfoods"}}
 {"timestamp":"2025-11-06T08:03:40.826Z","actorType":"vendor","actorId":2,"shopId":2,"vendorId":2,"action":"vendor.login.success","metadata":{"username":"southfoods"}}
+{"timestamp":"2025-11-06T08:13:40.046Z","actorType":"vendor","actorId":2,"shopId":2,"vendorId":2,"action":"vendor.login.success","metadata":{"username":"southfoods"}}
+{"timestamp":"2025-11-06T08:15:33.993Z","actorType":"vendor","actorId":2,"shopId":2,"vendorId":2,"action":"vendor.login.success","metadata":{"username":"southfoods"}}
+{"timestamp":"2025-11-06T08:16:43.965Z","actorType":"vendor","actorId":2,"shopId":2,"vendorId":2,"action":"interest.summary.viewed","metadata":{"itemCount":1}}
+{"timestamp":"2025-11-06T08:16:48.937Z","actorType":"vendor","actorId":2,"shopId":2,"vendorId":2,"action":"interest.summary.viewed","metadata":{"itemCount":1}}
+{"timestamp":"2025-11-06T08:22:33.442Z","actorType":"vendor","actorId":2,"shopId":2,"vendorId":2,"action":"vendor.login.success","metadata":{"username":"southfoods"}}
+{"timestamp":"2025-11-06T08:26:21.769Z","actorType":"vendor","actorId":2,"shopId":2,"vendorId":2,"action":"vendor.login.success","metadata":{"username":"southfoods"}}
+{"timestamp":"2025-11-06T08:29:26.990Z","actorType":"vendor","actorId":2,"shopId":2,"vendorId":2,"action":"vendor.login.success","metadata":{"username":"southfoods"}}
+{"timestamp":"2025-11-06T08:42:31.138Z","actorType":"vendor","actorId":2,"shopId":2,"vendorId":2,"action":"vendor.login.success","metadata":{"username":"southfoods"}}

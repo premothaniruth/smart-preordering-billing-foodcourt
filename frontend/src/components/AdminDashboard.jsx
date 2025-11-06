@@ -13,6 +13,7 @@ import {
   fetchInterestSummary,
   updateInterestThreshold,
 } from "../api";
+import PrinterSetupConfig from "./PrinterSetupConfig.jsx";
 
 const DEFAULT_PREP_MINUTES = 5;
 const MAX_LOAD_MULTIPLIER = 3;
@@ -470,6 +471,15 @@ const CountdownDisplay = ({ info }) => {
         <span style={{ fontWeight: 700, color }}>{primaryText}</span>
         <span style={timerStyle}>{info.label}</span>
       </div>
+      {showPrinterSetup && (
+        <PrinterSetupConfig
+          visible={showPrinterSetup}
+          onDismiss={handlePrinterConfigDismiss}
+          onSave={handlePrinterConfigSave}
+          initialConfig={printerConfig}
+          mode="inline"
+        />
+      )}
       {secondaryValue && (
         <span style={{ fontSize: 11, color: "#8e44ad" }}>{secondaryPrefix}{secondaryValue}</span>
       )}
@@ -642,6 +652,34 @@ const AdminDashboard = ({ token }) => {
     return shop.items.filter(it => Number(it.inventory ?? 100) <= Number(lowStockThreshold));
   }, [menu, vendorShopId, lowStockThreshold]);
 
+  const [showPrinterSetup, setShowPrinterSetup] = useState(false);
+  const [printerConfig, setPrinterConfig] = useState(() => {
+    try {
+      const stored = localStorage.getItem("vendorPrinterConfig");
+      return stored ? JSON.parse(stored) : null;
+    } catch (error) {
+      console.warn("Failed to read printer config", error);
+      return null;
+    }
+  });
+
+  const handlePrinterConfigSave = useCallback((config) => {
+    try {
+      localStorage.setItem("vendorPrinterConfig", JSON.stringify(config));
+      setPrinterConfig(config);
+      toast.success("Printer settings saved (demo)");
+    } catch (error) {
+      console.warn("Failed to persist printer config", error);
+      toast.error("Could not save printer settings");
+    } finally {
+      setShowPrinterSetup(false);
+    }
+  }, []);
+
+  const handlePrinterConfigDismiss = useCallback(() => {
+    setShowPrinterSetup(false);
+  }, []);
+
   const markReady = (id) => {
     markOrderReady(id, token).then(() => loadOrders());
   };
@@ -804,8 +842,9 @@ const AdminDashboard = ({ token }) => {
           {showLowStock ? 'Hide Low Stock' : `Low Stock Items (${lowStockItems.length})`}
         </button>
         <button
-          onClick={() => toast.info('Connect vendorPrinterBridge.printOrderTicket(ticket) to your thermal printer. Use individual order print buttons below to test.')}> 
-          Printer Setup Help
+          type="button"
+          onClick={() => setShowPrinterSetup((value) => !value)}>
+          {showPrinterSetup ? 'Hide Printer Setup' : 'Printer Setup Help'}
         </button>
         <button
           onClick={() => {
