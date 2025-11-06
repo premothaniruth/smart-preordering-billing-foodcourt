@@ -234,7 +234,6 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/images", express.static(path.join(__dirname, "uploads")));
 
 ensurePointsDataFiles();
-ensureCourtDataFiles();
 
 app.get("/healthz", (req, res) => {
   const summary = metricsRegistry.getHealthSummary();
@@ -553,7 +552,7 @@ const writeJsonTo = (filePath, payload) => {
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
 };
 
-const ensureCourtDataFiles = () => {
+function ensureCourtDataFiles() {
   const bases = [menuFile, ordersFile, vendorsFile, combosFile, offersFile];
   for (const base of bases) {
     const secondaryPath = resolveCourtFile(base, FC_SECONDARY);
@@ -567,7 +566,7 @@ const ensureCourtDataFiles = () => {
       }
     }
   }
-};
+}
 
 const DEFAULT_INTEREST_THRESHOLD = 15;
 const INTEREST_DEDUP_WINDOW_MS = 6 * 60 * 60 * 1000; // 6 hours
@@ -601,6 +600,8 @@ const loadUserCombos = (req) => getCombos(getUserFoodCourt(req));
 const loadUserOffers = (req) => getOffers(getUserFoodCourt(req));
 const loadUserOrders = (req) => getOrders(getUserFoodCourt(req));
 const saveUserOrders = (req, orders) => saveOrders(orders, getUserFoodCourt(req));
+
+ensureCourtDataFiles();
 
 // Simple admin credentials (can be overridden via env)
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "infybhojans";

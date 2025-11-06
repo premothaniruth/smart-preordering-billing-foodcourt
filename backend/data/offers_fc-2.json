@@ -1,0 +1,102 @@
+[
+  {
+    "id": "bev-combo-30",
+    "shopId": 3,
+    "title": "🥤 Beverages Combo Deal ₹30 Off",
+    "bannerText": "Happy Hour: ₹30 off on Cafe Duo",
+    "discountPercent": null,
+    "discountAmount": 30,
+    "applicableSections": [],
+    "applicableComboIds": [
+      "bev-happy-hour-1"
+    ],
+    "start": "2025-10-01T00:00:00Z",
+    "end": "2025-12-31T23:59:59Z",
+    "active": true,
+    "stackable": false,
+    "maxDiscountAmount": 30
+  },
+  {
+    "id": 1762361650374,
+    "shopId": 2,
+    "title": "Buy 1 get 1",
+    "bannerText": "Buy dosa and get vada for free",
+    "description": "",
+    "active": true,
+    "stackable": false,
+    "priority": 0,
+    "maxDiscountAmount": null,
+    "discountPercent": 0,
+    "discountAmount": null,
+    "applicableSections": [
+      "Breakfast"
+    ],
+    "applicableComboIds": [],
+    "start": null,
+    "end": null,
+    "timeStart": null,
+    "timeEnd": null,
+    "daysOfWeek": null,
+    "schedule": null,
+    "conditions": [
+      {
+        "type": "item_quantity",
+        "itemIds": [
+          102
+        ],
+        "minQuantity": 1
+      }
+    ],
+    "rewards": [
+      {
+        "type": "free_item",
+        "itemId": 105,
+        "quantity": 1,
+        "price": 50,
+        "description": "Medu Vada"
+      }
+    ],
+    "metadata": null,
+    "createdAt": "2025-11-05T16:55:14.759Z",
+    "updatedAt": "2025-11-05T16:55:14.759Z"
+  },
+  {
+    "id": "diwali-sections-10",
+    "shopId": 2,
+    "title": "🎉 Diwali 10% Off",
+    "bannerText": "Diwali Offer: 10% off Breakfast & Lunch",
+    "description": "",
+    "active": true,
+    "stackable": false,
+    "priority": 0,
+    "maxDiscountAmount": 100,
+    "discountPercent": 10,
+    "discountAmount": null,
+    "applicableSections": [
+      "Breakfast",
+      "Lunch"
+    ],
+    "applicableComboIds": [],
+    "start": "2025-10-01T00:00:00Z",
+    "end": "2025-11-30T23:59:59Z",
+    "timeStart": null,
+    "timeEnd": null,
+    "daysOfWeek": null,
+    "schedule": null,
+    "conditions": [],
+    "rewards": [
+      {
+        "type": "percentage_discount",
+        "percent": 10,
+        "appliesTo": "sections",
+        "sections": [
+          "Breakfast",
+          "Lunch"
+        ]
+      }
+    ],
+    "metadata": null,
+    "createdAt": "2025-11-01T11:34:56.581Z",
+    "updatedAt": "2025-11-05T16:55:14.759Z"
+  }
+]
