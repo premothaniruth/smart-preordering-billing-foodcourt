@@ -37,6 +37,7 @@ function AdminControl({
   const [bulkStatus, setBulkStatus] = useState("submitted_admin");
   const [bulkLoading, setBulkLoading] = useState(false);
   const [bulkError, setBulkError] = useState(null);
+  const [showAdminPassword, setShowAdminPassword] = useState(false);
   const [selectedBulkId, setSelectedBulkId] = useState(null);
   const [decisionComment, setDecisionComment] = useState("");
   const [sendVendorShopId, setSendVendorShopId] = useState("");
@@ -528,12 +529,33 @@ function AdminControl({
           </div>
           <div className="form-group">
             <label>Password</label>
-            <input
-              type="password"
-              value={loginForm.password}
-              onChange={(e) => setLoginForm((prev) => ({ ...prev, password: e.target.value }))}
-              placeholder="••••••••"
-            />
+            <div className="password-input-wrapper">
+              <input
+                type={showAdminPassword ? "text" : "password"}
+                value={loginForm.password}
+                onChange={(e) => setLoginForm((prev) => ({ ...prev, password: e.target.value }))}
+                placeholder="Enter password"
+              />
+              <button
+                type="button"
+                className="password-toggle"
+                onClick={() => setShowAdminPassword((prev) => !prev)}
+                aria-label={showAdminPassword ? "Hide password" : "Show password"}
+              >
+                {showAdminPassword ? (
+                  <svg aria-hidden="true" className="eye-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3 3l18 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                    <path d="M9.88 9.88A3 3 0 0114.12 14.12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                    <path d="M10.73 5.08A10.86 10.86 0 0121 12c-1.1 1.86-2.57 3.47-4.31 4.71M6.24 6.24C4.03 7.73 2.28 9.67 1 12c1.88 3.34 5.36 6 10 6 1.48 0 2.86-.24 4.11-.69" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                  </svg>
+                ) : (
+                  <svg aria-hidden="true" className="eye-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" fill="none" />
+                    <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.8" fill="none" />
+                  </svg>
+                )}
+              </button>
+            </div>
           </div>
           <button type="submit" className="primary-button" style={{ width: "100%", marginTop: 12 }}>
             Sign In

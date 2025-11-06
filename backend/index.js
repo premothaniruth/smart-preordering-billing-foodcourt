@@ -5410,9 +5410,26 @@ app.post("/order/extend/:id", authenticateVendor, (req, res) => {
       return res.status(404).json({ message: "Order not found for your shop" });
     }
 
-    const previousPrepMinutes = order.prepTime || 0;
+    const hadPrepTime = Object.prototype.hasOwnProperty.call(order, "prepTime");
+    const previousPrepMinutesRaw = Number(order.prepTime);
+    const previousPrepMinutes = Number.isFinite(previousPrepMinutesRaw) ? previousPrepMinutesRaw : 0;
+    const hadEstimatedReadyTime = Object.prototype.hasOwnProperty.call(order, "estimatedReadyTime");
     const previousEta = order.estimatedReadyTime || null;
-    order.prepTime = (order.prepTime || 0) + addMinutes;
+
+    if (!Object.prototype.hasOwnProperty.call(order, "_originalPrepTimeDefined")) {
+      order._originalPrepTimeDefined = hadPrepTime;
+    }
+    if (!Object.prototype.hasOwnProperty.call(order, "_originalEstimatedReadyTimeDefined")) {
+      order._originalEstimatedReadyTimeDefined = hadEstimatedReadyTime;
+    }
+    if (!Object.prototype.hasOwnProperty.call(order, "originalPrepTime") && hadPrepTime) {
+      order.originalPrepTime = previousPrepMinutes;
+    }
+    if (!Object.prototype.hasOwnProperty.call(order, "originalEstimatedReadyTime") && hadEstimatedReadyTime) {
+      order.originalEstimatedReadyTime = previousEta;
+    }
+
+    order.prepTime = previousPrepMinutes + addMinutes;
     const prevEta = order.estimatedReadyTime ? new Date(order.estimatedReadyTime).getTime() : Date.now();
     const baseTime = Math.max(prevEta, Date.now());
     order.estimatedReadyTime = new Date(baseTime + addMinutes * 60000).toISOString();
@@ -5435,6 +5452,78 @@ app.post("/order/extend/:id", authenticateVendor, (req, res) => {
     res.json({ status: "success", message: "Preparation time extended", order });
   } catch (error) {
     res.status(500).json({ message: "Error extending preparation time" });
+  }
+});
+
+/**
+ * POST /order/extend-reset/:id
+ * Vendor: Revoke any previously granted prep-time extensions for an order.
+ */
+app.post("/order/extend-reset/:id", authenticateVendor, (req, res) => {
+  try {
+    const orders = getOrders();
+    const orderId = parseInt(req.params.id);
+    const vendorShopId = req.vendor.shopId;
+
+    const order = orders.find((o) => o.id === orderId && o.shopId === vendorShopId);
+    if (!order) {
+      return res.status(404).json({ message: "Order not found for your shop" });
+    }
+
+    const extensionMinutes = Number(order.etaExtensionMinutes || 0);
+    if (!extensionMinutes) {
+      return res.status(400).json({ message: "No prep-time extension to revoke" });
+    }
+
+    const currentPrep = Number(order.prepTime || 0);
+    const hadPrepOriginally = order._originalPrepTimeDefined === true;
+    const hadEtaOriginally = order._originalEstimatedReadyTimeDefined === true;
+    const extendedEta = order.estimatedReadyTime || null;
+
+    if (hadPrepOriginally) {
+      const restoredPrepValue = Number(order.originalPrepTime);
+      order.prepTime = Number.isFinite(restoredPrepValue) ? restoredPrepValue : 0;
+    } else {
+      delete order.prepTime;
+    }
+
+    if (hadEtaOriginally) {
+      order.estimatedReadyTime = order.originalEstimatedReadyTime || null;
+    } else {
+      delete order.estimatedReadyTime;
+    }
+
+    if (!hadEtaOriginally && !Object.prototype.hasOwnProperty.call(order, "estimatedReadyTime")) {
+      const fallbackEtaMs = Date.parse(extendedEta);
+      if (Number.isFinite(fallbackEtaMs)) {
+        order.estimatedReadyTime = new Date(fallbackEtaMs - extensionMinutes * 60000).toISOString();
+      }
+    }
+
+    order.etaExtensionMinutes = 0;
+    order.etaExtendedAt = null;
+    delete order.originalPrepTime;
+    delete order.originalEstimatedReadyTime;
+    delete order._originalPrepTimeDefined;
+    delete order._originalEstimatedReadyTimeDefined;
+
+    saveOrders(orders);
+    emitOrderPrepExtendedEvent(order, {
+      vendor: req.vendor,
+      addMinutes: -extensionMinutes,
+      previousPrepMinutes: currentPrep,
+      previousEta: extendedEta,
+      actor: {
+        type: "vendor",
+        vendorId: req.vendor.vendorId,
+        shopId: req.vendor.shopId,
+        username: req.vendor.username,
+      },
+    });
+
+    res.json({ status: "success", message: "Prep-time extension revoked", order });
+  } catch (error) {
+    res.status(500).json({ message: "Error revoking preparation time extension" });
   }
 });
 

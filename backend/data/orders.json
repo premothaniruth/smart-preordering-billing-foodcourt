@@ -2391,7 +2391,7 @@
     "shopId": 2,
     "user": "+919952911560",
     "scheduledTime": null,
-    "status": "pending",
+    "status": "ready",
     "createdAt": "2025-11-06T07:57:22.894Z",
     "billingId": "00002",
     "estimatedReadyTime": "2025-11-06T08:27:22.893Z",
@@ -2481,7 +2481,8 @@
       "amount": 166.5,
       "provider": "razorpay-open",
       "reference": "PG-1762415842894"
-    }
+    },
+    "readyAt": "2025-11-06T09:37:09.242Z"
   },
   {
     "id": 46,
@@ -2498,11 +2499,11 @@
     "shopId": 2,
     "user": "+919952911560",
     "scheduledTime": "2025-11-06T14:20",
-    "status": "pending",
+    "status": "ready",
     "createdAt": "2025-11-06T07:59:42.284Z",
     "billingId": "00003",
-    "estimatedReadyTime": "2025-11-06T08:16:42.283Z",
-    "prepTime": 17,
+    "estimatedReadyTime": "2025-11-06T09:42:02.708Z",
+    "prepTime": 27,
     "baseEstimatedReadyTime": "2025-11-06T08:16:42.283Z",
     "basePrepTime": 17,
     "rating": null,
@@ -2588,7 +2589,10 @@
       "amount": 40.5,
       "provider": "razorpay-open",
       "reference": "PG-1762415982284"
-    }
+    },
+    "etaExtendedAt": "2025-11-06T09:37:02.709Z",
+    "etaExtensionMinutes": 10,
+    "readyAt": "2025-11-06T09:37:07.658Z"
   },
   {
     "id": 47,
@@ -2605,11 +2609,11 @@
     "shopId": 2,
     "user": "+919952911560",
     "scheduledTime": null,
-    "status": "pending",
+    "status": "completed",
     "createdAt": "2025-11-06T08:01:16.893Z",
     "billingId": "00004",
-    "estimatedReadyTime": "2025-11-06T08:20:16.893Z",
-    "prepTime": 19,
+    "estimatedReadyTime": "2025-11-06T09:29:05.833Z",
+    "prepTime": 24,
     "baseEstimatedReadyTime": "2025-11-06T08:20:16.893Z",
     "basePrepTime": 19,
     "rating": null,
@@ -2695,7 +2699,12 @@
       "amount": 126,
       "provider": "razorpay-open",
       "reference": "PG-1762416076893"
-    }
+    },
+    "etaExtendedAt": "2025-11-06T09:24:05.834Z",
+    "etaExtensionMinutes": 5,
+    "readyAt": "2025-11-06T09:24:29.006Z",
+    "pickedAt": "2025-11-06T09:24:36.451Z",
+    "completedAt": "2025-11-06T09:24:36.451Z"
   },
   {
     "id": 48,
@@ -2804,5 +2813,114 @@
       "provider": "razorpay-open",
       "reference": "PG-1762420326795"
     }
+  },
+  {
+    "id": 50,
+    "items": [
+      {
+        "id": 133,
+        "name": "Fish Fry",
+        "price": 140,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 15
+      }
+    ],
+    "shopId": 2,
+    "user": "+919952911560",
+    "scheduledTime": null,
+    "status": "pending",
+    "createdAt": "2025-11-06T09:44:26.896Z",
+    "billingId": "00007",
+    "estimatedReadyTime": "2025-11-06T09:59:26.896Z",
+    "prepTime": 15,
+    "baseEstimatedReadyTime": "2025-11-06T09:59:26.896Z",
+    "basePrepTime": 15,
+    "rating": null,
+    "feedback": null,
+    "totalAmount": 126,
+    "subtotalBeforeDiscount": 140,
+    "discountTotal": 14,
+    "offerSummary": {
+      "subtotalBeforeDiscount": 140,
+      "discountTotal": 14,
+      "totalPayable": 126,
+      "appliedOffers": [
+        {
+          "id": "diwali-sections-10",
+          "title": "🎉 Diwali 10% Off",
+          "description": "",
+          "bannerText": "Diwali Offer: 10% off Breakfast & Lunch",
+          "rewards": [
+            {
+              "type": "percentage_discount",
+              "details": {
+                "percent": 10,
+                "scope": "sections",
+                "sections": [
+                  "Breakfast",
+                  "Lunch"
+                ],
+                "itemIds": null,
+                "baseAmount": 140,
+                "computedDiscount": 14
+              },
+              "description": ""
+            }
+          ],
+          "discountAmount": 14,
+          "metadata": {
+            "id": "diwali-sections-10",
+            "shopId": 2,
+            "title": "🎉 Diwali 10% Off",
+            "bannerText": "Diwali Offer: 10% off Breakfast & Lunch",
+            "description": "",
+            "active": true,
+            "stackable": false,
+            "priority": 0,
+            "maxDiscountAmount": 100,
+            "discountPercent": 10,
+            "discountAmount": null,
+            "applicableSections": [
+              "Breakfast",
+              "Lunch"
+            ],
+            "applicableComboIds": [],
+            "start": "2025-10-01T00:00:00Z",
+            "end": "2025-11-30T23:59:59Z",
+            "timeStart": null,
+            "timeEnd": null,
+            "daysOfWeek": null,
+            "schedule": null,
+            "conditions": [],
+            "rewards": [
+              {
+                "type": "percentage_discount",
+                "percent": 10,
+                "appliesTo": "sections",
+                "sections": [
+                  "Breakfast",
+                  "Lunch"
+                ]
+              }
+            ],
+            "metadata": null,
+            "createdAt": "2025-11-01T11:34:56.581Z",
+            "updatedAt": "2025-11-05T16:55:14.759Z"
+          },
+          "extraItems": []
+        }
+      ],
+      "extraItems": []
+    },
+    "notes": null,
+    "payment": {
+      "method": "gateway",
+      "amount": 126,
+      "provider": "razorpay-open",
+      "reference": "PG-1762422266896"
+    },
+    "etaExtendedAt": null,
+    "etaExtensionMinutes": 0
   }
 ]

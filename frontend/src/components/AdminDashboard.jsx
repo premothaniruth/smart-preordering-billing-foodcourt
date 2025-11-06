@@ -609,22 +609,32 @@ const AdminDashboard = ({ token, onOpenPrinterSetup }) => {
     [countdownMap]
   );
 
+  const isOrderOverdue = useCallback(
+    (order) => {
+      if (order?.status !== 'pending') return false;
+      const info = countdownMap.get(order.id);
+      if (!info) return false;
+      return info.status === 'overdue' && info.countdownMs != null && info.countdownMs < 0;
+    },
+    [countdownMap]
+  );
+
   // Play overdue sound once when an order first becomes overdue
   useEffect(() => {
-    const overduePending = orders.filter((o) => {
-      if (o.status !== 'pending') return false;
-      const info = countdownMap.get(o.id);
-      return info && info.orderType === 'live' && info.countdownMs != null && info.countdownMs < 0;
-    });
+    const overduePending = orders.filter((o) => isOrderOverdue(o));
     overduePending.forEach(o => {
       if (!overdueNotifiedRef.current.has(o.id)) {
         overdueNotifiedRef.current.add(o.id);
         if (!muted) {
           try { new Audio(OVERDUE_SOUND).play(); } catch {}
         }
+        const ticketId = o.billingId || o.id;
+        toast.error(`Prep window elapsed for order ${ticketId}. Serve immediately.`, {
+          toastId: `order-overdue-${o.id}`,
+        });
       }
     });
-  }, [orders, countdownMap, tick, muted]);
+  }, [orders, isOrderOverdue, muted]);
 
   const handleBulkExtend = async (mins) => {
     const targets = orders.filter(o => o.status === 'pending');
@@ -1044,22 +1054,22 @@ const AdminDashboard = ({ token, onOpenPrinterSetup }) => {
                     </td>
                   )}
                   <td>
-                    <span className={`badge badge-${o.status === 'ready' ? 'success' : 'warning'}`}>
-                      {o.status.toUpperCase()}
-                    </span>
-                    {o.status === 'pending' && (() => {
-                      const info = countdownMap.get(o.id);
-                      return info && info.orderType === 'live' && info.countdownMs < 0;
-                    })() && (
+                    {isOrderOverdue(o) ? (
                       <span style={{
-                        marginLeft: 8,
+                        display: 'inline-block',
                         background: '#e74c3c',
                         color: '#fff',
                         borderRadius: 12,
-                        padding: '2px 8px',
-                        fontSize: 11,
+                        padding: '4px 10px',
+                        fontSize: 12,
                         fontWeight: 700
-                      }}>OVERDUE</span>
+                      }}>
+                        OVERDUE
+                      </span>
+                    ) : (
+                      <span className={`badge badge-${o.status === 'ready' ? 'success' : 'warning'}`}>
+                        {o.status.toUpperCase()}
+                      </span>
                     )}
                   </td>
                   <td>
