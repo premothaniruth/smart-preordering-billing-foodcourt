@@ -2964,5 +2964,46 @@
       "provider": "razorpay-open",
       "reference": "PG-1762450616491"
     }
+  },
+  {
+    "id": 52,
+    "items": [
+      {
+        "id": 1,
+        "name": "Aloo Paratha",
+        "price": 60,
+        "quantity": 1,
+        "option": null
+      }
+    ],
+    "shopId": 1,
+    "user": "testuser",
+    "scheduledTime": "2025-11-07T09:00:00+05:30",
+    "status": "pending",
+    "createdAt": "2025-11-06T18:06:09.098Z",
+    "billingId": "00011",
+    "estimatedReadyTime": "2025-11-06T18:17:09.098Z",
+    "prepTime": 11,
+    "baseEstimatedReadyTime": "2025-11-06T18:17:09.098Z",
+    "basePrepTime": 11,
+    "rating": null,
+    "feedback": null,
+    "totalAmount": 60,
+    "subtotalBeforeDiscount": 60,
+    "discountTotal": 0,
+    "offerSummary": {
+      "subtotalBeforeDiscount": 60,
+      "discountTotal": 0,
+      "totalPayable": 60,
+      "appliedOffers": [],
+      "extraItems": []
+    },
+    "notes": null,
+    "payment": {
+      "method": "gateway",
+      "amount": 60,
+      "provider": "razorpay-open",
+      "reference": "PG-1762452369098"
+    }
   }
 ]
