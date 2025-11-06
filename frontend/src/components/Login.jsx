@@ -9,7 +9,7 @@ import { toast } from "react-toastify";
  * @param {{ onLogin: (token:string)=>void }} props
  */
 
-const Login = ({ onLogin }) => {
+const Login = ({ onLogin, onBack }) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -32,6 +32,11 @@ const Login = ({ onLogin }) => {
 
   return (
     <div>
+      {typeof onBack === 'function' && (
+        <button type="button" onClick={onBack} className="link-button" style={{ marginBottom: 12 }}>
+          ← Back
+        </button>
+      )}
       <h2>Vendor Login</h2>
       <form onSubmit={handleSubmit}>
         <input
@@ -106,6 +111,7 @@ const Login = ({ onLogin }) => {
 
 Login.propTypes = {
   onLogin: PropTypes.func.isRequired,
+  onBack: PropTypes.func,
 };
 
 export default Login;

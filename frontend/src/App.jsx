@@ -1479,7 +1479,7 @@ function App() {
 
                   {view === "login" && !vendorToken && (
                     <div className="vendor-auth-container">
-                      <Login onLogin={handleLogin} />
+                      <Login onLogin={handleLogin} onBack={() => setView("landing")} />
                     </div>
                   )}
 
