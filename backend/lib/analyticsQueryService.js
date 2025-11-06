@@ -115,17 +115,34 @@ const fallbackOrderMetricsFromFile = ({ shopId, start, bucketMs }) => {
   const orders = readJsonSafe(ORDERS_FILE, []);
   if (!Array.isArray(orders) || orders.length === 0) return null;
 
-  const startTime = start instanceof Date ? start.getTime() : new Date(start).getTime();
-  if (!Number.isFinite(startTime)) return null;
+  let startTime = start instanceof Date ? start.getTime() : new Date(start).getTime();
+  if (!Number.isFinite(startTime)) {
+    startTime = null;
+  }
 
-  const relevant = orders.filter((order) => {
+  let relevant = orders.filter((order) => {
     if (String(order?.shopId) !== String(shopId)) return false;
     const createdAt = parseTimestamp(order?.createdAt);
     if (!createdAt) return false;
+    if (startTime == null) return true;
     return createdAt.getTime() >= startTime;
   });
 
-  if (relevant.length === 0) return null;
+  if (relevant.length === 0) {
+    const fallbackOrders = orders
+      .filter((order) => String(order?.shopId) === String(shopId))
+      .map((order) => ({ order, createdAt: parseTimestamp(order?.createdAt) }))
+      .filter((entry) => entry.createdAt)
+      .sort((a, b) => a.createdAt - b.createdAt)
+      .slice(-24);
+
+    if (fallbackOrders.length === 0) {
+      return null;
+    }
+
+    relevant = fallbackOrders.map((entry) => entry.order);
+    startTime = fallbackOrders[0].createdAt.getTime();
+  }
 
   const bucketMap = new Map();
   let totalRevenue = 0;
@@ -165,13 +182,40 @@ const fallbackOrderMetricsFromFile = ({ shopId, start, bucketMs }) => {
 const fallbackHistoricalSnapshotsFromFile = (shopId) => {
   const archiveEntry = ORDER_SUMMARY_ARCHIVE?.[String(shopId)];
   const history = Array.isArray(archiveEntry?.history) ? archiveEntry.history : [];
-  return history
+  const normalized = history
     .filter((item) => item && typeof item === "object")
     .map((item) => ({
       period: item.period || item.time || new Date().toISOString(),
       orders: safeNumber(item.orders, 0),
       revenue: safeNumber(item.revenue, 0),
     }));
+
+  if (normalized.length > 0) {
+    return normalized;
+  }
+
+  const fallbackOrders = readJsonSafe(ORDERS_FILE, [])
+    .filter((order) => String(order?.shopId) === String(shopId))
+    .map((order) => ({ order, createdAt: parseTimestamp(order?.createdAt) }))
+    .filter((entry) => entry.createdAt)
+    .sort((a, b) => a.createdAt - b.createdAt);
+
+  if (fallbackOrders.length === 0) {
+    return [];
+  }
+
+  const monthBuckets = new Map();
+  fallbackOrders.forEach(({ order, createdAt }) => {
+    const bucket = `${createdAt.getUTCFullYear()}-${String(createdAt.getUTCMonth() + 1).padStart(2, "0")}`;
+    const stats = monthBuckets.get(bucket) || { orders: 0, revenue: 0, period: new Date(Date.UTC(createdAt.getUTCFullYear(), createdAt.getUTCMonth(), 1)).toISOString() };
+    stats.orders += 1;
+    stats.revenue += computeOrderTotal(order);
+    monthBuckets.set(bucket, stats);
+  });
+
+  return Array.from(monthBuckets.values())
+    .sort((a, b) => new Date(a.period) - new Date(b.period))
+    .slice(-12);
 };
 
 class AnalyticsQueryService {

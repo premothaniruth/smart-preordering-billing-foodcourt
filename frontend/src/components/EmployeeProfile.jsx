@@ -518,15 +518,6 @@ const EmployeeProfile = ({ token, wallet = { balance: 0, transactions: [] }, onW
                 )}
               </div>
 
-              <div>
-                <div className="profile-label">Friends (usernames, comma-separated)</div>
-                {viewMode === 'view' ? (
-                  <div className="profile-text">{friendsText || 'None added'}</div>
-                ) : (
-                  <input value={friendsText} onChange={(e)=>setFriendsText(e.target.value)} placeholder="e.g., alice,bob,carol" />
-                )}
-              </div>
-
               {viewMode === 'edit' && (
                 <div className="profile-otp-block">
                   <div className="profile-label">Enter OTP</div>

@@ -403,5 +403,35 @@
     "expiresAt": "2026-01-05T07:59:42.294Z",
     "walletTxId": null,
     "createdAt": "2025-11-06T07:59:42.294Z"
+  },
+  {
+    "id": "pts_1762420326811_6iyr",
+    "employeeId": "1",
+    "type": "earn",
+    "subType": "order",
+    "points": 2,
+    "rupees": null,
+    "orderId": 49,
+    "itemCount": 4,
+    "streakDate": null,
+    "metadata": null,
+    "expiresAt": "2026-01-05T09:12:06.799Z",
+    "walletTxId": null,
+    "createdAt": "2025-11-06T09:12:06.811Z"
+  },
+  {
+    "id": "pts_1762420326816_235z",
+    "employeeId": "1",
+    "type": "bonus",
+    "subType": "streak",
+    "points": 1,
+    "rupees": null,
+    "orderId": null,
+    "itemCount": null,
+    "streakDate": "2025-11-06",
+    "metadata": null,
+    "expiresAt": "2026-01-05T09:12:06.816Z",
+    "walletTxId": null,
+    "createdAt": "2025-11-06T09:12:06.817Z"
   }
 ]

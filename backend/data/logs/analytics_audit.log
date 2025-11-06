@@ -139,3 +139,6 @@
 {"timestamp":"2025-11-06T08:45:01.866Z","actorType":"vendor","actorId":2,"shopId":2,"vendorId":2,"action":"vendor.login.success","metadata":{"username":"southfoods"}}
 {"timestamp":"2025-11-06T08:55:54.904Z","actorType":"vendor","actorId":2,"shopId":2,"vendorId":2,"action":"vendor.login.success","metadata":{"username":"southfoods"}}
 {"timestamp":"2025-11-06T08:57:43.616Z","actorType":"vendor","actorId":2,"shopId":2,"vendorId":2,"action":"vendor.login.success","metadata":{"username":"southfoods"}}
+{"timestamp":"2025-11-06T09:04:33.116Z","actorType":"vendor","actorId":4,"shopId":4,"vendorId":4,"action":"vendor.login.success","metadata":{"username":"fastfoods"}}
+{"type":"points:order-processed","actor":{"type":"system","source":"order.create"},"employeeId":1,"orderId":48,"pointsEarned":0,"streakBonuses":0,"pointsConverted":0}
+{"type":"points:order-processed","actor":{"type":"system","source":"order.create"},"employeeId":1,"orderId":49,"pointsEarned":2,"streakBonuses":1,"pointsConverted":0}
