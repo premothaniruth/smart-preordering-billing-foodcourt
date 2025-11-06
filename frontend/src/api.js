@@ -277,6 +277,48 @@ export const updateInterestThreshold = async (token, threshold) => {
   return res.json();
 };
 
+export const submitEmployeeConcern = async (token, concern) => {
+  const res = await fetch(`${API_URL}/employee/concerns`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: token,
+      'x-employee-token': token,
+    },
+    body: JSON.stringify(concern),
+  });
+  return res.json();
+};
+
+export const fetchEmployeeConcerns = async (token) => {
+  const res = await fetch(`${API_URL}/employee/concerns`, {
+    headers: {
+      Authorization: token,
+      'x-employee-token': token,
+    },
+  });
+  return res.json();
+};
+
+export const fetchAdminEmployeeConcerns = async (session) => {
+  const res = await fetch(`${API_URL}/admin/employee-concerns`, {
+    headers: buildAdminHeaders(session),
+  });
+  return res.json();
+};
+
+export const updateAdminEmployeeConcern = async (concernId, updates, session) => {
+  const res = await fetch(`${API_URL}/admin/employee-concerns/${concernId}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      ...buildAdminHeaders(session),
+    },
+    body: JSON.stringify(updates),
+  });
+  return res.json();
+};
+
 // Employee profile
 export const employeeProfile = async (token) => {
   const res = await fetch(`${API_URL}/employee/profile`, {

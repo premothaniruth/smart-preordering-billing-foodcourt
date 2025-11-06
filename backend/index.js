@@ -504,6 +504,7 @@ const favoritesFile = __dirname + "/data/favorites.json";
 const ratingsFile = __dirname + "/data/ratings.json";
 const grievancesFile = __dirname + "/data/grievances.json";
 const vendorGrievancesFile = __dirname + "/data/vendor_grievances.json";
+const employeeConcernsFile = __dirname + "/data/employee_concerns.json";
 const sosStateFile = __dirname + "/data/sos_state.json";
 const employeesFile = __dirname + "/data/employees.json";
 const combosFile = __dirname + "/data/combos.json";
@@ -2476,6 +2477,16 @@ const getVendorGrievances = () => {
  * @param {Array} grievances
  */
 const saveVendorGrievances = (grievances) => fs.writeFileSync(vendorGrievancesFile, JSON.stringify(grievances, null, 2));
+
+const getEmployeeConcerns = () => {
+  try {
+    return JSON.parse(fs.readFileSync(employeeConcernsFile, "utf8"));
+  } catch {
+    return [];
+  }
+};
+
+const saveEmployeeConcerns = (concerns) => fs.writeFileSync(employeeConcernsFile, JSON.stringify(concerns, null, 2));
 
 /**
  * Read bulk orders from disk.
@@ -5524,6 +5535,131 @@ app.post("/order/extend-reset/:id", authenticateVendor, (req, res) => {
     res.json({ status: "success", message: "Prep-time extension revoked", order });
   } catch (error) {
     res.status(500).json({ message: "Error revoking preparation time extension" });
+  }
+});
+
+// Employee concerns endpoints
+const EMPLOYEE_CONCERN_CATEGORIES = new Map([
+  ["cleanliness", "Cleanliness"],
+  ["food_quality", "Food / Taste"],
+  ["vendor_service", "Vendor Service"],
+  ["billing_issue", "Billing"],
+  ["other", "Other"],
+]);
+
+const EMPLOYEE_CONCERN_STATUSES = new Set(["pending", "in_progress", "resolved"]);
+
+app.post("/employee/concerns", authenticateEmployee, (req, res) => {
+  try {
+    const employee = req.employee;
+    if (!employee || employee.id == null) {
+      return res.status(401).json({ message: "Invalid employee session" });
+    }
+
+    const { category = "other", subject = "", description = "", location = "" } = req.body || {};
+
+    const trimmedSubject = String(subject || "").trim();
+    const trimmedDescription = String(description || "").trim();
+    if (trimmedDescription.length < 10) {
+      return res.status(400).json({ message: "Description should be at least 10 characters" });
+    }
+
+    const categoryKey = String(category || "other").toLowerCase();
+    const resolvedCategory = EMPLOYEE_CONCERN_CATEGORIES.has(categoryKey) ? categoryKey : "other";
+
+    const concerns = getEmployeeConcerns();
+    const now = new Date().toISOString();
+    const nextId = concerns.length > 0 ? Math.max(...concerns.map((c) => Number(c.id) || 0)) + 1 : 1;
+
+    const record = {
+      id: nextId,
+      employeeId: Number(employee.id),
+      username: employee.username || employee.email || employee.mobile || null,
+      department: employee.department || null,
+      category: resolvedCategory,
+      subject: trimmedSubject || EMPLOYEE_CONCERN_CATEGORIES.get(resolvedCategory) || "Employee Concern",
+      description: trimmedDescription,
+      location: String(location || "").trim() || null,
+      status: "pending",
+      adminNote: "",
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    concerns.unshift(record);
+    saveEmployeeConcerns(concerns);
+
+    res.json({ status: "success", concern: record });
+  } catch (error) {
+    console.error("Error submitting employee concern", error);
+    res.status(500).json({ message: "Error submitting employee concern" });
+  }
+});
+
+app.get("/employee/concerns", authenticateEmployee, (req, res) => {
+  try {
+    const employee = req.employee;
+    if (!employee || employee.id == null) {
+      return res.status(401).json({ message: "Invalid employee session" });
+    }
+    const concerns = getEmployeeConcerns().filter((entry) => Number(entry.employeeId) === Number(employee.id));
+    res.json(concerns);
+  } catch (error) {
+    console.error("Error loading employee concerns", error);
+    res.status(500).json({ message: "Error loading concerns" });
+  }
+});
+
+app.get("/admin/employee-concerns", authenticateAdmin, (req, res) => {
+  try {
+    const concerns = getEmployeeConcerns();
+    res.json(concerns);
+  } catch (error) {
+    console.error("Error fetching employee concerns", error);
+    res.status(500).json({ message: "Error fetching employee concerns" });
+  }
+});
+
+app.patch("/admin/employee-concerns/:id", authenticateAdmin, (req, res) => {
+  try {
+    const concerns = getEmployeeConcerns();
+    const concernId = Number(req.params.id);
+    const index = concerns.findIndex((c) => Number(c.id) === concernId);
+    if (index === -1) {
+      return res.status(404).json({ message: "Concern not found" });
+    }
+
+    const updates = {};
+    if (req.body && Object.prototype.hasOwnProperty.call(req.body, "status")) {
+      const status = String(req.body.status || "").toLowerCase();
+      if (EMPLOYEE_CONCERN_STATUSES.has(status)) {
+        updates.status = status;
+        if (status === "resolved") {
+          updates.resolvedAt = new Date().toISOString();
+        }
+      }
+    }
+
+    if (req.body && Object.prototype.hasOwnProperty.call(req.body, "adminNote")) {
+      updates.adminNote = String(req.body.adminNote || "").trim();
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ message: "No valid fields to update" });
+    }
+
+    concerns[index] = {
+      ...concerns[index],
+      ...updates,
+      updatedAt: new Date().toISOString(),
+    };
+
+    saveEmployeeConcerns(concerns);
+
+    res.json({ status: "success", concern: concerns[index] });
+  } catch (error) {
+    console.error("Error updating employee concern", error);
+    res.status(500).json({ message: "Error updating employee concern" });
   }
 });
 

@@ -1,6 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
-import { employeeProfile, employeeProfileRequestOtp, employeeProfileUpdate, walletTopUp, fetchEmployeePointsSummary } from '../api';
+import {
+  employeeProfile,
+  employeeProfileRequestOtp,
+  employeeProfileUpdate,
+  walletTopUp,
+  fetchEmployeePointsSummary,
+  submitEmployeeConcern,
+  fetchEmployeeConcerns,
+} from '../api';
 
 const MIN_TOPUP = 100;
 const MAX_TOPUP = 5000;
@@ -65,6 +73,10 @@ const EmployeeProfile = ({ token, wallet = { balance: 0, transactions: [] }, onW
   const [viewMode, setViewMode] = useState('view');
   const [showPassword, setShowPassword] = useState(false);
   const [showPin, setShowPin] = useState(false);
+  const [concernForm, setConcernForm] = useState({ category: 'cleanliness', subject: '', description: '', location: '' });
+  const [concernsLoading, setConcernsLoading] = useState(false);
+  const [concerns, setConcerns] = useState([]);
+  const [concernFilter, setConcernFilter] = useState('all');
 
   const load = async () => {
     try {
@@ -130,6 +142,33 @@ const EmployeeProfile = ({ token, wallet = { balance: 0, transactions: [] }, onW
     if (!wallet) return;
     setTopupAmount('');
   }, [wallet?.balance]);
+
+  const loadEmployeeConcerns = async () => {
+    if (!token) {
+      setConcerns([]);
+      return;
+    }
+    setConcernsLoading(true);
+    try {
+      const data = await fetchEmployeeConcerns(token);
+      if (Array.isArray(data)) {
+        data.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+        setConcerns(data);
+      } else if (data?.message) {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      toast.error(error?.message || 'Failed to load concerns');
+    } finally {
+      setConcernsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'concern' && token) {
+      loadEmployeeConcerns();
+    }
+  }, [activeTab, token]);
 
   const handleTopup = async () => {
     if (!token) {
@@ -239,6 +278,77 @@ const EmployeeProfile = ({ token, wallet = { balance: 0, transactions: [] }, onW
     const current = profile?.username;
     return !current || !String(current).trim();
   }, [profile]);
+
+  const concernCategoryOptions = [
+    { value: 'cleanliness', label: 'Cleanliness' },
+    { value: 'food_quality', label: 'Food / Taste' },
+    { value: 'vendor_service', label: 'Vendor Service' },
+    { value: 'billing_issue', label: 'Billing Issue' },
+    { value: 'other', label: 'Other' },
+  ];
+
+  const handleConcernChange = (field, value) => {
+    setConcernForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleConcernSubmit = async (event) => {
+    event.preventDefault();
+    if (!token) {
+      toast.error('Session expired. Please login again.');
+      return;
+    }
+    const { category, subject, description, location } = concernForm;
+    if (!subject.trim()) {
+      toast.error('Subject is required');
+      return;
+    }
+    if (description.trim().length < 10) {
+      toast.error('Description should be at least 10 characters');
+      return;
+    }
+    try {
+      const response = await submitEmployeeConcern(token, {
+        category,
+        subject: subject.trim(),
+        description: description.trim(),
+        location: location.trim(),
+      });
+      if (response?.status === 'success') {
+        toast.success('Concern submitted to admin');
+        setConcernForm({ category: 'cleanliness', subject: '', description: '', location: '' });
+        loadEmployeeConcerns();
+      } else {
+        toast.error(response?.message || 'Failed to submit concern');
+      }
+    } catch (error) {
+      toast.error(error?.message || 'Failed to submit concern');
+    }
+  };
+
+  const filteredConcerns = useMemo(() => {
+    if (concernFilter === 'all') return concerns;
+    return concerns.filter((entry) => (entry.status || 'pending') === concernFilter);
+  }, [concerns, concernFilter]);
+
+  const formatConcernDate = (value) => {
+    if (!value) return '—';
+    try {
+      return new Date(value).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+    } catch {
+      return value;
+    }
+  };
+
+  const concernStatusBadge = (status) => {
+    switch (status) {
+      case 'resolved':
+        return 'badge badge-success';
+      case 'in_progress':
+        return 'badge badge-warning';
+      default:
+        return 'badge badge-secondary';
+    }
+  };
 
   return (
     <div>
@@ -723,7 +833,130 @@ const EmployeeProfile = ({ token, wallet = { balance: 0, transactions: [] }, onW
               </div>
             </div>
           )}
-          {TAB_PLACEHOLDERS[activeTab] && (
+          {activeTab === 'concern' && (
+            <div style={{ display: 'grid', gap: 18 }}>
+              <div className="card" style={{ padding: 18 }}>
+                <div style={{ marginBottom: 12 }}>
+                  <h3 style={{ margin: '0 0 6px' }}>Raise a Concern</h3>
+                  <p style={{ margin: 0, color: '#6c7a89', fontSize: 13 }}>
+                    Share cleanliness, food quality, or vendor experience issues so the admin team can assist quickly.
+                  </p>
+                </div>
+                <form onSubmit={handleConcernSubmit} className="form-vertical" style={{ display: 'grid', gap: 12 }}>
+                  <div className="form-group">
+                    <label htmlFor="employee-concern-category">Category</label>
+                    <select
+                      id="employee-concern-category"
+                      value={concernForm.category}
+                      onChange={(e) => handleConcernChange('category', e.target.value)}
+                    >
+                      {concernCategoryOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="employee-concern-subject">Subject</label>
+                    <input
+                      id="employee-concern-subject"
+                      type="text"
+                      value={concernForm.subject}
+                      onChange={(e) => handleConcernChange('subject', e.target.value)}
+                      placeholder="Short title for your concern"
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="employee-concern-location">Location (optional)</label>
+                    <input
+                      id="employee-concern-location"
+                      type="text"
+                      value={concernForm.location}
+                      onChange={(e) => handleConcernChange('location', e.target.value)}
+                      placeholder="Cafeteria / floor / vendor counter"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="employee-concern-description">Description</label>
+                    <textarea
+                      id="employee-concern-description"
+                      rows={4}
+                      value={concernForm.description}
+                      onChange={(e) => handleConcernChange('description', e.target.value)}
+                      placeholder="Describe the issue with any relevant details such as date/time or vendor name."
+                      required
+                    />
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      onClick={() => setConcernForm({ category: 'cleanliness', subject: '', description: '', location: '' })}
+                    >
+                      Clear
+                    </button>
+                    <button type="submit" className="primary-button">
+                      Submit Concern
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              <div className="card" style={{ padding: 18 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                  <div>
+                    <h3 style={{ margin: '0 0 4px' }}>My Submitted Concerns</h3>
+                    <p style={{ margin: 0, color: '#6c7a89', fontSize: 13 }}>
+                      Track status updates from the admin management team.
+                    </p>
+                  </div>
+                  <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                    <select value={concernFilter} onChange={(e) => setConcernFilter(e.target.value)}>
+                      <option value="all">All Statuses</option>
+                      <option value="pending">Pending</option>
+                      <option value="in_progress">In Progress</option>
+                      <option value="resolved">Resolved</option>
+                    </select>
+                    <button type="button" className="secondary-button" onClick={loadEmployeeConcerns} disabled={concernsLoading}>
+                      {concernsLoading ? 'Refreshing…' : 'Refresh'}
+                    </button>
+                  </div>
+                </div>
+                <div style={{ maxHeight: 360, overflowY: 'auto', border: '1px solid #e1e6eb', borderRadius: 8, padding: 0 }}>
+                  {concernsLoading && concerns.length === 0 && (
+                    <p style={{ textAlign: 'center', padding: 18, color: '#7f8c8d' }}>Loading concerns…</p>
+                  )}
+                  {!concernsLoading && filteredConcerns.length === 0 && (
+                    <p style={{ textAlign: 'center', padding: 18, color: '#7f8c8d' }}>No concerns submitted yet.</p>
+                  )}
+                  {filteredConcerns.map((item) => (
+                    <div key={item.id} className="list-item" style={{ padding: '16px 18px', borderBottom: '1px solid #eef2f6' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                        <div>
+                          <div style={{ fontWeight: 600 }}>{item.subject}</div>
+                          <div style={{ fontSize: 12, color: '#7f8c8d' }}>
+                            Submitted {formatConcernDate(item.createdAt)} · Category: {categoryLabel(item.category)}
+                          </div>
+                        </div>
+                        <span className={concernStatusBadge(item.status || 'pending')}>
+                          {(item.status || 'pending').replace(/_/g, ' ').toUpperCase()}
+                        </span>
+                      </div>
+                      <p style={{ fontSize: 14, lineHeight: 1.5, marginBottom: 8 }}>{item.description}</p>
+                      <div style={{ fontSize: 12, color: '#7f8c8d', display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+                        <span>Last updated {formatConcernDate(item.updatedAt)}</span>
+                        {item.adminNote && <span style={{ fontStyle: 'italic' }}>Admin note: {item.adminNote}</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab !== 'concern' && TAB_PLACEHOLDERS[activeTab] && (
             <div style={{ display: 'grid', gap: 16 }}>
               <div className="card" style={{ padding: 20, background: '#f9fbfd', border: '1px dashed #cbd4de' }}>
                 <h3 style={{ margin: '0 0 8px' }}>{TAB_PLACEHOLDERS[activeTab].title}</h3>

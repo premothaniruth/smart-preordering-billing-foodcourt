@@ -1026,13 +1026,17 @@ function AdminControl({
   );
 
   const userManagementPanel = (
-    <div className="card">
-      <div className="card-header">User Management</div>
-      <div className="card-body">
-        <p style={{ margin: 0, color: "#7f8c8d" }}>
-          Placeholder area for managing employees, admins, and vendor accounts. Detailed controls coming soon.
-        </p>
+    <div>
+      <div className="card" style={{ marginBottom: 16 }}>
+        <div className="card-header">User Management</div>
+        <div className="card-body">
+          <p style={{ margin: 0, color: "#7f8c8d" }}>
+            Manage employee accounts and review concerns raised from the cafeteria floor. Use the panel below to respond
+            to cleanliness, food quality, or vendor service issues submitted by employees.
+          </p>
+        </div>
       </div>
+      <AdminEmployeeConcerns adminSession={adminSession} />
     </div>
   );
 
