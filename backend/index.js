@@ -1334,7 +1334,11 @@ app.get('/bulk-orders', (req, res) => {
       return res.status(401).json({ message: 'Invalid or expired session' });
     }
 
-    const allOrders = getBulkOrders();
+    let foodCourt = getUserFoodCourt(req);
+    if (vendorResolved?.vendor?.foodCourt) {
+      foodCourt = vendorResolved.vendor.foodCourt;
+    }
+    const allOrders = getBulkOrders(foodCourt);
     const statusFilter = req.query.status ? String(req.query.status).toLowerCase() : null;
     const vendorFilterParam = req.query.vendorShopId ? String(req.query.vendorShopId) : null;
 
@@ -1377,7 +1381,7 @@ app.get('/bulk-orders', (req, res) => {
       });
     }
 
-    const response = visible.map((order) => sanitizeBulkOrder(order));
+    const response = visible.map((order) => sanitizeBulkOrder(order, foodCourt));
     res.json({ status: 'ok', orders: response });
   } catch (error) {
     console.error('Error listing bulk orders', error);
@@ -1392,13 +1396,14 @@ app.post('/bulk-orders', (req, res) => {
     const { employee } = resolved;
 
     const payload = req.body || {};
-    const orders = getBulkOrders();
-    const record = normalizeBulkOrderForCreate(payload, employee, orders);
+    const foodCourt = getUserFoodCourt(req);
+    const orders = getBulkOrders(foodCourt);
+    const record = normalizeBulkOrderForCreate(payload, employee, orders, foodCourt);
     ensureBulkOrderReviewFields(record);
     orders.push(record);
-    saveBulkOrders(orders);
+    saveBulkOrders(orders, foodCourt);
 
-    res.status(201).json({ status: 'ok', order: sanitizeBulkOrder(record) });
+    res.status(201).json({ status: 'ok', order: sanitizeBulkOrder(record, foodCourt) });
   } catch (error) {
     console.error('Error creating bulk order', error);
     res.status(400).json({ message: error?.message || 'Failed to create bulk order' });
@@ -1410,7 +1415,8 @@ app.put('/bulk-orders/:id', (req, res) => {
     const resolved = resolveEmployeeFromRequest(req);
     if (!resolved) return res.status(401).json({ message: 'Invalid or expired session' });
     const { employee, employees } = resolved;
-    const orders = getBulkOrders();
+    const foodCourt = getUserFoodCourt(req);
+    const orders = getBulkOrders(foodCourt);
     const id = Number(req.params.id);
     const index = orders.findIndex((order) => Number(order.id) === id);
     if (index === -1) return res.status(404).json({ message: 'Bulk order not found' });
@@ -1459,15 +1465,16 @@ app.put('/bulk-orders/:id', (req, res) => {
       updated.adminReview.previousUpdatedAt = currentOrder.updatedAt || currentOrder.lastStatusChangeAt || currentOrder.createdAt;
     }
 
+    updated.foodCourt = foodCourt;
     orders[index] = updated;
-    saveBulkOrders(orders);
+    saveBulkOrders(orders, foodCourt);
 
     // Keep resolve cache up to date if organizer fields changed
     if (employees) {
       saveEmployees(employees);
     }
 
-    res.json({ status: 'ok', order: sanitizeBulkOrder(updated) });
+    res.json({ status: 'ok', order: sanitizeBulkOrder(updated, foodCourt) });
   } catch (error) {
     console.error('Error updating bulk order', error);
     res.status(400).json({ message: error?.message || 'Failed to update bulk order' });
@@ -1482,7 +1489,11 @@ app.post('/bulk-orders/:id/vendor-message', (req, res) => {
       return res.status(401).json({ message: 'Invalid or expired session' });
     }
 
-    const orders = getBulkOrders();
+    let foodCourt = getUserFoodCourt(req);
+    if (vendorResolved?.vendor?.foodCourt) {
+      foodCourt = vendorResolved.vendor.foodCourt;
+    }
+    const orders = getBulkOrders(foodCourt);
     const id = Number(req.params.id);
     const index = orders.findIndex((order) => Number(order.id) === id);
     if (index === -1) return res.status(404).json({ message: 'Bulk order not found' });
@@ -1520,10 +1531,11 @@ app.post('/bulk-orders/:id/vendor-message', (req, res) => {
     next.vendorMessages = Array.isArray(next.vendorMessages) ? [entry, ...next.vendorMessages].slice(0, 200) : [entry];
     next.history = Array.isArray(next.history) ? [buildBulkHistoryEntry('vendor_message', actor, { message: messageText }), ...next.history] : [buildBulkHistoryEntry('vendor_message', actor, { message: messageText })];
     next.updatedAt = now;
-    orders[index] = sanitizeBulkOrder(next);
-    saveBulkOrders(orders);
+    next.foodCourt = foodCourt;
+    orders[index] = sanitizeBulkOrder(next, foodCourt);
+    saveBulkOrders(orders, foodCourt);
 
-    res.json({ status: 'ok', order: sanitizeBulkOrder(orders[index]) });
+    res.json({ status: 'ok', order: sanitizeBulkOrder(orders[index], foodCourt) });
   } catch (error) {
     console.error('Error posting bulk order message', error);
     res.status(400).json({ message: error?.message || 'Failed to post message' });
@@ -1538,7 +1550,11 @@ app.post('/bulk-orders/:id/vendor-confirm', (req, res) => {
       return res.status(401).json({ message: 'Invalid or expired session' });
     }
 
-    const orders = getBulkOrders();
+    let foodCourt = getUserFoodCourt(req);
+    if (vendorResolved?.vendor?.foodCourt) {
+      foodCourt = vendorResolved.vendor.foodCourt;
+    }
+    const orders = getBulkOrders(foodCourt);
     const id = Number(req.params.id);
     const index = orders.findIndex((order) => Number(order.id) === id);
     if (index === -1) return res.status(404).json({ message: 'Bulk order not found' });
@@ -1601,8 +1617,9 @@ app.post('/bulk-orders/:id/vendor-confirm', (req, res) => {
 
     updated.updatedAt = now;
 
-    orders[index] = sanitizeBulkOrder(updated);
-    saveBulkOrders(orders);
+    updated.foodCourt = foodCourt;
+    orders[index] = sanitizeBulkOrder(updated, foodCourt);
+    saveBulkOrders(orders, foodCourt);
 
     res.json({ status: 'ok', order: orders[index] });
   } catch (error) {
@@ -1614,15 +1631,16 @@ app.post('/bulk-orders/:id/vendor-confirm', (req, res) => {
 app.get('/admin/bulk-orders', authenticateAdmin, (req, res) => {
   try {
     const statusFilter = req.query.status ? String(req.query.status).toLowerCase() : null;
-    const orders = getBulkOrders();
+    const foodCourt = getAdminFoodCourt(req);
+    const orders = getBulkOrders(foodCourt);
     const filtered = orders.filter((order) => {
       if (!statusFilter) return true;
       return normalizeBulkStatus(order.status) === normalizeBulkStatus(statusFilter);
-    }).map((order) => sanitizeBulkOrder(ensureBulkOrderReviewFields(order)));
+    }).map((order) => sanitizeBulkOrder(ensureBulkOrderReviewFields(order), foodCourt));
     res.json({ status: 'ok', orders: filtered });
   } catch (error) {
     console.error('Error listing admin bulk orders', error);
-    res.status(500).json({ message: 'Failed to load bulk orders' });
+    res.status(500).json({ message: 'Failed to fetch bulk orders' });
   }
 });
 
@@ -1741,7 +1759,8 @@ app.post('/admin/vendor', authenticateAdmin, async (req, res) => {
 
 app.post('/admin/bulk-orders/:id/decision', authenticateAdmin, (req, res) => {
   try {
-    const orders = getBulkOrders();
+    const foodCourt = getAdminFoodCourt(req);
+    const orders = getBulkOrders(foodCourt);
     const id = Number(req.params.id);
     const index = orders.findIndex((order) => Number(order.id) === id);
     if (index === -1) return res.status(404).json({ message: 'Bulk order not found' });
@@ -1788,11 +1807,11 @@ app.post('/admin/bulk-orders/:id/decision', authenticateAdmin, (req, res) => {
     appendAdminDecision(order, { action, comment, actor: adminActor });
     order.updatedAt = new Date().toISOString();
     orders[index] = order;
-    saveBulkOrders(orders);
+    saveBulkOrders(orders, foodCourt);
 
     notifyBulkOrderOrganizer(order, notificationSubject, notificationBody);
 
-    res.json({ status: 'ok', order: sanitizeBulkOrder(order) });
+    res.json({ status: 'ok', order: sanitizeBulkOrder(order, foodCourt) });
   } catch (error) {
     console.error('Error recording admin decision', error);
     res.status(400).json({ message: error?.message || 'Failed to record admin decision' });
@@ -1801,7 +1820,8 @@ app.post('/admin/bulk-orders/:id/decision', authenticateAdmin, (req, res) => {
 
 app.post('/admin/bulk-orders/:id/send-to-vendor', authenticateAdmin, (req, res) => {
   try {
-    const orders = getBulkOrders();
+    const foodCourt = getAdminFoodCourt(req);
+    const orders = getBulkOrders(foodCourt);
     const id = Number(req.params.id);
     const index = orders.findIndex((order) => Number(order.id) === id);
     if (index === -1) return res.status(404).json({ message: 'Bulk order not found' });
@@ -1823,11 +1843,11 @@ app.post('/admin/bulk-orders/:id/send-to-vendor', authenticateAdmin, (req, res) 
       : [buildBulkHistoryEntry('admin_sent_to_vendor', adminActor, { vendorShopId })];
     order.updatedAt = new Date().toISOString();
     orders[index] = order;
-    saveBulkOrders(orders);
+    saveBulkOrders(orders, foodCourt);
 
     notifyBulkOrderOrganizer(order, `Bulk order #${order.id} sent to vendors`, 'Your request has been shared with the vendor for confirmation.');
 
-    res.json({ status: 'ok', order: sanitizeBulkOrder(order) });
+    res.json({ status: 'ok', order: sanitizeBulkOrder(order, foodCourt) });
   } catch (error) {
     console.error('Error sending bulk order to vendor', error);
     res.status(400).json({ message: error?.message || 'Failed to send to vendor' });
@@ -3167,7 +3187,7 @@ const computeBulkOrderHeadcount = (attendeeGroups = [], itemGroups = [], fallbac
   return attendeeSum || fallback || itemSum || 0;
 };
 
-const normalizeBulkOrderForCreate = (input, employee, existingOrders = []) => {
+const normalizeBulkOrderForCreate = (input, employee, existingOrders = [], foodCourt = FC_DEFAULT) => {
   if (!input || typeof input !== 'object') {
     throw new Error('Bulk order payload missing');
   }
@@ -3225,11 +3245,12 @@ const normalizeBulkOrderForCreate = (input, employee, existingOrders = []) => {
     lastStatusChangeAt: now,
     history: [buildBulkHistoryEntry('created', buildBulkActorFromEmployee(employee), { status: initialStatus })],
     metadataVersion: 1,
+    foodCourt,
   };
 
   validateBulkOrderStructure(baseRecord);
   ensureBulkOrderReviewFields(baseRecord);
-  const sanitized = sanitizeBulkOrder(baseRecord);
+  const sanitized = sanitizeBulkOrder(baseRecord, foodCourt);
   sanitized.deliverySlots = sortSlotsByStartTime(sanitized.deliverySlots);
   sanitized.expectedHeadcount = computeBulkOrderHeadcount(sanitized.attendeeGroups, sanitized.itemGroups, expectedHeadcount);
   sanitized.expectedGuests = sanitized.expectedHeadcount;
