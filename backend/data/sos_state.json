@@ -1,8 +1,24 @@
 {
   "active": false,
-  "lastTriggeredAt": null,
-  "lastTriggeredBy": null,
+  "lastTriggeredAt": "2025-11-05T17:40:24.544Z",
+  "lastTriggeredBy": "southfoods",
   "message": null,
   "currentEventId": null,
-  "events": []
+  "events": [
+    {
+      "id": "sos-1762364424544",
+      "resolvedAt": "2025-11-05T17:41:09.874Z",
+      "resolvedBy": "infybhojans",
+      "note": "Cleared by control"
+    },
+    {
+      "id": "sos-1762364424544",
+      "triggeredAt": "2025-11-05T17:40:24.544Z",
+      "triggeredBy": "southfoods",
+      "role": "vendor",
+      "message": "Emergency reported by southfoods"
+    }
+  ],
+  "lastResolvedAt": "2025-11-05T17:41:09.874Z",
+  "lastResolvedBy": "infybhojans"
 }

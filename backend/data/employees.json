@@ -5,13 +5,25 @@
     "email": "prem@infosys.com",
     "mobile": "+919952911560",
     "passwordHash": "$2b$10$/e0tSz4K3pEpYL4BcAAsSOaOx0xBw/BhVHcZtZjrUDt5xfR/C84FG",
-    "pinHash": "$2b$10$8DDQ3hCK9jNqPLBC1AxZJOoAtY82tz25huPbZxIRW9nQx885Syr1W",
+    "pinHash": "$2b$10$X7YgV2JxYQ4lwPbWcMeL9OIFi8joWGdUe.5Dnh9TO.i1GWib3wXlK",
     "role": "Employee",
     "roleSlug": "employee",
     "department": "",
     "bulkOrderEligible": false,
     "walletBalance": 65,
     "walletTransactions": [
+      {
+        "id": "1762409202465-8by08k",
+        "timestamp": "2025-11-06T06:06:42.465Z",
+        "type": "credit",
+        "reason": "points-conversion",
+        "amount": 3,
+        "metadata": {
+          "pointsConverted": 30,
+          "pointsLedgerId": "pts_1762409202461_vt3q"
+        },
+        "status": "success"
+      },
       {
         "id": "1762361464411-4j8x8f",
         "timestamp": "2025-11-05T16:51:04.411Z",

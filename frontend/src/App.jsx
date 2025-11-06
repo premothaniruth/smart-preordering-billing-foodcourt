@@ -100,6 +100,7 @@ function App() {
   const lastSosEventIdRef = useRef(null);
   const [offerPreview, setOfferPreview] = useState(null);
   const [offersLoading, setOffersLoading] = useState(false);
+  const [showSplash, setShowSplash] = useState(true);
 
   useEffect(() => {
     try {
@@ -154,6 +155,11 @@ function App() {
       console.warn("Failed to persist admin vendors", error);
     }
   }, [adminManagedVendors]);
+
+  useEffect(() => {
+    const splashTimeout = setTimeout(() => setShowSplash(false), 2400);
+    return () => clearTimeout(splashTimeout);
+  }, []);
 
   useEffect(() => {
     const storedSession = adminSession;
@@ -1065,6 +1071,15 @@ function App() {
 
   return (
     <>
+      {showSplash && (
+        <div className={`splash-overlay${showSplash ? " splash-overlay--visible" : ""}`}>
+          <div className="splash-card">
+            <img src="/infy-bhojans-logo.png" alt="Infy Bhojans logo" className="splash-logo" />
+            <p className="splash-tagline">Smart preordering & billing for food courts</p>
+            <button className="splash-skip" onClick={() => setShowSplash(false)}>Enter</button>
+          </div>
+        </div>
+      )}
       <header>
         <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/95/Infosys_logo.svg/200px-Infosys_logo.svg.png" alt="Infy Bhojans Logo" />
         <h1>Infy Bhojans</h1>

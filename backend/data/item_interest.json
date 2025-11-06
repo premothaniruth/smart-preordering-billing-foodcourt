@@ -10,5 +10,17 @@
     "employeeContact": null,
     "employeeEmail": "prem@infosys.com",
     "employeeUsername": "prem"
+  },
+  {
+    "id": "1762362447307-7yg84n",
+    "shopId": "2",
+    "itemId": "101",
+    "vendorId": "2",
+    "timestamp": "2025-11-05T17:07:27.307Z",
+    "employeeId": "1",
+    "employeeMobile": "+919952911560",
+    "employeeContact": null,
+    "employeeEmail": "prem@infosys.com",
+    "employeeUsername": "prem"
   }
 ]

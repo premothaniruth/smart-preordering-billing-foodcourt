@@ -1,3 +1,5 @@
+const fs = require("fs");
+const path = require("path");
 const { InfluxDB } = require("@influxdata/influxdb-client");
 const duckdb = require("duckdb");
 const analyticsConfig = require("./analyticsConfig");
@@ -21,6 +23,9 @@ const GRANULARITY_TO_MS = {
   week: 7 * 24 * 60 * 60 * 1000,
 };
 
+const DATA_DIR = path.join(__dirname, "..", "data");
+const ORDERS_FILE = path.join(DATA_DIR, "orders.json");
+
 const safeNumber = (value, fallback = 0) => {
   const num = Number(value);
   return Number.isFinite(num) ? num : fallback;
@@ -30,6 +35,40 @@ const truncateTime = (timestamp, bucketMs) => {
   const timeMs = typeof timestamp === "number" ? timestamp : new Date(timestamp).getTime();
   if (!Number.isFinite(timeMs) || !bucketMs) return null;
   return Math.floor(timeMs / bucketMs) * bucketMs;
+};
+
+const readJsonSafe = (filePath, fallback) => {
+  try {
+    const raw = fs.readFileSync(filePath, "utf8");
+    if (!raw || !raw.trim()) return fallback;
+    return JSON.parse(raw);
+  } catch (error) {
+    console.warn(`[AnalyticsQueryService] Failed to read ${filePath}`, error?.message || error);
+    return fallback;
+  }
+};
+
+const computeOrderTotal = (order) => {
+  if (order == null) return 0;
+  if (order.totalAmount != null) {
+    const total = Number(order.totalAmount);
+    if (Number.isFinite(total)) return total;
+  }
+  const items = Array.isArray(order.items) ? order.items : [];
+  return items.reduce((sum, item) => {
+    const price = Number(item?.price);
+    const quantity = Number(item?.quantity != null ? item.quantity : 1);
+    const safePrice = Number.isFinite(price) ? price : 0;
+    const safeQty = Number.isFinite(quantity) && quantity > 0 ? quantity : 1;
+    return sum + safePrice * safeQty;
+  }, 0);
+};
+
+const parseTimestamp = (value) => {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date;
 };
 
 class AnalyticsQueryService {
@@ -143,6 +182,13 @@ class AnalyticsQueryService {
       ? prepExtended.reduce((sum, row) => sum + safeNumber(row.currentPrepMinutes - row.previousPrepMinutes), 0) / prepExtended.length
       : 0;
 
+    if (orderCreated.length === 0 && orderStatus.length === 0 && rows.length === 0) {
+      const fallback = this._fallbackOrderMetricsFromFile(shopId, start, bucketMs);
+      if (fallback) {
+        return fallback;
+      }
+    }
+
     return {
       totalOrders: uniqueOrders.size,
       totalRevenue,
@@ -210,6 +256,10 @@ class AnalyticsQueryService {
         .reverse();
     } catch (error) {
       console.error("[AnalyticsQueryService] DuckDB query failed", error);
+      const fallback = this._fallbackHistoricalSnapshotsFromFile(shopId);
+      if (fallback.length > 0) {
+        return fallback;
+      }
       return [];
     }
   }

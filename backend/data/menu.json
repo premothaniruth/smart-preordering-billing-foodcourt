@@ -14,11 +14,12 @@
               "isVeg": true,
               "image": "/images/aloo-paratha.jpg",
               "prepTime": 10,
-              "inventory": 96,
+              "inventory": 10,
               "section": "Breakfast",
               "options": [],
               "hasOptions": [],
-              "calories": "222 kcal"
+              "calories": "222 kcal",
+              "restockedAt": "2025-11-05T17:37:50.149Z"
             },
             {
               "id": 2,
@@ -57,7 +58,8 @@
               "section": "Breakfast",
               "options": [],
               "hasOptions": [],
-              "restockedAt": "2025-11-04T19:40:35.532Z"
+              "restockedAt": "2025-11-04T19:40:35.532Z",
+              "calories": null
             },
             {
               "id": 5,
@@ -69,7 +71,8 @@
               "inventory": 98,
               "section": "Breakfast",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 6,
@@ -81,7 +84,8 @@
               "inventory": 98,
               "section": "Breakfast",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 7,
@@ -93,7 +97,8 @@
               "inventory": 97,
               "section": "Breakfast",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 8,
@@ -105,7 +110,8 @@
               "inventory": 98,
               "section": "Breakfast",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 9,
@@ -117,7 +123,8 @@
               "inventory": 100,
               "section": "Breakfast",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 10,
@@ -129,7 +136,8 @@
               "inventory": 100,
               "section": "Breakfast",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 11,
@@ -141,7 +149,8 @@
               "inventory": 100,
               "section": "Breakfast",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 12,
@@ -153,7 +162,8 @@
               "inventory": 100,
               "section": "Breakfast",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 13,
@@ -165,7 +175,8 @@
               "inventory": 99,
               "section": "Breakfast",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 14,
@@ -177,7 +188,8 @@
               "inventory": 99,
               "section": "Breakfast",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 15,
@@ -189,7 +201,8 @@
               "inventory": 99,
               "section": "Breakfast",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 16,
@@ -201,7 +214,8 @@
               "inventory": 99,
               "section": "Breakfast",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 17,
@@ -231,7 +245,8 @@
                   "name": "With Veggies",
                   "priceModifier": 10
                 }
-              ]
+              ],
+              "calories": null
             },
             {
               "id": 18,
@@ -243,7 +258,8 @@
               "inventory": 99,
               "section": "Breakfast",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 19,
@@ -255,7 +271,8 @@
               "inventory": 99,
               "section": "Breakfast",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 20,
@@ -285,7 +302,8 @@
                   "name": "Mango",
                   "priceModifier": 10
                 }
-              ]
+              ],
+              "calories": null
             }
           ]
         },
@@ -302,7 +320,8 @@
               "inventory": 100,
               "section": "Lunch",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 22,
@@ -314,7 +333,8 @@
               "inventory": 100,
               "section": "Lunch",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 23,
@@ -326,7 +346,8 @@
               "inventory": 99,
               "section": "Lunch",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 24,
@@ -338,7 +359,8 @@
               "inventory": 100,
               "section": "Lunch",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 25,
@@ -350,7 +372,8 @@
               "inventory": 100,
               "section": "Lunch",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 26,
@@ -362,7 +385,8 @@
               "inventory": 100,
               "section": "Lunch",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 27,
@@ -374,7 +398,8 @@
               "inventory": 100,
               "section": "Lunch",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 28,
@@ -404,7 +429,8 @@
                   "name": "Boneless",
                   "priceModifier": 15
                 }
-              ]
+              ],
+              "calories": null
             },
             {
               "id": 29,
@@ -416,7 +442,8 @@
               "inventory": 100,
               "section": "Lunch",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 30,
@@ -428,7 +455,8 @@
               "inventory": 100,
               "section": "Lunch",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 31,
@@ -440,7 +468,8 @@
               "inventory": 100,
               "section": "Lunch",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 32,
@@ -452,7 +481,8 @@
               "inventory": 100,
               "section": "Lunch",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 33,
@@ -464,7 +494,8 @@
               "inventory": 100,
               "section": "Lunch",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 34,
@@ -476,7 +507,8 @@
               "inventory": 100,
               "section": "Lunch",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 35,
@@ -488,7 +520,8 @@
               "inventory": 100,
               "section": "Lunch",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 36,
@@ -500,7 +533,8 @@
               "inventory": 100,
               "section": "Lunch",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 37,
@@ -512,7 +546,8 @@
               "inventory": 100,
               "section": "Lunch",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 38,
@@ -542,7 +577,8 @@
                   "name": "Paneer",
                   "priceModifier": 15
                 }
-              ]
+              ],
+              "calories": null
             },
             {
               "id": 39,
@@ -554,7 +590,8 @@
               "inventory": 100,
               "section": "Lunch",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 40,
@@ -566,7 +603,8 @@
               "inventory": 100,
               "section": "Lunch",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             }
           ]
         },
@@ -583,7 +621,8 @@
               "inventory": 100,
               "section": "Dinner",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 42,
@@ -595,7 +634,8 @@
               "inventory": 100,
               "section": "Dinner",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 43,
@@ -625,7 +665,8 @@
                   "name": "Boneless",
                   "priceModifier": 15
                 }
-              ]
+              ],
+              "calories": null
             },
             {
               "id": 44,
@@ -637,7 +678,8 @@
               "inventory": 99,
               "section": "Dinner",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 45,
@@ -649,7 +691,8 @@
               "inventory": 100,
               "section": "Dinner",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 46,
@@ -661,7 +704,8 @@
               "inventory": 100,
               "section": "Dinner",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 47,
@@ -673,7 +717,8 @@
               "inventory": 100,
               "section": "Dinner",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 48,
@@ -685,7 +730,8 @@
               "inventory": 100,
               "section": "Dinner",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 49,
@@ -697,7 +743,8 @@
               "inventory": 100,
               "section": "Dinner",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 50,
@@ -709,7 +756,8 @@
               "inventory": 100,
               "section": "Dinner",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 51,
@@ -721,7 +769,8 @@
               "inventory": 100,
               "section": "Dinner",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 52,
@@ -733,7 +782,8 @@
               "inventory": 100,
               "section": "Dinner",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 53,
@@ -745,7 +795,8 @@
               "inventory": 100,
               "section": "Dinner",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 54,
@@ -757,7 +808,8 @@
               "inventory": 100,
               "section": "Dinner",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 55,
@@ -769,7 +821,8 @@
               "inventory": 100,
               "section": "Dinner",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 56,
@@ -781,7 +834,8 @@
               "inventory": 100,
               "section": "Dinner",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 57,
@@ -793,7 +847,8 @@
               "inventory": 100,
               "section": "Dinner",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 58,
@@ -805,7 +860,8 @@
               "inventory": 100,
               "section": "Dinner",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 59,
@@ -817,7 +873,8 @@
               "inventory": 100,
               "section": "Dinner",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 60,
@@ -829,7 +886,8 @@
               "inventory": 100,
               "section": "Dinner",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             }
           ]
         },
@@ -846,7 +904,8 @@
               "inventory": 100,
               "section": "Quick Bites",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 62,
@@ -858,7 +917,8 @@
               "inventory": 100,
               "section": "Quick Bites",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 63,
@@ -870,7 +930,8 @@
               "inventory": 100,
               "section": "Quick Bites",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 64,
@@ -883,7 +944,8 @@
               "section": "Quick Bites",
               "options": [],
               "hasOptions": [],
-              "restockedAt": "2025-11-04T06:49:56.325Z"
+              "restockedAt": "2025-11-04T06:49:56.325Z",
+              "calories": null
             },
             {
               "id": 65,
@@ -895,7 +957,8 @@
               "inventory": 100,
               "section": "Quick Bites",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 66,
@@ -907,7 +970,8 @@
               "inventory": 100,
               "section": "Quick Bites",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 67,
@@ -919,7 +983,8 @@
               "inventory": 100,
               "section": "Quick Bites",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 68,
@@ -931,7 +996,8 @@
               "inventory": 100,
               "section": "Quick Bites",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 69,
@@ -961,7 +1027,8 @@
                   "name": "Chicken",
                   "priceModifier": 10
                 }
-              ]
+              ],
+              "calories": null
             },
             {
               "id": 70,
@@ -973,7 +1040,8 @@
               "inventory": 100,
               "section": "Quick Bites",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 71,
@@ -985,7 +1053,8 @@
               "inventory": 100,
               "section": "Quick Bites",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 72,
@@ -997,7 +1066,8 @@
               "inventory": 100,
               "section": "Quick Bites",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 73,
@@ -1009,7 +1079,8 @@
               "inventory": 100,
               "section": "Quick Bites",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 74,
@@ -1021,7 +1092,8 @@
               "inventory": 100,
               "section": "Quick Bites",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 75,
@@ -1033,7 +1105,8 @@
               "inventory": 100,
               "section": "Quick Bites",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 76,
@@ -1045,7 +1118,8 @@
               "inventory": 100,
               "section": "Quick Bites",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 77,
@@ -1057,7 +1131,8 @@
               "inventory": 100,
               "section": "Quick Bites",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 78,
@@ -1069,7 +1144,8 @@
               "inventory": 100,
               "section": "Quick Bites",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 79,
@@ -1081,7 +1157,8 @@
               "inventory": 100,
               "section": "Quick Bites",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 80,
@@ -1093,7 +1170,8 @@
               "inventory": 100,
               "section": "Quick Bites",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             }
           ]
         },
@@ -1110,7 +1188,8 @@
               "inventory": 100,
               "section": "Chat Specials",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 82,
@@ -1122,7 +1201,8 @@
               "inventory": 100,
               "section": "Chat Specials",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 83,
@@ -1134,7 +1214,8 @@
               "inventory": 100,
               "section": "Chat Specials",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 84,
@@ -1146,7 +1227,8 @@
               "inventory": 100,
               "section": "Chat Specials",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 85,
@@ -1158,7 +1240,8 @@
               "inventory": 100,
               "section": "Chat Specials",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 86,
@@ -1170,7 +1253,8 @@
               "inventory": 100,
               "section": "Chat Specials",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 87,
@@ -1182,7 +1266,8 @@
               "inventory": 100,
               "section": "Chat Specials",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 88,
@@ -1194,7 +1279,8 @@
               "inventory": 100,
               "section": "Chat Specials",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 89,
@@ -1206,7 +1292,8 @@
               "inventory": 100,
               "section": "Chat Specials",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 90,
@@ -1218,7 +1305,8 @@
               "inventory": 100,
               "section": "Chat Specials",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 91,
@@ -1230,7 +1318,8 @@
               "inventory": 100,
               "section": "Chat Specials",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 92,
@@ -1242,7 +1331,8 @@
               "inventory": 100,
               "section": "Chat Specials",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 93,
@@ -1254,7 +1344,8 @@
               "inventory": 100,
               "section": "Chat Specials",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 94,
@@ -1266,7 +1357,8 @@
               "inventory": 100,
               "section": "Chat Specials",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 95,
@@ -1278,7 +1370,8 @@
               "inventory": 100,
               "section": "Chat Specials",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 96,
@@ -1290,7 +1383,8 @@
               "inventory": 100,
               "section": "Chat Specials",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 97,
@@ -1302,7 +1396,8 @@
               "inventory": 100,
               "section": "Chat Specials",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 98,
@@ -1314,7 +1409,8 @@
               "inventory": 100,
               "section": "Chat Specials",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 99,
@@ -1326,7 +1422,8 @@
               "inventory": 100,
               "section": "Chat Specials",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             },
             {
               "id": 100,
@@ -1338,7 +1435,8 @@
               "inventory": 100,
               "section": "Chat Specials",
               "options": [],
-              "hasOptions": []
+              "hasOptions": [],
+              "calories": null
             }
           ]
         }
@@ -1358,14 +1456,14 @@
               "isVeg": true,
               "image": "/images/idli.jpg",
               "prepTime": 7,
-              "inventory": 7,
+              "inventory": 100,
               "section": "Breakfast",
               "options": [],
               "hasOptions": [],
               "sectionOrder": 7,
               "calories": "~58-102 kcal",
               "isHotSeller": true,
-              "restockedAt": "2025-11-05T16:56:43.992Z"
+              "restockedAt": "2025-11-05T17:10:54.523Z"
             },
             {
               "id": 102,
@@ -1400,12 +1498,12 @@
               "isVeg": true,
               "image": "/images/pongal.jpg",
               "prepTime": 12,
-              "inventory": 9,
+              "inventory": 100,
               "section": "Breakfast",
               "options": [],
               "hasOptions": [],
               "calories": "~150-230 kcal",
-              "restockedAt": "2025-11-05T16:56:54.799Z"
+              "restockedAt": "2025-11-05T17:10:43.025Z"
             },
             {
               "id": 105,
@@ -1518,11 +1616,12 @@
               "isVeg": true,
               "image": "/images/neer-dosa.jpg",
               "prepTime": 9,
-              "inventory": 0,
+              "inventory": 100,
               "section": "Breakfast",
               "options": [],
               "hasOptions": [],
-              "calories": "~90-110 kcal"
+              "calories": "~90-110 kcal",
+              "restockedAt": "2025-11-05T17:10:54.523Z"
             },
             {
               "id": 114,
@@ -1653,7 +1752,7 @@
               "isVeg": true,
               "image": "/images/bisi-bele-bath.jpg",
               "prepTime": 15,
-              "inventory": 100,
+              "inventory": 93,
               "section": "Lunch",
               "options": [],
               "hasOptions": [],
@@ -1680,7 +1779,7 @@
               "isVeg": true,
               "image": "/images/paruppu-vadai.jpg",
               "prepTime": 8,
-              "inventory": 100,
+              "inventory": 99,
               "section": "Lunch",
               "options": [],
               "hasOptions": [],
@@ -1693,7 +1792,7 @@
               "isVeg": true,
               "image": "/images/rasam.jpg",
               "prepTime": 10,
-              "inventory": 100,
+              "inventory": 99,
               "section": "Lunch",
               "options": [],
               "hasOptions": [],
@@ -1719,7 +1818,7 @@
               "isVeg": true,
               "image": "/images/aviyal.jpg",
               "prepTime": 14,
-              "inventory": 100,
+              "inventory": 99,
               "section": "Lunch",
               "options": [],
               "hasOptions": [],
@@ -1732,7 +1831,7 @@
               "isVeg": true,
               "image": "/images/poriyal.jpg",
               "prepTime": 8,
-              "inventory": 100,
+              "inventory": 99,
               "section": "Lunch",
               "options": [],
               "hasOptions": [],
@@ -1745,7 +1844,7 @@
               "isVeg": true,
               "image": "/images/ghee-rice.jpg",
               "prepTime": 10,
-              "inventory": 100,
+              "inventory": 99,
               "section": "Lunch",
               "options": [],
               "hasOptions": [],
@@ -1784,7 +1883,7 @@
               "isVeg": false,
               "image": "/images/fish-fry.jpg",
               "prepTime": 15,
-              "inventory": 100,
+              "inventory": 92,
               "section": "Lunch",
               "options": [],
               "hasOptions": [],
@@ -1823,7 +1922,7 @@
               "isVeg": true,
               "image": "/images/payasam.jpg",
               "prepTime": 15,
-              "inventory": 100,
+              "inventory": 99,
               "section": "Lunch",
               "options": [],
               "hasOptions": [],
@@ -1875,7 +1974,7 @@
               "isVeg": true,
               "image": "/images/avial.jpg",
               "prepTime": 14,
-              "inventory": 100,
+              "inventory": 93,
               "section": "Lunch",
               "options": [],
               "hasOptions": [],

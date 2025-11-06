@@ -5,8 +5,12 @@
       "bonusIssued": 2
     },
     "2025-11-05": {
-      "orders": 3,
+      "orders": 5,
       "bonusIssued": 1
+    },
+    "2025-11-06": {
+      "orders": 1,
+      "bonusIssued": 0
     }
   }
 }
