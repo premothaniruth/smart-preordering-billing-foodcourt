@@ -3132,5 +3132,55 @@
       "provider": "razorpay-open",
       "reference": "PG-1762454098056"
     }
+  },
+  {
+    "id": 56,
+    "items": [
+      {
+        "id": 5,
+        "name": "Paneer Paratha",
+        "price": 75,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 12
+      }
+    ],
+    "shopId": 5,
+    "user": "+919952091560",
+    "scheduledTime": "2025-11-07T08:00",
+    "status": "cancelled",
+    "createdAt": "2025-11-06T19:06:44.779Z",
+    "billingId": "00003",
+    "estimatedReadyTime": "2025-11-06T19:28:44.779Z",
+    "prepTime": 22,
+    "baseEstimatedReadyTime": "2025-11-06T19:28:44.779Z",
+    "basePrepTime": 22,
+    "rating": null,
+    "feedback": null,
+    "totalAmount": 75,
+    "subtotalBeforeDiscount": 75,
+    "discountTotal": 0,
+    "offerSummary": {
+      "subtotalBeforeDiscount": 75,
+      "discountTotal": 0,
+      "totalPayable": 75,
+      "appliedOffers": [],
+      "extraItems": []
+    },
+    "notes": null,
+    "payment": {
+      "method": "gateway",
+      "amount": 75,
+      "provider": "razorpay-open",
+      "reference": "PG-1762456004779"
+    },
+    "cancelledAt": "2025-11-06T19:09:08.780Z",
+    "cancelledBy": "+919952091560",
+    "cancellationReason": null,
+    "refundAmount": 75,
+    "cancellationFee": 0,
+    "cancellationPolicy": "Full refund (cancel ≥ 60 minutes before scheduled time)",
+    "cancellationRefundPercent": 1,
+    "cancellationLeadMinutes": 440.85383333333334
   }
 ]

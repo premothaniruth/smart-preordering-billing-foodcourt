@@ -2714,9 +2714,13 @@ const deleteEmployeeById = (employeeId) => {
  * Read bulk orders from disk.
  * @returns {Array}
  */
-const getBulkOrders = () => {
+const getBulkOrders = (foodCourt = FC_DEFAULT) => {
   try {
-    const raw = fs.readFileSync(bulkOrdersFile, 'utf8');
+    const targetFile = resolveCourtFile(bulkOrdersFile, foodCourt);
+    if (!fs.existsSync(targetFile)) {
+      fs.writeFileSync(targetFile, '[]');
+    }
+    const raw = fs.readFileSync(targetFile, 'utf8');
     const list = JSON.parse(raw);
     return Array.isArray(list) ? list : [];
   } catch {
@@ -2724,8 +2728,9 @@ const getBulkOrders = () => {
   }
 };
 
-const saveBulkOrders = (orders) => {
-  fs.writeFileSync(bulkOrdersFile, JSON.stringify(Array.isArray(orders) ? orders : [], null, 2));
+const saveBulkOrders = (orders, foodCourt = FC_DEFAULT) => {
+  const targetFile = resolveCourtFile(bulkOrdersFile, foodCourt);
+  fs.writeFileSync(targetFile, JSON.stringify(Array.isArray(orders) ? orders : [], null, 2));
 };
 
 const generateBulkOrderId = (existing = []) => {
@@ -5228,7 +5233,8 @@ app.post('/offers/preview', (req, res) => {
       return res.status(400).json({ status: 'error', message: 'shopId and items are required' });
     }
 
-    const rawMenu = getMenu();
+    const foodCourt = getUserFoodCourt(req);
+    const rawMenu = getMenu(foodCourt);
     const normalizedShops = normalizeMenuShops(rawMenu);
     const shopNorm = normalizedShops.find((s) => String(s.shopId) === String(shopId));
     if (!shopNorm) {
@@ -5239,7 +5245,6 @@ app.post('/offers/preview', (req, res) => {
     const itemLookup = new Map((shopNorm.items || []).map((i) => [Number(i.id), i]));
     const sectionLookup = new Map((shopNorm.items || []).map((i) => [Number(i.id), i.section || 'All Items']));
 
-    const foodCourt = getAdminFoodCourt(req);
     const combos = getCombos(foodCourt);
     const shopCombos = combos.filter((c) => String(c.shopId) === String(shopId) && c.active !== false);
 

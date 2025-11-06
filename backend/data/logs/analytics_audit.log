@@ -157,3 +157,4 @@
 {"type":"points:order-processed","actor":{"type":"system","source":"order.create"},"employeeId":2,"orderId":53,"pointsEarned":0,"streakBonuses":1,"pointsConverted":0}
 {"type":"points:order-processed","actor":{"type":"system","source":"order.create"},"employeeId":1,"orderId":54,"pointsEarned":0,"streakBonuses":0,"pointsConverted":0}
 {"type":"points:order-processed","actor":{"type":"system","source":"order.create"},"employeeId":1,"orderId":55,"pointsEarned":0,"streakBonuses":0,"pointsConverted":0}
+{"type":"points:order-processed","actor":{"type":"system","source":"order.create"},"employeeId":2,"orderId":56,"pointsEarned":0,"streakBonuses":0,"pointsConverted":0}

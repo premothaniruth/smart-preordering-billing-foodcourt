@@ -1553,6 +1553,7 @@ function App() {
                       onClearHistory={handleClearHistory}
                       onReportIssue={handleReportIssue}
                       onCancel={handleCancelScheduledOrder}
+                      evaluateCancellation={evaluateCancellationPolicy}
                     />
                   )}
 
