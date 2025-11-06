@@ -1103,7 +1103,7 @@ const Menu = ({
         )}
         {!hideShopSelector && (
           <div className="menu-shop-selector">
-            <label>Choose Shop:</label>
+            <label>Shop: </label>
             <div className="shop-dropdown" ref={shopMenuRef}>
               <button
                 type="button"

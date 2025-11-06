@@ -150,3 +150,5 @@
 {"type":"points:order-processed","actor":{"type":"system","source":"order.create"},"employeeId":1,"orderId":50,"pointsEarned":0,"streakBonuses":0,"pointsConverted":0}
 {"timestamp":"2025-11-06T09:44:42.338Z","actorType":"vendor","actorId":2,"shopId":2,"vendorId":2,"action":"vendor.login.success","metadata":{"username":"southfoods"}}
 {"type":"points:order-processed","actor":{"type":"system","source":"order.create"},"employeeId":1,"orderId":51,"pointsEarned":0,"streakBonuses":0,"pointsConverted":0}
+{"type":"points:order-processed","actor":{"type":"system","source":"order.create"},"employeeId":1,"orderId":52,"pointsEarned":0,"streakBonuses":0,"pointsConverted":0}
+{"type":"points:order-processed","actor":{"type":"system","source":"order.create"},"employeeId":1,"orderId":51,"pointsEarned":0,"streakBonuses":0,"pointsConverted":0}

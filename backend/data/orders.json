@@ -2922,5 +2922,47 @@
     },
     "etaExtendedAt": null,
     "etaExtensionMinutes": 0
+  },
+  {
+    "id": 51,
+    "items": [
+      {
+        "id": 3,
+        "name": "Chole Bhature",
+        "price": 80,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 12
+      }
+    ],
+    "shopId": 1,
+    "user": "+919952911560",
+    "scheduledTime": "2025-11-07T08:00",
+    "status": "pending",
+    "createdAt": "2025-11-06T17:36:56.491Z",
+    "billingId": "00010",
+    "estimatedReadyTime": "2025-11-06T17:52:56.491Z",
+    "prepTime": 16,
+    "baseEstimatedReadyTime": "2025-11-06T17:52:56.491Z",
+    "basePrepTime": 16,
+    "rating": null,
+    "feedback": null,
+    "totalAmount": 80,
+    "subtotalBeforeDiscount": 80,
+    "discountTotal": 0,
+    "offerSummary": {
+      "subtotalBeforeDiscount": 80,
+      "discountTotal": 0,
+      "totalPayable": 80,
+      "appliedOffers": [],
+      "extraItems": []
+    },
+    "notes": null,
+    "payment": {
+      "method": "gateway",
+      "amount": 80,
+      "provider": "razorpay-open",
+      "reference": "PG-1762450616491"
+    }
   }
 ]
