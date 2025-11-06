@@ -6,5 +6,13 @@
     "lifetimeExpiredPoints": 0,
     "lastEarnedAt": "2025-11-06T09:12:06.817Z",
     "lastConvertedAt": "2025-11-06T06:06:42.461Z"
+  },
+  "2": {
+    "activePoints": 1,
+    "lifetimePoints": 1,
+    "lifetimeConvertedPoints": 0,
+    "lifetimeExpiredPoints": 0,
+    "lastEarnedAt": "2025-11-06T18:27:14.298Z",
+    "lastConvertedAt": null
   }
 }

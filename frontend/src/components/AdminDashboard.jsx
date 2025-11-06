@@ -519,9 +519,19 @@ const AdminDashboard = ({ token, onOpenPrinterSetup }) => {
     } catch { return null; }
   })();
 
-  const loadOrders = useCallback(() => {
-    fetchOrders(token).then(setOrders);
+  const vendorFoodCourt = useMemo(() => {
+    try {
+      if (!token) return null;
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.foodCourt || null;
+    } catch {
+      return null;
+    }
   }, [token]);
+
+  const loadOrders = useCallback(() => {
+    fetchOrders(token, vendorFoodCourt).then(setOrders);
+  }, [token, vendorFoodCourt]);
 
   const loadInterest = useCallback(async () => {
     if (!token) return;
@@ -565,16 +575,7 @@ const AdminDashboard = ({ token, onOpenPrinterSetup }) => {
 
   useEffect(() => {
     loadOrders();
-    const currentFoodCourt = (() => {
-      try {
-        if (!token) return null;
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        return payload.foodCourt || null;
-      } catch {
-        return null;
-      }
-    })();
-    fetchMenu(currentFoodCourt).then(setMenu);
+    fetchMenu(vendorFoodCourt).then(setMenu);
     if (!localStorage.getItem('vendorSoundFirstLoginDone')) {
       try { localStorage.setItem('vendorSoundFirstLoginDone', '1'); } catch {}
     }

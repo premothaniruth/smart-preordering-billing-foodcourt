@@ -1014,24 +1014,68 @@ function App() {
     setShowGrievanceModal(true);
   };
 
+  const evaluateCancellationPolicy = useCallback((order) => {
+    if (!order) return { allowed: false, reason: 'Order not found' };
+    const status = (order.status || '').toLowerCase();
+    if (status !== 'pending') {
+      return { allowed: false, reason: 'Order is not pending anymore.' };
+    }
+    if (!order.scheduledTime) {
+      return { allowed: false, reason: 'Only scheduled orders can be cancelled online.' };
+    }
+    const scheduledDate = new Date(order.scheduledTime);
+    if (Number.isNaN(scheduledDate.getTime())) {
+      return { allowed: false, reason: 'Scheduled time is invalid for this order.' };
+    }
+    const diffMinutes = Math.floor((scheduledDate.getTime() - Date.now()) / 60000);
+    if (diffMinutes <= 0) {
+      return { allowed: false, reason: 'The scheduled window has already started.' };
+    }
+    if (diffMinutes >= 60) {
+      return {
+        allowed: true,
+        refundRate: 1,
+        summary: 'Full refund if cancelled ≥ 60 minutes before pick-up.',
+        refundNote: 'Cancel now to receive a full refund (100%).',
+        confirmMessage: `Cancel order ${order.billingId || order.id}? You will receive a full refund.`,
+        buttonLabel: 'Cancel (Full refund)',
+      };
+    }
+    if (diffMinutes >= 30) {
+      return {
+        allowed: true,
+        refundRate: 0.55,
+        summary: '55% refund if cancelled 30-59 minutes before pick-up.',
+        refundNote: 'Cancel now to receive a 55% refund.',
+        confirmMessage: `Cancel order ${order.billingId || order.id}? You will receive a 55% refund.`,
+        buttonLabel: 'Cancel (55% refund)',
+      };
+    }
+    return {
+      allowed: false,
+      reason: "Cancellations are allowed until 30 minutes before the scheduled time.",
+      summary: "Cancellation window closed (<30 minutes before pick-up).",
+    };
+  }, []);
+
   const handleCancelScheduledOrder = async (order) => {
     if (!order || !order.id) return;
-    if (!order.scheduledTime) {
-      toast.error("Only scheduled orders can be cancelled");
-      return;
-    }
     if (!userId) {
       toast.error("Login required");
       return;
     }
-    const scheduledAt = new Date(order.scheduledTime).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
-    const confirmMsg = `Cancel order ${order.billingId || order.id} scheduled for ${scheduledAt}?\nRefunds depend on how early you cancel.`;
+    const policy = evaluateCancellationPolicy(order);
+    if (!policy.allowed) {
+      toast.error(policy.reason || "Order cannot be cancelled right now");
+      return;
+    }
+    const confirmMsg = policy.confirmMessage || `Cancel order ${order.billingId || order.id}?`;
     const confirmed = window.confirm(confirmMsg);
     if (!confirmed) return;
     const reason = window.prompt("Optional: share the reason for cancellation", "");
     try {
       const response = await cancelOrder(order.id, userId, reason || "", foodCourt);
-      if (!response || response.status !== 'success') {
+      if (!response || response.status !== "success") {
         toast.error(response?.message || "Could not cancel order");
         return;
       }
@@ -1369,7 +1413,7 @@ function App() {
                           </button>
                           <div style={{ marginLeft: 'auto', display: 'flex' }}>
                             <button
-                              onClick={() => { fetchUserOrders(userId).then(setUserOrders); setView("orders"); }}
+                              onClick={() => { fetchUserOrders(userId, foodCourt).then(setUserOrders); setView("orders"); }}
                               className="primary-button"
                               style={{ minWidth: 150, width: 150 }}
                             >
@@ -1457,7 +1501,7 @@ function App() {
                                   <div style={{ marginTop: 10 }}>
                                     <span
                                       role="button"
-                                      onClick={() => { fetchUserOrders(userId).then(setUserOrders); setView("orders"); }}
+                                      onClick={() => { fetchUserOrders(userId, foodCourt).then(setUserOrders); setView("orders"); }}
                                       style={{ cursor: 'pointer', color: '#2c3e50', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
                                     >
                                       View recent orders

@@ -1506,6 +1506,14 @@ textarea:focus-visible {
   transform: translateY(-2px);
 }
 
+.food-court-trigger {
+  background: #3498db;
+}
+
+.food-court-trigger:hover {
+  background: #2980b9;
+}
+
 /* Responsive landing page */
 @media (max-width: 768px) {
   .landing-options {

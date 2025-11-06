@@ -134,8 +134,23 @@ const Menu = ({
   const [interestPending, setInterestPending] = useState(false);
   const [expressedInterest, setExpressedInterest] = useState({});
   const interestCooldownsRef = useRef(new Map()); // key -> timestamp
+  const foodCourtMenuRef = useRef(null);
+  const [foodCourtMenuOpen, setFoodCourtMenuOpen] = useState(false);
   const shopMenuRef = useRef(null);
   const [shopMenuOpen, setShopMenuOpen] = useState(false);
+
+  const foodCourtOptions = useMemo(
+    () => [
+      { value: 'fc-1', label: 'FC-1' },
+      { value: 'fc-2', label: 'FC-2' },
+    ],
+    []
+  );
+
+  const selectedFoodCourtLabel = useMemo(() => {
+    const match = foodCourtOptions.find((option) => option.value === foodCourt);
+    return match ? match.label : 'Select Food Court';
+  }, [foodCourtOptions, foodCourt]);
 
   const todayDateId = useMemo(() => getDateId(new Date()), [currentHm]);
 
@@ -190,6 +205,23 @@ const Menu = ({
     const normalized = raw.startsWith("/") ? raw : `/${raw}`;
     return `${API_URL}${normalized}`;
   }, [API_URL]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (foodCourtMenuRef.current && !foodCourtMenuRef.current.contains(event.target)) {
+        setFoodCourtMenuOpen(false);
+      }
+      if (shopMenuRef.current && !shopMenuRef.current.contains(event.target)) {
+        setShopMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   useEffect(() => {
     let ignore = false;
@@ -1089,16 +1121,38 @@ const Menu = ({
       )}
       <div className="filter-section" style={{ display:'flex', gap:12, flexWrap:'wrap', alignItems:'center', marginBottom: 12 }}>
         {typeof onFoodCourtChange === 'function' && (
-          <div className="menu-food-court-selector" style={{ display:'flex', alignItems:'center', gap:8 }}>
-            <label style={{ fontWeight: 600, fontSize: 13, color: '#2c3e50' }}>Food Court:</label>
-            <select
-              value={foodCourt}
-              onChange={(e) => onFoodCourtChange(e.target.value)}
-              style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid #ccc', fontSize: 14 }}
-            >
-              <option value="fc-1">FC‑1</option>
-              <option value="fc-2">FC‑2</option>
-            </select>
+          <div className="menu-food-court-selector">
+            <label>Food Court:</label>
+            <div className="shop-dropdown" ref={foodCourtMenuRef}>
+              <button
+                type="button"
+                className="secondary-button shop-selector-trigger food-court-trigger"
+                onClick={() => setFoodCourtMenuOpen((prev) => !prev)}
+              >
+                <span className="shop-selector-label compact">
+                  <span className="shop-selector-text">{selectedFoodCourtLabel}</span>
+                </span>
+              </button>
+              {foodCourtMenuOpen && (
+                <div className="concern-dropdown" style={{ minWidth: 180 }}>
+                  {foodCourtOptions.map((option) => (
+                    <button
+                      type="button"
+                      key={option.value}
+                      onClick={() => {
+                        onFoodCourtChange(option.value);
+                        setFoodCourtMenuOpen(false);
+                        if (typeof onActiveSectionChange === 'function') {
+                          onActiveSectionChange(null);
+                        }
+                      }}
+                    >
+                      <span className="shop-name">{option.label}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
         {!hideShopSelector && (

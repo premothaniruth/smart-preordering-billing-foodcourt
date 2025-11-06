@@ -13,10 +13,11 @@ import { submitRating } from "../api";
  *  onClearHistory: ()=>void,
  *  onReportIssue: (order:any)=>void,
  *  onCancel?: (order:any)=>void,
+ *  evaluateCancellation?: (order:any)=>{allowed:boolean,reason?:string,summary?:string,refundNote?:string,buttonLabel?:string}
  * }} props
  */
 
-const OrderHistory = ({ orders, onReorder, onBack, onClearHistory, onReportIssue, onCancel }) => {
+const OrderHistory = ({ orders, onReorder, onBack, onClearHistory, onReportIssue, onCancel, evaluateCancellation }) => {
   const byCreatedDesc = (a, b) => new Date(b.createdAt) - new Date(a.createdAt);
   const readyOrders = useMemo(() => orders.filter(o => o.status === 'ready').sort(byCreatedDesc), [orders]);
   const completedOrders = useMemo(() => orders.filter(o => o.status === 'completed').sort(byCreatedDesc), [orders]);
@@ -114,22 +115,8 @@ const OrderHistory = ({ orders, onReorder, onBack, onClearHistory, onReportIssue
   function renderOrderCard(order) {
     const early = isEarly(order);
     const isScheduled = Boolean(order.scheduledTime);
-    const isPending = (order.status || '').toLowerCase() === 'pending';
-    const cancellable = Boolean(onCancel) && isScheduled && isPending;
-    let cancellationWindow = null;
-    if (isScheduled) {
-      try {
-        const scheduledDate = new Date(order.scheduledTime);
-        const diffMinutes = Math.round((scheduledDate.getTime() - Date.now()) / 60000);
-        if (!Number.isNaN(diffMinutes)) {
-          if (diffMinutes <= 0) {
-            cancellationWindow = 'Scheduled window in progress';
-          } else {
-            cancellationWindow = diffMinutes >= 60 ? 'Full refund if cancelled ≥ 60 min before' : (diffMinutes >= 30 ? '75% refund if cancelled 30-59 min before' : 'Cancellation window closes in <30 min');
-          }
-        }
-      } catch {}
-    }
+    const policy = typeof evaluateCancellation === 'function' ? evaluateCancellation(order) : null;
+    const cancellable = Boolean(onCancel) && Boolean(policy?.allowed);
     return (
       <>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: 15 }}>
@@ -186,9 +173,14 @@ const OrderHistory = ({ orders, onReorder, onBack, onClearHistory, onReportIssue
                 We prepared your order earlier than expected. Hope you enjoy our quick service! Please encourage us with a positive rating and feedback to serve you better.
               </div>
             )}
-            {cancellationWindow && (
+            {policy?.summary && (
               <div style={{ fontSize: 11, color: '#8e44ad', marginTop: 6 }}>
-                {cancellationWindow}
+                {policy.summary}
+              </div>
+            )}
+            {!policy?.allowed && policy?.reason && (
+              <div style={{ fontSize: 11, color: '#c0392b', marginTop: 6 }}>
+                {policy.reason}
               </div>
             )}
             {order.status === 'cancelled' && (
@@ -207,7 +199,7 @@ const OrderHistory = ({ orders, onReorder, onBack, onClearHistory, onReportIssue
                 onClick={() => onCancel(order)}
                 style={{ background: "#e74c3c", padding: "8px 16px" }}
               >
-                ❌ Cancel Order
+                ❌ {policy?.buttonLabel || 'Cancel Order'}
               </button>
             )}
           </div>

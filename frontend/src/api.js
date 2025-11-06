@@ -708,9 +708,13 @@ export const previewOffers = async ({ shopId, items, scheduledTime, foodCourt })
  * @param {string} token
  * @returns {Promise<any>}
  */
-export const fetchOrders = async (token) => {
+export const fetchOrders = async (token, foodCourt) => {
+  const headers = { Authorization: `Bearer ${token}` };
+  if (foodCourt) {
+    headers['x-food-court'] = foodCourt;
+  }
   const res = await fetch(`${API_URL}/orders`, {
-    headers: { Authorization: `Bearer ${token}` },
+    headers,
   });
   return res.json();
 };
