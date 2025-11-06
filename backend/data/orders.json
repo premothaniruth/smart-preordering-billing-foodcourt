@@ -3005,5 +3005,47 @@
       "provider": "razorpay-open",
       "reference": "PG-1762452369098"
     }
+  },
+  {
+    "id": 53,
+    "items": [
+      {
+        "id": 5,
+        "name": "Paneer Paratha",
+        "price": 75,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 12
+      }
+    ],
+    "shopId": 1,
+    "user": "+919952091560",
+    "scheduledTime": "2025-11-07T08:00",
+    "status": "pending",
+    "createdAt": "2025-11-06T18:14:03.453Z",
+    "billingId": "00012",
+    "estimatedReadyTime": "2025-11-06T18:34:03.453Z",
+    "prepTime": 20,
+    "baseEstimatedReadyTime": "2025-11-06T18:34:03.453Z",
+    "basePrepTime": 20,
+    "rating": null,
+    "feedback": null,
+    "totalAmount": 75,
+    "subtotalBeforeDiscount": 75,
+    "discountTotal": 0,
+    "offerSummary": {
+      "subtotalBeforeDiscount": 75,
+      "discountTotal": 0,
+      "totalPayable": 75,
+      "appliedOffers": [],
+      "extraItems": []
+    },
+    "notes": null,
+    "payment": {
+      "method": "gateway",
+      "amount": 75,
+      "provider": "razorpay-open",
+      "reference": "PG-1762452843453"
+    }
   }
 ]

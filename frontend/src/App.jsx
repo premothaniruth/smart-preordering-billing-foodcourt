@@ -36,6 +36,16 @@ const ADMIN_CREDENTIALS = {
 };
 const ADMIN_VENDORS_STORAGE_KEY = "adminManagedVendors";
 
+const playSound = (src) => {
+  if (!src) return;
+  try {
+    const audio = new Audio(src);
+    audio.play().catch(() => {});
+  } catch (error) {
+    console.warn("Unable to play sound", error);
+  }
+};
+
 /**
  * App
  * Root component orchestrating vendor and employee views.

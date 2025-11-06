@@ -1899,8 +1899,19 @@ app.post('/employee/login-password', async (req, res) => {
   try {
     const { username, password } = req.body || {};
     if (!username || !password) return res.status(400).json({ message: 'Username and password are required' });
+    const identifier = String(username).trim();
+    const identifierLower = identifier.toLowerCase();
+    const candidateMobile = normalizeMobileInput(identifier);
     const employees = getEmployees();
-    const u = employees.find(e => String(e.username).toLowerCase() === String(username).toLowerCase() || String(e.email || '').toLowerCase() === String(username).toLowerCase());
+    const u = employees.find((e) => {
+      const usernameLower = String(e.username || '').toLowerCase();
+      const emailLower = String(e.email || '').toLowerCase();
+      const mobileLower = String(e.mobile || '').toLowerCase();
+      if (usernameLower === identifierLower) return true;
+      if (emailLower === identifierLower) return true;
+      if (candidateMobile && mobileLower === candidateMobile.toLowerCase()) return true;
+      return false;
+    });
     if (!u || !u.passwordHash) return res.status(401).json({ message: 'Invalid credentials' });
     const ok = await bcrypt.compare(String(password), String(u.passwordHash));
     if (!ok) return res.status(401).json({ message: 'Invalid credentials' });
@@ -1952,9 +1963,20 @@ app.post('/employee/login-pin', async (req, res) => {
   try {
     const { username, pin, mobileOrEmail } = req.body || {};
     if (!username || !pin) return res.status(400).json({ message: 'Username and PIN are required' });
+    const identifier = String(username).trim();
+    const identifierLower = identifier.toLowerCase();
+    const candidateMobile = normalizeMobileInput(identifier);
     if (!validatePin(pin)) return res.status(400).json({ message: 'PIN must be 4 digits' });
     const employees = getEmployees();
-    const u = employees.find(e => String(e.username).toLowerCase() === String(username).toLowerCase() || String(e.email || '').toLowerCase() === String(username).toLowerCase());
+    const u = employees.find((e) => {
+      const usernameLower = String(e.username || '').toLowerCase();
+      const emailLower = String(e.email || '').toLowerCase();
+      const mobileLower = String(e.mobile || '').toLowerCase();
+      if (usernameLower === identifierLower) return true;
+      if (emailLower === identifierLower) return true;
+      if (candidateMobile && mobileLower === candidateMobile.toLowerCase()) return true;
+      return false;
+    });
     if (!u) return res.status(401).json({ message: 'Invalid credentials' });
     if (!u.pinHash) return res.status(403).json({ message: 'PIN not configured. Contact administrator.' });
     const ok = await bcrypt.compare(String(pin), String(u.pinHash));
