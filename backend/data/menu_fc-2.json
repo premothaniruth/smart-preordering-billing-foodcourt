@@ -2521,8 +2521,8 @@
       ]
     },
     {
-      "shopId": 8,
-      "shopName": "Sip n Chill",
+      "shopId": 7,
+      "shopName": "The German Breads",
       "categories": [
         {
           "categoryName": "Beverages",
@@ -2802,8 +2802,8 @@
       ]
     },
     {
-      "shopId": 7,
-      "shopName": "The German Breads",
+      "shopId": 8,
+      "shopName": "Sip n Chill",
       "categories": [
         {
           "categoryName": "Fast Food",

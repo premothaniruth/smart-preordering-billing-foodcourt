@@ -115,6 +115,8 @@ const Menu = ({
   activeSection: activeSectionProp = null,
   onActiveSectionChange,
   employeeToken = null,
+  foodCourt,
+  onFoodCourtChange,
 }) => {
   const [vegOnly, setVegOnly] = useState(false);
   const [nonVegOnly, setNonVegOnly] = useState(false);
@@ -234,9 +236,9 @@ const Menu = ({
     const loadShopData = async () => {
       try {
         const [sectionsData, offersData, combosData] = await Promise.all([
-          fetchMenuSections(selectedShop, at || undefined),
-          fetchActiveOffers(selectedShop),
-          fetchCombos(selectedShop, true),
+          fetchMenuSections(selectedShop, at || undefined, foodCourt),
+          fetchActiveOffers(selectedShop, foodCourt),
+          fetchCombos(selectedShop, true, foodCourt),
         ]);
 
         if (ignore) return;
@@ -270,7 +272,7 @@ const Menu = ({
     return () => {
       ignore = true;
     };
-  }, [selectedShop, scheduledTime, activeSectionProp]);
+  }, [selectedShop, scheduledTime, activeSectionProp, foodCourt]);
 
   useEffect(() => {
     if (activeSectionProp === undefined) return;
@@ -1086,6 +1088,19 @@ const Menu = ({
         </div>
       )}
       <div className="filter-section" style={{ display:'flex', gap:12, flexWrap:'wrap', alignItems:'center', marginBottom: 12 }}>
+        {typeof onFoodCourtChange === 'function' && (
+          <div className="menu-food-court-selector" style={{ display:'flex', alignItems:'center', gap:8 }}>
+            <label style={{ fontWeight: 600, fontSize: 13, color: '#2c3e50' }}>Food Court:</label>
+            <select
+              value={foodCourt}
+              onChange={(e) => onFoodCourtChange(e.target.value)}
+              style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid #ccc', fontSize: 14 }}
+            >
+              <option value="fc-1">FC‑1</option>
+              <option value="fc-2">FC‑2</option>
+            </select>
+          </div>
+        )}
         {!hideShopSelector && (
           <div className="menu-shop-selector">
             <label>Choose Shop:</label>

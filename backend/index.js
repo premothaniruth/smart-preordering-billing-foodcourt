@@ -553,7 +553,7 @@ const writeJsonTo = (filePath, payload) => {
 };
 
 function ensureCourtDataFiles() {
-  const bases = [menuFile, ordersFile, vendorsFile, combosFile, offersFile];
+  const bases = [menuFile, ordersFile, vendorsFile, combosFile, offersFile, favoritesFile, itemInterestFile];
   for (const base of bases) {
     const secondaryPath = resolveCourtFile(base, FC_SECONDARY);
     if (!fs.existsSync(secondaryPath)) {
@@ -2239,9 +2239,9 @@ const saveVendors = (vendors, foodCourt = FC_DEFAULT) => {
   writeJsonTo(resolveCourtFile(vendorsFile, foodCourt), payload);
 };
 
-const getItemInterestRecords = () => {
+const getItemInterestRecords = (foodCourt = FC_DEFAULT) => {
   try {
-    const raw = fs.readFileSync(itemInterestFile, 'utf8');
+    const raw = fs.readFileSync(resolveCourtFile(itemInterestFile, foodCourt), 'utf8');
     const parsed = JSON.parse(raw || '[]');
     return Array.isArray(parsed) ? parsed : [];
   } catch {
@@ -2249,9 +2249,9 @@ const getItemInterestRecords = () => {
   }
 };
 
-const saveItemInterestRecords = (records) => {
+const saveItemInterestRecords = (records, foodCourt = FC_DEFAULT) => {
   const payload = Array.isArray(records) ? records : [];
-  fs.writeFileSync(itemInterestFile, JSON.stringify(payload, null, 2));
+  fs.writeFileSync(resolveCourtFile(itemInterestFile, foodCourt), JSON.stringify(payload, null, 2));
 };
 
 const getVendorInterestThresholds = () => {
@@ -2511,9 +2511,9 @@ const buildInterestSummary = ({ entry, metadata, threshold, foodCourt }) => {
  * Read favorites from disk.
  * @returns {Array<{userId:string,itemId:number}>}
  */
-const getFavorites = () => {
+const getFavorites = (foodCourt = FC_DEFAULT) => {
   try {
-    return JSON.parse(fs.readFileSync(favoritesFile, "utf8"));
+    return JSON.parse(fs.readFileSync(resolveCourtFile(favoritesFile, foodCourt), "utf8"));
   } catch {
     return [];
   }
@@ -2523,7 +2523,8 @@ const getFavorites = () => {
  * Persist favorites to disk.
  * @param {Array} favorites
  */
-const saveFavorites = (favorites) => fs.writeFileSync(favoritesFile, JSON.stringify(favorites, null, 2));
+const saveFavorites = (favorites, foodCourt = FC_DEFAULT) =>
+  fs.writeFileSync(resolveCourtFile(favoritesFile, foodCourt), JSON.stringify(favorites, null, 2));
 
 /**
  * Read ratings from disk.
@@ -3850,7 +3851,7 @@ app.post('/interest', authenticateEmployee, (req, res) => {
 
     const vendorId = getVendorIdForShop(shopIdStr, foodCourt);
     const identitySet = getEmployeeIdentitySet(req.employee || {}, req.employeeSession || null);
-    const records = getItemInterestRecords();
+    const records = getItemInterestRecords(foodCourt);
     const nowMs = Date.now();
     const nowIso = new Date(nowMs).toISOString();
 
@@ -3889,7 +3890,7 @@ app.post('/interest', authenticateEmployee, (req, res) => {
 
       records.push(newRecord);
       ensureInterestCapacity(records);
-      saveItemInterestRecords(records);
+      saveItemInterestRecords(records, foodCourt);
 
       recordAuditEvent({
         actorType: 'employee',
@@ -4728,17 +4729,18 @@ app.get("/orders/user/:userId", (req, res) => {
 app.post("/favorites", (req, res) => {
   try {
     const { userId, itemId } = req.body;
-    let favorites = getFavorites();
-    
+    const foodCourt = getUserFoodCourt(req);
+    let favorites = getFavorites(foodCourt);
+
     const existingIndex = favorites.findIndex(f => f.userId === userId && f.itemId === itemId);
-    
+
     if (existingIndex >= 0) {
       favorites.splice(existingIndex, 1);
-      saveFavorites(favorites);
+      saveFavorites(favorites, foodCourt);
       res.json({ status: "removed", message: "Removed from favorites" });
     } else {
       favorites.push({ userId, itemId });
-      saveFavorites(favorites);
+      saveFavorites(favorites, foodCourt);
       res.json({ status: "added", message: "Added to favorites" });
     }
   } catch (error) {
@@ -4753,7 +4755,8 @@ app.post("/favorites", (req, res) => {
  */
 app.get("/favorites/:userId", (req, res) => {
   try {
-    const favorites = getFavorites();
+    const foodCourt = getUserFoodCourt(req);
+    const favorites = getFavorites(foodCourt);
     const userFavorites = favorites.filter(f => f.userId === req.params.userId).map(f => f.itemId);
     res.json(userFavorites);
   } catch (error) {

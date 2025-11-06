@@ -1366,26 +1366,6 @@ function App() {
                               My Orders
                             </button>
                           </div>
-                          <div
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 10,
-                              marginLeft: 'auto'
-                            }}
-                          >
-                            <label style={{ fontSize: 13, color: '#2c3e50', fontWeight: 600 }}>
-                              Food Court:
-                            </label>
-                            <select
-                              value={foodCourt}
-                              onChange={(e) => setFoodCourt(e.target.value)}
-                              style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid #ccc', fontSize: 14 }}
-                            >
-                              <option value="fc-1">FC‑1</option>
-                              <option value="fc-2">FC‑2</option>
-                            </select>
-                          </div>
                         </div>
                         <div className="layout-container">
                           <div className="menu-section">
@@ -1407,6 +1387,8 @@ function App() {
                               scheduledTime={scheduledTime}
                               activeSection={activeMenuSection}
                               onActiveSectionChange={setActiveMenuSection}
+                              foodCourt={foodCourt}
+                              onFoodCourtChange={setFoodCourt}
                             />
                             {/* Inline feedback form for employees */}
                             <div className="card" style={{ marginTop: 20 }}>
