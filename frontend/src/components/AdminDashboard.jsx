@@ -13,7 +13,6 @@ import {
   fetchInterestSummary,
   updateInterestThreshold,
 } from "../api";
-import PrinterSetupConfig from "./PrinterSetupConfig.jsx";
 
 const DEFAULT_PREP_MINUTES = 5;
 const MAX_LOAD_MULTIPLIER = 3;
@@ -471,15 +470,6 @@ const CountdownDisplay = ({ info }) => {
         <span style={{ fontWeight: 700, color }}>{primaryText}</span>
         <span style={timerStyle}>{info.label}</span>
       </div>
-      {showPrinterSetup && (
-        <PrinterSetupConfig
-          visible={showPrinterSetup}
-          onDismiss={handlePrinterConfigDismiss}
-          onSave={handlePrinterConfigSave}
-          initialConfig={printerConfig}
-          mode="inline"
-        />
-      )}
       {secondaryValue && (
         <span style={{ fontSize: 11, color: "#8e44ad" }}>{secondaryPrefix}{secondaryValue}</span>
       )}
@@ -502,7 +492,7 @@ const BULK_STATUS_OPTIONS = [
 
 const normalizeBulkStatusClient = (value) => (typeof value === 'string' ? value.toLowerCase() : '');
 
-const AdminDashboard = ({ token }) => {
+const AdminDashboard = ({ token, onOpenPrinterSetup }) => {
   const [orders, setOrders] = useState([]);
   const [menu, setMenu] = useState([]);
   const [tab, setTab] = useState("current");
@@ -651,34 +641,6 @@ const AdminDashboard = ({ token }) => {
     if (!shop || !Array.isArray(shop.items)) return [];
     return shop.items.filter(it => Number(it.inventory ?? 100) <= Number(lowStockThreshold));
   }, [menu, vendorShopId, lowStockThreshold]);
-
-  const [showPrinterSetup, setShowPrinterSetup] = useState(false);
-  const [printerConfig, setPrinterConfig] = useState(() => {
-    try {
-      const stored = localStorage.getItem("vendorPrinterConfig");
-      return stored ? JSON.parse(stored) : null;
-    } catch (error) {
-      console.warn("Failed to read printer config", error);
-      return null;
-    }
-  });
-
-  const handlePrinterConfigSave = useCallback((config) => {
-    try {
-      localStorage.setItem("vendorPrinterConfig", JSON.stringify(config));
-      setPrinterConfig(config);
-      toast.success("Printer settings saved (demo)");
-    } catch (error) {
-      console.warn("Failed to persist printer config", error);
-      toast.error("Could not save printer settings");
-    } finally {
-      setShowPrinterSetup(false);
-    }
-  }, []);
-
-  const handlePrinterConfigDismiss = useCallback(() => {
-    setShowPrinterSetup(false);
-  }, []);
 
   const markReady = (id) => {
     markOrderReady(id, token).then(() => loadOrders());
@@ -843,8 +805,14 @@ const AdminDashboard = ({ token }) => {
         </button>
         <button
           type="button"
-          onClick={() => setShowPrinterSetup((value) => !value)}>
-          {showPrinterSetup ? 'Hide Printer Setup' : 'Printer Setup Help'}
+          onClick={() => {
+            if (typeof onOpenPrinterSetup === 'function') {
+              onOpenPrinterSetup();
+            } else {
+              window.dispatchEvent(new CustomEvent('navigate:menu-editor', { detail: { to: 'printer-setup' } }));
+            }
+          }}>
+          Printer Setup Help
         </button>
         <button
           onClick={() => {

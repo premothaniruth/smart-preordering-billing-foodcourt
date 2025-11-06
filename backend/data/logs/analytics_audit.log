@@ -136,3 +136,6 @@
 {"timestamp":"2025-11-06T08:26:21.769Z","actorType":"vendor","actorId":2,"shopId":2,"vendorId":2,"action":"vendor.login.success","metadata":{"username":"southfoods"}}
 {"timestamp":"2025-11-06T08:29:26.990Z","actorType":"vendor","actorId":2,"shopId":2,"vendorId":2,"action":"vendor.login.success","metadata":{"username":"southfoods"}}
 {"timestamp":"2025-11-06T08:42:31.138Z","actorType":"vendor","actorId":2,"shopId":2,"vendorId":2,"action":"vendor.login.success","metadata":{"username":"southfoods"}}
+{"timestamp":"2025-11-06T08:45:01.866Z","actorType":"vendor","actorId":2,"shopId":2,"vendorId":2,"action":"vendor.login.success","metadata":{"username":"southfoods"}}
+{"timestamp":"2025-11-06T08:55:54.904Z","actorType":"vendor","actorId":2,"shopId":2,"vendorId":2,"action":"vendor.login.success","metadata":{"username":"southfoods"}}
+{"timestamp":"2025-11-06T08:57:43.616Z","actorType":"vendor","actorId":2,"shopId":2,"vendorId":2,"action":"vendor.login.success","metadata":{"username":"southfoods"}}

@@ -23,6 +23,7 @@ import VendorConcernsMenu from "./components/VendorConcernsMenu.jsx";
 import SosButton from "./components/SosButton.jsx";
 import BulkOrderPortal from "./components/BulkOrderPortal.jsx";
 import PaymentPage from "./components/PaymentPage.jsx";
+import PrinterSetupPage from "./components/PrinterSetupPage.jsx";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -242,10 +243,13 @@ function App() {
       setView(target);
     };
     window.addEventListener('navigate:menu-editor', navHandler);
+    const printerHandler = () => setView('printer-setup');
+    window.addEventListener('navigate:printer-setup', printerHandler);
     const clearHandler = () => setTargetItemId(null);
     window.addEventListener('menu:clear-target', clearHandler);
     return () => {
       window.removeEventListener('navigate:menu-editor', navHandler);
+      window.removeEventListener('navigate:printer-setup', printerHandler);
       window.removeEventListener('menu:clear-target', clearHandler);
     };
   }, []);
@@ -1127,7 +1131,15 @@ function App() {
                 {view === "menu-editor" && (
                   <MenuEditor token={vendorToken} menu={menu} onUpdate={loadMenu} targetItemId={targetItemId} />
                 )}
-                {view === "dashboard" && <AdminDashboard token={vendorToken} />}
+                {view === "dashboard" && (
+                  <AdminDashboard
+                    token={vendorToken}
+                    onOpenPrinterSetup={() => setView("printer-setup")}
+                  />
+                )}
+                {view === "printer-setup" && (
+                  <PrinterSetupPage onBack={() => setView("dashboard")} />
+                )}
                 {view === "analytics" && <Analytics token={vendorToken} />}
                 {view === "vendor-data-upload" && <VendorDataUpload token={vendorToken} />}
                 {view === "procurement" && <ProcurementManager token={vendorToken} />}

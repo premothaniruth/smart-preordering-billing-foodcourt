@@ -146,7 +146,7 @@ function PrinterSetupConfig({ visible, onDismiss, onSave, initialConfig, mode = 
                   <option key={option.value} value={option.value}>{option.label}</option>
                 ))}
               </select>
-              <span style={helperStyle}>Demo brands only – choose the printer closest to your hardware.</span>
+              <span style={helperStyle}>Choose the printer closest to your hardware.</span>
             </div>
 
             <div style={columnStyle}>
@@ -307,7 +307,7 @@ function PrinterSetupConfig({ visible, onDismiss, onSave, initialConfig, mode = 
 
       <div style={{ padding: "16px 24px", borderTop: "1px solid #eef2f6", display: "flex", justifyContent: "space-between", gap: 12 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: "#7f8c8d" }}>
-          <span>These settings are stored locally for demo purposes.</span>
+          <span>These settings are stored locally.</span>
         </div>
         <div style={{ display: "flex", gap: 12 }}>
           <button
