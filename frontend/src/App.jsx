@@ -1075,389 +1075,403 @@ function App() {
         <div className={`splash-overlay${showSplash ? " splash-overlay--visible" : ""}`}>
           <div className="splash-card">
             <img src="/infy-bhojans-logo.png" alt="Infy Bhojans logo" className="splash-logo" />
-            <p className="splash-tagline">Smart preordering & billing for food courts</p>
-            <button className="splash-skip" onClick={() => setShowSplash(false)}>Enter</button>
           </div>
         </div>
       )}
-      <header>
-        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/95/Infosys_logo.svg/200px-Infosys_logo.svg.png" alt="Infy Bhojans Logo" />
-        <h1>Infy Bhojans</h1>
-      </header>
-
-      <div className="app-container">
-        <ToastContainer position="top-right" autoClose={3000} />
-
-        {vendorToken ? (
-          <>
-            <div className="vendor-toolbar">
-              <div className="vendor-toolbar-left">
-                <button onClick={() => setView("dashboard")}>Dashboard</button>
-                <button onClick={() => setView("menu-editor")}>Edit Menu</button>
-                <button onClick={() => setView("analytics")}>Analytics</button>
-                <button onClick={() => setView("vendor-data-upload")}>Historic Upload</button>
-                <button onClick={() => setView("procurement")}>Procurement</button>
-                <button onClick={() => setView("vendor-combos")}>Combos</button>
-                <button onClick={() => setView("vendor-offers")}>Offers</button>
-                <button onClick={() => setView("feedbacks")}>Feedbacks</button>
-                <button onClick={() => setView("grievances")}>Complaints</button>
-                <button onClick={() => setView("user")}>Switch to User View</button>
-                <VendorConcernsMenu
-                  onRaiseNew={() => {
-                    setShowVendorConcernForm(true);
-                    setShowVendorConcernList(false);
-                  }}
-                  onViewStatus={() => {
-                    setShowVendorConcernForm(false);
-                    setShowVendorConcernList(true);
-                  }}
-                />
-              </div>
+      {!showSplash && (
+        <>
+          <header>
+            <div className="header-slot header-slot--left">
+              <img
+                src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/95/Infosys_logo.svg/200px-Infosys_logo.svg.png"
+                alt="Infosys"
+                className="header-logo header-logo--infosys"
+              />
             </div>
-
-            {view === "menu-editor" && (
-              <MenuEditor token={vendorToken} menu={menu} onUpdate={loadMenu} targetItemId={targetItemId} />
-            )}
-            {view === "dashboard" && <AdminDashboard token={vendorToken} />}
-            {view === "analytics" && <Analytics token={vendorToken} />}
-            {view === "vendor-data-upload" && <VendorDataUpload token={vendorToken} />}
-            {view === "procurement" && <ProcurementManager token={vendorToken} />}
-            {view === "vendor-combos" && <VendorCombos token={vendorToken} />}
-            {view === "vendor-offers" && <VendorOffers token={vendorToken} />}
-            {view === "grievances" && <VendorGrievances token={vendorToken} />}
-            {view === "feedbacks" && <VendorFeedbacks token={vendorToken} />}
-            {view === "user" && (
-              <div className="layout-container">
-                <div className="menu-section">
-                  <Menu
-                    menu={menu}
-                    addToCart={() => {}}
-                    cart={[]}
-                    selectedShop={selectedShop}
-                    setSelectedShop={setSelectedShop}
-                    favorites={[]}
-                    onFavoriteToggle={() => {}}
-                    userId={null}
-                    hideFavorites
-                    hideShopSelector={false}
-                    showInventory
-                    readOnly
-                    activeSection={activeMenuSection}
-                    onActiveSectionChange={setActiveMenuSection}
-                  />
-                </div>
-                {/* Read-only user view for vendor: no cart, no order summary */}
-                <div className="cart-section" style={{ display: 'none' }} />
-              </div>
-            )}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20 }}>
-              <button onClick={handleLogout} style={{ background: '#e74c3c', color: '#fff' }}>Logout</button>
+            <div className="header-slot header-slot--center">
+              <img src="/infy-bhojans-logo.png" alt="Infy Bhojans" className="header-logo header-logo--brand" />
             </div>
-          </>
-        ) : (
-          <>
-            {view === "landing" && (
-              <div className="landing-page">
-                <div className="welcome-section">
-                  <h2>Welcome to Infy Bhojans</h2>
-                  <p>Choose your access level to continue:</p>
-                  <div className="landing-options">
-                    <div className="option-card employee-card">
-                      <h3>Infy Bhojans Employee Access</h3>
-                      <p>Order food, view menu, track orders, and provide feedback</p>
-                      <button onClick={() => setView("user")} className="primary-button">
-                        Employee Login
-                      </button>
-                    </div>
-                    <div className="option-card vendor-card">
-                      <h3>Infy Bhojans Vendor Access</h3>
-                      <p>Manage menu, view analytics, handle orders, and resolve complaints</p>
-                      <button onClick={() => setView("login")} className="secondary-button">
-                        Vendor Login
-                      </button>
-                    </div>
-                    <div className="option-card admin-card">
-                      <h3>Infy Bhojans Admin Control</h3>
-                      <p>Create vendors, reset credentials, and oversee platform access</p>
-                      <button
-                        onClick={() => setView("admin")}
-                        className="secondary-button"
-                        style={{ background: '#e67e22', borderColor: '#d35400', color: '#fff' }}
-                      >
-                        Admin Login
-                      </button>
-                    </div>
+            <div className="header-slot header-slot--right" aria-hidden="true" />
+          </header>
+
+          <div className="app-container">
+            <ToastContainer position="top-right" autoClose={3000} />
+
+            {vendorToken ? (
+              <>
+                <div className="vendor-toolbar">
+                  <div className="vendor-toolbar-left">
+                    <button onClick={() => setView("dashboard")}>Dashboard</button>
+                    <button onClick={() => setView("menu-editor")}>Edit Menu</button>
+                    <button onClick={() => setView("analytics")}>Analytics</button>
+                    <button onClick={() => setView("vendor-data-upload")}>Historic Upload</button>
+                    <button onClick={() => setView("procurement")}>Procurement</button>
+                    <button onClick={() => setView("vendor-combos")}>Combos</button>
+                    <button onClick={() => setView("vendor-offers")}>Offers</button>
+                    <button onClick={() => setView("feedbacks")}>Feedbacks</button>
+                    <button onClick={() => setView("grievances")}>Complaints</button>
+                    <button onClick={() => setView("user")}>Switch to User View</button>
+                    <VendorConcernsMenu
+                      onRaiseNew={() => {
+                        setShowVendorConcernForm(true);
+                        setShowVendorConcernList(false);
+                      }}
+                      onViewStatus={() => {
+                        setShowVendorConcernForm(false);
+                        setShowVendorConcernList(true);
+                      }}
+                    />
                   </div>
                 </div>
-              </div>
-            )}
 
-            {view === "user" && (
-              employeeToken ? (
-                <>
-                  <div
-                    style={{
-                      display: 'flex',
-                      flexWrap: 'wrap',
-                      alignItems: 'center',
-                      gap: 12,
-                      marginBottom: 20
-                    }}
-                  >
-                    <button
-                      onClick={() => setView("bulk-portal")}
-                      className="primary-button"
-                      style={{ minWidth: 150, width: 150 }}
-                    >
-                      Bulk Orders
-                    </button>
-                    <button
-                      onClick={() => setView("profile")}
-                      className="secondary-button"
-                      style={{ minWidth: 150, width: 150 }}
-                    >
-                      My Profile
-                    </button>
-                    <div style={{ marginLeft: 'auto', display: 'flex' }}>
-                      <button
-                        onClick={() => { fetchUserOrders(userId).then(setUserOrders); setView("orders"); }}
-                        className="primary-button"
-                        style={{ minWidth: 150, width: 150 }}
-                      >
-                        My Orders
-                      </button>
-                    </div>
-                  </div>
+                {view === "menu-editor" && (
+                  <MenuEditor token={vendorToken} menu={menu} onUpdate={loadMenu} targetItemId={targetItemId} />
+                )}
+                {view === "dashboard" && <AdminDashboard token={vendorToken} />}
+                {view === "analytics" && <Analytics token={vendorToken} />}
+                {view === "vendor-data-upload" && <VendorDataUpload token={vendorToken} />}
+                {view === "procurement" && <ProcurementManager token={vendorToken} />}
+                {view === "vendor-combos" && <VendorCombos token={vendorToken} />}
+                {view === "vendor-offers" && <VendorOffers token={vendorToken} />}
+                {view === "grievances" && <VendorGrievances token={vendorToken} />}
+                {view === "feedbacks" && <VendorFeedbacks token={vendorToken} />}
+                {view === "user" && (
                   <div className="layout-container">
                     <div className="menu-section">
                       <Menu
                         menu={menu}
-                        addToCart={addToCart}
-                        cart={cart}
-                        incItemNoOption={incItemNoOption}
-                        decItemNoOption={decItemNoOption}
-                        incItemVariant={incItemVariant}
-                        decItemVariant={decItemVariant}
+                        addToCart={() => {}}
+                        cart={[]}
                         selectedShop={selectedShop}
                         setSelectedShop={setSelectedShop}
-                        favorites={favorites}
-                        cartShopMismatch={cartShopMismatch}
-                        onFavoriteToggle={handleFavoriteToggle}
-                        userId={userId}
-                        employeeToken={employeeToken}
-                        scheduledTime={scheduledTime}
+                        favorites={[]}
+                        onFavoriteToggle={() => {}}
+                        userId={null}
+                        hideFavorites
+                        hideShopSelector={false}
+                        showInventory
+                        readOnly
                         activeSection={activeMenuSection}
                         onActiveSectionChange={setActiveMenuSection}
                       />
-                      {/* Inline feedback form for employees */}
-                      <div className="card" style={{ marginTop: 20 }}>
-                        <div className="card-header">Rate your experience</div>
-                        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}>
-                          {[1,2,3,4,5].map(n => (
-                            <span
-                              key={n}
-                              className="rating-star"
-                              onMouseEnter={() => setInlineHoverRating(n)}
-                              onMouseLeave={() => setInlineHoverRating(0)}
-                              onClick={() => setInlineRating(n)}
-                              style={{ color: n <= (inlineHoverRating || inlineRating) ? '#f1c40f' : '#ccc', fontSize: 22, cursor: 'pointer' }}
-                            >★</span>
-                          ))}
-                        </div>
-                        <textarea placeholder="Share your feedback on food quality and service" value={inlineFeedback} onChange={(e)=>setInlineFeedback(e.target.value)} />
-                        <div className="mt-10">
-                          <button onClick={submitInlineFeedback} disabled={!inlineRating}>Submit Feedback</button>
+                    </div>
+                    {/* Read-only user view for vendor: no cart, no order summary */}
+                    <div className="cart-section" style={{ display: 'none' }} />
+                  </div>
+                )}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20 }}>
+                  <button onClick={handleLogout} style={{ background: '#e74c3c', color: '#fff' }}>Logout</button>
+                </div>
+              </>
+            ) : (
+              !showSplash && (
+                <>
+                  {view === "landing" && (
+                    <div className="landing-page">
+                      <div className="welcome-section">
+                        <h2>Welcome to Infy Bhojans</h2>
+                        <p>Choose your access level to continue:</p>
+                        <div className="landing-options">
+                          <div className="option-card employee-card">
+                            <h3>Employee Access</h3>
+                            <p>Order food, view menu, track orders, and provide feedback</p>
+                            <button onClick={() => setView("user")} className="primary-button">
+                              Employee Login
+                            </button>
+                          </div>
+                          <div className="option-card vendor-card">
+                            <h3>Vendor Access</h3>
+                            <p>Manage menu, view analytics, handle orders, and resolve complaints</p>
+                            <button onClick={() => setView("login")} className="secondary-button">
+                              Vendor Login
+                            </button>
+                          </div>
+                          <div className="option-card admin-card">
+                            <h3>Admin Control</h3>
+                            <p>Create vendors, reset credentials, and oversee platform access</p>
+                            <button
+                              onClick={() => setView("admin")}
+                              className="secondary-button"
+                              style={{ background: '#e67e22', borderColor: '#d35400', color: '#fff' }}
+                            >
+                              Admin Login
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
-                    <div className="cart-section">
-                      <Cart
-                        cart={cart}
-                        removeFromCart={removeFromCart}
-                        decrementFromCart={decrementFromCart}
-                        incrementFromCart={incrementFromCart}
-                        scheduledTime={scheduledTime}
-                        setScheduledTime={setScheduledTime}
-                        onProceedToPayment={handleProceedToPayment}
-                        shopItems={selectedShopItems}
-                        inventoryById={currentShopInventory}
-                        initialNotes={cartNotes}
-                        onNotesChange={setCartNotes}
-                        cartShopMismatch={cartShopMismatch}
-                        offerPreview={offerPreview}
-                        offersLoading={offersLoading}
-                      />
-                      {orderSummary && (
-                        <div className="order-summary" style={{ marginTop: 20 }}>
-                          <h3>Order Confirmation</h3>
-                          <div><strong>Billing ID:</strong> {orderSummary.billingId}</div>
-                          <div><strong>User:</strong> {orderSummary.user}</div>
-                          <div><strong>Prep Time:</strong> {orderSummary.prepTime} mins</div>
-                          <h4>Items:</h4>
-                          <ul style={{ listStyle: "none", paddingLeft: 0 }}>
-                            {orderSummary.items.map((item, idx) => (
-                              <li key={idx} style={{ fontSize: 13, marginBottom: 4 }}>
-                                {item.name} {item.option && `(${item.option})`} x{item.quantity} - ₹{item.price * item.quantity}
-                              </li>
-                            ))}
-                          </ul>
-                          <div><strong>Total:</strong> ₹{orderSummary.totalAmount}</div>
-                          {recentOrdersTodayCount > 1 && (
-                            <div style={{ marginTop: 10 }}>
-                              <span
-                                role="button"
-                                onClick={() => { fetchUserOrders(userId).then(setUserOrders); setView("orders"); }}
-                                style={{ cursor: 'pointer', color: '#2c3e50', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
-                              >
-                                View recent orders
-                              </span>
+                  )}
+
+                  {view === "user" && (
+                    employeeToken ? (
+                      <>
+                        <div
+                          style={{
+                            display: 'flex',
+                            flexWrap: 'wrap',
+                            alignItems: 'center',
+                            gap: 12,
+                            marginBottom: 20
+                          }}
+                        >
+                          <button
+                            onClick={() => setView("bulk-portal")}
+                            className="primary-button"
+                            style={{ minWidth: 150, width: 150 }}
+                          >
+                            Bulk Orders
+                          </button>
+                          <button
+                            onClick={() => setView("profile")}
+                            className="secondary-button"
+                            style={{ minWidth: 150, width: 150 }}
+                          >
+                            My Profile
+                          </button>
+                          <div style={{ marginLeft: 'auto', display: 'flex' }}>
+                            <button
+                              onClick={() => { fetchUserOrders(userId).then(setUserOrders); setView("orders"); }}
+                              className="primary-button"
+                              style={{ minWidth: 150, width: 150 }}
+                            >
+                              My Orders
+                            </button>
+                          </div>
+                        </div>
+                        <div className="layout-container">
+                          <div className="menu-section">
+                            <Menu
+                              menu={menu}
+                              addToCart={addToCart}
+                              cart={cart}
+                              incItemNoOption={incItemNoOption}
+                              decItemNoOption={decItemNoOption}
+                              incItemVariant={incItemVariant}
+                              decItemVariant={decItemVariant}
+                              selectedShop={selectedShop}
+                              setSelectedShop={setSelectedShop}
+                              favorites={favorites}
+                              cartShopMismatch={cartShopMismatch}
+                              onFavoriteToggle={handleFavoriteToggle}
+                              userId={userId}
+                              employeeToken={employeeToken}
+                              scheduledTime={scheduledTime}
+                              activeSection={activeMenuSection}
+                              onActiveSectionChange={setActiveMenuSection}
+                            />
+                            {/* Inline feedback form for employees */}
+                            <div className="card" style={{ marginTop: 20 }}>
+                              <div className="card-header">Rate your experience</div>
+                              <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}>
+                                {[1,2,3,4,5].map(n => (
+                                  <span
+                                    key={n}
+                                    className="rating-star"
+                                    onMouseEnter={() => setInlineHoverRating(n)}
+                                    onMouseLeave={() => setInlineHoverRating(0)}
+                                    onClick={() => setInlineRating(n)}
+                                    style={{ color: n <= (inlineHoverRating || inlineRating) ? '#f1c40f' : '#ccc', fontSize: 22, cursor: 'pointer' }}
+                                  >★</span>
+                                ))}
+                              </div>
+                              <textarea placeholder="Share your feedback on food quality and service" value={inlineFeedback} onChange={(e)=>setInlineFeedback(e.target.value)} />
+                              <div className="mt-10">
+                                <button onClick={submitInlineFeedback} disabled={!inlineRating}>Submit Feedback</button>
+                              </div>
                             </div>
-                          )}
+                          </div>
+                          <div className="cart-section">
+                            <Cart
+                              cart={cart}
+                              removeFromCart={removeFromCart}
+                              decrementFromCart={decrementFromCart}
+                              incrementFromCart={incrementFromCart}
+                              scheduledTime={scheduledTime}
+                              setScheduledTime={setScheduledTime}
+                              onProceedToPayment={handleProceedToPayment}
+                              shopItems={selectedShopItems}
+                              inventoryById={currentShopInventory}
+                              initialNotes={cartNotes}
+                              onNotesChange={setCartNotes}
+                              cartShopMismatch={cartShopMismatch}
+                              offerPreview={offerPreview}
+                              offersLoading={offersLoading}
+                            />
+                            {orderSummary && (
+                              <div className="order-summary" style={{ marginTop: 20 }}>
+                                <h3>Order Confirmation</h3>
+                                <div><strong>Billing ID:</strong> {orderSummary.billingId}</div>
+                                <div><strong>User:</strong> {orderSummary.user}</div>
+                                <div><strong>Prep Time:</strong> {orderSummary.prepTime} mins</div>
+                                <h4>Items:</h4>
+                                <ul style={{ listStyle: "none", paddingLeft: 0 }}>
+                                  {orderSummary.items.map((item, idx) => (
+                                    <li key={idx} style={{ fontSize: 13, marginBottom: 4 }}>
+                                      {item.name} {item.option && `(${item.option})`} x{item.quantity} - ₹{item.price * item.quantity}
+                                    </li>
+                                  ))}
+                                </ul>
+                                <div><strong>Total:</strong> ₹{orderSummary.totalAmount}</div>
+                                {recentOrdersTodayCount > 1 && (
+                                  <div style={{ marginTop: 10 }}>
+                                    <span
+                                      role="button"
+                                      onClick={() => { fetchUserOrders(userId).then(setUserOrders); setView("orders"); }}
+                                      style={{ cursor: 'pointer', color: '#2c3e50', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
+                                    >
+                                      View recent orders
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div style={{ marginTop: 24, display: 'flex', justifyContent: 'flex-end' }}>
+                          <button onClick={handleEmployeeLogout} style={{ background: '#e74c3c', color: '#fff', minWidth: 140 }}>
+                            Logout
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="employee-auth-container">
+                        <EmployeeLogin onSuccess={handleEmployeeLogin} onBack={() => setView("landing")} />
+                      </div>
+                    )
+                  )}
+
+                  {view === "login" && (
+                    <>
+                      <button onClick={() => setView("landing")} style={{ marginBottom: 15 }}>
+                        ← Back to Main Login
+                      </button>
+                      <Login onLogin={handleLogin} />
+                    </>
+                  )}
+
+                  {view === "bulk-portal" && employeeToken && (
+                    <BulkOrderPortal
+                      token={employeeToken}
+                      employeeRole={employeeRole}
+                      onClose={() => setView("user")}
+                    />
+                  )}
+
+                  {view === "orders" && (
+                    <OrderHistory
+                      orders={userOrders}
+                      onReorder={handleReorder}
+                      onBack={() => setView("user")}
+                      onClearHistory={handleClearHistory}
+                      onReportIssue={handleReportIssue}
+                      onCancel={handleCancelScheduledOrder}
+                    />
+                  )}
+
+                  {view === "payment" && (
+                    <PaymentPage
+                      draft={checkoutDraft}
+                      paymentMethod={paymentMethod}
+                      onPaymentMethodChange={handlePaymentMethodChange}
+                      onPlaceOrder={placeOrderWithMethod}
+                      onBack={handlePaymentBack}
+                      onNotesChange={handlePaymentNotesChange}
+                      isPlacingOrder={isPlacingOrder}
+                      emitToast={(type, message) => {
+                        if (type === 'error') toast.error(message);
+                        else if (type === 'info') toast.info(message);
+                        else toast(message);
+                      }}
+                    />
+                  )}
+
+                  {view === "profile" && (
+                    <div>
+                      <button onClick={() => setView("user")} style={{ marginBottom: 15 }}>← Back</button>
+                      <EmployeeProfile
+                        token={employeeToken}
+                        wallet={wallet}
+                        onWalletChange={applyWalletPayload}
+                        onRequestWalletRefresh={loadWallet}
+                        pointsRefreshNonce={pointsRefreshNonce}
+                      />
+                    </div>
+                  )}
+
+                  {view === "admin" && (
+                    <div className="admin-panel">
+                      <button onClick={() => setView("landing")} style={{ marginBottom: 15 }}>
+                        &larr; Back to Main Login
+                      </button>
+                      <div className="admin-panel-main">
+                        <AdminControl
+                          adminSession={adminSession}
+                          onAdminLogin={handleAdminLogin}
+                          onAdminLogout={handleAdminLogout}
+                          onCreateVendor={handleCreateVendor}
+                          onUpdateVendor={handleUpdateVendor}
+                          vendors={adminManagedVendors}
+                          onRequestRefresh={() => {
+                            loadMenu();
+                            refreshAdminManagedVendors();
+                          }}
+                          sosState={sosState}
+                          onTriggerSos={() => handleSosTrigger("admin")}
+                          onResolveSos={() => handleSosResolve("admin")}
+                        />
+                      </div>
+                      {adminSession && (
+                        <div
+                          className="admin-sos-footer"
+                          style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 12, marginTop: 16 }}
+                        >
+                          <SosButton
+                            isActive={Boolean(sosState?.active)}
+                            onTrigger={() => handleSosTrigger("admin")}
+                            onResolve={() => handleSosResolve("admin")}
+                          />
+                          <button
+                            onClick={handleAdminLogout}
+                            className="logout-button"
+                            style={{ background: "#e74c3c", color: "#fff", minWidth: 160 }}
+                          >
+                            Logout
+                          </button>
                         </div>
                       )}
                     </div>
-                  </div>
-                  <div style={{ marginTop: 24, display: 'flex', justifyContent: 'flex-end' }}>
-                    <button onClick={handleEmployeeLogout} style={{ background: '#e74c3c', color: '#fff', minWidth: 140 }}>
-                      Logout
-                    </button>
-                  </div>
+                  )}
                 </>
-              ) : (
-                <div className="employee-auth-container">
-                  <EmployeeLogin onSuccess={handleEmployeeLogin} onBack={() => setView("landing")} />
-                </div>
               )
             )}
 
-            {view === "login" && (
-              <>
-                <button onClick={() => setView("landing")} style={{ marginBottom: 15 }}>
-                  ← Back to Main Login
-                </button>
-                <Login onLogin={handleLogin} />
-              </>
-            )}
-
-            {view === "bulk-portal" && employeeToken && (
-              <BulkOrderPortal
-                token={employeeToken}
-                employeeRole={employeeRole}
-                onClose={() => setView("user")}
+            {showGrievanceModal && selectedOrderForGrievance && (
+              <GrievanceModal
+                order={selectedOrderForGrievance}
+                onClose={() => setShowGrievanceModal(false)}
               />
             )}
 
-            {view === "orders" && (
-              <OrderHistory
-                orders={userOrders}
-                onReorder={handleReorder}
-                onBack={() => setView("user")}
-                onClearHistory={handleClearHistory}
-                onReportIssue={handleReportIssue}
-                onCancel={handleCancelScheduledOrder}
+            {showVendorConcernForm && vendorToken && (
+              <VendorGrievanceForm
+                token={vendorToken}
+                onClose={() => setShowVendorConcernForm(false)}
+                sosState={sosState}
+                onTriggerSos={() => handleSosTrigger("vendor")}
+                onResolveSos={() => handleSosResolve("vendor")}
               />
             )}
 
-            {view === "payment" && (
-              <PaymentPage
-                draft={checkoutDraft}
-                paymentMethod={paymentMethod}
-                onPaymentMethodChange={handlePaymentMethodChange}
-                onPlaceOrder={placeOrderWithMethod}
-                onBack={handlePaymentBack}
-                onNotesChange={handlePaymentNotesChange}
-                isPlacingOrder={isPlacingOrder}
-                emitToast={(type, message) => {
-                  if (type === 'error') toast.error(message);
-                  else if (type === 'info') toast.info(message);
-                  else toast(message);
-                }}
+            {showVendorConcernList && vendorToken && (
+              <VendorGrievanceList
+                token={vendorToken}
+                onClose={() => setShowVendorConcernList(false)}
               />
             )}
-
-            {view === "profile" && (
-              <div>
-                <button onClick={() => setView("user")} style={{ marginBottom: 15 }}>← Back</button>
-                <EmployeeProfile
-                  token={employeeToken}
-                  wallet={wallet}
-                  onWalletChange={applyWalletPayload}
-                  onRequestWalletRefresh={loadWallet}
-                  pointsRefreshNonce={pointsRefreshNonce}
-                />
-              </div>
-            )}
-
-            {view === "admin" && (
-              <div className="admin-panel">
-                <button onClick={() => setView("landing")} style={{ marginBottom: 15 }}>
-                  &larr; Back to Main Login
-                </button>
-                <div className="admin-panel-main">
-                  <AdminControl
-                    adminSession={adminSession}
-                    onAdminLogin={handleAdminLogin}
-                    onAdminLogout={handleAdminLogout}
-                    onCreateVendor={handleCreateVendor}
-                    onUpdateVendor={handleUpdateVendor}
-                    vendors={adminManagedVendors}
-                    onRequestRefresh={() => {
-                      loadMenu();
-                      refreshAdminManagedVendors();
-                    }}
-                    sosState={sosState}
-                    onTriggerSos={() => handleSosTrigger("admin")}
-                    onResolveSos={() => handleSosResolve("admin")}
-                  />
-                </div>
-                {adminSession && (
-                  <div
-                    className="admin-sos-footer"
-                    style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 12, marginTop: 16 }}
-                  >
-                    <SosButton
-                      isActive={Boolean(sosState?.active)}
-                      onTrigger={() => handleSosTrigger("admin")}
-                      onResolve={() => handleSosResolve("admin")}
-                    />
-                    <button
-                      onClick={handleAdminLogout}
-                      className="logout-button"
-                      style={{ background: "#e74c3c", color: "#fff", minWidth: 160 }}
-                    >
-                      Logout
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-          </>
-        )}
-      {showGrievanceModal && selectedOrderForGrievance && (
-        <GrievanceModal
-          order={selectedOrderForGrievance}
-          onClose={() => setShowGrievanceModal(false)}
-        />
+          </div>
+        </>
       )}
-
-      {showVendorConcernForm && vendorToken && (
-        <VendorGrievanceForm
-          token={vendorToken}
-          onClose={() => setShowVendorConcernForm(false)}
-          sosState={sosState}
-          onTriggerSos={() => handleSosTrigger("vendor")}
-          onResolveSos={() => handleSosResolve("vendor")}
-        />
-      )}
-
-      {showVendorConcernList && vendorToken && (
-        <VendorGrievanceList
-          token={vendorToken}
-          onClose={() => setShowVendorConcernList(false)}
-        />
-      )}
-    </div>
-  </>
+    </>
   );
 }
 

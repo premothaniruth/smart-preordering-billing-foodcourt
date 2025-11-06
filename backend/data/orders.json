@@ -2367,5 +2367,334 @@
     "readyAt": "2025-11-06T06:07:18.887Z",
     "pickedAt": "2025-11-06T06:07:28.488Z",
     "completedAt": "2025-11-06T06:07:28.488Z"
+  },
+  {
+    "id": 45,
+    "items": [
+      {
+        "id": 133,
+        "name": "Fish Fry",
+        "price": 140,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 15
+      },
+      {
+        "id": 123,
+        "name": "Bisi Bele Bath",
+        "price": 45,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 15
+      }
+    ],
+    "shopId": 2,
+    "user": "+919952911560",
+    "scheduledTime": null,
+    "status": "pending",
+    "createdAt": "2025-11-06T07:57:22.894Z",
+    "billingId": "00002",
+    "estimatedReadyTime": "2025-11-06T08:27:22.893Z",
+    "prepTime": 30,
+    "baseEstimatedReadyTime": "2025-11-06T08:27:22.893Z",
+    "basePrepTime": 30,
+    "rating": null,
+    "feedback": null,
+    "totalAmount": 166.5,
+    "subtotalBeforeDiscount": 185,
+    "discountTotal": 18.5,
+    "offerSummary": {
+      "subtotalBeforeDiscount": 185,
+      "discountTotal": 18.5,
+      "totalPayable": 166.5,
+      "appliedOffers": [
+        {
+          "id": "diwali-sections-10",
+          "title": "🎉 Diwali 10% Off",
+          "description": "",
+          "bannerText": "Diwali Offer: 10% off Breakfast & Lunch",
+          "rewards": [
+            {
+              "type": "percentage_discount",
+              "details": {
+                "percent": 10,
+                "scope": "sections",
+                "sections": [
+                  "Breakfast",
+                  "Lunch"
+                ],
+                "itemIds": null,
+                "baseAmount": 185,
+                "computedDiscount": 18.5
+              },
+              "description": ""
+            }
+          ],
+          "discountAmount": 18.5,
+          "metadata": {
+            "id": "diwali-sections-10",
+            "shopId": 2,
+            "title": "🎉 Diwali 10% Off",
+            "bannerText": "Diwali Offer: 10% off Breakfast & Lunch",
+            "description": "",
+            "active": true,
+            "stackable": false,
+            "priority": 0,
+            "maxDiscountAmount": 100,
+            "discountPercent": 10,
+            "discountAmount": null,
+            "applicableSections": [
+              "Breakfast",
+              "Lunch"
+            ],
+            "applicableComboIds": [],
+            "start": "2025-10-01T00:00:00Z",
+            "end": "2025-11-30T23:59:59Z",
+            "timeStart": null,
+            "timeEnd": null,
+            "daysOfWeek": null,
+            "schedule": null,
+            "conditions": [],
+            "rewards": [
+              {
+                "type": "percentage_discount",
+                "percent": 10,
+                "appliesTo": "sections",
+                "sections": [
+                  "Breakfast",
+                  "Lunch"
+                ]
+              }
+            ],
+            "metadata": null,
+            "createdAt": "2025-11-01T11:34:56.581Z",
+            "updatedAt": "2025-11-05T16:55:14.759Z"
+          },
+          "extraItems": []
+        }
+      ],
+      "extraItems": []
+    },
+    "notes": null,
+    "payment": {
+      "method": "gateway",
+      "amount": 166.5,
+      "provider": "razorpay-open",
+      "reference": "PG-1762415842894"
+    }
+  },
+  {
+    "id": 46,
+    "items": [
+      {
+        "id": 123,
+        "name": "Bisi Bele Bath",
+        "price": 45,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 15
+      }
+    ],
+    "shopId": 2,
+    "user": "+919952911560",
+    "scheduledTime": "2025-11-06T14:20",
+    "status": "pending",
+    "createdAt": "2025-11-06T07:59:42.284Z",
+    "billingId": "00003",
+    "estimatedReadyTime": "2025-11-06T08:16:42.283Z",
+    "prepTime": 17,
+    "baseEstimatedReadyTime": "2025-11-06T08:16:42.283Z",
+    "basePrepTime": 17,
+    "rating": null,
+    "feedback": null,
+    "totalAmount": 40.5,
+    "subtotalBeforeDiscount": 45,
+    "discountTotal": 4.5,
+    "offerSummary": {
+      "subtotalBeforeDiscount": 45,
+      "discountTotal": 4.5,
+      "totalPayable": 40.5,
+      "appliedOffers": [
+        {
+          "id": "diwali-sections-10",
+          "title": "🎉 Diwali 10% Off",
+          "description": "",
+          "bannerText": "Diwali Offer: 10% off Breakfast & Lunch",
+          "rewards": [
+            {
+              "type": "percentage_discount",
+              "details": {
+                "percent": 10,
+                "scope": "sections",
+                "sections": [
+                  "Breakfast",
+                  "Lunch"
+                ],
+                "itemIds": null,
+                "baseAmount": 45,
+                "computedDiscount": 4.5
+              },
+              "description": ""
+            }
+          ],
+          "discountAmount": 4.5,
+          "metadata": {
+            "id": "diwali-sections-10",
+            "shopId": 2,
+            "title": "🎉 Diwali 10% Off",
+            "bannerText": "Diwali Offer: 10% off Breakfast & Lunch",
+            "description": "",
+            "active": true,
+            "stackable": false,
+            "priority": 0,
+            "maxDiscountAmount": 100,
+            "discountPercent": 10,
+            "discountAmount": null,
+            "applicableSections": [
+              "Breakfast",
+              "Lunch"
+            ],
+            "applicableComboIds": [],
+            "start": "2025-10-01T00:00:00Z",
+            "end": "2025-11-30T23:59:59Z",
+            "timeStart": null,
+            "timeEnd": null,
+            "daysOfWeek": null,
+            "schedule": null,
+            "conditions": [],
+            "rewards": [
+              {
+                "type": "percentage_discount",
+                "percent": 10,
+                "appliesTo": "sections",
+                "sections": [
+                  "Breakfast",
+                  "Lunch"
+                ]
+              }
+            ],
+            "metadata": null,
+            "createdAt": "2025-11-01T11:34:56.581Z",
+            "updatedAt": "2025-11-05T16:55:14.759Z"
+          },
+          "extraItems": []
+        }
+      ],
+      "extraItems": []
+    },
+    "notes": null,
+    "payment": {
+      "method": "gateway",
+      "amount": 40.5,
+      "provider": "razorpay-open",
+      "reference": "PG-1762415982284"
+    }
+  },
+  {
+    "id": 47,
+    "items": [
+      {
+        "id": 133,
+        "name": "Fish Fry",
+        "price": 140,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 15
+      }
+    ],
+    "shopId": 2,
+    "user": "+919952911560",
+    "scheduledTime": null,
+    "status": "pending",
+    "createdAt": "2025-11-06T08:01:16.893Z",
+    "billingId": "00004",
+    "estimatedReadyTime": "2025-11-06T08:20:16.893Z",
+    "prepTime": 19,
+    "baseEstimatedReadyTime": "2025-11-06T08:20:16.893Z",
+    "basePrepTime": 19,
+    "rating": null,
+    "feedback": null,
+    "totalAmount": 126,
+    "subtotalBeforeDiscount": 140,
+    "discountTotal": 14,
+    "offerSummary": {
+      "subtotalBeforeDiscount": 140,
+      "discountTotal": 14,
+      "totalPayable": 126,
+      "appliedOffers": [
+        {
+          "id": "diwali-sections-10",
+          "title": "🎉 Diwali 10% Off",
+          "description": "",
+          "bannerText": "Diwali Offer: 10% off Breakfast & Lunch",
+          "rewards": [
+            {
+              "type": "percentage_discount",
+              "details": {
+                "percent": 10,
+                "scope": "sections",
+                "sections": [
+                  "Breakfast",
+                  "Lunch"
+                ],
+                "itemIds": null,
+                "baseAmount": 140,
+                "computedDiscount": 14
+              },
+              "description": ""
+            }
+          ],
+          "discountAmount": 14,
+          "metadata": {
+            "id": "diwali-sections-10",
+            "shopId": 2,
+            "title": "🎉 Diwali 10% Off",
+            "bannerText": "Diwali Offer: 10% off Breakfast & Lunch",
+            "description": "",
+            "active": true,
+            "stackable": false,
+            "priority": 0,
+            "maxDiscountAmount": 100,
+            "discountPercent": 10,
+            "discountAmount": null,
+            "applicableSections": [
+              "Breakfast",
+              "Lunch"
+            ],
+            "applicableComboIds": [],
+            "start": "2025-10-01T00:00:00Z",
+            "end": "2025-11-30T23:59:59Z",
+            "timeStart": null,
+            "timeEnd": null,
+            "daysOfWeek": null,
+            "schedule": null,
+            "conditions": [],
+            "rewards": [
+              {
+                "type": "percentage_discount",
+                "percent": 10,
+                "appliesTo": "sections",
+                "sections": [
+                  "Breakfast",
+                  "Lunch"
+                ]
+              }
+            ],
+            "metadata": null,
+            "createdAt": "2025-11-01T11:34:56.581Z",
+            "updatedAt": "2025-11-05T16:55:14.759Z"
+          },
+          "extraItems": []
+        }
+      ],
+      "extraItems": []
+    },
+    "notes": null,
+    "payment": {
+      "method": "gateway",
+      "amount": 126,
+      "provider": "razorpay-open",
+      "reference": "PG-1762416076893"
+    }
   }
 ]

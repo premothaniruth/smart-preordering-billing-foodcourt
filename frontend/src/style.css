@@ -75,11 +75,12 @@ body, html, #root {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.55);
+  background: rgba(0, 0, 0, 0.7);
   z-index: 2000;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.4s ease;
+  padding: 4vw;
 }
 
 .splash-overlay--visible {
@@ -88,45 +89,35 @@ body, html, #root {
 }
 
 .splash-card {
-  background: #ffffff;
-  padding: 32px 40px;
-  border-radius: 16px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
   text-align: center;
-  max-width: 420px;
-  width: calc(100% - 32px);
+  width: 100%;
+  max-width: 1000px;
   animation: splashPop 0.5s ease;
+  background: transparent;
+  padding: 0;
+  box-shadow: none;
 }
 
 .splash-logo {
-  width: 100%;
-  max-width: 320px;
+  width: min(90vw, 900px);
   height: auto;
   display: block;
-  margin: 0 auto 16px;
+  margin: 0 auto;
 }
 
 .splash-tagline {
-  margin: 0 0 24px;
-  font-size: 16px;
-  color: #2c3e50;
-  font-weight: 500;
-}
-
-.splash-skip {
-  background: linear-gradient(135deg, #ff7e5f 0%, #feb47b 100%);
+  margin: 0;
+  font-size: clamp(28px, 6vw, 48px);
   color: #fff;
   font-weight: 600;
-  padding: 10px 32px;
-  border-radius: 999px;
-  border: none;
-  cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.splash-skip:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 18px rgba(255, 126, 95, 0.35);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-shadow: 0 6px 18px rgba(0, 0, 0, 0.55);
 }
 
 @keyframes splashPop {
@@ -150,9 +141,10 @@ body, html, #root {
 /* ===== HEADER ===== */
 header {
   background: rgba(255, 255, 255, 0.95);
-  padding: 15px 30px;
+  padding: 1px 30px;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 15px;
   box-shadow: 0 2px 10px rgba(0,0,0,0.1);
   position: sticky;
@@ -160,14 +152,32 @@ header {
   z-index: 1000;
 }
 
-header img {
-  height: 50px;
+.header-slot {
+  flex: 1;
+  display: flex;
+  align-items: center;
 }
 
-header h1 {
-  margin: 0;
-  font-size: 24px;
-  color: #2c3e50;
+.header-slot--center {
+  justify-content: center;
+}
+
+.header-slot--left {
+  justify-content: flex-start;
+}
+
+.header-slot--right {
+  justify-content: flex-end;
+}
+
+.header-logo {
+  height: 50px;
+  object-fit: contain;
+}
+
+.header-logo--brand {
+  height: clamp(60px, 12vw, 90px);
+  max-width: min(65vw, 480px);
 }
 
 /* ===== MAIN CONTAINER ===== */

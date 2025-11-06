@@ -25,6 +25,7 @@ const GRANULARITY_TO_MS = {
 
 const DATA_DIR = path.join(__dirname, "..", "data");
 const ORDERS_FILE = path.join(DATA_DIR, "orders.json");
+const ANALYTICS_ARCHIVE_DIR = path.join(DATA_DIR, "archive");
 
 const safeNumber = (value, fallback = 0) => {
   const num = Number(value);
@@ -69,6 +70,108 @@ const parseTimestamp = (value) => {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return null;
   return date;
+};
+
+const ensureMap = (map, key, factory) => {
+  if (!map.has(key)) {
+    map.set(key, factory());
+  }
+  return map.get(key);
+};
+
+const loadOrderSummaryArchive = () => {
+  if (!fs.existsSync(ANALYTICS_ARCHIVE_DIR)) {
+    return {};
+  }
+  const entries = fs.readdirSync(ANALYTICS_ARCHIVE_DIR, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && entry.name.endsWith(".json"));
+  return entries.reduce((acc, entry) => {
+    const filePath = path.join(ANALYTICS_ARCHIVE_DIR, entry.name);
+    const payload = readJsonSafe(filePath, null);
+    if (payload && typeof payload === "object") {
+      Object.entries(payload).forEach(([shopKey, summary]) => {
+        if (!acc[shopKey] && summary && typeof summary === "object") {
+          acc[shopKey] = summary;
+        }
+      });
+    }
+    return acc;
+  }, {});
+};
+
+const ORDER_SUMMARY_ARCHIVE = loadOrderSummaryArchive();
+
+const formatBuckets = (bucketMap) => {
+  return Array.from(bucketMap.entries())
+    .sort((a, b) => Number(a[0]) - Number(b[0]))
+    .map(([bucket, stats]) => ({
+      time: new Date(Number(bucket)).toISOString(),
+      orders: stats.orders,
+      revenue: stats.revenue,
+    }));
+};
+
+const fallbackOrderMetricsFromFile = ({ shopId, start, bucketMs }) => {
+  const orders = readJsonSafe(ORDERS_FILE, []);
+  if (!Array.isArray(orders) || orders.length === 0) return null;
+
+  const startTime = start instanceof Date ? start.getTime() : new Date(start).getTime();
+  if (!Number.isFinite(startTime)) return null;
+
+  const relevant = orders.filter((order) => {
+    if (String(order?.shopId) !== String(shopId)) return false;
+    const createdAt = parseTimestamp(order?.createdAt);
+    if (!createdAt) return false;
+    return createdAt.getTime() >= startTime;
+  });
+
+  if (relevant.length === 0) return null;
+
+  const bucketMap = new Map();
+  let totalRevenue = 0;
+  const statusBreakdown = {};
+
+  relevant.forEach((order) => {
+    const createdAt = parseTimestamp(order?.createdAt);
+    if (!createdAt) return;
+    const bucket = truncateTime(createdAt.getTime(), bucketMs);
+    if (bucket == null) return;
+    const entry = ensureMap(bucketMap, bucket, () => ({ orders: 0, revenue: 0 }));
+    entry.orders += 1;
+    const orderTotal = computeOrderTotal(order);
+    totalRevenue += orderTotal;
+    entry.revenue += orderTotal;
+
+    const status = String(order?.status || "unknown").toLowerCase();
+    statusBreakdown[status] = (statusBreakdown[status] || 0) + 1;
+  });
+
+  const archiveEntry = ORDER_SUMMARY_ARCHIVE?.[String(shopId)] || {};
+  const averagePrepExtension = safeNumber(archiveEntry.averagePrepExtensionMinutes, 0);
+
+  return {
+    totalOrders: relevant.length,
+    totalRevenue,
+    timeSeries: formatBuckets(bucketMap),
+    statusBreakdown,
+    averagePrepExtension,
+    raw: {
+      orderCreated: [],
+      orderStatus: [],
+    },
+  };
+};
+
+const fallbackHistoricalSnapshotsFromFile = (shopId) => {
+  const archiveEntry = ORDER_SUMMARY_ARCHIVE?.[String(shopId)];
+  const history = Array.isArray(archiveEntry?.history) ? archiveEntry.history : [];
+  return history
+    .filter((item) => item && typeof item === "object")
+    .map((item) => ({
+      period: item.period || item.time || new Date().toISOString(),
+      orders: safeNumber(item.orders, 0),
+      revenue: safeNumber(item.revenue, 0),
+    }));
 };
 
 class AnalyticsQueryService {
@@ -183,7 +286,7 @@ class AnalyticsQueryService {
       : 0;
 
     if (orderCreated.length === 0 && orderStatus.length === 0 && rows.length === 0) {
-      const fallback = this._fallbackOrderMetricsFromFile(shopId, start, bucketMs);
+      const fallback = fallbackOrderMetricsFromFile({ shopId, start, bucketMs });
       if (fallback) {
         return fallback;
       }

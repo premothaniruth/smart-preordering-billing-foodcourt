@@ -204,7 +204,6 @@ const deriveOrderCountdownInfo = (order, { now, pendingOrdersCount, prepTimesByS
 
   const timeUntilReady = targetTime - now;
   const timeUntilStart = startTime - now;
-  const displayCountdownMs = Math.min(timeUntilStart, timeUntilReady);
 
   let status = "in-progress";
   let prefix = "Ready in";
@@ -218,6 +217,8 @@ const deriveOrderCountdownInfo = (order, { now, pendingOrdersCount, prepTimesByS
     prefix = "Prep window elapsed";
     message = "Expected ready";
   }
+
+  const displayCountdownMs = status === "waiting" ? timeUntilStart : timeUntilReady;
 
   const helperParts = [];
   helperParts.push(`Prep ${formatMinutes(effectivePrepMinutes)}`);
@@ -589,7 +590,7 @@ const AdminDashboard = ({ token }) => {
   );
 
   const countdownMap = useMemo(() => {
-    const now = Date.now() + tick * 0;
+    const now = Date.now();
     const map = new Map();
     orders.forEach((order) => {
       const info = computeOrderCountdown(order, { now, pendingOrdersCount, prepTimesByShop });
