@@ -319,6 +319,21 @@ export const updateAdminEmployeeConcern = async (concernId, updates, session) =>
   return res.json();
 };
 
+export const fetchAdminEmployees = async (session) => {
+  const res = await fetch(`${API_URL}/admin/employees`, {
+    headers: buildAdminHeaders(session),
+  });
+  return res.json();
+};
+
+export const deleteAdminEmployee = async (session, employeeId) => {
+  const res = await fetch(`${API_URL}/admin/employees/${employeeId}`, {
+    method: 'DELETE',
+    headers: buildAdminHeaders(session),
+  });
+  return res.json();
+};
+
 // Employee profile
 export const employeeProfile = async (token) => {
   const res = await fetch(`${API_URL}/employee/profile`, {

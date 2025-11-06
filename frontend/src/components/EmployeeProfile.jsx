@@ -287,6 +287,11 @@ const EmployeeProfile = ({ token, wallet = { balance: 0, transactions: [] }, onW
     { value: 'other', label: 'Other' },
   ];
 
+  const categoryLabel = (value) => {
+    const entry = concernCategoryOptions.find((option) => option.value === value);
+    return entry ? entry.label : 'Other';
+  };
+
   const handleConcernChange = (field, value) => {
     setConcernForm((prev) => ({ ...prev, [field]: value }));
   };

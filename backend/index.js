@@ -2488,6 +2488,98 @@ const getEmployeeConcerns = () => {
 
 const saveEmployeeConcerns = (concerns) => fs.writeFileSync(employeeConcernsFile, JSON.stringify(concerns, null, 2));
 
+const sanitizeEmployeeRecord = (employee) => {
+  if (!employee || typeof employee !== 'object') return null;
+  const {
+    passwordHash,
+    pinHash,
+    pin,
+    password,
+    walletTransactions,
+    otp,
+    otpExpiresAt,
+    otpAction,
+    otpAttempts,
+    ...rest
+  } = employee;
+
+  const wallet = {
+    balance: Number(employee.walletBalance || rest.walletBalance || 0),
+  };
+
+  if (Array.isArray(employee.walletTransactions)) {
+    wallet.transactions = employee.walletTransactions.slice(0, 10).map((tx) => ({
+      id: tx.id,
+      timestamp: tx.timestamp,
+      type: tx.type,
+      amount: tx.amount,
+      reason: tx.reason,
+      status: tx.status,
+    }));
+  }
+
+  const output = {
+    id: employee.id,
+    username: employee.username || null,
+    email: employee.email || null,
+    mobile: employee.mobile || null,
+    role: employee.role || null,
+    roleSlug: employee.roleSlug || null,
+    department: employee.department || null,
+    bulkOrderEligible: Boolean(employee.bulkOrderEligible),
+    createdAt: employee.createdAt || null,
+    updatedAt: employee.updatedAt || null,
+    lastLoginAt: employee.lastLoginAt || null,
+    wallet,
+  };
+
+  if (employee.metadata && typeof employee.metadata === 'object') {
+    output.metadata = employee.metadata;
+  }
+
+  return output;
+};
+
+const deleteEmployeeById = (employeeId) => {
+  const employees = getEmployees();
+  const nextEmployees = employees.filter((emp) => Number(emp.id) !== Number(employeeId));
+  if (nextEmployees.length === employees.length) {
+    return { removed: false };
+  }
+  saveEmployees(nextEmployees);
+
+  for (const [token, session] of employeeSessions.entries()) {
+    if (Number(session?.employeeId) === Number(employeeId)) {
+      employeeSessions.delete(token);
+      continue;
+    }
+    if (session?.mobile && employees.some((emp) => emp.mobile === session.mobile)) {
+      continue;
+    }
+    if (session?.employeeId == null && session?.mobile) {
+      const matched = nextEmployees.some((emp) => emp.mobile === session.mobile || emp.email === session.mobile);
+      if (!matched) {
+        employeeSessions.delete(token);
+      }
+    }
+  }
+
+  const concerns = getEmployeeConcerns();
+  const updatedConcerns = concerns.map((concern) => {
+    if (Number(concern.employeeId) !== Number(employeeId)) {
+      return concern;
+    }
+    return {
+      ...concern,
+      username: null,
+      department: concern.department || null,
+    };
+  });
+  saveEmployeeConcerns(updatedConcerns);
+
+  return { removed: true };
+};
+
 /**
  * Read bulk orders from disk.
  * @returns {Array}
@@ -5660,6 +5752,36 @@ app.patch("/admin/employee-concerns/:id", authenticateAdmin, (req, res) => {
   } catch (error) {
     console.error("Error updating employee concern", error);
     res.status(500).json({ message: "Error updating employee concern" });
+  }
+});
+
+app.get("/admin/employees", authenticateAdmin, (req, res) => {
+  try {
+    const employees = getEmployees();
+    const sanitized = employees.map((employee) => sanitizeEmployeeRecord(employee)).filter(Boolean);
+    res.json({ status: "ok", employees: sanitized });
+  } catch (error) {
+    console.error("Error listing employees", error);
+    res.status(500).json({ message: "Failed to load employees" });
+  }
+});
+
+app.delete("/admin/employees/:id", authenticateAdmin, (req, res) => {
+  try {
+    const employeeId = Number(req.params.id);
+    if (!Number.isFinite(employeeId)) {
+      return res.status(400).json({ message: "Invalid employee id" });
+    }
+
+    const { removed } = deleteEmployeeById(employeeId);
+    if (!removed) {
+      return res.status(404).json({ message: "Employee not found" });
+    }
+
+    res.json({ status: "success", message: "Employee removed" });
+  } catch (error) {
+    console.error("Error deleting employee", error);
+    res.status(500).json({ message: "Failed to delete employee" });
   }
 });
 

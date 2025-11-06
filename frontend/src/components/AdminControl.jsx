@@ -13,6 +13,8 @@ import {
   restoreArchivedVendor
 } from "../api";
 import AdminVendorGrievances from "./AdminVendorGrievances";
+import AdminEmployeeConcerns from "./AdminEmployeeConcerns";
+import AdminEmployeeDirectory from "./AdminEmployeeDirectory";
 
 const initialCreateState = {
   shopName: "",
@@ -1036,6 +1038,7 @@ function AdminControl({
           </p>
         </div>
       </div>
+      <AdminEmployeeDirectory adminSession={adminSession} />
       <AdminEmployeeConcerns adminSession={adminSession} />
     </div>
   );

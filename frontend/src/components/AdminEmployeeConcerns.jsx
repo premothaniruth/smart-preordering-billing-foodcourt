@@ -89,6 +89,17 @@ const AdminEmployeeConcerns = ({ adminSession }) => {
     [selectedId, concerns]
   );
 
+  const employeeLabel = (item) => {
+    if (!item) return "Employee";
+    const username = String(item.username || "").trim();
+    if (username) return username;
+    const email = String(item.email || "").trim();
+    if (email) return email;
+    const mobile = String(item.mobile || "").trim();
+    if (mobile) return mobile;
+    return `Employee #${item.employeeId}`;
+  };
+
   const handleSelect = (concern) => {
     setSelectedId(concern.id);
     setNoteDraft(concern.adminNote || "");
@@ -166,7 +177,17 @@ const AdminEmployeeConcerns = ({ adminSession }) => {
                   </span>
                 </div>
                 <div className="concern-meta">
-                  <span>Employee #{item.employeeId}</span>
+                  <button
+                    type="button"
+                    className="link-button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      handleSelect(item);
+                    }}
+                    style={{ padding: 0, fontWeight: 600 }}
+                  >
+                    {employeeLabel(item)}
+                  </button>
                   {item.department && <span>{item.department}</span>}
                   <span>{formatDateTime(item.createdAt)}</span>
                 </div>
@@ -182,9 +203,17 @@ const AdminEmployeeConcerns = ({ adminSession }) => {
         <div className="admin-concern-detail">
           {selectedConcern ? (
             <div>
+              <button
+                type="button"
+                className="link-button"
+                onClick={() => setSelectedId(null)}
+                style={{ marginBottom: 8, padding: 0 }}
+              >
+                ← Back to concerns list
+              </button>
               <h3 style={{ marginTop: 0 }}>{selectedConcern.subject}</h3>
               <p style={{ color: "#7f8c8d", marginTop: 4 }}>
-                Employee #{selectedConcern.employeeId}
+                {employeeLabel(selectedConcern)}
                 {selectedConcern.department ? ` • ${selectedConcern.department}` : ""}
                 {selectedConcern.location ? ` • ${selectedConcern.location}` : ""}
               </p>
