@@ -644,29 +644,97 @@ const evaluateReward = ({ reward, context, offer, itemLookup, summary }) => {
           const computeItemBuyGet = () => {
             const buyQuantity = toNumber(configSource.buyQuantity ?? itemCond?.minQuantity);
             if (!buyQuantity || buyQuantity <= 0) return 1;
+
+            const requirementMap = new Map();
+            const recordRequirement = (rawId, rawQuantity) => {
+              if (rawId == null) return;
+              const qtyNum = toNumber(rawQuantity);
+              if (!qtyNum || qtyNum <= 0) return;
+              const numericId = Number(rawId);
+              const key = Number.isFinite(numericId) ? String(numericId) : String(rawId);
+              if (!key) return;
+              requirementMap.set(key, (requirementMap.get(key) || 0) + qtyNum);
+            };
+
+            if (Array.isArray(configSource.targetItems)) {
+              configSource.targetItems.forEach((item) => {
+                const rawId = item?.id != null ? item.id : item?.value;
+                const rawQty = item?.quantity != null ? item.quantity : item?.qty;
+                recordRequirement(rawId, rawQty);
+              });
+            }
+            if (requirementMap.size === 0 && Array.isArray(itemCond?.targetRequirements)) {
+              itemCond.targetRequirements.forEach((entry) => {
+                const rawId = entry?.id != null ? entry.id : entry?.itemId;
+                recordRequirement(rawId, entry?.quantity);
+              });
+            }
+
             const targetIdsRaw = Array.isArray(configSource.targetItemIds) && configSource.targetItemIds.length > 0
               ? configSource.targetItemIds
               : (Array.isArray(itemCond?.itemIds) ? itemCond.itemIds : []);
-            const idsRaw = targetIdsRaw.length ? targetIdsRaw : [itemId];
+            const requirementKeys = requirementMap.size > 0 ? Array.from(requirementMap.keys()) : [];
+            const idsRaw = targetIdsRaw.length > 0 ? targetIdsRaw : (requirementKeys.length > 0 ? requirementKeys : [itemId]);
             const hasWildcard = idsRaw.some((id) => typeof id === 'string' && id.startsWith('custom-target-'));
 
-            if (hasWildcard) {
-              const qualifyingQuantity = context.totalQuantity;
-              if (!qualifyingQuantity || qualifyingQuantity <= 0) return 1;
-              const tiers = Math.floor(qualifyingQuantity / buyQuantity);
-              return tiers > 0 ? tiers : 1;
+            const quantityByKey = new Map();
+            if (hasWildcard && context.itemTotals) {
+              context.itemTotals.forEach((entry, key) => {
+                const qty = Number(entry?.quantity) || 0;
+                quantityByKey.set(String(key), qty);
+              });
             }
 
             const ids = idsRaw
               .map((id) => Number(id))
               .filter((id) => Number.isFinite(id));
-            if (!ids.length) return 1;
+
             let qualifyingQuantity = 0;
             for (const id of ids) {
               const entry = context.itemTotals?.get(Number(id));
-              if (entry?.quantity) qualifyingQuantity += Number(entry.quantity);
+              if (!entry?.quantity) continue;
+              const qty = Number(entry.quantity) || 0;
+              if (qty > 0) {
+                qualifyingQuantity += qty;
+                quantityByKey.set(String(id), (quantityByKey.get(String(id)) || 0) + qty);
+              }
             }
-            if (qualifyingQuantity <= 0) return 1;
+
+            if (requirementMap.size > 0) {
+              if (context.itemTotals) {
+                requirementMap.forEach((_reqQty, key) => {
+                  if (quantityByKey.has(key)) return;
+                  const numericKey = Number(key);
+                  if (!Number.isFinite(numericKey)) return;
+                  const entry = context.itemTotals.get(numericKey);
+                  const qty = Number(entry?.quantity) || 0;
+                  if (qty > 0) {
+                    quantityByKey.set(String(numericKey), qty);
+                  }
+                });
+              }
+
+              let minTiers = Infinity;
+              requirementMap.forEach((requiredQty, key) => {
+                const actualQty = quantityByKey.get(key) || 0;
+                const tiersForItem = requiredQty > 0 ? Math.floor(actualQty / requiredQty) : 0;
+                minTiers = Math.min(minTiers, tiersForItem);
+              });
+
+              if (Number.isFinite(minTiers) && minTiers > 0) {
+                return minTiers;
+              }
+              // Fall back to aggregate calculation if requirements could not determine tiers.
+            }
+
+            if (hasWildcard) {
+              const qualifyingQuantityWildcard = context.totalQuantity;
+              if (!qualifyingQuantityWildcard || qualifyingQuantityWildcard <= 0) return 1;
+              const tiers = Math.floor(qualifyingQuantityWildcard / buyQuantity);
+              return tiers > 0 ? tiers : 1;
+            }
+
+            if (!ids.length || qualifyingQuantity <= 0) return 1;
             const tiers = Math.floor(qualifyingQuantity / buyQuantity);
             return tiers > 0 ? tiers : 1;
           };

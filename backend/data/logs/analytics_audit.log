@@ -177,3 +177,4 @@
 {"timestamp":"2025-11-07T08:19:52.598Z","actorType":"vendor","actorId":2,"shopId":2,"vendorId":2,"action":"vendor.login.success","metadata":{"username":"southfoods","foodCourt":"fc-1"}}
 {"timestamp":"2025-11-07T08:27:14.398Z","actorType":"vendor","actorId":2,"shopId":2,"vendorId":2,"action":"vendor.login.success","metadata":{"username":"southfoods","foodCourt":"fc-1"}}
 {"timestamp":"2025-11-07T08:32:25.104Z","actorType":"vendor","actorId":2,"shopId":2,"vendorId":2,"action":"vendor.login.success","metadata":{"username":"southfoods","foodCourt":"fc-1"}}
+{"timestamp":"2025-11-07T08:45:06.291Z","actorType":"vendor","actorId":2,"shopId":2,"vendorId":2,"action":"vendor.login.success","metadata":{"username":"southfoods","foodCourt":"fc-1"}}
