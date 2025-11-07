@@ -1663,14 +1663,35 @@ app.post('/bulk-orders/:id/vendor-confirm', (req, res) => {
 
 app.get('/admin/bulk-orders', authenticateAdmin, (req, res) => {
   try {
-    const statusFilter = req.query.status ? String(req.query.status).toLowerCase() : null;
-    const foodCourt = getAdminFoodCourt(req);
-    const orders = getBulkOrders(foodCourt);
-    const filtered = orders.filter((order) => {
-      if (!statusFilter) return true;
-      return normalizeBulkStatus(order.status) === normalizeBulkStatus(statusFilter);
-    }).map((order) => sanitizeBulkOrder(ensureBulkOrderReviewFields(order), foodCourt));
-    res.json({ status: 'ok', orders: filtered });
+    const statusFilterRaw = req.query.status ? String(req.query.status).toLowerCase() : null;
+    const normalizedStatusFilter = statusFilterRaw ? normalizeBulkStatus(statusFilterRaw) : null;
+    const requestedFoodCourt = req.query.foodCourt ? String(req.query.foodCourt).toLowerCase() : null;
+
+    const courtsToFetch = requestedFoodCourt === 'all'
+      ? FOOD_COURTS
+      : [
+          FOOD_COURTS.includes(requestedFoodCourt)
+            ? requestedFoodCourt
+            : getAdminFoodCourt(req)
+        ];
+
+    const aggregated = courtsToFetch.flatMap((court) => {
+      const orders = getBulkOrders(court);
+      return orders
+        .filter((order) => {
+          if (!normalizedStatusFilter) return true;
+          return normalizeBulkStatus(order.status) === normalizedStatusFilter;
+        })
+        .map((order) => {
+          const sanitized = sanitizeBulkOrder(ensureBulkOrderReviewFields(order), court);
+          if (!sanitized.foodCourt) {
+            sanitized.foodCourt = court;
+          }
+          return sanitized;
+        });
+    });
+
+    res.json({ status: 'ok', orders: aggregated });
   } catch (error) {
     console.error('Error listing admin bulk orders', error);
     res.status(500).json({ message: 'Failed to fetch bulk orders' });

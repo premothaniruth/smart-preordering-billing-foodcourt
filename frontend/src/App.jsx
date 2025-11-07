@@ -35,12 +35,30 @@ const ADMIN_CREDENTIALS = {
   password: "infybhojans"
 };
 const ADMIN_VENDORS_STORAGE_KEY = "adminManagedVendors";
+const ADMIN_FOOD_COURT_STORAGE_KEY = "adminSelectedFoodCourtV2";
+const LEGACY_ADMIN_FOOD_COURT_KEY = "adminSelectedFoodCourt";
+
+const ADMIN_FOOD_COURT_CHOICES = new Set(["all", "fc-1", "fc-2"]);
 
 const getAdminSelectedFoodCourt = () => {
   try {
-    return localStorage.getItem("adminSelectedFoodCourt") || "fc-1";
+    const stored = localStorage.getItem(ADMIN_FOOD_COURT_STORAGE_KEY);
+    if (stored && ADMIN_FOOD_COURT_CHOICES.has(stored)) {
+      return stored;
+    }
+
+    const legacy = localStorage.getItem(LEGACY_ADMIN_FOOD_COURT_KEY);
+    if (legacy && ADMIN_FOOD_COURT_CHOICES.has(legacy)) {
+      localStorage.removeItem(LEGACY_ADMIN_FOOD_COURT_KEY);
+      const normalized = ADMIN_FOOD_COURT_CHOICES.has(legacy) ? legacy : "all";
+      localStorage.setItem(ADMIN_FOOD_COURT_STORAGE_KEY, normalized);
+      return normalized;
+    }
+
+    localStorage.setItem(ADMIN_FOOD_COURT_STORAGE_KEY, "all");
+    return "all";
   } catch {
-    return "fc-1";
+    return "all";
   }
 };
 
@@ -286,7 +304,8 @@ function App() {
 
   useEffect(() => {
     try {
-      localStorage.setItem("adminSelectedFoodCourt", adminFoodCourt);
+      localStorage.setItem(ADMIN_FOOD_COURT_STORAGE_KEY, adminFoodCourt);
+      localStorage.removeItem(LEGACY_ADMIN_FOOD_COURT_KEY);
     } catch {}
     if (adminSession) {
       refreshAdminManagedVendors();

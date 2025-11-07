@@ -24,6 +24,7 @@ const initialCreateState = {
 };
 
 const FOOD_COURT_OPTIONS = [
+  { value: 'all', label: 'All Courts' },
   { value: 'fc-1', label: 'Food Court 1' },
   { value: 'fc-2', label: 'Food Court 2' },
 ];
@@ -42,7 +43,7 @@ function AdminControl({
   onUpdateVendor,
   vendors = [],
   onRequestRefresh,
-  selectedFoodCourt = 'fc-1',
+  selectedFoodCourt = 'all',
   onFoodCourtChange = () => {},
 }) {
   const [loginForm, setLoginForm] = useState({ username: "", password: "" });
