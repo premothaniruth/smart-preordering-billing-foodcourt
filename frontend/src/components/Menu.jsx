@@ -1122,7 +1122,7 @@ const Menu = ({
       <div className="filter-section" style={{ display:'flex', gap:12, flexWrap:'wrap', alignItems:'center', marginBottom: 12 }}>
         {typeof onFoodCourtChange === 'function' && (
           <div className="menu-food-court-selector">
-            <label>Food Court:</label>
+            <label>Food Court: </label>
             <div className="shop-dropdown" ref={foodCourtMenuRef}>
               <button
                 type="button"

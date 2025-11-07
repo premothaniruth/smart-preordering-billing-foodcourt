@@ -3,14 +3,15 @@
     "id": 2,
     "username": "premtg",
     "email": "premtg@gmail.com",
-    "mobile": "+919952091560",
+    "mobile": "+919952081560",
     "passwordHash": "$2b$10$xpGfsxJ1kz2ITvpdwu.RK.nWDd3Nyl8eavWrSG7YIGqTDBmGDsZ/i",
-    "pinHash": "$2b$10$ZNZRvB3IXoLizT53fHnCVOq98A.6knCQE2xf3kBbSjaNccGdRep8K",
+    "pinHash": "$2b$10$NoS6klRta0Gr7zP/qnBFqO5kgF5FE2qg3ySUzJCNeNnoqjL9Kt0UK",
     "role": "Employee",
     "roleSlug": "employee",
     "department": "",
     "bulkOrderEligible": false,
     "walletBalance": 0,
-    "walletTransactions": []
+    "walletTransactions": [],
+    "birthday": "2025-10-28"
   }
 ]

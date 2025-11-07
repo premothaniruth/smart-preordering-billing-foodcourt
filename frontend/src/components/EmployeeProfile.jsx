@@ -22,10 +22,6 @@ const TAB_PLACEHOLDERS = {
     title: 'Nutrition Plan',
     description: 'Track calories, macros, and get tailored meal plans based on your dietary preferences.',
   },
-  security: {
-    title: 'Security',
-    description: 'Manage trusted devices, activity logs, and additional authentication options for your account.',
-  },
   coupons: {
     title: 'Create Coupons',
     description: 'Design personalized coupon codes and share them with your team for exclusive cafeteria perks.',
@@ -34,17 +30,21 @@ const TAB_PLACEHOLDERS = {
     title: 'Book a Table',
     description: 'Reserve seats in advance for your group at participating cafeteria partners.',
   },
-  concern: {
-    title: 'Raise Concern',
-    description: 'Submit feedback or report issues directly to cafeteria support for quick assistance.',
-  },
   recipe: {
     title: 'Special Recipe',
     description: 'Discover curated chef specials and submit your own creations for the weekly showcase.',
   },
+  security: {
+    title: 'Security',
+    description: 'Manage trusted devices, activity logs, and additional authentication options for your account.',
+  },
   theme: {
     title: 'Theme Options',
     description: 'Personalize your dashboard with color themes, accessibility presets, and layout choices.',
+  },
+  concern: {
+    title: 'Raise Concern',
+    description: 'Submit feedback or report issues directly to cafeteria support for quick assistance.',
   }
 };
 
@@ -417,11 +417,11 @@ const EmployeeProfile = ({ token, wallet = { balance: 0, transactions: [] }, onW
             </button>
             <button
               type="button"
-              className={activeTab === 'security' ? 'primary-button' : 'secondary-button'}
+              className={activeTab === 'recipe' ? 'primary-button' : 'secondary-button'}
               style={{ width: '100%', textAlign: 'left' }}
-              onClick={() => setActiveTab('security')}
+              onClick={() => setActiveTab('recipe')}
             >
-              Security
+              Special Recipe
             </button>
             <button
               type="button"
@@ -441,27 +441,27 @@ const EmployeeProfile = ({ token, wallet = { balance: 0, transactions: [] }, onW
             </button>
             <button
               type="button"
-              className={activeTab === 'concern' ? 'primary-button' : 'secondary-button'}
-              style={{ width: '100%', textAlign: 'left' }}
-              onClick={() => setActiveTab('concern')}
-            >
-              Raise Concern
-            </button>
-            <button
-              type="button"
-              className={activeTab === 'recipe' ? 'primary-button' : 'secondary-button'}
-              style={{ width: '100%', textAlign: 'left' }}
-              onClick={() => setActiveTab('recipe')}
-            >
-              Special Recipe
-            </button>
-            <button
-              type="button"
               className={activeTab === 'theme' ? 'primary-button' : 'secondary-button'}
               style={{ width: '100%', textAlign: 'left' }}
               onClick={() => setActiveTab('theme')}
             >
               Theme Options
+            </button>
+            <button
+              type="button"
+              className={activeTab === 'security' ? 'primary-button' : 'secondary-button'}
+              style={{ width: '100%', textAlign: 'left' }}
+              onClick={() => setActiveTab('security')}
+            >
+              Security
+            </button>
+            <button
+              type="button"
+              className={activeTab === 'concern' ? 'primary-button' : 'secondary-button'}
+              style={{ width: '100%', textAlign: 'left' }}
+              onClick={() => setActiveTab('concern')}
+            >
+              Raise Concern
             </button>
           </div>
 

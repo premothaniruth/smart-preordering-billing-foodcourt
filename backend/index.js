@@ -277,6 +277,7 @@ app.delete("/admin/vendor/:id", authenticateAdmin, (req, res) => {
       passwordHash: removedVendor.passwordHash,
       deletedAt: new Date().toISOString(),
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      foodCourt,
       data: {
         vendorRecord: removedVendor,
         menuSnapshot: getMenu(foodCourt),
@@ -378,7 +379,7 @@ app.delete("/admin/vendor/:id", authenticateAdmin, (req, res) => {
       console.warn("Failed to purge analytics snapshots", error);
     }
 
-    vendorDirectoryCache = { map: null, timestamp: 0 };
+    invalidateVendorDirectoryCache(foodCourt);
 
     res.json({ status: "success", message: "Vendor removed", vendorId, archiveId: archivePayload.archiveId });
   } catch (error) {
@@ -418,6 +419,13 @@ app.post("/admin/vendor-archives/:archiveId/restore", authenticateAdmin, async (
       return res.status(409).json({ message: "Vendor already exists" });
     }
 
+    const archiveFoodCourt = archive.foodCourt || FC_DEFAULT;
+    if (archiveFoodCourt !== foodCourt) {
+      return res.status(409).json({
+        message: `Archive belongs to ${archiveFoodCourt.toUpperCase()}. Switch to that food court to restore.`,
+      });
+    }
+
     vendors.push({
       vendorId: archive.vendorId,
       shopId: archive.shopId,
@@ -426,11 +434,11 @@ app.post("/admin/vendor-archives/:archiveId/restore", authenticateAdmin, async (
       email: archive.email || undefined,
       shopName: archive.shopName || undefined,
     });
-    saveVendors(vendors);
+    saveVendors(vendors, foodCourt);
 
     const menu = archive.data.menuSnapshot;
     if (menu) {
-      saveMenu(menu);
+      saveMenu(menu, foodCourt);
     }
 
     const combos = archive.data.combos || [];
@@ -457,7 +465,7 @@ app.post("/admin/vendor-archives/:archiveId/restore", authenticateAdmin, async (
 
     const orders = archive.data.orders || [];
     if (Array.isArray(orders)) {
-      saveVendorOrders(req, orders);
+      saveOrders(orders, foodCourt);
     }
 
     const headcountRecord = archive.data.headcountRecord || null;
@@ -480,6 +488,8 @@ app.post("/admin/vendor-archives/:archiveId/restore", authenticateAdmin, async (
     }
 
     removeArchiveById(archiveId);
+
+    invalidateVendorDirectoryCache(foodCourt);
 
     res.json({ status: "success", message: "Vendor restored", vendorId: archive.vendorId });
   } catch (error) {
@@ -1719,7 +1729,7 @@ app.post('/admin/vendor', authenticateAdmin, async (req, res) => {
     newVendor.shopName = trimmedShopName;
 
     vendors.push(newVendor);
-    saveVendors(vendors);
+    saveVendors(vendors, foodCourt);
 
     const newShopEntry = {
       shopId: resolvedShopId,
@@ -1738,7 +1748,7 @@ app.post('/admin/vendor', authenticateAdmin, async (req, res) => {
       saveMenu(menuObj, foodCourt);
     }
 
-    vendorDirectoryCache = { map: null, timestamp: 0 };
+    invalidateVendorDirectoryCache(foodCourt);
 
     res.json({
       status: 'success',
@@ -5551,7 +5561,8 @@ app.put("/admin/vendor/:id", authenticateAdmin, (req, res) => {
     if (!Number.isFinite(vendorId)) {
       return res.status(400).json({ message: "Invalid vendor ID" });
     }
-    const vendors = getVendors();
+    const foodCourt = getAdminFoodCourt(req);
+    const vendors = getVendors(foodCourt);
     const index = vendors.findIndex((v) => v.vendorId === vendorId);
     if (index === -1) {
       return res.status(404).json({ message: "Vendor not found" });
@@ -5597,9 +5608,9 @@ app.put("/admin/vendor/:id", authenticateAdmin, (req, res) => {
       }
     }
 
-    saveVendors(vendors);
+    saveVendors(vendors, foodCourt);
 
-    const rawMenu = getMenu();
+    const rawMenu = getMenu(foodCourt);
     const updateShopEntry = (menuData) => {
       const applyUpdate = (shop) => {
         if (!shop) return shop;
@@ -5634,10 +5645,10 @@ app.put("/admin/vendor/:id", authenticateAdmin, (req, res) => {
 
     const updatedMenu = updateShopEntry(rawMenu);
     if (updatedMenu !== rawMenu) {
-      saveMenu(updatedMenu);
+      saveMenu(updatedMenu, foodCourt);
     }
 
-    vendorDirectoryCache = { map: null, timestamp: 0 };
+    invalidateVendorDirectoryCache(foodCourt);
 
     const sanitizedVendor = {
       vendorId: vendor.vendorId,
