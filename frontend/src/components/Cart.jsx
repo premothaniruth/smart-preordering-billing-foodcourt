@@ -276,13 +276,44 @@ const Cart = ({
   const discountTotal = offerPreview?.discountTotal != null ? Number(offerPreview.discountTotal) : 0;
   const total = offerPreview?.totalPayable != null ? Number(offerPreview.totalPayable) : subtotal;
   const extraItems = Array.isArray(offerPreview?.extraItems) ? offerPreview.extraItems : [];
+  const complimentaryLines = extraItems.map((item, index) => {
+    const toNumber = (value) => {
+      const num = Number(value);
+      return Number.isFinite(num) ? num : null;
+    };
+    const unitCandidate = toNumber(item.waivedUnitPrice ?? item.price ?? 0);
+    const totalCandidate = toNumber(item.waivedTotal ?? null);
+    const rawQuantity = toNumber(item.quantity ?? null);
+    let qty = rawQuantity != null && rawQuantity > 0 ? rawQuantity : null;
+    if (qty == null || qty <= 0) {
+      if (unitCandidate != null && unitCandidate > 0 && totalCandidate != null && totalCandidate >= unitCandidate) {
+        qty = Math.max(1, Math.round(totalCandidate / unitCandidate));
+      } else {
+        qty = 1;
+      }
+    }
+    const waivedUnit = unitCandidate != null ? unitCandidate : (totalCandidate != null && qty ? totalCandidate / qty : 0);
+    const waivedTotal = totalCandidate != null ? totalCandidate : waivedUnit * qty;
+    return {
+      key: `${item.id || 'free'}-${item.fromOfferId || 'offer'}-${index}`,
+      name: item.name || `Complimentary Item ${index + 1}`,
+      quantity: qty,
+      waivedUnit,
+      waivedTotal,
+      section: item.section || null,
+      fromOfferTitle: item.fromOfferTitle || null,
+    };
+  });
+  const cartQuantity = cart.reduce((sum, c) => sum + Number(c.quantity || 0), 0);
+  const complimentaryQuantity = complimentaryLines.reduce((sum, line) => sum + Number(line.quantity || 0), 0);
+  const totalCartUnits = cartQuantity + complimentaryQuantity;
   const handleProceedToPayment = () => {
     onProceedToPayment({ notes: customNotes.trim() || undefined });
   };
 
   return (
     <div>
-      <h2>Cart ({cart.length})</h2>
+      <h2>Cart ({totalCartUnits})</h2>
 
       {cartShopMismatch && cart.length > 0 && (
         <div
@@ -403,6 +434,34 @@ const Cart = ({
             </div>
           );
           })}
+          {complimentaryLines.map((free) => (
+            <div key={free.key} className="cart-item" style={{ background: '#f5f9f6' }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: "bold", fontSize: 14, display:'flex', alignItems:'center', gap:6 }}>
+                  {free.name}
+                  <span style={{ fontSize: 11, color: '#27ae60', fontWeight: 600 }}>FREE</span>
+                </div>
+                {free.section && (
+                  <div style={{ fontSize: 11, color: "#666" }}>
+                    Section: {free.section}
+                  </div>
+                )}
+                <div style={{ fontSize: 12, color: "#666", marginTop: 4 }}>
+                  {free.quantity} x ₹0 = ₹0
+                  {Number.isFinite(free.waivedTotal) && free.waivedTotal > 0 && (
+                    <span style={{ marginLeft: 6, color: '#27ae60' }}>
+                      (₹{free.waivedTotal.toFixed(2)} waived total{free.waivedUnit > 0 ? `, ₹${free.waivedUnit.toFixed(2)} each` : ''})
+                    </span>
+                  )}
+                </div>
+                {free.fromOfferTitle && (
+                  <div style={{ fontSize: 11, color: '#7f8c8d', marginTop: 4 }}>
+                    {free.fromOfferTitle}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
       )}
       <div className="cart-scheduler">

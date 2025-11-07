@@ -605,10 +605,11 @@ const evaluateReward = ({ reward, context, offer, itemLookup, summary }) => {
         };
 
         const computeMultiplier = () => {
+          const itemCond = findCondition('item_quantity');
+          const comboCond = findCondition('combo_quantity');
           const template = offer.metadata?.template || configSource?.template;
-          if (!template) return 1;
-          if (template === 'item_buy_x_get_y') {
-            const itemCond = findCondition('item_quantity');
+
+          const computeItemBuyGet = () => {
             const buyQuantity = toNumber(configSource.buyQuantity ?? itemCond?.minQuantity);
             if (!buyQuantity || buyQuantity <= 0) return 1;
             const targetIdsRaw = Array.isArray(configSource.targetItemIds) && configSource.targetItemIds.length > 0
@@ -636,10 +637,9 @@ const evaluateReward = ({ reward, context, offer, itemLookup, summary }) => {
             if (qualifyingQuantity <= 0) return 1;
             const tiers = Math.floor(qualifyingQuantity / buyQuantity);
             return tiers > 0 ? tiers : 1;
-          }
+          };
 
-          if (template === 'combo_buy_x_get_y') {
-            const comboCond = findCondition('combo_quantity');
+          const computeComboBuy = () => {
             const buyQuantity = toNumber(configSource.buyQuantity ?? comboCond?.minQuantity);
             if (!buyQuantity || buyQuantity <= 0) return 1;
             const comboIdsRaw = Array.isArray(offer.metadata?.applicableComboIds) && offer.metadata.applicableComboIds.length > 0
@@ -654,24 +654,19 @@ const evaluateReward = ({ reward, context, offer, itemLookup, summary }) => {
             if (qualifyingQuantity <= 0) return 1;
             const tiers = Math.floor(qualifyingQuantity / buyQuantity);
             return tiers > 0 ? tiers : 1;
+          };
+
+          if (template === 'item_buy_x_get_y') {
+            return computeItemBuyGet();
           }
 
-          if (template === 'combo_buy_item_free') {
-            const comboCond = findCondition('combo_quantity');
-            const buyQuantity = toNumber(configSource.buyQuantity ?? comboCond?.minQuantity);
-            if (!buyQuantity || buyQuantity <= 0) return 1;
-            const comboIdsRaw = Array.isArray(offer.metadata?.applicableComboIds) && offer.metadata.applicableComboIds.length > 0
-              ? offer.metadata.applicableComboIds
-              : (Array.isArray(comboCond?.comboIds) ? comboCond.comboIds : []);
-            if (!comboIdsRaw.length) return 1;
-            const countsMap = context.comboCounts || new Map();
-            let qualifyingQuantity = 0;
-            for (const comboId of comboIdsRaw) {
-              qualifyingQuantity += countsMap.get(String(comboId)) || 0;
-            }
-            if (qualifyingQuantity <= 0) return 1;
-            const tiers = Math.floor(qualifyingQuantity / buyQuantity);
-            return tiers > 0 ? tiers : 1;
+          if (template === 'combo_buy_x_get_y' || template === 'combo_buy_item_free') {
+            return computeComboBuy();
+          }
+
+          if (!template) {
+            if (itemCond) return computeItemBuyGet();
+            if (comboCond) return computeComboBuy();
           }
 
           return 1;
