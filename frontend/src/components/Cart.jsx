@@ -273,9 +273,14 @@ const Cart = ({
   }, [inventoryLookup]);
 
   const subtotal = cart.reduce((sum, c) => sum + c.item.finalPrice * c.quantity, 0);
-  const discountTotal = offerPreview?.discountTotal != null ? Number(offerPreview.discountTotal) : 0;
-  const total = offerPreview?.totalPayable != null ? Number(offerPreview.totalPayable) : subtotal;
+  const rawDiscountTotal = offerPreview?.discountTotal != null ? Number(offerPreview.discountTotal) : 0;
   const extraItems = Array.isArray(offerPreview?.extraItems) ? offerPreview.extraItems : [];
+  const freeItemWaiverTotal = extraItems.reduce((sum, item) => {
+    const waived = Number(item?.waivedTotal);
+    return Number.isFinite(waived) && waived > 0 ? sum + waived : sum;
+  }, 0);
+  const discountTotal = Math.max(0, rawDiscountTotal - freeItemWaiverTotal);
+  const total = Math.max(0, subtotal - discountTotal);
   const complimentaryLines = extraItems.map((item, index) => {
     const toNumber = (value) => {
       const num = Number(value);
