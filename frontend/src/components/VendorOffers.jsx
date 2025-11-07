@@ -2,17 +2,8 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { fetchOffers, fetchMenuSections, fetchCombos, updateOffers } from "../api";
 import { toast } from "react-toastify";
 
-const CUSTOM_FREE_ITEM_OPTIONS = [
-  { value: "custom-1", label: "Custom 1" },
-  { value: "custom-2", label: "Custom 2" },
-  { value: "custom-3", label: "Custom 3" }
-];
-
-const CUSTOM_TARGET_ITEM_OPTIONS = [
-  { value: "custom-target-1", label: "Custom Target 1" },
-  { value: "custom-target-2", label: "Custom Target 2" },
-  { value: "custom-target-3", label: "Custom Target 3" }
-];
+const CUSTOM_TARGET_ITEM_OPTIONS = [];
+const CUSTOM_FREE_ITEM_OPTIONS = [];
 
 const TEMPLATE_OPTIONS = [
   { value: "percent_order", label: "% Off Order / Sections" },
@@ -132,22 +123,19 @@ const TemplateConfigFields = ({ offer, idx, updateConfigField, updateOfferField,
     const existing = new Map((Array.isArray(cfg.targetItems) ? cfg.targetItems : []).map((item) => [String(item.id), item]));
     const normalized = values.map((value) => {
       const key = String(value);
-      if (existing.has(key)) {
-        return { ...existing.get(key), id: key };
-      }
-      const custom = CUSTOM_TARGET_ITEM_OPTIONS.find((opt) => opt.value === key);
-      if (custom) {
-        return { id: key, label: custom.label, section: 'Custom' };
+      const preserved = existing.get(key);
+      if (preserved) {
+        return { ...preserved, id: key };
       }
       const match = menuItems.find((item) => String(item.id) === key);
       return {
         id: key,
         label: match?.name || '',
-        section: match?.section || null
+        section: match?.section || null,
+        quantity: cfg.buyQuantity && cfg.buyQuantity !== '' ? String(cfg.buyQuantity) : '1'
       };
     });
-    const hasCustom = normalized.some((item) => typeof item.id === 'string' && item.id.startsWith('custom-target-'));
-    const finalList = hasCustom ? normalized.filter((item) => typeof item.id === 'string' && item.id.startsWith('custom-target-')) : normalized;
+    const finalList = normalized;
     updateConfigField(idx, 'targetItems', finalList);
   };
 
@@ -175,10 +163,6 @@ const TemplateConfigFields = ({ offer, idx, updateConfigField, updateOfferField,
           quantity: preserved?.quantity || ''
         };
       }
-      const custom = CUSTOM_FREE_ITEM_OPTIONS.find((opt) => opt.value === key);
-      if (custom) {
-        return { id: key, label: custom.label, price: '', quantity: '' };
-      }
       const match = menuItems.find((item) => String(item.id) === key);
       return {
         id: key,
@@ -187,23 +171,11 @@ const TemplateConfigFields = ({ offer, idx, updateConfigField, updateOfferField,
         quantity: ''
       };
     });
-    const hasCustom = normalized.some((item) => typeof item.id === 'string' && item.id.startsWith('custom-'));
-    const finalList = hasCustom ? normalized.filter((item) => typeof item.id === 'string' && item.id.startsWith('custom-')) : normalized;
+    const finalList = normalized;
     updateConfigField(idx, 'freeItems', finalList);
 
     const primary = finalList[0]?.id || '';
     updateConfigField(idx, 'freeItemId', primary);
-    if (!primary || (typeof primary === 'string' && primary.startsWith('custom-'))) {
-      updateConfigField(idx, 'freeItemLabel', finalList[0]?.label || '');
-      updateConfigField(idx, 'freeItemPrice', finalList[0]?.price || '');
-      return;
-    }
-    const primaryEntry = CUSTOM_FREE_ITEM_OPTIONS.find((opt) => opt.value === primary);
-    if (primaryEntry) {
-      updateConfigField(idx, 'freeItemLabel', primaryEntry.label);
-      updateConfigField(idx, 'freeItemPrice', '');
-      return;
-    }
     const match = menuItems.find((item) => String(item.id) === primary);
     updateConfigField(idx, 'freeItemLabel', match?.name || '');
     updateConfigField(idx, 'freeItemPrice', match && match.price != null ? String(match.price) : '');
@@ -231,30 +203,20 @@ const TemplateConfigFields = ({ offer, idx, updateConfigField, updateOfferField,
 
   const menuOptions = useMemo(() => Array.isArray(menuItems) ? menuItems : [], [menuItems]);
   const targetItemOptions = useMemo(() => {
-    const customOpts = CUSTOM_TARGET_ITEM_OPTIONS.map((opt) => ({
-      value: opt.value,
-      label: opt.label,
-      helper: 'Custom'
-    }));
     const menuOpts = menuOptions.map((item) => ({
       value: String(item.id),
       label: item.name,
       helper: item.section ? item.section : null
     }));
-    return [...customOpts, ...menuOpts];
+    return menuOpts;
   }, [menuOptions]);
   const freeItemOptions = useMemo(() => {
-    const customOpts = CUSTOM_FREE_ITEM_OPTIONS.map((opt) => ({
-      value: opt.value,
-      label: opt.label,
-      helper: 'Custom'
-    }));
     const menuOpts = menuOptions.map((item) => ({
       value: String(item.id),
       label: item.name,
       helper: item.section ? item.section : null
     }));
-    return [...customOpts, ...menuOpts];
+    return menuOpts;
   }, [menuOptions]);
   const selectedComboIds = Array.isArray(offer.applicableComboIds) ? offer.applicableComboIds.map(String) : [];
   const selectedTargetItemIds = Array.isArray(cfg.targetItems) ? cfg.targetItems.map((item) => item.id) : (Array.isArray(cfg.targetItemIds) ? cfg.targetItemIds.map((id) => String(id)) : []);
@@ -283,6 +245,34 @@ const TemplateConfigFields = ({ offer, idx, updateConfigField, updateOfferField,
           <span style={{ fontSize: 12, color: '#c0392b' }}>No items available.</span>
         )}
       </div>
+      {Array.isArray(cfg.targetItems) && cfg.targetItems.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
+          <div style={{ fontSize: 11, textTransform: 'uppercase', color: '#7f8c8d' }}>Selected Target Items</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {cfg.targetItems.map((item) => (
+              <div key={item.id} style={{ border: '1px solid #d1d8e0', borderRadius: 6, padding: '6px 10px', background: '#f7f9fc', display: 'flex', flexDirection: 'column', gap: 6, minWidth: 180 }}>
+                <div style={{ fontWeight: 600, fontSize: 13 }}>{item.label || item.id}</div>
+                {item.section && (
+                  <div style={{ fontSize: 11, color: '#7f8c8d' }}>{item.section}</div>
+                )}
+                <div>
+                  <div style={{ fontSize: 11, color: '#7f8c8d' }}>Required Qty</div>
+                  <input
+                    type="number"
+                    value={item.quantity || cfg.buyQuantity || '1'}
+                    onChange={(e) => {
+                      const nextTargets = (cfg.targetItems || []).map((ti) => ti.id === item.id ? { ...ti, quantity: e.target.value } : ti);
+                      updateConfigField(idx, 'targetItems', nextTargets);
+                    }}
+                    style={{ width: '100%' }}
+                    min={0}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -513,7 +503,8 @@ const sanitizeConfig = (config = {}) => {
       targetLookup.set(id, {
         id,
         label: item?.label != null ? String(item.label) : "",
-        section: item?.section != null ? String(item.section) : ""
+        section: item?.section != null ? String(item.section) : "",
+        quantity: item?.quantity != null && item.quantity !== "" ? String(item.quantity) : (config.buyQuantity != null ? String(config.buyQuantity) : "")
       });
     }
   });
@@ -549,27 +540,25 @@ const sanitizeConfig = (config = {}) => {
     normalizedFreeItems
   );
 
+  // Remove legacy custom selection references now that custom options are disabled
   if (selection.buy.mode === "custom") {
-    if (selection.buy.allowAny) {
-      normalizedTargetItems = [];
-    } else if (selection.buy.items.length > 0) {
-      normalizedTargetItems = selection.buy.items.map((id) => {
-        const key = String(id);
-        return targetLookup.get(key) || { id: key, label: "", section: "" };
-      });
-    }
+    selection.buy.mode = "fixed";
+    selection.buy.allowAny = false;
+    selection.buy.items = [];
+  }
+  if (selection.free.mode === "custom") {
+    selection.free.mode = "fixed";
+    selection.free.allowAny = false;
+    selection.free.items = [];
   }
 
-  if (selection.free.mode === "custom") {
-    if (selection.free.allowAny) {
-      normalizedFreeItems = [];
-    } else if (selection.free.items.length > 0 && normalizedFreeItems.length === 0) {
-      normalizedFreeItems = selection.free.items.map((id) => {
-        const key = String(id);
-        return freeLookup.get(key) || { id: key, label: "", price: "", quantity: "" };
-      });
-    }
-  }
+  normalizedTargetItems = normalizedTargetItems
+    .filter((item) => item.id && !String(item.id).startsWith("custom-target-"))
+    .map((item) => ({
+      ...item,
+      quantity: item.quantity != null ? String(item.quantity) : (config.buyQuantity != null ? String(config.buyQuantity) : "")
+    }));
+  normalizedFreeItems = normalizedFreeItems.filter((item) => item.id && !String(item.id).startsWith("custom-free-"));
 
   let legacyFreeItemId = config.freeItemId != null ? String(config.freeItemId) : "";
   let legacyFreeItemLabel = config.freeItemLabel != null ? String(config.freeItemLabel) : "";
@@ -594,23 +583,19 @@ const sanitizeConfig = (config = {}) => {
     return Number.isFinite(num) ? num : item.id;
   });
 
-  if (selection.buy.mode === "custom") {
-    if (selection.buy.allowAny) {
-      targetItemIds = [CUSTOM_ANY_TOKEN];
-    } else if (selection.buy.items.length > 0) {
-      targetItemIds = selection.buy.items.map((value) => {
-        const num = Number(value);
-        return Number.isFinite(num) ? num : String(value);
-      });
-    }
-  }
+  targetItemIds = targetItemIds.filter((id) => !(typeof id === "string" && id.startsWith("custom-target-")));
 
-  const hasWildcardTargets = targetItemIds.some((id) => typeof id === "string" && (id.startsWith("custom-target-") || id === CUSTOM_ANY_TOKEN));
+  const hasWildcardTargets = targetItemIds.some((id) => typeof id === "string" && id === CUSTOM_ANY_TOKEN);
+
+  const aggregatedTargetQuantity = normalizedTargetItems.reduce((sum, item) => {
+    const qtyNum = Number(item.quantity);
+    return Number.isFinite(qtyNum) && qtyNum > 0 ? sum + qtyNum : sum;
+  }, 0);
 
   const summaryText = buildSelectionSummary({
     ...config,
     selection,
-    buyQuantity: config.buyQuantity,
+    buyQuantity: aggregatedTargetQuantity > 0 ? String(aggregatedTargetQuantity) : config.buyQuantity,
     freeQuantity: config.freeQuantity
   });
 
@@ -619,7 +604,7 @@ const sanitizeConfig = (config = {}) => {
     minTotal: config.minTotal != null ? String(config.minTotal) : "",
     percent: config.percent != null ? String(config.percent) : "",
     amount: config.amount != null ? String(config.amount) : "",
-    buyQuantity: config.buyQuantity != null ? String(config.buyQuantity) : "",
+    buyQuantity: aggregatedTargetQuantity > 0 ? String(aggregatedTargetQuantity) : (config.buyQuantity != null ? String(config.buyQuantity) : ""),
     freeQuantity: config.freeQuantity != null ? String(config.freeQuantity) : "1",
     freeItemId: legacyFreeItemId,
     freeItemLabel: legacyFreeItemLabel,
@@ -759,6 +744,14 @@ const buildConditionsAndRewards = (offer) => {
       const freeQty = Number(cfg.freeQuantity || 0);
 
       const isCustomSelection = selection.buy.mode === 'custom' || selection.free.mode === 'custom' || selection.free.allowAny || selection.buy.allowAny;
+      if (isCustomSelection) {
+        selection.buy.mode = "fixed";
+        selection.buy.allowAny = false;
+        selection.buy.items = [];
+        selection.free.mode = "fixed";
+        selection.free.allowAny = false;
+        selection.free.items = [];
+      }
       if (isCustomSelection && freeQty > 0) {
         const reward = {
           type: "custom_free_selection",
@@ -1069,14 +1062,28 @@ const VendorOffers = ({ token }) => {
           normalizedItems.push({
             id,
             label: item?.label != null ? String(item.label) : '',
-            section: item?.section != null ? String(item.section) : ''
+            section: item?.section != null ? String(item.section) : '',
+            quantity: item?.quantity != null && item.quantity !== '' ? String(item.quantity) : (config.buyQuantity && config.buyQuantity !== '' ? String(config.buyQuantity) : '')
           });
         });
         config.targetItems = normalizedItems;
-        config.targetItemIds = normalizedItems.map((entry) => {
+        const normalizedIds = [];
+        const idSet = new Set();
+        normalizedItems.forEach((entry) => {
           const num = Number(entry.id);
-          return Number.isFinite(num) ? num : entry.id;
+          const resolved = Number.isFinite(num) ? num : entry.id;
+          if (idSet.has(resolved)) return;
+          idSet.add(resolved);
+          normalizedIds.push(resolved);
         });
+        config.targetItemIds = normalizedIds;
+        const aggregatedQty = normalizedItems.reduce((sum, entry) => {
+          const qtyNum = Number(entry.quantity);
+          return Number.isFinite(qtyNum) && qtyNum > 0 ? sum + qtyNum : sum;
+        }, 0);
+        if (aggregatedQty > 0) {
+          config.buyQuantity = String(aggregatedQty);
+        }
       } else if (field === 'freeItems') {
         config.freeItems = Array.isArray(value) ? value.map((item) => ({
           id: String(item?.id ?? item?.value ?? ''),

@@ -23,7 +23,7 @@ const VendorCombos = ({ token }) => {
   const [combos, setCombos] = useState([]);
   const [loading, setLoading] = useState(false);
   const [menu, setMenu] = useState([]);
-  const [idNameMap, setIdNameMap] = useState(new Map());
+  const [itemLookup, setItemLookup] = useState(() => new Map());
   const shopItems = useMemo(() => {
     const shop = (menu || []).find(s => String(s.shopId) === String(vendorShopId));
     return shop && Array.isArray(shop.items) ? shop.items : [];
@@ -41,15 +41,17 @@ const VendorCombos = ({ token }) => {
   useEffect(() => { load(); }, [vendorShopId, vendorFoodCourt]);
 
   useEffect(() => {
-    // Build id->name map for current shop
+    // Build item lookup for current shop
     fetchMenu(vendorFoodCourt).then((m) => {
       setMenu(m || []);
       const shop = (m || []).find(s => String(s.shopId) === String(vendorShopId));
       const map = new Map();
       if (shop && Array.isArray(shop.items)) {
-        for (const it of shop.items) map.set(Number(it.id), it.name);
+        for (const it of shop.items) {
+          map.set(Number(it.id), it);
+        }
       }
-      setIdNameMap(map);
+      setItemLookup(map);
     }).catch(()=>{});
   }, [vendorShopId, vendorFoodCourt]);
 
@@ -122,7 +124,7 @@ const VendorCombos = ({ token }) => {
           overridePrice: (x.overridePrice == null || x.overridePrice === "") ? null : Number(x.overridePrice)
         }))
       }));
-      const res = await updateCombos(payload, token);
+      const res = await updateCombos(payload, token, vendorFoodCourt);
       if (res && res.status === "success") {
         toast.success("Combos saved");
         await load();
@@ -186,41 +188,67 @@ const VendorCombos = ({ token }) => {
 
           <div style={{ marginTop: 10 }}>
             <div style={{ fontWeight: 600, marginBottom: 6 }}>Components</div>
-            {(c.components || []).map((comp, cidx) => (
-              <div key={cidx} style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr 1fr 1fr auto', gap: 8, marginBottom: 8 }}>
-                <div style={{ position: 'relative' }}>
+            {(c.components || []).map((comp, cidx) => {
+              const selectedItem = itemLookup.get(Number(comp.itemId));
+              const selectedName = selectedItem?.name || '';
+              const rawPrice = selectedItem?.price ?? selectedItem?.finalPrice ?? selectedItem?.basePrice ?? null;
+              const numericPrice = rawPrice != null ? Number(rawPrice) : null;
+              const priceDisplay = numericPrice != null && Number.isFinite(numericPrice) ? `₹${numericPrice.toFixed(2)}` : '';
+
+              return (
+                <div key={cidx} style={{ display: 'grid', gridTemplateColumns: '1.6fr 0.5fr 0.8fr 1fr auto', gap: 8, marginBottom: 8, alignItems: 'center' }}>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      list={`combo-item-list-${idx}-${cidx}`}
+                      placeholder="Search or enter item name"
+                      value={selectedName}
+                      onChange={(e) => {
+                        // find item by name (first exact, then startsWith, then includes)
+                        const q = e.target.value.trim().toLowerCase();
+                        if (!q) { updateComponent(idx,cidx,'itemId', 0); return; }
+                        const exact = shopItems.find(it => String(it.name).toLowerCase() === q);
+                        const starts = exact || shopItems.find(it => String(it.name).toLowerCase().startsWith(q));
+                        const any = starts || shopItems.find(it => String(it.name).toLowerCase().includes(q));
+                        if (any) updateComponent(idx,cidx,'itemId', Number(any.id) || 0);
+                      }}
+                    />
+                    <datalist id={`combo-item-list-${idx}-${cidx}`}>
+                      {shopItems.map(it => (
+                        <option key={it.id} value={it.name}>{it.id}</option>
+                      ))}
+                    </datalist>
+                    <div style={{ fontSize: 11, color: '#666', marginTop: 4 }}>
+                      ID: {comp.itemId || '—'}
+                    </div>
+                  </div>
                   <input
-                    list={`combo-item-list-${idx}-${cidx}`}
-                    placeholder="Search or enter item name"
-                    value={idNameMap.get(Number(comp.itemId)) || ''}
-                    onChange={(e) => {
-                      // find item by name (first exact, then startsWith, then includes)
-                      const q = e.target.value.trim().toLowerCase();
-                      if (!q) { updateComponent(idx,cidx,'itemId', 0); return; }
-                      const exact = shopItems.find(it => String(it.name).toLowerCase() === q);
-                      const starts = exact || shopItems.find(it => String(it.name).toLowerCase().startsWith(q));
-                      const any = starts || shopItems.find(it => String(it.name).toLowerCase().includes(q));
-                      if (any) updateComponent(idx,cidx,'itemId', Number(any.id) || 0);
-                    }}
+                    type="number"
+                    placeholder="Qty"
+                    value={comp.quantity || 1}
+                    onChange={(e)=>updateComponent(idx,cidx,'quantity', Number(e.target.value)||1)}
                   />
-                  <datalist id={`combo-item-list-${idx}-${cidx}`}>
-                    {shopItems.map(it => (
-                      <option key={it.id} value={it.name}>{it.id}</option>
-                    ))}
-                  </datalist>
-                  <div style={{ fontSize: 11, color: '#666', marginTop: 4 }}>
-                    ID: {comp.itemId || '—'}
+                  <div>
+                    <div style={{ fontSize: 12, color: '#666', marginBottom: 4 }}>Item Price</div>
+                    <input
+                      type="text"
+                      value={priceDisplay}
+                      readOnly
+                      placeholder="Select item"
+                      style={{ background: '#f4f6f7', border: '1px solid #dde2eb', padding: '6px 8px', color: '#2c3e50', fontWeight: 600 }}
+                    />
+                  </div>
+                  <input
+                    type="number"
+                    placeholder="Override Price (optional)"
+                    value={comp.overridePrice ?? ''}
+                    onChange={(e)=>updateComponent(idx,cidx,'overridePrice', e.target.value)}
+                  />
+                  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                    <button onClick={()=>removeComponent(idx,cidx)} style={{ background: '#e74c3c' }}>Remove</button>
                   </div>
                 </div>
-                <input type="number" placeholder="Qty" value={comp.quantity || 1} onChange={(e)=>updateComponent(idx,cidx,'quantity', Number(e.target.value)||1)} />
-                <input placeholder="Name (optional)" value={comp.name || ''} onChange={(e)=>updateComponent(idx,cidx,'name', e.target.value)} />
-                <input placeholder="Option (optional)" value={comp.option || ''} onChange={(e)=>updateComponent(idx,cidx,'option', e.target.value)} />
-                <div style={{ display: 'flex', gap: 6 }}>
-                  <input type="number" placeholder="Override Price (optional)" value={comp.overridePrice ?? ''} onChange={(e)=>updateComponent(idx,cidx,'overridePrice', e.target.value)} />
-                  <button onClick={()=>removeComponent(idx,cidx)} style={{ background: '#e74c3c' }}>Remove</button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
             <button onClick={()=>addComponent(idx)}>+ Add Component</button>
           </div>
         </div>

@@ -42,8 +42,8 @@
       {
         "type": "item_quantity",
         "itemIds": [
-          102,
-          104
+          104,
+          102
         ],
         "minQuantity": 3
       }
@@ -85,30 +85,32 @@
             "id": "105",
             "label": "Medu Vada",
             "price": "50",
-            "quantity": ""
+            "quantity": "1"
           },
           {
             "id": "104",
             "label": "Pongal",
             "price": "55",
-            "quantity": ""
+            "quantity": "1"
           }
         ],
         "targetItems": [
           {
-            "id": "102",
-            "label": "",
-            "section": ""
+            "id": "104",
+            "label": "Pongal",
+            "section": "Breakfast",
+            "quantity": "2"
           },
           {
-            "id": "104",
-            "label": "",
-            "section": ""
+            "id": "102",
+            "label": "Dosa",
+            "section": "Breakfast",
+            "quantity": "1"
           }
         ],
         "targetItemIds": [
-          102,
-          104
+          104,
+          102
         ],
         "targetMatchMode": "specific",
         "discountPercent": "",
@@ -127,11 +129,12 @@
             "allowAny": false,
             "priceCap": "",
             "items": [
-              "105"
+              "105",
+              "104"
             ]
           }
         },
-        "summaryText": "Customer buys 3 items from 2 selected items, gets 1 item of 1 selected item free. Paid items are charged on higher-priced selections, free items apply to the lowest-priced eligible items."
+        "summaryText": "Customer buys 3 items from 2 selected items, gets 1 item from 2 selected items free. Paid items are charged on higher-priced selections, free items apply to the lowest-priced eligible items."
       },
       "config": {
         "template": "item_buy_x_get_y",
@@ -148,30 +151,32 @@
             "id": "105",
             "label": "Medu Vada",
             "price": "50",
-            "quantity": ""
+            "quantity": "1"
           },
           {
             "id": "104",
             "label": "Pongal",
             "price": "55",
-            "quantity": ""
+            "quantity": "1"
           }
         ],
         "targetItems": [
           {
-            "id": "102",
-            "label": "",
-            "section": ""
+            "id": "104",
+            "label": "Pongal",
+            "section": "Breakfast",
+            "quantity": "2"
           },
           {
-            "id": "104",
-            "label": "",
-            "section": ""
+            "id": "102",
+            "label": "Dosa",
+            "section": "Breakfast",
+            "quantity": "1"
           }
         ],
         "targetItemIds": [
-          102,
-          104
+          104,
+          102
         ],
         "targetMatchMode": "specific",
         "discountPercent": "",
@@ -190,16 +195,17 @@
             "allowAny": false,
             "priceCap": "",
             "items": [
-              "105"
+              "105",
+              "104"
             ]
           }
         },
-        "summaryText": "Customer buys 3 items from 2 selected items, gets 1 item of 1 selected item free. Paid items are charged on higher-priced selections, free items apply to the lowest-priced eligible items."
+        "summaryText": "Customer buys 3 items from 2 selected items, gets 1 item from 2 selected items free. Paid items are charged on higher-priced selections, free items apply to the lowest-priced eligible items."
       },
-      "summaryText": "Customer buys 3 items from 2 selected items, gets 1 item of 1 selected item free. Paid items are charged on higher-priced selections, free items apply to the lowest-priced eligible items."
+      "summaryText": "Customer buys 3 items from 2 selected items, gets 1 item from 2 selected items free. Paid items are charged on higher-priced selections, free items apply to the lowest-priced eligible items."
     },
     "createdAt": "2025-11-05T16:55:14.759Z",
-    "updatedAt": "2025-11-07T07:23:00.422Z"
+    "updatedAt": "2025-11-07T08:11:49.310Z"
   },
   {
     "id": "diwali-sections-10",
@@ -308,6 +314,6 @@
       "summaryText": "Customer buys 0 items, gets 1 item (selected manually) free. Paid items are charged on higher-priced selections, free items apply to the lowest-priced eligible items."
     },
     "createdAt": "2025-11-01T11:34:56.581Z",
-    "updatedAt": "2025-11-07T07:23:00.422Z"
+    "updatedAt": "2025-11-07T08:11:49.311Z"
   }
 ]

@@ -443,13 +443,30 @@ const evaluateCondition = (condition, context, evaluationTimeHM, evaluationDate)
     case 'item_quantity': {
       const ids = Array.isArray(condition.itemIds) ? condition.itemIds : [];
       const hasWildcard = ids.some((id) => typeof id === 'string' && (id.startsWith('custom-target-') || id === CUSTOM_ANY_TOKEN));
-      if (!hasWildcard && ids.length === 0) return false;
+      const requirements = new Map();
+      if (Array.isArray(condition.targetRequirements)) {
+        condition.targetRequirements.forEach((entry) => {
+          if (!entry) return;
+          const key = entry.id != null ? entry.id : entry.itemId;
+          if (key == null) return;
+          const qty = Number(entry.quantity);
+          if (!Number.isFinite(qty) || qty <= 0) return;
+          requirements.set(String(key), qty);
+        });
+      }
+      if (!hasWildcard && ids.length === 0 && requirements.size === 0) return false;
+
       let subtotal = 0;
-      let quantity = 0;
+      let totalQuantity = 0;
+      const quantityByKey = new Map();
 
       if (hasWildcard) {
         subtotal = context.totalAmount;
-        quantity = context.totalQuantity;
+        totalQuantity = context.totalQuantity;
+        context.itemTotals.forEach((entry, key) => {
+          const qty = Number(entry?.quantity) || 0;
+          quantityByKey.set(String(key), qty);
+        });
       }
 
       for (const id of ids) {
@@ -457,15 +474,30 @@ const evaluateCondition = (condition, context, evaluationTimeHM, evaluationDate)
         const numericId = Number(id);
         if (!Number.isFinite(numericId)) continue;
         const entry = context.itemTotals.get(numericId);
-        if (entry) {
-          subtotal += entry.amount;
-          quantity += entry.quantity;
+        if (!entry) continue;
+        const amount = Number(entry.amount) || 0;
+        const qty = Number(entry.quantity) || 0;
+        if (!hasWildcard) {
+          subtotal += amount;
+          totalQuantity += qty;
+        }
+        const mapKey = String(numericId);
+        quantityByKey.set(mapKey, (quantityByKey.get(mapKey) || 0) + qty);
+      }
+
+      if (condition.minQuantity != null && totalQuantity < Number(condition.minQuantity)) return false;
+      if (condition.minSubtotal != null && subtotal < Number(condition.minSubtotal)) return false;
+
+      if (requirements.size > 0) {
+        for (const [key, requiredQty] of requirements.entries()) {
+          const numericKey = Number(key);
+          const mapKey = Number.isFinite(numericKey) ? String(numericKey) : String(key);
+          const actualQty = quantityByKey.get(mapKey) || 0;
+          if (actualQty < requiredQty) return false;
         }
       }
 
-      if (condition.minQuantity != null && quantity < Number(condition.minQuantity)) return false;
-      if (condition.minSubtotal != null && subtotal < Number(condition.minSubtotal)) return false;
-      return quantity > 0 || subtotal > 0;
+      return totalQuantity > 0 || subtotal > 0;
     }
     case 'combo_quantity': {
       const ids = Array.isArray(condition.comboIds) ? condition.comboIds : [];
