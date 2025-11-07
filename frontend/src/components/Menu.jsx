@@ -279,7 +279,21 @@ const Menu = ({
         if (ignore) return;
 
         setSectioned(sectionsData || null);
-        setOffers(Array.isArray(offersData) ? offersData : []);
+        const normalizedOffers = Array.isArray(offersData)
+          ? offersData.map((offer) => {
+              if (Array.isArray(offer?.sections) && offer.sections.length > 0) {
+                return offer;
+              }
+              const derivedSections = Array.isArray(offer?.applicableSections)
+                ? Array.from(new Set(offer.applicableSections.map((section) => String(section))))
+                : [];
+              if (derivedSections.length === 0) {
+                return offer;
+              }
+              return { ...offer, sections: derivedSections };
+            })
+          : [];
+        setOffers(normalizedOffers);
         setCombos(Array.isArray(combosData) ? combosData : []);
 
         const sections = Array.isArray(sectionsData?.sections) ? sectionsData.sections : [];

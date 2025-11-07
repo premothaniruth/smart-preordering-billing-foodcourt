@@ -585,7 +585,19 @@ const evaluateReward = ({ reward, context, offer, itemLookup, summary }) => {
         const defaultName = isCustom ? (matchedEntry?.label || reward.description || reward.itemName || rewardItemIdRaw || 'Custom Item') : `Item ${itemId}`;
         const name = baseName || defaultName;
         const section = lookup.section || matchedEntry?.section || null;
-        const price = reward.price != null ? Number(reward.price) : (matchedEntry?.price != null ? Number(matchedEntry.price) : 0);
+        const resolveNumber = (value) => {
+          const num = Number(value);
+          return Number.isFinite(num) ? num : null;
+        };
+        const resolvedPrice = (() => {
+          const direct = resolveNumber(reward.price);
+          if (direct != null) return direct;
+          const matched = resolveNumber(matchedEntry?.price);
+          if (matched != null) return matched;
+          const lookupPrice = resolveNumber(lookup.price);
+          if (lookupPrice != null) return lookupPrice;
+          return 0;
+        })();
         const findCondition = (type) => (offer.conditions || []).find((cond) => cond.type === type);
         const toNumber = (value) => {
           const num = Number(value);
@@ -667,10 +679,11 @@ const evaluateReward = ({ reward, context, offer, itemLookup, summary }) => {
 
         const multiplier = computeMultiplier();
         const totalQuantity = Math.max(1, multiplier) * quantity;
+        const discountAmount = Math.max(0, resolvedPrice) * totalQuantity;
         extraItems.push({
           id: itemId != null ? itemId : rewardItemIdRaw,
           name,
-          price,
+          price: resolvedPrice,
           quantity: totalQuantity,
           section,
           fromOfferId: offer.id,
@@ -681,10 +694,14 @@ const evaluateReward = ({ reward, context, offer, itemLookup, summary }) => {
           quantity: totalQuantity,
           baseQuantity: quantity,
           multiplier,
-          price,
+          price: resolvedPrice,
           name,
-          section
+          section,
+          discount: discountAmount
         };
+        if (discountAmount > 0) {
+          discount += discountAmount;
+        }
       }
       break;
     }

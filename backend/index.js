@@ -5244,7 +5244,9 @@ app.get('/offers/active', (req, res) => {
   try {
     const now = new Date();
     const shopId = req.query.shopId ? String(req.query.shopId) : null;
-    const offers = getOffers().filter(o => {
+    const requestedCourt = req.query.foodCourt ? String(req.query.foodCourt) : null;
+    const foodCourt = FOOD_COURTS.includes(requestedCourt) ? requestedCourt : getUserFoodCourt(req);
+    const offers = getOffers(foodCourt).filter(o => {
       if (shopId && String(o.shopId) !== shopId) return false;
       const start = o.start ? new Date(o.start) : null;
       const end = o.end ? new Date(o.end) : null;
