@@ -679,11 +679,14 @@ const evaluateReward = ({ reward, context, offer, itemLookup, summary }) => {
 
         const multiplier = computeMultiplier();
         const totalQuantity = Math.max(1, multiplier) * quantity;
-        const discountAmount = Math.max(0, resolvedPrice) * totalQuantity;
+        const waivedUnitPrice = Math.max(0, resolvedPrice);
+        const discountAmount = waivedUnitPrice * totalQuantity;
         extraItems.push({
           id: itemId != null ? itemId : rewardItemIdRaw,
           name,
-          price: resolvedPrice,
+          price: 0,
+          waivedUnitPrice,
+          waivedTotal: discountAmount,
           quantity: totalQuantity,
           section,
           fromOfferId: offer.id,
@@ -694,7 +697,8 @@ const evaluateReward = ({ reward, context, offer, itemLookup, summary }) => {
           quantity: totalQuantity,
           baseQuantity: quantity,
           multiplier,
-          price: resolvedPrice,
+          waivedUnitPrice,
+          waivedTotal: discountAmount,
           name,
           section,
           discount: discountAmount

@@ -169,3 +169,4 @@
 {"timestamp":"2025-11-07T05:12:46.938Z","actorType":"vendor","actorId":101,"shopId":5,"vendorId":101,"action":"vendor.login.success","metadata":{"username":"centralgrill","foodCourt":"fc-2"}}
 {"type":"points:order-processed","actor":{"type":"system","source":"order.create"},"employeeId":2,"orderId":58,"pointsEarned":0,"streakBonuses":1,"pointsConverted":0}
 {"timestamp":"2025-11-07T05:40:13.341Z","actorType":"vendor","actorId":101,"shopId":5,"vendorId":101,"action":"vendor.login.success","metadata":{"username":"centralgrill","foodCourt":"fc-2"}}
+{"type":"points:order-processed","actor":{"type":"system","source":"order.create"},"employeeId":2,"orderId":59,"pointsEarned":4,"streakBonuses":0,"pointsConverted":0}

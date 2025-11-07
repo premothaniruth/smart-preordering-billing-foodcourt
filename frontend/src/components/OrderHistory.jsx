@@ -8,6 +8,7 @@ import { submitRating } from "../api";
  * Shows delivery time and an early-delivery encouragement note.
  * @param {{
  *  orders: any[],
+ *  foodCourt?: string,
  *  onReorder: (order:any)=>void,
  *  onBack: ()=>void,
  *  onClearHistory: ()=>void,
@@ -16,14 +17,14 @@ import { submitRating } from "../api";
  *  evaluateCancellation?: (order:any)=>{allowed:boolean,reason?:string,summary?:string,refundNote?:string,buttonLabel?:string}
  * }} props
  */
-
-const OrderHistory = ({ orders, onReorder, onBack, onClearHistory, onReportIssue, onCancel, evaluateCancellation }) => {
+const OrderHistory = ({ orders, foodCourt, onReorder, onBack, onClearHistory, onReportIssue, onCancel, evaluateCancellation }) => {
   const byCreatedDesc = (a, b) => new Date(b.createdAt) - new Date(a.createdAt);
   const readyOrders = useMemo(() => orders.filter(o => o.status === 'ready').sort(byCreatedDesc), [orders]);
   const completedOrders = useMemo(() => orders.filter(o => o.status === 'completed').sort(byCreatedDesc), [orders]);
   const recentOrders = useMemo(() => orders.filter(o => o.status !== 'ready' && o.status !== 'completed').sort(byCreatedDesc), [orders]);
   const [ratingState, setRatingState] = useState({});
   const [showOlderCompleted, setShowOlderCompleted] = useState(false);
+  const recentOrdersHeading = foodCourt ? `Recent Orders in ${String(foodCourt).toUpperCase()}` : 'Recent Orders';
 
   return (
     <div>
@@ -60,7 +61,7 @@ const OrderHistory = ({ orders, onReorder, onBack, onClearHistory, onReportIssue
 
       {recentOrders.length > 0 && (
         <>
-          <h3 style={{ marginTop: 20 }}>Recent Orders</h3>
+          <h3 style={{ marginTop: 20 }}>{recentOrdersHeading}</h3>
           <div style={{ display: "grid", gap: 20 }}>
             {recentOrders.map((order) => (
               <div key={order.id} className="card">

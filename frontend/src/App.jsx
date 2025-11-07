@@ -77,6 +77,7 @@ const playSound = (src) => {
 function App() {
   const [menu, setMenu] = useState([]);
   const [cart, setCart] = useState([]);
+  const [cartFoodCourt, setCartFoodCourt] = useState(null);
   const [scheduledTime, setScheduledTime] = useState("");
   const [selectedShop, setSelectedShop] = useState(1);
   const [cartShopMismatch, setCartShopMismatch] = useState(false);
@@ -314,6 +315,12 @@ function App() {
     } catch {}
     loadMenu();
   }, [foodCourt, loadMenu]);
+
+  useEffect(() => {
+    if (cart.length === 0) {
+      setCartFoodCourt(null);
+    }
+  }, [cart.length]);
 
   useEffect(() => {
     readyNotifiedRef.current.clear();
@@ -760,6 +767,10 @@ function App() {
 
   const ensureSameShop = (incomingShopId) => {
     if (cart.length === 0) return true;
+    if (cartFoodCourt && cartFoodCourt !== foodCourt) {
+      toast.warn(`Cart has items from ${cartFoodCourt.toUpperCase()}. Clear your cart before adding items from ${foodCourt.toUpperCase()}.`);
+      return false;
+    }
     const existingShopId = currentCartShop;
     if (existingShopId == null || incomingShopId == null) return true;
     const same = String(existingShopId) === String(incomingShopId);
@@ -768,6 +779,22 @@ function App() {
     }
     return same;
   };
+
+  const handleFoodCourtChange = useCallback((nextCourt) => {
+    if (!nextCourt) return;
+    if (nextCourt === foodCourt) {
+      setFoodCourt(nextCourt);
+      return;
+    }
+    const lockedCourt = cartFoodCourt || (cart.length > 0 ? foodCourt : null);
+    if (cart.length > 0 && lockedCourt && lockedCourt !== nextCourt) {
+      const currentLabel = lockedCourt.toUpperCase();
+      const targetLabel = nextCourt.toUpperCase();
+      toast.warn(`Cart has items from ${currentLabel}. Clear it to explore ${targetLabel}.`);
+      return;
+    }
+    setFoodCourt(nextCourt);
+  }, [cart.length, cartFoodCourt, foodCourt, setFoodCourt]);
 
   const addToCart = (item, shopId, selectedOption = null, customization = {}) => {
     if (!ensureSameShop(shopId)) return;
@@ -789,10 +816,16 @@ function App() {
       if (idx >= 0) {
         const newCart = [...prev];
         newCart[idx] = { ...newCart[idx], quantity: newCart[idx].quantity + 1 };
+        if (prev.length === 0 && newCart.length > 0) {
+          setCartFoodCourt(foodCourt);
+        }
         return newCart;
-      } else {
-        return [...prev, { item: cartItem, shopId, quantity: 1 }];
       }
+      const nextCart = [...prev, { item: cartItem, shopId, quantity: 1 }];
+      if (prev.length === 0) {
+        setCartFoodCourt(foodCourt);
+      }
+      return nextCart;
     });
   };
 
@@ -831,10 +864,17 @@ function App() {
       if (idx >= 0) {
         const next = [...prev];
         next[idx] = { ...next[idx], quantity: next[idx].quantity + 1 };
+        if (prev.length === 0 && next.length > 0) {
+          setCartFoodCourt(foodCourt);
+        }
         return next;
       }
       const cartItem = { ...item, selectedOption: null, customization: {}, finalPrice: item.price, prepTime: item.prepTime || 5 };
-      return [...prev, { item: cartItem, shopId, quantity: 1 }];
+      const nextCart = [...prev, { item: cartItem, shopId, quantity: 1 }];
+      if (prev.length === 0) {
+        setCartFoodCourt(foodCourt);
+      }
+      return nextCart;
     });
   };
 
@@ -862,10 +902,17 @@ function App() {
       if (idx >= 0) {
         const next = [...prev];
         next[idx] = { ...next[idx], quantity: next[idx].quantity + 1 };
+        if (prev.length === 0 && next.length > 0) {
+          setCartFoodCourt(foodCourt);
+        }
         return next;
       }
       const cartItem = { ...item, selectedOption: option, customization: {}, finalPrice: item.price + (option?.priceModifier || 0), prepTime: item.prepTime || 5 };
-      return [...prev, { item: cartItem, shopId, quantity: 1 }];
+      const nextCart = [...prev, { item: cartItem, shopId, quantity: 1 }];
+      if (prev.length === 0) {
+        setCartFoodCourt(foodCourt);
+      }
+      return nextCart;
     });
   };
 
@@ -948,6 +995,7 @@ function App() {
       }
 
       setCart([]);
+      setCartFoodCourt(null);
       setScheduledTime("");
       setOrderSummary(response.orderSummary);
       setCheckoutDraft(null);
@@ -1478,7 +1526,8 @@ function App() {
                               activeSection={activeMenuSection}
                               onActiveSectionChange={setActiveMenuSection}
                               foodCourt={foodCourt}
-                              onFoodCourtChange={setFoodCourt}
+                              onFoodCourtChange={handleFoodCourtChange}
+                              cartFoodCourt={cartFoodCourt}
                             />
                             {/* Inline feedback form for employees */}
                             <div className="card" style={{ marginTop: 20 }}>
@@ -1584,6 +1633,7 @@ function App() {
                   {view === "orders" && (
                     <OrderHistory
                       orders={userOrders}
+                      foodCourt={foodCourt}
                       onReorder={handleReorder}
                       onBack={() => setView("user")}
                       onClearHistory={handleClearHistory}

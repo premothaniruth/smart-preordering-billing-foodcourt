@@ -379,7 +379,7 @@
               "isVeg": true,
               "image": "/images/rajma-chawal.jpg",
               "prepTime": 16,
-              "inventory": 100,
+              "inventory": 98,
               "section": "Lunch",
               "options": [],
               "hasOptions": [],
@@ -569,7 +569,7 @@
               "isVeg": true,
               "image": "/images/veg-biryani.jpg",
               "prepTime": 18,
-              "inventory": 100,
+              "inventory": 96,
               "hasOptions": [
                 {
                   "name": "Classic",

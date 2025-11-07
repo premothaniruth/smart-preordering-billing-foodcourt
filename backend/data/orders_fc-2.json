@@ -3294,5 +3294,154 @@
       "provider": "razorpay-open",
       "reference": "PG-1762493106294"
     }
+  },
+  {
+    "id": 59,
+    "items": [
+      {
+        "id": 38,
+        "name": "Veg Biryani",
+        "price": 120,
+        "quantity": 4,
+        "option": "Classic",
+        "prepTime": 18
+      },
+      {
+        "id": 25,
+        "name": "Rajma Chawal",
+        "price": 95,
+        "quantity": 2,
+        "option": null,
+        "prepTime": 16
+      },
+      {
+        "id": 25,
+        "name": "Rajma Chawal",
+        "price": 95,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 16,
+        "offerSource": 1762489856964,
+        "isOfferFreebie": true
+      }
+    ],
+    "shopId": 5,
+    "user": "+919952081560",
+    "scheduledTime": null,
+    "status": "pending",
+    "createdAt": "2025-11-07T06:35:17.343Z",
+    "billingId": "00006",
+    "estimatedReadyTime": "2025-11-07T07:11:17.343Z",
+    "prepTime": 36,
+    "baseEstimatedReadyTime": "2025-11-07T07:11:17.343Z",
+    "basePrepTime": 36,
+    "rating": null,
+    "feedback": null,
+    "totalAmount": 575,
+    "subtotalBeforeDiscount": 670,
+    "discountTotal": 95,
+    "offerSummary": {
+      "subtotalBeforeDiscount": 670,
+      "discountTotal": 95,
+      "totalPayable": 575,
+      "appliedOffers": [
+        {
+          "id": 1762489856964,
+          "title": "Buy 2 Get 1 free",
+          "description": "",
+          "bannerText": "Buy 2 veg biriyani and get 1 Rajma chawal free",
+          "rewards": [
+            {
+              "type": "free_item",
+              "details": {
+                "itemId": 25,
+                "quantity": 1,
+                "baseQuantity": 1,
+                "multiplier": 1,
+                "price": 95,
+                "name": "Rajma Chawal",
+                "section": "Lunch",
+                "discount": 95
+              },
+              "description": "Rajma Chawal"
+            }
+          ],
+          "discountAmount": 95,
+          "metadata": {
+            "id": 1762489856964,
+            "shopId": 5,
+            "title": "Buy 2 Get 1 free",
+            "bannerText": "Buy 2 veg biriyani and get 1 Rajma chawal free",
+            "description": "",
+            "active": true,
+            "stackable": false,
+            "priority": 0,
+            "maxDiscountAmount": null,
+            "discountPercent": 5,
+            "discountAmount": null,
+            "applicableSections": [
+              "Lunch"
+            ],
+            "applicableComboIds": [],
+            "start": null,
+            "end": null,
+            "timeStart": null,
+            "timeEnd": null,
+            "daysOfWeek": null,
+            "schedule": null,
+            "conditions": [
+              {
+                "type": "item_quantity",
+                "itemIds": [
+                  38
+                ],
+                "minQuantity": 2
+              }
+            ],
+            "rewards": [
+              {
+                "type": "free_item",
+                "itemId": 25,
+                "quantity": 1,
+                "price": 95,
+                "description": "Rajma Chawal"
+              }
+            ],
+            "metadata": null,
+            "createdAt": "2025-11-07T04:30:58.822Z",
+            "updatedAt": "2025-11-07T05:24:25.151Z"
+          },
+          "extraItems": [
+            {
+              "id": 25,
+              "name": "Rajma Chawal",
+              "price": 95,
+              "quantity": 1,
+              "section": "Lunch",
+              "fromOfferId": 1762489856964,
+              "fromOfferTitle": "Buy 2 Get 1 free"
+            }
+          ]
+        }
+      ],
+      "extraItems": [
+        {
+          "id": 25,
+          "name": "Rajma Chawal",
+          "price": 95,
+          "quantity": 1,
+          "section": "Lunch",
+          "fromOfferId": 1762489856964,
+          "fromOfferTitle": "Buy 2 Get 1 free"
+        }
+      ]
+    },
+    "notes": null,
+    "payment": {
+      "method": "gateway",
+      "amount": 575,
+      "provider": "razorpay-open",
+      "reference": "PG-1762497317343"
+    }
   }
 ]
