@@ -3504,6 +3504,18 @@ const saveOffers = (offers, foodCourt = FC_DEFAULT) => writeJsonTo(resolveCourtF
 
 const normalizeOfferInputForStorage = (offer, vendorShopId) => {
   const safeId = offer?.id || `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  const cloneObject = (value) => {
+    if (!value || typeof value !== "object") return null;
+    try {
+      return JSON.parse(JSON.stringify(value));
+    } catch {
+      return { ...value };
+    }
+  };
+  const configSnapshot = cloneObject(offer?.config);
+  const existingMetadata = cloneObject(offer?.metadata) || {};
+  const template = offer?.template || configSnapshot?.template || existingMetadata?.template || null;
+
   const base = {
     id: safeId,
     shopId: Number(vendorShopId),
@@ -3534,10 +3546,25 @@ const normalizeOfferInputForStorage = (offer, vendorShopId) => {
       : null,
     conditions: Array.isArray(offer?.conditions) ? offer.conditions : [],
     rewards: Array.isArray(offer?.rewards) ? offer.rewards : [],
-    metadata: offer?.metadata && typeof offer.metadata === "object" ? offer.metadata : null,
+    metadata: null,
     createdAt: offer?.createdAt || new Date().toISOString(),
     updatedAt: new Date().toISOString()
   };
+
+  const metadata = {
+    ...existingMetadata,
+    template: existingMetadata?.template || template,
+    applicableComboIds: base.applicableComboIds,
+    applicableSections: base.applicableSections,
+  };
+  if (configSnapshot) {
+    metadata.configSnapshot = configSnapshot;
+    metadata.config = configSnapshot;
+    if (typeof configSnapshot.summaryText === "string") {
+      metadata.summaryText = configSnapshot.summaryText;
+    }
+  }
+  base.metadata = Object.keys(metadata).length > 0 ? metadata : null;
 
   return base;
 };
