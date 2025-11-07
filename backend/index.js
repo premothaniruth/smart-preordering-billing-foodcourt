@@ -391,7 +391,15 @@ app.delete("/admin/vendor/:id", authenticateAdmin, (req, res) => {
 app.get("/admin/vendor-archives", authenticateAdmin, (req, res) => {
   try {
     const now = Date.now();
-    const archives = listVendorArchives().filter((entry) => new Date(entry.expiresAt).getTime() > now);
+    const foodCourt = getAdminFoodCourt(req);
+    const archives = listVendorArchives()
+      .filter((entry) => new Date(entry.expiresAt).getTime() > now)
+      .filter((entry) => {
+        if (!entry || !entry.foodCourt) {
+          return foodCourt === FC_DEFAULT;
+        }
+        return entry.foodCourt === foodCourt;
+      });
     res.json({ status: "ok", archives });
   } catch (error) {
     console.error("Error listing vendor archives", error);

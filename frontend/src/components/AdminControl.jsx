@@ -23,13 +23,19 @@ const initialCreateState = {
   password: ""
 };
 
+const FOOD_COURT_OPTIONS = [
+  { value: 'fc-1', label: 'Food Court 1' },
+  { value: 'fc-2', label: 'Food Court 2' },
+];
+
 function AdminControl({
   adminSession = null,
   onAdminLogin,
   onAdminLogout = () => {},
   onCreateVendor,
   onUpdateVendor,
-  vendors = []
+  vendors = [],
+  onRequestRefresh,
 }) {
   const [loginForm, setLoginForm] = useState({ username: "", password: "" });
   const [createForm, setCreateForm] = useState(initialCreateState);
@@ -50,17 +56,31 @@ function AdminControl({
   const [archivedLoading, setArchivedLoading] = useState(false);
   const [archivedError, setArchivedError] = useState(null);
   const [activePanel, setActivePanel] = useState("bulk");
+  const [selectedFoodCourt, setSelectedFoodCourt] = useState(() => {
+    try {
+      return localStorage.getItem('adminSelectedFoodCourt') || 'fc-1';
+    } catch {
+      return 'fc-1';
+    }
+  });
 
   const sortedVendors = useMemo(() => {
-    return [...vendors].sort((a, b) => a.shopName.localeCompare(b.shopName));
-  }, [vendors]);
+    const source = vendorDirectory.length ? vendorDirectory : vendors;
+    return [...source].sort((a, b) => a.shopName.localeCompare(b.shopName));
+  }, [vendorDirectory, vendors]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('adminSelectedFoodCourt', selectedFoodCourt);
+    } catch {}
+  }, [selectedFoodCourt]);
 
   const handleDeleteVendor = async (vendorId) => {
     if (!adminSession || !vendorId) return;
     const confirmDelete = window.confirm("Are you sure you want to remove this vendor? This will delete associated shop data.");
     if (!confirmDelete) return;
     try {
-      const res = await deleteAdminVendor(adminSession, vendorId);
+      const res = await deleteAdminVendor(adminSession, vendorId, selectedFoodCourt);
       if (res?.status === "success") {
         toast.success("Vendor removed");
         if (String(selectedVendorId) === String(vendorId)) {
@@ -81,7 +101,7 @@ function AdminControl({
   const handleRestoreVendor = async (archiveId) => {
     if (!adminSession || !archiveId) return;
     try {
-      const res = await restoreArchivedVendor(adminSession, archiveId);
+      const res = await restoreArchivedVendor(adminSession, archiveId, selectedFoodCourt);
       if (res?.status === "success") {
         toast.success("Vendor restored successfully");
         await Promise.all([refreshVendorDirectory(), loadArchivedVendors()]);
@@ -101,7 +121,7 @@ function AdminControl({
       setBulkLoading(true);
       setBulkError(null);
       const requestParams = status === "all" || !status ? {} : { status };
-      const res = await fetchAdminBulkOrders(session, requestParams);
+      const res = await fetchAdminBulkOrders(session, requestParams, selectedFoodCourt);
       if (res?.status === "ok" && Array.isArray(res.orders)) {
         setBulkOrders(res.orders);
         if (res.orders.length > 0 && !res.orders.find((order) => Number(order.id) === Number(selectedBulkId))) {
@@ -128,7 +148,7 @@ function AdminControl({
       setSelectedBulkId(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [adminSession, bulkStatus]);
+  }, [adminSession, bulkStatus, selectedFoodCourt]);
 
   const refreshVendorDirectory = useCallback(async () => {
     if (!adminSession) {
@@ -139,7 +159,7 @@ function AdminControl({
     try {
       setVendorDirectoryLoading(true);
       setVendorDirectoryError(null);
-      const res = await fetchAdminVendors(adminSession);
+      const res = await fetchAdminVendors(adminSession, selectedFoodCourt);
       if (res?.status === "ok" && Array.isArray(res.vendors)) {
         setVendorDirectory(res.vendors);
       } else {
@@ -164,7 +184,7 @@ function AdminControl({
     try {
       setArchivedLoading(true);
       setArchivedError(null);
-      const res = await fetchArchivedVendors(adminSession);
+      const res = await fetchArchivedVendors(adminSession, selectedFoodCourt);
       if (res?.status === "ok" && Array.isArray(res.archives)) {
         setArchivedVendors(res.archives);
       } else {
@@ -198,7 +218,7 @@ function AdminControl({
       try {
         setVendorDirectoryLoading(true);
         setVendorDirectoryError(null);
-        const res = await fetchAdminVendors(adminSession);
+        const res = await fetchAdminVendors(adminSession, selectedFoodCourt);
         if (cancelled) return;
         if (res?.status === "ok" && Array.isArray(res.vendors)) {
           setVendorDirectory(res.vendors);
@@ -224,7 +244,7 @@ function AdminControl({
     return () => {
       cancelled = true;
     };
-  }, [adminSession, refreshVendorDirectory, loadArchivedVendors]);
+  }, [adminSession, selectedFoodCourt, refreshVendorDirectory, loadArchivedVendors]);
 
   const handleLoginSubmit = (e) => {
     e.preventDefault();
@@ -258,6 +278,7 @@ function AdminControl({
       username,
       password,
       email: email || undefined,
+      foodCourt: selectedFoodCourt,
     });
     setCreateForm(initialCreateState);
   };
@@ -274,14 +295,15 @@ function AdminControl({
     const payload = {};
     if (username) payload.username = username;
     if (password) payload.password = password;
-    onUpdateVendor(selectedVendorId, payload);
+    onUpdateVendor(selectedVendorId, { ...payload, foodCourt: selectedFoodCourt });
     setUpdateForm({ username: "", password: "" });
     setSelectedVendorId("");
   };
 
   const handleVendorSelection = (vendorId) => {
     setSelectedVendorId(vendorId);
-    const vendor = vendors.find((v) => String(v.id) === String(vendorId));
+    const source = vendorDirectory.length ? vendorDirectory : vendors;
+    const vendor = source.find((v) => String(v.vendorId ?? v.id) === String(vendorId));
     if (vendor) {
       setUpdateForm({
         username: vendor.username || "",
@@ -296,10 +318,9 @@ function AdminControl({
     if (!selectedBulkId) return;
     try {
       setBulkLoading(true);
-      const res = await submitAdminBulkDecision(adminSession, selectedBulkId, { action, comment: decisionComment });
+      const res = await submitAdminBulkDecision(adminSession, selectedBulkId, { action, comment: decisionComment }, selectedFoodCourt);
       if (res?.status === "ok") {
-        toast.success(`Order #${selectedBulkId} ${action.replace(/_/g, " ")}.
-`);
+        toast.success(`Order #${selectedBulkId} ${action.replace(/_/g, " ")}.\n`);
         setDecisionComment("");
         await loadBulkOrders(adminSession, bulkStatus);
       } else {
@@ -317,7 +338,7 @@ function AdminControl({
     try {
       setBulkLoading(true);
       const payload = sendVendorShopId ? { vendorShopId: sendVendorShopId } : {};
-      const res = await sendBulkOrderToVendor(adminSession, selectedBulkId, payload);
+      const res = await sendBulkOrderToVendor(adminSession, selectedBulkId, payload, selectedFoodCourt);
       if (res?.status === "ok") {
         toast.success(`Sent order #${selectedBulkId} to vendor`);
         setSendVendorShopId("");
@@ -855,6 +876,12 @@ function AdminControl({
         <div className="card">
           <div className="card-header">Create New Vendor</div>
           <form className="card-body" onSubmit={handleCreateSubmit}>
+            <div className="form-group">
+              <label>Active Food Court</label>
+              <div style={{ fontSize: 13, color: "#34495e" }}>
+                {FOOD_COURT_OPTIONS.find((option) => option.value === selectedFoodCourt)?.label || selectedFoodCourt}
+              </div>
+            </div>
             <div className="form-group">
               <label>Shop Name</label>
               <input

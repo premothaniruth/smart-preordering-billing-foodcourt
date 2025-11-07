@@ -36,6 +36,14 @@ const ADMIN_CREDENTIALS = {
 };
 const ADMIN_VENDORS_STORAGE_KEY = "adminManagedVendors";
 
+const getAdminSelectedFoodCourt = () => {
+  try {
+    return localStorage.getItem("adminSelectedFoodCourt") || "fc-1";
+  } catch {
+    return "fc-1";
+  }
+};
+
 const playSound = (src) => {
   if (!src) return;
   try {
@@ -236,7 +244,8 @@ function App() {
     let cancelled = false;
     const hydrateVendors = async () => {
       try {
-        const res = await fetchAdminVendors(storedSession);
+        const targetCourt = getAdminSelectedFoodCourt();
+        const res = await fetchAdminVendors(storedSession, targetCourt);
         if (!cancelled && res?.status === "ok" && Array.isArray(res.vendors)) {
           setAdminManagedVendors(res.vendors);
         }
@@ -469,7 +478,8 @@ function App() {
   const refreshAdminManagedVendors = useCallback(async () => {
     if (!adminSession) return;
     try {
-      const res = await fetchAdminVendors(adminSession);
+      const targetCourt = getAdminSelectedFoodCourt();
+      const res = await fetchAdminVendors(adminSession, targetCourt);
       if (res?.status === "ok" && Array.isArray(res.vendors)) {
         setAdminManagedVendors(res.vendors);
       }
@@ -1174,7 +1184,8 @@ function App() {
     const session = { username: trimmedUser, password: trimmedPass };
     setAdminSession(session);
     try {
-      const res = await fetchAdminVendors(session);
+      const targetCourt = getAdminSelectedFoodCourt();
+      const res = await fetchAdminVendors(session, targetCourt);
       if (res?.status === "ok" && Array.isArray(res.vendors)) {
         setAdminManagedVendors(res.vendors);
       } else {
@@ -1204,10 +1215,16 @@ function App() {
       return;
     }
     try {
-      const res = await createVendor(payload, adminSession);
+      const targetCourt = payload?.foodCourt || getAdminSelectedFoodCourt();
+      const res = await createVendor(payload, adminSession, targetCourt);
       if (res?.status === "success") {
         const vendor = res.vendor || {};
-        setAdminManagedVendors((prev) => [...prev, vendor]);
+        setAdminManagedVendors((prev) => {
+          if (targetCourt !== getAdminSelectedFoodCourt()) {
+            return prev;
+          }
+          return [...prev, vendor];
+        });
         toast.success(`Vendor ${vendor.shopName || payload.shopName} created successfully.`);
       } else {
         toast.error(res?.message || "Failed to create vendor");
@@ -1225,16 +1242,19 @@ function App() {
       return;
     }
     try {
-      const res = await updateVendor(vendorId, payload, adminSession);
+      const targetCourt = payload?.foodCourt || getAdminSelectedFoodCourt();
+      const res = await updateVendor(vendorId, payload, adminSession, targetCourt);
       if (res?.status === "success") {
-        setAdminManagedVendors((prev) => prev.map((vendor) => {
-          if (String(vendor.vendorId ?? vendor.id) !== String(vendorId)) return vendor;
-          const updated = { ...vendor, ...payload };
-          if (res.vendor) {
-            Object.assign(updated, res.vendor);
-          }
-          return updated;
-        }));
+        if (targetCourt === getAdminSelectedFoodCourt()) {
+          setAdminManagedVendors((prev) => prev.map((vendor) => {
+            if (String(vendor.vendorId ?? vendor.id) !== String(vendorId)) return vendor;
+            const updated = { ...vendor, ...payload };
+            if (res.vendor) {
+              Object.assign(updated, res.vendor);
+            }
+            return updated;
+          }));
+        }
         toast.success("Vendor credentials updated and notification sent");
       } else {
         toast.error(res?.message || "Failed to update vendor");

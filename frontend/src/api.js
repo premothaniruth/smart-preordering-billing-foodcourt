@@ -154,9 +154,10 @@ const buildAdminHeaders = (session) => {
   };
 };
 
-export const fetchAdminBulkOrders = async (session, params = {}) => {
+export const fetchAdminBulkOrders = async (session, params = {}, foodCourt) => {
   const search = new URLSearchParams();
   if (params.status) search.set('status', params.status);
+  if (foodCourt) search.set('foodCourt', foodCourt);
   const qs = search.toString();
   const res = await fetch(`${API_URL}/admin/bulk-orders${qs ? `?${qs}` : ''}`, {
     headers: buildAdminHeaders(session),
@@ -164,56 +165,66 @@ export const fetchAdminBulkOrders = async (session, params = {}) => {
   return res.json();
 };
 
-export const fetchAdminVendors = async (session) => {
-  const res = await fetch(`${API_URL}/admin/vendors`, {
+export const fetchAdminVendors = async (session, foodCourt) => {
+  const url = new URL(`${API_URL}/admin/vendors`);
+  if (foodCourt) url.searchParams.set('foodCourt', foodCourt);
+  const res = await fetch(url.toString(), {
     headers: buildAdminHeaders(session),
   });
   return res.json();
 };
 
-export const deleteAdminVendor = async (session, vendorId) => {
-  const res = await fetch(`${API_URL}/admin/vendor/${vendorId}`, {
+export const deleteAdminVendor = async (session, vendorId, foodCourt) => {
+  const url = new URL(`${API_URL}/admin/vendor/${vendorId}`);
+  if (foodCourt) url.searchParams.set('foodCourt', foodCourt);
+  const res = await fetch(url.toString(), {
     method: "DELETE",
     headers: buildAdminHeaders(session),
   });
   return res.json();
 };
 
-export const fetchArchivedVendors = async (session) => {
-  const res = await fetch(`${API_URL}/admin/vendor-archives`, {
+export const fetchArchivedVendors = async (session, foodCourt) => {
+  const url = new URL(`${API_URL}/admin/vendor-archives`);
+  if (foodCourt) url.searchParams.set('foodCourt', foodCourt);
+  const res = await fetch(url.toString(), {
     headers: buildAdminHeaders(session),
   });
   return res.json();
 };
 
-export const restoreArchivedVendor = async (session, archiveId) => {
+export const restoreArchivedVendor = async (session, archiveId, foodCourt) => {
   const res = await fetch(`${API_URL}/admin/vendor-archives/${archiveId}/restore`, {
     method: "POST",
-    headers: buildAdminHeaders(session),
+    headers: {
+      'Content-Type': 'application/json',
+      ...buildAdminHeaders(session),
+    },
+    body: JSON.stringify({ foodCourt }),
   });
   return res.json();
 };
 
-export const submitAdminBulkDecision = async (session, orderId, { action, comment }) => {
+export const submitAdminBulkDecision = async (session, orderId, { action, comment }, foodCourt) => {
   const res = await fetch(`${API_URL}/admin/bulk-orders/${orderId}/decision`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       ...buildAdminHeaders(session),
     },
-    body: JSON.stringify({ action, comment }),
+    body: JSON.stringify({ action, comment, foodCourt }),
   });
   return res.json();
 };
 
-export const sendBulkOrderToVendor = async (session, orderId, payload = {}) => {
+export const sendBulkOrderToVendor = async (session, orderId, payload = {}, foodCourt) => {
   const res = await fetch(`${API_URL}/admin/bulk-orders/${orderId}/send-to-vendor`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       ...buildAdminHeaders(session),
     },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ ...payload, foodCourt }),
   });
   return res.json();
 };
@@ -1197,11 +1208,11 @@ export const updateAdminVendorGrievance = async (grievanceId, updates, session) 
  * @param {object} data
  * @param {{username:string,password:string}} session
  */
-export const createVendor = async (data, session) => {
+export const createVendor = async (data, session, foodCourt) => {
   const res = await fetch(`${API_URL}/admin/vendor`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...buildAdminHeaders(session) },
-    body: JSON.stringify(data),
+    body: JSON.stringify({ ...data, foodCourt }),
   });
   return res.json();
 };
@@ -1212,11 +1223,13 @@ export const createVendor = async (data, session) => {
  * @param {object} data
  * @param {{username:string,password:string}} session
  */
-export const updateVendor = async (vendorId, data, session) => {
-  const res = await fetch(`${API_URL}/admin/vendor/${vendorId}`, {
+export const updateVendor = async (vendorId, data, session, foodCourt) => {
+  const url = new URL(`${API_URL}/admin/vendor/${vendorId}`);
+  if (foodCourt) url.searchParams.set('foodCourt', foodCourt);
+  const res = await fetch(url.toString(), {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', ...buildAdminHeaders(session) },
-    body: JSON.stringify(data),
+    body: JSON.stringify({ ...data, foodCourt }),
   });
   return res.json();
 };
