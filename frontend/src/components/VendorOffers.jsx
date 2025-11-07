@@ -732,13 +732,36 @@ const buildConditionsAndRewards = (offer) => {
     }
     case "item_buy_x_get_y": {
       const targetIds = Array.isArray(cfg.targetItemIds) ? cfg.targetItemIds : [];
-      const buyQty = Number(cfg.buyQuantity || 0);
-      if (buyQty > 0 && targetIds.length > 0) {
-        conditions.push({
+      const targetRequirements = Array.isArray(cfg.targetItems)
+        ? cfg.targetItems
+            .map((item) => {
+              const rawId = item?.id != null ? item.id : item?.value;
+              if (rawId == null) return null;
+              const qtyNum = Number(item?.quantity);
+              if (!Number.isFinite(qtyNum) || qtyNum <= 0) return null;
+              const numericId = Number(rawId);
+              const resolvedId = Number.isFinite(numericId) ? numericId : String(rawId);
+              return {
+                id: resolvedId,
+                quantity: qtyNum
+              };
+            })
+            .filter(Boolean)
+        : [];
+      const aggregatedTargetQty = targetRequirements.reduce((sum, entry) => sum + entry.quantity, 0);
+      if (targetIds.length > 0) {
+        const conditionPayload = {
           type: "item_quantity",
-          itemIds: targetIds,
-          minQuantity: buyQty
-        });
+          itemIds: targetIds
+        };
+        if (aggregatedTargetQty > 0) conditionPayload.minQuantity = aggregatedTargetQty;
+        if (targetRequirements.length > 0) {
+          conditionPayload.targetRequirements = targetRequirements.map((entry) => ({
+            id: entry.id,
+            quantity: entry.quantity
+          }));
+        }
+        conditions.push(conditionPayload);
       }
       const selection = cfg.selection || buildSelectionDefaults();
       const freeQty = Number(cfg.freeQuantity || 0);
@@ -834,20 +857,58 @@ const adaptOffer = (offer = {}) => {
 
   const itemCond = conditions.find((c) => c.type === "item_quantity");
   if (itemCond) {
-    if (itemCond.minQuantity != null) config.buyQuantity = String(itemCond.minQuantity);
-    if ((!Array.isArray(config.targetItems) || config.targetItems.length === 0) && Array.isArray(itemCond.itemIds)) {
-      const unique = new Set();
-      const mapped = [];
+    const targetRequirements = new Map();
+    if (Array.isArray(itemCond.targetRequirements)) {
+      itemCond.targetRequirements.forEach((entry) => {
+        if (!entry) return;
+        const key = entry.id != null ? entry.id : entry.itemId;
+        if (key == null) return;
+        const qtyNum = Number(entry.quantity);
+        if (!Number.isFinite(qtyNum) || qtyNum <= 0) return;
+        targetRequirements.set(String(key), qtyNum);
+      });
+    }
+
+    if (targetRequirements.size > 0) {
+      const aggregated = Array.from(targetRequirements.values()).reduce((sum, qty) => sum + qty, 0);
+      if (aggregated > 0) config.buyQuantity = String(aggregated);
+    } else if (itemCond.minQuantity != null) {
+      config.buyQuantity = String(itemCond.minQuantity);
+    }
+
+    const existingTargets = Array.isArray(config.targetItems) ? config.targetItems : [];
+    const normalizedExisting = existingTargets.map((item) => ({
+      id: item?.id != null ? String(item.id) : item?.value != null ? String(item.value) : "",
+      label: item?.label != null ? String(item.label) : "",
+      section: item?.section != null ? String(item.section) : "",
+      quantity: item?.quantity != null && item.quantity !== "" ? String(item.quantity) : ""
+    })).filter((item) => item.id);
+
+    const mergedById = new Map(normalizedExisting.map((item) => [item.id, item]));
+
+    if (Array.isArray(itemCond.itemIds)) {
       itemCond.itemIds.forEach((rawId) => {
         const id = rawId != null ? String(rawId) : "";
-        if (!id || unique.has(id)) return;
-        unique.add(id);
-        mapped.push({ id, label: config.targetItems?.find((ti) => String(ti.id) === id)?.label || "", section: config.targetItems?.find((ti) => String(ti.id) === id)?.section || "" });
+        if (!id) return;
+        if (!mergedById.has(id)) {
+          mergedById.set(id, {
+            id,
+            label: "",
+            section: "",
+            quantity: ""
+          });
+        }
       });
-      if (mapped.length > 0) {
-        config.targetItems = mapped;
+    }
+
+    for (const [key, qty] of targetRequirements.entries()) {
+      const entry = mergedById.get(key) || mergedById.get(String(Number(key)));
+      if (entry) {
+        entry.quantity = String(qty);
       }
     }
+
+    config.targetItems = Array.from(mergedById.values());
     if ((!Array.isArray(config.targetItemIds) || config.targetItemIds.length === 0) && Array.isArray(itemCond.itemIds)) {
       config.targetItemIds = itemCond.itemIds.map((rawId) => {
         const idNum = Number(rawId);
@@ -1030,7 +1091,8 @@ const VendorOffers = ({ token }) => {
         const defaults = {
           percent_order: { template: 'percent_order', percent: current.config?.percent || current.discountPercent || "10", minTotal: current.config?.minTotal || "", freeItems: current.config?.freeItems || [] },
           flat_order: { template: 'flat_order', amount: current.config?.amount || current.discountAmount || "20", minTotal: current.config?.minTotal || "", freeItems: current.config?.freeItems || [] },
-          combo_buy_item_free: { template: 'combo_buy_item_free', buyQuantity: current.config?.buyQuantity || "1", freeQuantity: current.config?.freeQuantity || "1", freeItems: current.config?.freeItems || (current.config?.freeItemId ? [{ id: current.config.freeItemId, label: current.config.freeItemLabel, price: current.config.freeItemPrice }] : []) },
+          combo_buy_item_free: { template: 'combo_buy_item_free', buyQuantity: current.config?.buyQuantity || "1", freeQuantity: current.config?.freeQuantity || "1", freeItems: current.config?.freeItems || (current.config?.freeItemId ? [{ id: current.config.freeItemId, label: current.config.freeItemLabel, price: current.config.freeItemPrice }] : []), applicableComboIds: [] },
+          combo_buy_x_get_y: { template: 'combo_buy_x_get_y', buyQuantity: current.config?.buyQuantity || "1", freeQuantity: current.config?.freeQuantity || "1", discountPercent: current.config?.discountPercent || current.discountPercent || "0", freeItems: current.config?.freeItems || (current.config?.freeItemId ? [{ id: current.config.freeItemId, label: current.config.freeItemLabel, price: current.config.freeItemPrice }] : []), applicableComboIds: [] },
           item_buy_x_get_y: { template: 'item_buy_x_get_y', buyQuantity: current.config?.buyQuantity || "3", freeQuantity: current.config?.freeQuantity || "1", freeItems: current.config?.freeItems || (current.config?.freeItemId ? [{ id: current.config.freeItemId, label: current.config.freeItemLabel, price: current.config.freeItemPrice }] : []), targetItemIds: current.config?.targetItemIds || [] }
         };
         current.template = value;

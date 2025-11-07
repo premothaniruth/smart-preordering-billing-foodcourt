@@ -24,21 +24,21 @@
     "name": "South Breakfast Combo",
     "price": 95,
     "active": true,
-    "hidden": true,
+    "hidden": false,
     "availableStart": null,
     "availableEnd": null,
     "components": [
       {
         "itemId": 107,
         "quantity": 2,
-        "overridePrice": 50
+        "overridePrice": 90
       },
       {
         "itemId": 106,
         "quantity": 1,
         "name": "",
         "option": "",
-        "overridePrice": 55
+        "overridePrice": 77
       }
     ]
   },

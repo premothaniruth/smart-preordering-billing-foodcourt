@@ -674,8 +674,9 @@ const evaluateReward = ({ reward, context, offer, itemLookup, summary }) => {
           const computeComboBuy = () => {
             const buyQuantity = toNumber(configSource.buyQuantity ?? comboCond?.minQuantity);
             if (!buyQuantity || buyQuantity <= 0) return 1;
-            const comboIdsRaw = Array.isArray(offer.metadata?.applicableComboIds) && offer.metadata.applicableComboIds.length > 0
-              ? offer.metadata.applicableComboIds
+            const applicableMetaCombos = Array.isArray(offer.metadata?.applicableComboIds) ? offer.metadata.applicableComboIds : [];
+            const comboIdsRaw = applicableMetaCombos.length > 0
+              ? applicableMetaCombos
               : (Array.isArray(comboCond?.comboIds) ? comboCond.comboIds : []);
             if (!comboIdsRaw.length) return 1;
             const countsMap = context.comboCounts || new Map();
