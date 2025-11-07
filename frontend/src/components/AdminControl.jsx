@@ -36,6 +36,8 @@ function AdminControl({
   onUpdateVendor,
   vendors = [],
   onRequestRefresh,
+  selectedFoodCourt = 'fc-1',
+  onFoodCourtChange = () => {},
 }) {
   const [loginForm, setLoginForm] = useState({ username: "", password: "" });
   const [createForm, setCreateForm] = useState(initialCreateState);
@@ -56,24 +58,11 @@ function AdminControl({
   const [archivedLoading, setArchivedLoading] = useState(false);
   const [archivedError, setArchivedError] = useState(null);
   const [activePanel, setActivePanel] = useState("bulk");
-  const [selectedFoodCourt, setSelectedFoodCourt] = useState(() => {
-    try {
-      return localStorage.getItem('adminSelectedFoodCourt') || 'fc-1';
-    } catch {
-      return 'fc-1';
-    }
-  });
 
   const sortedVendors = useMemo(() => {
     const source = vendorDirectory.length ? vendorDirectory : vendors;
     return [...source].sort((a, b) => a.shopName.localeCompare(b.shopName));
   }, [vendorDirectory, vendors]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('adminSelectedFoodCourt', selectedFoodCourt);
-    } catch {}
-  }, [selectedFoodCourt]);
 
   const handleDeleteVendor = async (vendorId) => {
     if (!adminSession || !vendorId) return;
@@ -173,7 +162,7 @@ function AdminControl({
     } finally {
       setVendorDirectoryLoading(false);
     }
-  }, [adminSession]);
+  }, [adminSession, selectedFoodCourt]);
 
   const loadArchivedVendors = useCallback(async () => {
     if (!adminSession) {
@@ -198,7 +187,7 @@ function AdminControl({
     } finally {
       setArchivedLoading(false);
     }
-  }, [adminSession]);
+  }, [adminSession, selectedFoodCourt]);
 
   useEffect(() => {
     let cancelled = false;
@@ -245,6 +234,12 @@ function AdminControl({
       cancelled = true;
     };
   }, [adminSession, selectedFoodCourt, refreshVendorDirectory, loadArchivedVendors]);
+
+  useEffect(() => {
+    setSelectedVendorId("");
+    setUpdateForm({ username: "", password: "" });
+    setSendVendorShopId("");
+  }, [selectedFoodCourt]);
 
   const handleLoginSubmit = (e) => {
     e.preventDefault();
@@ -878,9 +873,17 @@ function AdminControl({
           <form className="card-body" onSubmit={handleCreateSubmit}>
             <div className="form-group">
               <label>Active Food Court</label>
-              <div style={{ fontSize: 13, color: "#34495e" }}>
-                {FOOD_COURT_OPTIONS.find((option) => option.value === selectedFoodCourt)?.label || selectedFoodCourt}
-              </div>
+              <select
+                value={selectedFoodCourt}
+                onChange={(e) => onFoodCourtChange(e.target.value)}
+                style={{ minWidth: 160 }}
+              >
+                {FOOD_COURT_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="form-group">
               <label>Shop Name</label>
@@ -1203,7 +1206,9 @@ AdminControl.propTypes = {
   onCreateVendor: PropTypes.func.isRequired,
   onUpdateVendor: PropTypes.func.isRequired,
   vendors: PropTypes.arrayOf(PropTypes.object),
-  onRequestRefresh: PropTypes.func
+  onRequestRefresh: PropTypes.func,
+  selectedFoodCourt: PropTypes.string,
+  onFoodCourtChange: PropTypes.func,
 };
 
 export default AdminControl;

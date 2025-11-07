@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { fetchOffers, fetchCombos, fetchMenuSections, updateOffers } from "../api";
+import { fetchOffers, fetchMenuSections, fetchCombos, updateOffers } from "../api";
 import { toast } from "react-toastify";
 
 const CUSTOM_FREE_ITEM_OPTIONS = [
@@ -942,8 +942,16 @@ const adaptOffer = (offer = {}) => {
  * @param {{ token: string }} props
  */
 const VendorOffers = ({ token }) => {
-  const vendorShopId = useMemo(() => {
-    try { return JSON.parse(atob(token.split(".")[1])).shopId || 1; } catch { return 1; }
+  const { vendorShopId, vendorFoodCourt } = useMemo(() => {
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1] || ""));
+      return {
+        vendorShopId: payload?.shopId ?? 1,
+        vendorFoodCourt: payload?.foodCourt || "fc-1"
+      };
+    } catch {
+      return { vendorShopId: 1, vendorFoodCourt: "fc-1" };
+    }
   }, [token]);
 
   const [offers, setOffers] = useState([]);
@@ -956,9 +964,9 @@ const VendorOffers = ({ token }) => {
     setLoading(true);
     try {
       const [off, sec, cmb] = await Promise.all([
-        fetchOffers(vendorShopId),
-        fetchMenuSections(vendorShopId),
-        fetchCombos(vendorShopId, false)
+        fetchOffers(vendorShopId, vendorFoodCourt),
+        fetchMenuSections(vendorShopId, undefined, vendorFoodCourt),
+        fetchCombos(vendorShopId, false, vendorFoodCourt)
       ]);
       setOffers(Array.isArray(off) ? off.map(adaptOffer) : []);
       const sectionNames = Array.isArray(sec?.sections) ? sec.sections.map((s) => s.name) : [];
@@ -986,7 +994,7 @@ const VendorOffers = ({ token }) => {
       setMenuItems([]);
     }
     setLoading(false);
-  }, [vendorShopId]);
+  }, [vendorShopId, vendorFoodCourt]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -1118,7 +1126,7 @@ const VendorOffers = ({ token }) => {
           config: configSnapshot,
         };
       });
-      const res = await updateOffers(cleaned, token);
+      const res = await updateOffers(cleaned, token, vendorFoodCourt);
       if (res && res.status === "success") {
         toast.success("Offers saved");
         await load();

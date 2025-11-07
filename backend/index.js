@@ -590,6 +590,21 @@ const DEFAULT_INTEREST_THRESHOLD = 15;
 const INTEREST_DEDUP_WINDOW_MS = 6 * 60 * 60 * 1000; // 6 hours
 const MAX_INTEREST_RECORDS = 5000;
 
+const getVendorThresholdValue = (vendorId, thresholdsMap, { foodCourt } = {}) => {
+  if (!vendorId) return DEFAULT_INTEREST_THRESHOLD;
+  const lookup = thresholdsMap && typeof thresholdsMap === "object" ? thresholdsMap : {};
+  const vendorKey = String(vendorId);
+  const direct = lookup[vendorKey];
+  if (Number.isFinite(direct)) return direct;
+
+  if (foodCourt && lookup[foodCourt] && typeof lookup[foodCourt] === "object") {
+    const courtValue = lookup[foodCourt][vendorKey];
+    if (Number.isFinite(courtValue)) return courtValue;
+  }
+
+  return DEFAULT_INTEREST_THRESHOLD;
+};
+
 const getVendorFoodCourt = (req) => {
   const candidate = req?.vendor?.foodCourt;
   return FOOD_COURTS.includes(String(candidate)) ? String(candidate) : FC_DEFAULT;
@@ -5199,7 +5214,8 @@ app.get('/combos', (req, res) => {
 app.put('/combos', authenticateVendor, (req, res) => {
   try {
     const incoming = Array.isArray(req.body.combos) ? req.body.combos : [];
-    const foodCourt = getVendorFoodCourt(req);
+    const bodyCourt = req.body?.foodCourt;
+    const foodCourt = FOOD_COURTS.includes(String(bodyCourt)) ? String(bodyCourt) : getVendorFoodCourt(req);
     const all = getCombos(foodCourt);
     const rest = all.filter(c => String(c.shopId) !== String(req.vendor.shopId));
     const normalized = incoming.map(c => ({
@@ -5249,7 +5265,8 @@ app.get('/offers/active', (req, res) => {
 app.put('/offers', authenticateVendor, (req, res) => {
   try {
     const incoming = Array.isArray(req.body.offers) ? req.body.offers : [];
-    const foodCourt = getVendorFoodCourt(req);
+    const bodyCourt = req.body?.foodCourt;
+    const foodCourt = FOOD_COURTS.includes(String(bodyCourt)) ? String(bodyCourt) : getVendorFoodCourt(req);
     const all = getOffers(foodCourt);
     const rest = all.filter(o => String(o.shopId) !== String(req.vendor.shopId));
     const normalized = incoming.map(o => normalizeOfferInputForStorage(o, req.vendor.shopId));
@@ -5410,7 +5427,7 @@ app.post("/order/ready/:id", authenticateVendor, (req, res) => {
     const previousStatus = order.status;
     order.status = "ready";
     order.readyAt = new Date().toISOString();
-    saveOrders(orders);
+    saveVendorOrders(req, orders);
     emitOrderStatusEvent(order, {
       vendor: req.vendor,
       previousStatus,
@@ -5456,7 +5473,7 @@ app.post("/order/picked/:id", authenticateVendor, (req, res) => {
       order.readyAt = now;
     }
 
-    saveOrders(orders);
+    saveVendorOrders(req, orders);
     emitOrderStatusEvent(order, {
       vendor: req.vendor,
       previousStatus,
@@ -5576,6 +5593,7 @@ app.put("/admin/vendor/:id", authenticateAdmin, (req, res) => {
       return res.status(404).json({ message: "Vendor not found" });
     }
 
+    const { username, password, shopName, shopId, email } = req.body || {};
     const vendor = vendors[index];
     const originalShopId = vendor.shopId != null ? Number(vendor.shopId) : null;
 
@@ -5720,7 +5738,7 @@ app.post("/order/extend/:id", authenticateVendor, (req, res) => {
     order.etaExtendedAt = new Date().toISOString();
     order.etaExtensionMinutes = (order.etaExtensionMinutes || 0) + addMinutes;
 
-    saveOrders(orders);
+    saveVendorOrders(req, orders);
     emitOrderPrepExtendedEvent(order, {
       vendor: req.vendor,
       addMinutes,
@@ -5791,7 +5809,7 @@ app.post("/order/extend-reset/:id", authenticateVendor, (req, res) => {
     delete order._originalPrepTimeDefined;
     delete order._originalEstimatedReadyTimeDefined;
 
-    saveOrders(orders);
+    saveVendorOrders(req, orders);
     emitOrderPrepExtendedEvent(order, {
       vendor: req.vendor,
       addMinutes: -extensionMinutes,

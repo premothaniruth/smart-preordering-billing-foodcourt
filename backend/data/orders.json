@@ -2935,15 +2935,99 @@
         "prepTime": 12
       }
     ],
-    "shopId": 1,
+    "shopId": 5,
     "user": "+919952911560",
     "scheduledTime": "2025-11-07T08:00",
     "status": "pending",
-    "createdAt": "2025-11-06T17:36:56.491Z",
-    "billingId": "00010",
-    "estimatedReadyTime": "2025-11-06T17:52:56.491Z",
+    "createdAt": "2025-11-06T17:17:45.474Z",
+    "billingId": "00008",
+    "estimatedReadyTime": "2025-11-06T17:29:45.474Z",
+    "prepTime": 12,
+    "baseEstimatedReadyTime": "2025-11-06T17:29:45.474Z",
+    "basePrepTime": 12,
+    "rating": null,
+    "feedback": null,
+    "totalAmount": 80,
+    "subtotalBeforeDiscount": 80,
+    "discountTotal": 0,
+    "offerSummary": {
+      "subtotalBeforeDiscount": 80,
+      "discountTotal": 0,
+      "totalPayable": 80,
+      "appliedOffers": [],
+      "extraItems": []
+    },
+    "notes": null,
+    "payment": {
+      "method": "gateway",
+      "amount": 80,
+      "provider": "razorpay-open",
+      "reference": "PG-1762449465474"
+    }
+  },
+  {
+    "id": 52,
+    "items": [
+      {
+        "id": 4,
+        "name": "Aloo Puri",
+        "price": 70,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 10
+      }
+    ],
+    "shopId": 5,
+    "user": "+919952911560",
+    "scheduledTime": "2025-11-07T08:00",
+    "status": "pending",
+    "createdAt": "2025-11-06T17:35:29.460Z",
+    "billingId": "00009",
+    "estimatedReadyTime": "2025-11-06T17:47:29.460Z",
+    "prepTime": 12,
+    "baseEstimatedReadyTime": "2025-11-06T17:47:29.460Z",
+    "basePrepTime": 12,
+    "rating": null,
+    "feedback": null,
+    "totalAmount": 70,
+    "subtotalBeforeDiscount": 70,
+    "discountTotal": 0,
+    "offerSummary": {
+      "subtotalBeforeDiscount": 70,
+      "discountTotal": 0,
+      "totalPayable": 70,
+      "appliedOffers": [],
+      "extraItems": []
+    },
+    "notes": null,
+    "payment": {
+      "method": "gateway",
+      "amount": 70,
+      "provider": "razorpay-open",
+      "reference": "PG-1762450529460"
+    }
+  },
+  {
+    "id": 53,
+    "items": [
+      {
+        "id": 3,
+        "name": "Chole Bhature",
+        "price": 80,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 12
+      }
+    ],
+    "shopId": 5,
+    "user": "+919952091560",
+    "scheduledTime": "2025-11-07T08:00",
+    "status": "pending",
+    "createdAt": "2025-11-06T18:27:14.289Z",
+    "billingId": "00014",
+    "estimatedReadyTime": "2025-11-06T18:43:14.289Z",
     "prepTime": 16,
-    "baseEstimatedReadyTime": "2025-11-06T17:52:56.491Z",
+    "baseEstimatedReadyTime": "2025-11-06T18:43:14.289Z",
     "basePrepTime": 16,
     "rating": null,
     "feedback": null,
@@ -2962,52 +3046,11 @@
       "method": "gateway",
       "amount": 80,
       "provider": "razorpay-open",
-      "reference": "PG-1762450616491"
+      "reference": "PG-1762453634289"
     }
   },
   {
-    "id": 52,
-    "items": [
-      {
-        "id": 1,
-        "name": "Aloo Paratha",
-        "price": 60,
-        "quantity": 1,
-        "option": null
-      }
-    ],
-    "shopId": 1,
-    "user": "testuser",
-    "scheduledTime": "2025-11-07T09:00:00+05:30",
-    "status": "pending",
-    "createdAt": "2025-11-06T18:06:09.098Z",
-    "billingId": "00011",
-    "estimatedReadyTime": "2025-11-06T18:17:09.098Z",
-    "prepTime": 11,
-    "baseEstimatedReadyTime": "2025-11-06T18:17:09.098Z",
-    "basePrepTime": 11,
-    "rating": null,
-    "feedback": null,
-    "totalAmount": 60,
-    "subtotalBeforeDiscount": 60,
-    "discountTotal": 0,
-    "offerSummary": {
-      "subtotalBeforeDiscount": 60,
-      "discountTotal": 0,
-      "totalPayable": 60,
-      "appliedOffers": [],
-      "extraItems": []
-    },
-    "notes": null,
-    "payment": {
-      "method": "gateway",
-      "amount": 60,
-      "provider": "razorpay-open",
-      "reference": "PG-1762452369098"
-    }
-  },
-  {
-    "id": 53,
+    "id": 54,
     "items": [
       {
         "id": 5,
@@ -3018,15 +3061,57 @@
         "prepTime": 12
       }
     ],
-    "shopId": 1,
-    "user": "+919952091560",
+    "shopId": 5,
+    "user": "+919952911560",
     "scheduledTime": "2025-11-07T08:00",
     "status": "pending",
-    "createdAt": "2025-11-06T18:14:03.453Z",
-    "billingId": "00012",
-    "estimatedReadyTime": "2025-11-06T18:34:03.453Z",
+    "createdAt": "2025-11-06T18:31:51.905Z",
+    "billingId": "00001",
+    "estimatedReadyTime": "2025-11-06T18:49:51.905Z",
+    "prepTime": 18,
+    "baseEstimatedReadyTime": "2025-11-06T18:49:51.905Z",
+    "basePrepTime": 18,
+    "rating": null,
+    "feedback": null,
+    "totalAmount": 75,
+    "subtotalBeforeDiscount": 75,
+    "discountTotal": 0,
+    "offerSummary": {
+      "subtotalBeforeDiscount": 75,
+      "discountTotal": 0,
+      "totalPayable": 75,
+      "appliedOffers": [],
+      "extraItems": []
+    },
+    "notes": null,
+    "payment": {
+      "method": "gateway",
+      "amount": 75,
+      "provider": "razorpay-open",
+      "reference": "PG-1762453911905"
+    }
+  },
+  {
+    "id": 55,
+    "items": [
+      {
+        "id": 5,
+        "name": "Paneer Paratha",
+        "price": 75,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 12
+      }
+    ],
+    "shopId": 5,
+    "user": "+919952911560",
+    "scheduledTime": "2025-11-07T08:00",
+    "status": "ready",
+    "createdAt": "2025-11-06T18:34:58.056Z",
+    "billingId": "00002",
+    "estimatedReadyTime": "2025-11-06T18:54:58.055Z",
     "prepTime": 20,
-    "baseEstimatedReadyTime": "2025-11-06T18:34:03.453Z",
+    "baseEstimatedReadyTime": "2025-11-06T18:54:58.055Z",
     "basePrepTime": 20,
     "rating": null,
     "feedback": null,
@@ -3045,11 +3130,12 @@
       "method": "gateway",
       "amount": 75,
       "provider": "razorpay-open",
-      "reference": "PG-1762452843453"
-    }
+      "reference": "PG-1762454098056"
+    },
+    "readyAt": "2025-11-07T04:18:56.842Z"
   },
   {
-    "id": 54,
+    "id": 56,
     "items": [
       {
         "id": 5,
@@ -3060,15 +3146,15 @@
         "prepTime": 12
       }
     ],
-    "shopId": 1,
+    "shopId": 5,
     "user": "+919952091560",
     "scheduledTime": "2025-11-07T08:00",
-    "status": "pending",
-    "createdAt": "2025-11-06T18:26:55.296Z",
-    "billingId": "00013",
-    "estimatedReadyTime": "2025-11-06T18:48:55.296Z",
+    "status": "cancelled",
+    "createdAt": "2025-11-06T19:06:44.779Z",
+    "billingId": "00003",
+    "estimatedReadyTime": "2025-11-06T19:28:44.779Z",
     "prepTime": 22,
-    "baseEstimatedReadyTime": "2025-11-06T18:48:55.296Z",
+    "baseEstimatedReadyTime": "2025-11-06T19:28:44.779Z",
     "basePrepTime": 22,
     "rating": null,
     "feedback": null,
@@ -3087,7 +3173,15 @@
       "method": "gateway",
       "amount": 75,
       "provider": "razorpay-open",
-      "reference": "PG-1762453615296"
-    }
+      "reference": "PG-1762456004779"
+    },
+    "cancelledAt": "2025-11-06T19:09:08.780Z",
+    "cancelledBy": "+919952091560",
+    "cancellationReason": null,
+    "refundAmount": 75,
+    "cancellationFee": 0,
+    "cancellationPolicy": "Full refund (cancel ≥ 60 minutes before scheduled time)",
+    "cancellationRefundPercent": 1,
+    "cancellationLeadMinutes": 440.85383333333334
   }
 ]

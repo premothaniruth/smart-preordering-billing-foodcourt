@@ -158,3 +158,9 @@
 {"type":"points:order-processed","actor":{"type":"system","source":"order.create"},"employeeId":1,"orderId":54,"pointsEarned":0,"streakBonuses":0,"pointsConverted":0}
 {"type":"points:order-processed","actor":{"type":"system","source":"order.create"},"employeeId":1,"orderId":55,"pointsEarned":0,"streakBonuses":0,"pointsConverted":0}
 {"type":"points:order-processed","actor":{"type":"system","source":"order.create"},"employeeId":2,"orderId":56,"pointsEarned":0,"streakBonuses":0,"pointsConverted":0}
+{"timestamp":"2025-11-07T04:07:57.616Z","actorType":"vendor","actorId":2,"shopId":2,"vendorId":2,"action":"vendor.login.success","metadata":{"username":"southfoods","foodCourt":"fc-1"}}
+{"timestamp":"2025-11-07T04:18:44.676Z","actorType":"vendor","actorId":101,"shopId":5,"vendorId":101,"action":"vendor.login.success","metadata":{"username":"centralgrill","foodCourt":"fc-2"}}
+{"type":"points:order-processed","actor":{"type":"system","source":"order.create"},"employeeId":2,"orderId":57,"pointsEarned":0,"streakBonuses":0,"pointsConverted":0}
+{"timestamp":"2025-11-07T04:26:48.087Z","actorType":"vendor","actorId":101,"shopId":5,"vendorId":101,"action":"vendor.login.success","metadata":{"username":"centralgrill","foodCourt":"fc-2"}}
+{"timestamp":"2025-11-07T04:27:41.565Z","actorType":"vendor","actorId":101,"shopId":5,"vendorId":101,"action":"interest.summary.viewed","metadata":{"itemCount":0}}
+{"timestamp":"2025-11-07T04:30:41.972Z","actorType":"vendor","actorId":101,"shopId":5,"vendorId":101,"action":"vendor.login.success","metadata":{"username":"centralgrill","foodCourt":"fc-2"}}

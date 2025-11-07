@@ -127,6 +127,7 @@ function App() {
       return 'fc-1';
     }
   });
+  const [adminFoodCourt, setAdminFoodCourt] = useState(() => getAdminSelectedFoodCourt());
 
   const userId = employeeMobile || null;
   const vendorShopId = (() => {
@@ -238,14 +239,25 @@ function App() {
     return () => clearTimeout(splashTimeout);
   }, []);
 
+  const refreshAdminManagedVendors = useCallback(async () => {
+    if (!adminSession) return;
+    try {
+      const res = await fetchAdminVendors(adminSession, adminFoodCourt);
+      if (res?.status === "ok" && Array.isArray(res.vendors)) {
+        setAdminManagedVendors(res.vendors);
+      }
+    } catch (error) {
+      console.error("Failed to refresh admin vendors", error);
+    }
+  }, [adminSession, adminFoodCourt]);
+
   useEffect(() => {
     const storedSession = adminSession;
     if (!storedSession) return;
     let cancelled = false;
     const hydrateVendors = async () => {
       try {
-        const targetCourt = getAdminSelectedFoodCourt();
-        const res = await fetchAdminVendors(storedSession, targetCourt);
+        const res = await fetchAdminVendors(storedSession, adminFoodCourt);
         if (!cancelled && res?.status === "ok" && Array.isArray(res.vendors)) {
           setAdminManagedVendors(res.vendors);
         }
@@ -259,7 +271,16 @@ function App() {
     return () => {
       cancelled = true;
     };
-  }, [adminSession]);
+  }, [adminSession, adminFoodCourt]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("adminSelectedFoodCourt", adminFoodCourt);
+    } catch {}
+    if (adminSession) {
+      refreshAdminManagedVendors();
+    }
+  }, [adminFoodCourt, adminSession, refreshAdminManagedVendors]);
 
   useEffect(() => {
     if (vendorShopId) setSelectedShop(vendorShopId);
@@ -474,19 +495,6 @@ function App() {
       applyWalletPayload({ balance: 0, transactions: [] });
     }
   }, [employeeToken, loadWallet, applyWalletPayload]);
-
-  const refreshAdminManagedVendors = useCallback(async () => {
-    if (!adminSession) return;
-    try {
-      const targetCourt = getAdminSelectedFoodCourt();
-      const res = await fetchAdminVendors(adminSession, targetCourt);
-      if (res?.status === "ok" && Array.isArray(res.vendors)) {
-        setAdminManagedVendors(res.vendors);
-      }
-    } catch (error) {
-      console.error("Failed to refresh admin vendors", error);
-    }
-  }, [adminSession]);
 
   useEffect(() => {
     document.title = "Infy Bhojans";
@@ -1184,7 +1192,7 @@ function App() {
     const session = { username: trimmedUser, password: trimmedPass };
     setAdminSession(session);
     try {
-      const targetCourt = getAdminSelectedFoodCourt();
+      const targetCourt = adminFoodCourt;
       const res = await fetchAdminVendors(session, targetCourt);
       if (res?.status === "ok" && Array.isArray(res.vendors)) {
         setAdminManagedVendors(res.vendors);
@@ -1215,16 +1223,13 @@ function App() {
       return;
     }
     try {
-      const targetCourt = payload?.foodCourt || getAdminSelectedFoodCourt();
+      const targetCourt = payload?.foodCourt || adminFoodCourt;
       const res = await createVendor(payload, adminSession, targetCourt);
       if (res?.status === "success") {
         const vendor = res.vendor || {};
-        setAdminManagedVendors((prev) => {
-          if (targetCourt !== getAdminSelectedFoodCourt()) {
-            return prev;
-          }
-          return [...prev, vendor];
-        });
+        if (targetCourt === adminFoodCourt) {
+          setAdminManagedVendors((prev) => [...prev, vendor]);
+        }
         toast.success(`Vendor ${vendor.shopName || payload.shopName} created successfully.`);
       } else {
         toast.error(res?.message || "Failed to create vendor");
@@ -1242,10 +1247,10 @@ function App() {
       return;
     }
     try {
-      const targetCourt = payload?.foodCourt || getAdminSelectedFoodCourt();
+      const targetCourt = payload?.foodCourt || adminFoodCourt;
       const res = await updateVendor(vendorId, payload, adminSession, targetCourt);
       if (res?.status === "success") {
-        if (targetCourt === getAdminSelectedFoodCourt()) {
+        if (targetCourt === adminFoodCourt) {
           setAdminManagedVendors((prev) => prev.map((vendor) => {
             if (String(vendor.vendorId ?? vendor.id) !== String(vendorId)) return vendor;
             const updated = { ...vendor, ...payload };
@@ -1624,6 +1629,8 @@ function App() {
                             loadMenu();
                             refreshAdminManagedVendors();
                           }}
+                          selectedFoodCourt={adminFoodCourt}
+                          onFoodCourtChange={setAdminFoodCourt}
                           sosState={sosState}
                           onTriggerSos={() => handleSosTrigger("admin")}
                           onResolveSos={() => handleSosResolve("admin")}

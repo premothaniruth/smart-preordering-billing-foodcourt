@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
 import { vendorLogin } from "../api";
 import { toast } from "react-toastify";
@@ -13,13 +13,29 @@ const Login = ({ onLogin, onBack }) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [foodCourt, setFoodCourt] = useState(() => {
+    try {
+      return localStorage.getItem("vendorSelectedFoodCourt") || "fc-1";
+    } catch {
+      return "fc-1";
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("vendorSelectedFoodCourt", foodCourt);
+    } catch {}
+  }, [foodCourt]);
 
   // Attempt vendor login via API
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const data = await vendorLogin(username, password);
+      const data = await vendorLogin(username, password, foodCourt);
       if (data.token) {
+        try {
+          localStorage.setItem("vendorSelectedFoodCourt", data.foodCourt || foodCourt);
+        } catch {}
         onLogin({ token: data.token, foodCourt: data.foodCourt });
         toast.success(`Logged into ${(data.foodCourt || "fc-1").toUpperCase()} successfully`);
       } else {
@@ -45,6 +61,32 @@ const Login = ({ onLogin, onBack }) => {
           onChange={(e) => setUsername(e.target.value)}
           required
         />
+        <br />
+        <div style={{ margin: "12px 0" }}>
+          <div style={{ fontSize: 13, color: "#7f8c8d", marginBottom: 6 }}>Select Food Court</div>
+          <label style={{ display: "inline-flex", alignItems: "center", marginRight: 16 }}>
+            <input
+              type="radio"
+              name="vendor-food-court"
+              value="fc-1"
+              checked={foodCourt === "fc-1"}
+              onChange={(e) => setFoodCourt(e.target.value)}
+              style={{ marginRight: 6 }}
+            />
+            1
+          </label>
+          <label style={{ display: "inline-flex", alignItems: "center" }}>
+            <input
+              type="radio"
+              name="vendor-food-court"
+              value="fc-2"
+              checked={foodCourt === "fc-2"}
+              onChange={(e) => setFoodCourt(e.target.value)}
+              style={{ marginRight: 6 }}
+            />
+            2
+          </label>
+        </div>
         <br />
         <div style={{ position: "relative", display: "inline-block" }}>
           <input

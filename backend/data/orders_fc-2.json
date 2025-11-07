@@ -2938,7 +2938,7 @@
     "shopId": 5,
     "user": "+919952911560",
     "scheduledTime": "2025-11-07T08:00",
-    "status": "pending",
+    "status": "completed",
     "createdAt": "2025-11-06T17:17:45.474Z",
     "billingId": "00008",
     "estimatedReadyTime": "2025-11-06T17:29:45.474Z",
@@ -2963,7 +2963,10 @@
       "amount": 80,
       "provider": "razorpay-open",
       "reference": "PG-1762449465474"
-    }
+    },
+    "readyAt": "2025-11-07T04:27:06.661Z",
+    "pickedAt": "2025-11-07T04:27:12.550Z",
+    "completedAt": "2025-11-07T04:27:12.550Z"
   },
   {
     "id": 52,
@@ -2980,7 +2983,7 @@
     "shopId": 5,
     "user": "+919952911560",
     "scheduledTime": "2025-11-07T08:00",
-    "status": "pending",
+    "status": "completed",
     "createdAt": "2025-11-06T17:35:29.460Z",
     "billingId": "00009",
     "estimatedReadyTime": "2025-11-06T17:47:29.460Z",
@@ -3005,7 +3008,10 @@
       "amount": 70,
       "provider": "razorpay-open",
       "reference": "PG-1762450529460"
-    }
+    },
+    "readyAt": "2025-11-07T04:27:06.061Z",
+    "pickedAt": "2025-11-07T04:27:12.211Z",
+    "completedAt": "2025-11-07T04:27:12.211Z"
   },
   {
     "id": 53,
@@ -3022,7 +3028,7 @@
     "shopId": 5,
     "user": "+919952091560",
     "scheduledTime": "2025-11-07T08:00",
-    "status": "pending",
+    "status": "completed",
     "createdAt": "2025-11-06T18:27:14.289Z",
     "billingId": "00014",
     "estimatedReadyTime": "2025-11-06T18:43:14.289Z",
@@ -3047,7 +3053,10 @@
       "amount": 80,
       "provider": "razorpay-open",
       "reference": "PG-1762453634289"
-    }
+    },
+    "readyAt": "2025-11-07T04:27:05.427Z",
+    "pickedAt": "2025-11-07T04:27:11.994Z",
+    "completedAt": "2025-11-07T04:27:11.994Z"
   },
   {
     "id": 54,
@@ -3064,7 +3073,7 @@
     "shopId": 5,
     "user": "+919952911560",
     "scheduledTime": "2025-11-07T08:00",
-    "status": "pending",
+    "status": "completed",
     "createdAt": "2025-11-06T18:31:51.905Z",
     "billingId": "00001",
     "estimatedReadyTime": "2025-11-06T18:49:51.905Z",
@@ -3089,7 +3098,10 @@
       "amount": 75,
       "provider": "razorpay-open",
       "reference": "PG-1762453911905"
-    }
+    },
+    "readyAt": "2025-11-07T04:27:07.625Z",
+    "pickedAt": "2025-11-07T04:27:11.645Z",
+    "completedAt": "2025-11-07T04:27:11.645Z"
   },
   {
     "id": 55,
@@ -3106,7 +3118,7 @@
     "shopId": 5,
     "user": "+919952911560",
     "scheduledTime": "2025-11-07T08:00",
-    "status": "pending",
+    "status": "completed",
     "createdAt": "2025-11-06T18:34:58.056Z",
     "billingId": "00002",
     "estimatedReadyTime": "2025-11-06T18:54:58.055Z",
@@ -3131,7 +3143,10 @@
       "amount": 75,
       "provider": "razorpay-open",
       "reference": "PG-1762454098056"
-    }
+    },
+    "readyAt": "2025-11-07T04:27:04.377Z",
+    "pickedAt": "2025-11-07T04:27:11.195Z",
+    "completedAt": "2025-11-07T04:27:11.195Z"
   },
   {
     "id": 56,
@@ -3182,5 +3197,52 @@
     "cancellationPolicy": "Full refund (cancel ≥ 60 minutes before scheduled time)",
     "cancellationRefundPercent": 1,
     "cancellationLeadMinutes": 440.85383333333334
+  },
+  {
+    "id": 57,
+    "items": [
+      {
+        "id": 1,
+        "name": "Aloo Paratha",
+        "price": 60,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 10
+      }
+    ],
+    "shopId": 5,
+    "user": "+919952081560",
+    "scheduledTime": null,
+    "status": "completed",
+    "createdAt": "2025-11-07T04:26:18.383Z",
+    "billingId": "00004",
+    "estimatedReadyTime": "2025-11-07T04:46:18.383Z",
+    "prepTime": 20,
+    "baseEstimatedReadyTime": "2025-11-07T04:46:18.383Z",
+    "basePrepTime": 20,
+    "rating": null,
+    "feedback": null,
+    "totalAmount": 60,
+    "subtotalBeforeDiscount": 60,
+    "discountTotal": 0,
+    "offerSummary": {
+      "subtotalBeforeDiscount": 60,
+      "discountTotal": 0,
+      "totalPayable": 60,
+      "appliedOffers": [],
+      "extraItems": []
+    },
+    "notes": null,
+    "payment": {
+      "method": "gateway",
+      "amount": 60,
+      "provider": "razorpay-open",
+      "reference": "PG-1762489578383"
+    },
+    "etaExtendedAt": null,
+    "etaExtensionMinutes": 0,
+    "readyAt": "2025-11-07T04:27:02.811Z",
+    "pickedAt": "2025-11-07T04:27:10.045Z",
+    "completedAt": "2025-11-07T04:27:10.045Z"
   }
 ]

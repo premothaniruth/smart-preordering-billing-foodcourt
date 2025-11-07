@@ -98,5 +98,37 @@
     "metadata": null,
     "createdAt": "2025-11-01T11:34:56.581Z",
     "updatedAt": "2025-11-05T16:55:14.759Z"
+  },
+  {
+    "id": 1762489856964,
+    "shopId": 5,
+    "title": "New Offer",
+    "bannerText": "New Offer",
+    "description": "",
+    "active": true,
+    "stackable": true,
+    "priority": 0,
+    "maxDiscountAmount": null,
+    "discountPercent": 5,
+    "discountAmount": null,
+    "applicableSections": [],
+    "applicableComboIds": [],
+    "start": null,
+    "end": null,
+    "timeStart": null,
+    "timeEnd": null,
+    "daysOfWeek": null,
+    "schedule": null,
+    "conditions": [],
+    "rewards": [
+      {
+        "type": "percentage_discount",
+        "percent": 5,
+        "appliesTo": "order"
+      }
+    ],
+    "metadata": null,
+    "createdAt": "2025-11-07T04:30:58.822Z",
+    "updatedAt": "2025-11-07T04:30:58.822Z"
   }
 ]

@@ -8,8 +8,16 @@ import { toast } from "react-toastify";
  * @param {{ token: string }} props
  */
 const VendorCombos = ({ token }) => {
-  const vendorShopId = useMemo(() => {
-    try { return JSON.parse(atob(token.split(".")[1])).shopId || 1; } catch { return 1; }
+  const { vendorShopId, vendorFoodCourt } = useMemo(() => {
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1] || ""));
+      return {
+        vendorShopId: payload?.shopId ?? 1,
+        vendorFoodCourt: payload?.foodCourt || "fc-1"
+      };
+    } catch {
+      return { vendorShopId: 1, vendorFoodCourt: "fc-1" };
+    }
   }, [token]);
 
   const [combos, setCombos] = useState([]);
@@ -24,17 +32,17 @@ const VendorCombos = ({ token }) => {
   const load = async () => {
     setLoading(true);
     try {
-      const data = await fetchCombos(vendorShopId, false);
+      const data = await fetchCombos(vendorShopId, false, vendorFoodCourt);
       setCombos(Array.isArray(data) ? data : []);
     } catch { setCombos([]); }
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, [vendorShopId]);
+  useEffect(() => { load(); }, [vendorShopId, vendorFoodCourt]);
 
   useEffect(() => {
     // Build id->name map for current shop
-    fetchMenu().then((m) => {
+    fetchMenu(vendorFoodCourt).then((m) => {
       setMenu(m || []);
       const shop = (m || []).find(s => String(s.shopId) === String(vendorShopId));
       const map = new Map();
@@ -43,7 +51,7 @@ const VendorCombos = ({ token }) => {
       }
       setIdNameMap(map);
     }).catch(()=>{});
-  }, [vendorShopId]);
+  }, [vendorShopId, vendorFoodCourt]);
 
   const addCombo = () => {
     setCombos(prev => ([{

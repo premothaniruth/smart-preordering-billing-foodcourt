@@ -666,11 +666,11 @@ export const fetchCombos = async (shopId, activeOnly = true, foodCourt) =>
  * @param {any[]} combos
  * @param {string} token
  */
-export const updateCombos = async (combos, token) => {
+export const updateCombos = async (combos, token, foodCourt) => {
   const res = await fetch(`${API_URL}/combos`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ combos })
+    body: JSON.stringify({ combos, foodCourt })
   });
   return res.json();
 };
@@ -692,11 +692,11 @@ export const fetchActiveOffers = async (shopId, foodCourt) => {
  * @param {any[]} offers
  * @param {string} token
  */
-export const updateOffers = async (offers, token) => {
+export const updateOffers = async (offers, token, foodCourt) => {
   const res = await fetch(`${API_URL}/offers`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ offers })
+    body: JSON.stringify({ offers, foodCourt })
   });
   return res.json();
 };

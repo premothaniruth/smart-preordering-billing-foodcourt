@@ -1,9 +1,9 @@
 [
-    {
+  {
     "vendorId": 101,
     "shopId": 5,
     "username": "centralgrill",
-    "passwordHash": "$2b$10$ZQ/PMJ05FtQyYYqm6GjeruKHDQjVsPuXeEVvqcGbLF.v0o0Gu2Kvm",
+    "passwordHash": "$2b$10$nBQsMDG6KfeuWcRvnerHO.TTBkmsvV0SeQ64mMCyyjhWvaY8Gt50m",
     "email": "centralgrill.fc2@infosys.com",
     "shopName": "Central Grill & Curries"
   },
