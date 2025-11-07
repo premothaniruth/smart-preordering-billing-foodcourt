@@ -28,6 +28,12 @@ const FOOD_COURT_OPTIONS = [
   { value: 'fc-2', label: 'Food Court 2' },
 ];
 
+const normalizeBulkStatusFilter = (value) => {
+  if (!value || value === "all") return null;
+  if (value === "under_review") return "submitted_admin";
+  return value;
+};
+
 function AdminControl({
   adminSession = null,
   onAdminLogin,
@@ -44,7 +50,7 @@ function AdminControl({
   const [selectedVendorId, setSelectedVendorId] = useState("");
   const [updateForm, setUpdateForm] = useState({ username: "", password: "" });
   const [bulkOrders, setBulkOrders] = useState([]);
-  const [bulkStatus, setBulkStatus] = useState("submitted_admin");
+  const [bulkStatus, setBulkStatus] = useState("all");
   const [bulkLoading, setBulkLoading] = useState(false);
   const [bulkError, setBulkError] = useState(null);
   const [showAdminPassword, setShowAdminPassword] = useState(false);
@@ -109,12 +115,19 @@ function AdminControl({
     try {
       setBulkLoading(true);
       setBulkError(null);
-      const requestParams = status === "all" || !status ? {} : { status };
+      const normalizedStatus = normalizeBulkStatusFilter(status);
+      const requestParams = normalizedStatus ? { status: normalizedStatus } : {};
       const res = await fetchAdminBulkOrders(session, requestParams, selectedFoodCourt);
       if (res?.status === "ok" && Array.isArray(res.orders)) {
-        setBulkOrders(res.orders);
-        if (res.orders.length > 0 && !res.orders.find((order) => Number(order.id) === Number(selectedBulkId))) {
-          setSelectedBulkId(res.orders[0].id);
+        const orders = res.orders;
+        setBulkOrders(orders);
+        if (orders.length > 0) {
+          const currentExists = orders.some((order) => Number(order.id) === Number(selectedBulkId));
+          if (!currentExists) {
+            setSelectedBulkId(orders[0].id);
+          }
+        } else {
+          setSelectedBulkId(null);
         }
       } else {
         setBulkOrders([]);
@@ -522,7 +535,7 @@ function AdminControl({
 
   const bulkStatusOptions = [
     { value: "all", label: "All" },
-    { value: "submitted_admin", label: "Submitted" },
+    { value: "submitted_admin", label: "Under Review" },
     { value: "needs_revision", label: "Needs Revision" },
     { value: "approved_admin", label: "Approved" },
     { value: "sent_to_vendor", label: "Sent to Vendor" },
