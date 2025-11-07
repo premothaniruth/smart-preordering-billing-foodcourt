@@ -19,8 +19,8 @@
   {
     "id": 1762361650374,
     "shopId": 2,
-    "title": "Buy 1 get 1",
-    "bannerText": "Buy dosa and get vada for free",
+    "title": "Buy 2 get 1",
+    "bannerText": "Buy 1 dosa and 2 pongal get 1 medu vada and 1 pongal freefor free",
     "description": "",
     "active": true,
     "stackable": false,
@@ -42,9 +42,10 @@
       {
         "type": "item_quantity",
         "itemIds": [
-          102
+          102,
+          104
         ],
-        "minQuantity": 1
+        "minQuantity": 3
       }
     ],
     "rewards": [
@@ -54,11 +55,151 @@
         "quantity": 1,
         "price": 50,
         "description": "Medu Vada"
+      },
+      {
+        "type": "free_item",
+        "itemId": 104,
+        "quantity": 1,
+        "price": 55,
+        "description": "Pongal"
       }
     ],
-    "metadata": null,
+    "metadata": {
+      "template": "item_buy_x_get_y",
+      "applicableComboIds": [],
+      "applicableSections": [
+        "Breakfast"
+      ],
+      "configSnapshot": {
+        "template": "item_buy_x_get_y",
+        "minTotal": "",
+        "percent": "0",
+        "amount": "",
+        "buyQuantity": "3",
+        "freeQuantity": "1",
+        "freeItemId": "105",
+        "freeItemLabel": "Medu Vada",
+        "freeItemPrice": "50",
+        "freeItems": [
+          {
+            "id": "105",
+            "label": "Medu Vada",
+            "price": "50",
+            "quantity": ""
+          },
+          {
+            "id": "104",
+            "label": "Pongal",
+            "price": "55",
+            "quantity": ""
+          }
+        ],
+        "targetItems": [
+          {
+            "id": "102",
+            "label": "",
+            "section": ""
+          },
+          {
+            "id": "104",
+            "label": "",
+            "section": ""
+          }
+        ],
+        "targetItemIds": [
+          102,
+          104
+        ],
+        "targetMatchMode": "specific",
+        "discountPercent": "",
+        "selection": {
+          "buy": {
+            "mode": "fixed",
+            "allowAny": false,
+            "priceCap": "",
+            "items": [
+              "102",
+              "104"
+            ]
+          },
+          "free": {
+            "mode": "fixed",
+            "allowAny": false,
+            "priceCap": "",
+            "items": [
+              "105"
+            ]
+          }
+        },
+        "summaryText": "Customer buys 3 items from 2 selected items, gets 1 item of 1 selected item free. Paid items are charged on higher-priced selections, free items apply to the lowest-priced eligible items."
+      },
+      "config": {
+        "template": "item_buy_x_get_y",
+        "minTotal": "",
+        "percent": "0",
+        "amount": "",
+        "buyQuantity": "3",
+        "freeQuantity": "1",
+        "freeItemId": "105",
+        "freeItemLabel": "Medu Vada",
+        "freeItemPrice": "50",
+        "freeItems": [
+          {
+            "id": "105",
+            "label": "Medu Vada",
+            "price": "50",
+            "quantity": ""
+          },
+          {
+            "id": "104",
+            "label": "Pongal",
+            "price": "55",
+            "quantity": ""
+          }
+        ],
+        "targetItems": [
+          {
+            "id": "102",
+            "label": "",
+            "section": ""
+          },
+          {
+            "id": "104",
+            "label": "",
+            "section": ""
+          }
+        ],
+        "targetItemIds": [
+          102,
+          104
+        ],
+        "targetMatchMode": "specific",
+        "discountPercent": "",
+        "selection": {
+          "buy": {
+            "mode": "fixed",
+            "allowAny": false,
+            "priceCap": "",
+            "items": [
+              "102",
+              "104"
+            ]
+          },
+          "free": {
+            "mode": "fixed",
+            "allowAny": false,
+            "priceCap": "",
+            "items": [
+              "105"
+            ]
+          }
+        },
+        "summaryText": "Customer buys 3 items from 2 selected items, gets 1 item of 1 selected item free. Paid items are charged on higher-priced selections, free items apply to the lowest-priced eligible items."
+      },
+      "summaryText": "Customer buys 3 items from 2 selected items, gets 1 item of 1 selected item free. Paid items are charged on higher-priced selections, free items apply to the lowest-priced eligible items."
+    },
     "createdAt": "2025-11-05T16:55:14.759Z",
-    "updatedAt": "2025-11-05T16:55:14.759Z"
+    "updatedAt": "2025-11-07T07:23:00.422Z"
   },
   {
     "id": "diwali-sections-10",
@@ -95,8 +236,78 @@
         ]
       }
     ],
-    "metadata": null,
+    "metadata": {
+      "template": "percent_order",
+      "applicableComboIds": [],
+      "applicableSections": [
+        "Breakfast",
+        "Lunch"
+      ],
+      "configSnapshot": {
+        "template": "percent_order",
+        "minTotal": "",
+        "percent": "10",
+        "amount": "",
+        "buyQuantity": "",
+        "freeQuantity": "1",
+        "freeItemId": "",
+        "freeItemLabel": "",
+        "freeItemPrice": "",
+        "freeItems": [],
+        "targetItems": [],
+        "targetItemIds": [],
+        "targetMatchMode": "specific",
+        "discountPercent": "10",
+        "selection": {
+          "buy": {
+            "mode": "fixed",
+            "allowAny": false,
+            "priceCap": "",
+            "items": []
+          },
+          "free": {
+            "mode": "fixed",
+            "allowAny": false,
+            "priceCap": "",
+            "items": []
+          }
+        },
+        "summaryText": "Customer buys 0 items, gets 1 item (selected manually) free. Paid items are charged on higher-priced selections, free items apply to the lowest-priced eligible items."
+      },
+      "config": {
+        "template": "percent_order",
+        "minTotal": "",
+        "percent": "10",
+        "amount": "",
+        "buyQuantity": "",
+        "freeQuantity": "1",
+        "freeItemId": "",
+        "freeItemLabel": "",
+        "freeItemPrice": "",
+        "freeItems": [],
+        "targetItems": [],
+        "targetItemIds": [],
+        "targetMatchMode": "specific",
+        "discountPercent": "10",
+        "selection": {
+          "buy": {
+            "mode": "fixed",
+            "allowAny": false,
+            "priceCap": "",
+            "items": []
+          },
+          "free": {
+            "mode": "fixed",
+            "allowAny": false,
+            "priceCap": "",
+            "items": []
+          }
+        },
+        "summaryText": "Customer buys 0 items, gets 1 item (selected manually) free. Paid items are charged on higher-priced selections, free items apply to the lowest-priced eligible items."
+      },
+      "summaryText": "Customer buys 0 items, gets 1 item (selected manually) free. Paid items are charged on higher-priced selections, free items apply to the lowest-priced eligible items."
+    },
     "createdAt": "2025-11-01T11:34:56.581Z",
-    "updatedAt": "2025-11-05T16:55:14.759Z"
+    "updatedAt": "2025-11-07T07:23:00.422Z"
   }
 ]

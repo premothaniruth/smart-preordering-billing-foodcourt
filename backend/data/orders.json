@@ -2829,11 +2829,11 @@
     "shopId": 2,
     "user": "+919952911560",
     "scheduledTime": null,
-    "status": "pending",
+    "status": "completed",
     "createdAt": "2025-11-06T09:44:26.896Z",
     "billingId": "00007",
-    "estimatedReadyTime": "2025-11-06T09:59:26.896Z",
-    "prepTime": 15,
+    "estimatedReadyTime": "2025-11-07T07:22:55.795Z",
+    "prepTime": 20,
     "baseEstimatedReadyTime": "2025-11-06T09:59:26.896Z",
     "basePrepTime": 15,
     "rating": null,
@@ -2920,8 +2920,15 @@
       "provider": "razorpay-open",
       "reference": "PG-1762422266896"
     },
-    "etaExtendedAt": null,
-    "etaExtensionMinutes": 0
+    "etaExtendedAt": "2025-11-07T07:17:55.795Z",
+    "etaExtensionMinutes": 5,
+    "_originalPrepTimeDefined": true,
+    "_originalEstimatedReadyTimeDefined": true,
+    "originalPrepTime": 15,
+    "originalEstimatedReadyTime": "2025-11-06T09:59:26.896Z",
+    "readyAt": "2025-11-07T07:17:58.221Z",
+    "pickedAt": "2025-11-07T07:18:01.506Z",
+    "completedAt": "2025-11-07T07:18:01.506Z"
   },
   {
     "id": 51,
