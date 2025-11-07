@@ -1,1 +1,15 @@
-[]
+[
+  {
+    "id": 1,
+    "vendorId": 101,
+    "shopId": 5,
+    "username": "centralgrill",
+    "subject": "test fc-2",
+    "description": "test demo fc2",
+    "priority": "high",
+    "status": "pending",
+    "adminNote": "",
+    "createdAt": "2025-11-07T04:54:26.684Z",
+    "updatedAt": "2025-11-07T04:54:26.684Z"
+  }
+]

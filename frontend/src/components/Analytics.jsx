@@ -49,11 +49,16 @@ const Analytics = ({ token }) => {
   const [exporting, setExporting] = useState(false);
   const [exportFormat, setExportFormat] = useState("json");
   const [historyChartType, setHistoryChartType] = useState("bar");
-  const vendorShopId = useMemo(() => {
+  const { vendorShopId, vendorFoodCourt } = useMemo(() => {
     try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      return payload.shopId || 0;
-    } catch { return 0; }
+      const payload = JSON.parse(atob(token.split('.')[1] || ""));
+      return {
+        vendorShopId: payload?.shopId || 0,
+        vendorFoodCourt: payload?.foodCourt || "fc-1"
+      };
+    } catch {
+      return { vendorShopId: 0, vendorFoodCourt: "fc-1" };
+    }
   }, [token]);
 
   const baseColor = useMemo(() => {
@@ -81,7 +86,7 @@ const Analytics = ({ token }) => {
     let active = true;
     setLoading(true);
     setError(null);
-    fetchAnalytics(token, period, granularity)
+    fetchAnalytics(token, period, granularity, vendorFoodCourt)
       .then((summary) => {
         if (active) {
           setData(summary || DEFAULT_SUMMARY);

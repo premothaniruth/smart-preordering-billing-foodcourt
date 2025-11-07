@@ -117,6 +117,7 @@ const Menu = ({
   employeeToken = null,
   foodCourt,
   onFoodCourtChange,
+  vendorFoodCourt,
 }) => {
   const [vegOnly, setVegOnly] = useState(false);
   const [nonVegOnly, setNonVegOnly] = useState(false);
@@ -138,6 +139,8 @@ const Menu = ({
   const [foodCourtMenuOpen, setFoodCourtMenuOpen] = useState(false);
   const shopMenuRef = useRef(null);
   const [shopMenuOpen, setShopMenuOpen] = useState(false);
+
+  const effectiveFoodCourt = vendorFoodCourt || foodCourt;
 
   const foodCourtOptions = useMemo(
     () => [
@@ -268,9 +271,9 @@ const Menu = ({
     const loadShopData = async () => {
       try {
         const [sectionsData, offersData, combosData] = await Promise.all([
-          fetchMenuSections(selectedShop, at || undefined, foodCourt),
-          fetchActiveOffers(selectedShop, foodCourt),
-          fetchCombos(selectedShop, true, foodCourt),
+          fetchMenuSections(selectedShop, at || undefined, effectiveFoodCourt),
+          fetchActiveOffers(selectedShop, effectiveFoodCourt),
+          fetchCombos(selectedShop, true, effectiveFoodCourt),
         ]);
 
         if (ignore) return;
@@ -304,7 +307,7 @@ const Menu = ({
     return () => {
       ignore = true;
     };
-  }, [selectedShop, scheduledTime, activeSectionProp, foodCourt]);
+  }, [selectedShop, scheduledTime, activeSectionProp, effectiveFoodCourt]);
 
   useEffect(() => {
     if (activeSectionProp === undefined) return;

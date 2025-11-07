@@ -829,10 +829,11 @@ export const fetchSosStatus = async () => {
  * @param {('hour'|'day'|'week')} granularity
  * @returns {Promise<any>}
  */
-export const fetchAnalytics = async (token, period, granularity, { onFallback } = {}) => {
+export const fetchAnalytics = async (token, period, granularity, foodCourt, { onFallback } = {}) => {
   const realtimeParams = new URLSearchParams();
   if (granularity) realtimeParams.set("granularity", granularity);
   realtimeParams.set("includeInventory", "true");
+  if (foodCourt) realtimeParams.set("foodCourt", foodCourt);
 
   const realtimeRes = await fetch(`${API_URL}/analytics/summary?${realtimeParams.toString()}`, {
     headers: { Authorization: `Bearer ${token}` }
@@ -854,6 +855,7 @@ export const fetchAnalytics = async (token, period, granularity, { onFallback } 
   const params = new URLSearchParams();
   if (period) params.set("period", period);
   if (granularity) params.set("granularity", granularity);
+  if (foodCourt) params.set("foodCourt", foodCourt);
   const qs = params.toString() ? `?${params.toString()}` : "";
   const fallbackRes = await fetch(`${API_URL}/analytics${qs}`, {
     headers: { Authorization: `Bearer ${token}` }
@@ -898,8 +900,10 @@ export const uploadHistoricAnalytics = async (token, file) => {
   return payload;
 };
 
-export const fetchRecommendations = async (token) => {
-  const res = await fetch(`${API_URL}/analytics/recommendations`, {
+export const fetchRecommendations = async (token, foodCourt) => {
+  const params = new URLSearchParams();
+  if (foodCourt) params.set('foodCourt', foodCourt);
+  const res = await fetch(`${API_URL}/analytics/recommendations${params.size ? `?${params.toString()}` : ''}`, {
     headers: { Authorization: `Bearer ${token}` }
   });
   if (!res.ok) {
@@ -908,8 +912,10 @@ export const fetchRecommendations = async (token) => {
   return res.json();
 };
 
-export const fetchHeadcountEntries = async (token) => {
-  const res = await fetch(`${API_URL}/analytics/headcount`, {
+export const fetchHeadcountEntries = async (token, foodCourt) => {
+  const params = new URLSearchParams();
+  if (foodCourt) params.set('foodCourt', foodCourt);
+  const res = await fetch(`${API_URL}/analytics/headcount${params.size ? `?${params.toString()}` : ''}`, {
     headers: { Authorization: `Bearer ${token}` }
   });
   if (!res.ok) {
@@ -918,14 +924,14 @@ export const fetchHeadcountEntries = async (token) => {
   return res.json();
 };
 
-export const submitHeadcount = async (token, headcount) => {
+export const submitHeadcount = async (token, headcount, foodCourt) => {
   const res = await fetch(`${API_URL}/analytics/headcount`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ headcount }),
+    body: JSON.stringify({ headcount, foodCourt }),
   });
   if (!res.ok) {
     const text = await res.text();

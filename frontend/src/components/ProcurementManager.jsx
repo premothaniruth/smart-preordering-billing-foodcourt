@@ -36,19 +36,31 @@ const ProcurementManager = ({ token }) => {
   const [creatingOrder, setCreatingOrder] = useState(false);
   const [uiError, setUiError] = useState(null);
 
+  const { vendorShopId, vendorFoodCourt } = useMemo(() => {
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1] || ""));
+      return {
+        vendorShopId: payload?.shopId || 0,
+        vendorFoodCourt: payload?.foodCourt || "fc-1",
+      };
+    } catch {
+      return { vendorShopId: 0, vendorFoodCourt: "fc-1" };
+    }
+  }, [token]);
+
   const loadRecommendations = useCallback(async () => {
     setRecommendationsState({ loading: true, error: null, data: null });
     try {
-      const data = await fetchRecommendations(token);
+      const data = await fetchRecommendations(token, vendorFoodCourt);
       setRecommendationsState({ loading: false, error: null, data });
     } catch (error) {
       setRecommendationsState({ loading: false, error: error.message || "Failed to fetch recommendations", data: null });
     }
-  }, [token]);
+  }, [token, vendorFoodCourt]);
 
   const loadHeadcount = useCallback(async () => {
     try {
-      const response = await fetchHeadcountEntries(token);
+      const response = await fetchHeadcountEntries(token, vendorFoodCourt);
       if (response && Array.isArray(response.entries)) {
         setHeadcountEntries(response.entries);
         if (response.entries.length > 0) {
@@ -63,7 +75,7 @@ const ProcurementManager = ({ token }) => {
   const loadTemplates = useCallback(async () => {
     setTemplatesState((prev) => ({ ...prev, loading: true, error: null }));
     try {
-      const response = await fetchProcurementTemplates(token);
+      const response = await fetchProcurementTemplates(token, vendorFoodCourt);
       setTemplatesState({ loading: false, error: null, list: response.templates || [] });
     } catch (error) {
       setTemplatesState({ loading: false, error: error.message || "Failed to load templates", list: [] });
@@ -73,7 +85,7 @@ const ProcurementManager = ({ token }) => {
   const loadOrders = useCallback(async () => {
     setOrdersState((prev) => ({ ...prev, loading: true, error: null }));
     try {
-      const response = await fetchProcurementOrders(token);
+      const response = await fetchProcurementOrders(token, vendorFoodCourt);
       setOrdersState({ loading: false, error: null, list: response.orders || [] });
     } catch (error) {
       setOrdersState({ loading: false, error: error.message || "Failed to load procurement orders", list: [] });
@@ -83,7 +95,7 @@ const ProcurementManager = ({ token }) => {
   const loadForecast = useCallback(async () => {
     setForecastState({ loading: true, error: null, data: null });
     try {
-      const data = await fetchForecast(token);
+      const data = await fetchForecast(token, vendorFoodCourt);
       setForecastState({ loading: false, error: null, data });
     } catch (error) {
       setForecastState({ loading: false, error: error.message || "Failed to load forecast", data: null });
@@ -122,7 +134,7 @@ const ProcurementManager = ({ token }) => {
     if (!templateId) return;
     resetUiError();
     try {
-      await deleteProcurementTemplate(token, templateId);
+      await deleteProcurementTemplate(token, templateId, vendorFoodCourt, vendorFoodCourt);
       await loadTemplates();
     } catch (error) {
       setUiError(error.message || "Failed to delete template");
@@ -155,9 +167,9 @@ const ProcurementManager = ({ token }) => {
     resetUiError();
     try {
       if (editingTemplateId) {
-        await updateProcurementTemplate(token, editingTemplateId, templateDraft);
+        await updateProcurementTemplate(token, editingTemplateId, templateDraft, vendorFoodCourt, vendorFoodCourt);
       } else {
-        await createProcurementTemplate(token, templateDraft);
+        await createProcurementTemplate(token, templateDraft, vendorFoodCourt, vendorFoodCourt);
       }
       await loadTemplates();
       setView("overview");
