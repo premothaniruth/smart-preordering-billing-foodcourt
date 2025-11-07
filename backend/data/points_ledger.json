@@ -448,5 +448,20 @@
     "expiresAt": "2026-01-05T18:27:14.298Z",
     "walletTxId": null,
     "createdAt": "2025-11-06T18:27:14.298Z"
+  },
+  {
+    "id": "pts_1762493106309_wrm9",
+    "employeeId": "2",
+    "type": "bonus",
+    "subType": "streak",
+    "points": 1,
+    "rupees": null,
+    "orderId": null,
+    "itemCount": null,
+    "streakDate": "2025-11-07",
+    "metadata": null,
+    "expiresAt": "2026-01-06T05:25:06.308Z",
+    "walletTxId": null,
+    "createdAt": "2025-11-07T05:25:06.309Z"
   }
 ]

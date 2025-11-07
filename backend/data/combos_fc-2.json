@@ -65,5 +65,31 @@
         "overridePrice": null
       }
     ]
+  },
+  {
+    "id": 1762492718067,
+    "shopId": 5,
+    "name": "Bliss breakfast",
+    "price": 100,
+    "active": true,
+    "hidden": false,
+    "availableStart": "10:30",
+    "availableEnd": "11:00",
+    "components": [
+      {
+        "itemId": 5,
+        "quantity": 1,
+        "name": "",
+        "option": "",
+        "overridePrice": 75
+      },
+      {
+        "itemId": 20,
+        "quantity": 1,
+        "name": "",
+        "option": "",
+        "overridePrice": 55
+      }
+    ]
   }
 ]

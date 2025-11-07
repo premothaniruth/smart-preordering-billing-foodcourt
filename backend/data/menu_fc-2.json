@@ -19,7 +19,8 @@
               "options": [],
               "hasOptions": [],
               "calories": "222 kcal",
-              "restockedAt": "2025-11-07T04:27:34.016Z"
+              "restockedAt": "2025-11-07T04:27:34.016Z",
+              "isRecommended": true
             },
             {
               "id": 2,
@@ -59,7 +60,8 @@
               "options": [],
               "hasOptions": [],
               "restockedAt": "2025-11-04T19:40:35.532Z",
-              "calories": null
+              "calories": null,
+              "isHotSeller": true
             },
             {
               "id": 5,
@@ -68,11 +70,12 @@
               "isVeg": true,
               "image": "/images/paneer-paratha.jpg",
               "prepTime": 12,
-              "inventory": 95,
+              "inventory": 94,
               "section": "Breakfast",
               "options": [],
               "hasOptions": [],
-              "calories": null
+              "calories": null,
+              "isHotSeller": true
             },
             {
               "id": 6,
@@ -137,7 +140,8 @@
               "section": "Breakfast",
               "options": [],
               "hasOptions": [],
-              "calories": null
+              "calories": null,
+              "isHotSeller": true
             },
             {
               "id": 11,
@@ -150,7 +154,8 @@
               "section": "Breakfast",
               "options": [],
               "hasOptions": [],
-              "calories": null
+              "calories": null,
+              "isRecommended": true
             },
             {
               "id": 12,
@@ -189,7 +194,8 @@
               "section": "Breakfast",
               "options": [],
               "hasOptions": [],
-              "calories": null
+              "calories": null,
+              "isRecommended": true
             },
             {
               "id": 15,
@@ -215,7 +221,8 @@
               "section": "Breakfast",
               "options": [],
               "hasOptions": [],
-              "calories": null
+              "calories": null,
+              "isHotSeller": true
             },
             {
               "id": 17,
@@ -281,7 +288,7 @@
               "isVeg": true,
               "image": "/images/sweet-lassi.jpg",
               "prepTime": 5,
-              "inventory": 99,
+              "inventory": 98,
               "hasOptions": [
                 {
                   "name": "Classic",
@@ -321,7 +328,8 @@
               "section": "Lunch",
               "options": [],
               "hasOptions": [],
-              "calories": null
+              "calories": null,
+              "isHotSeller": true
             },
             {
               "id": 22,
@@ -334,7 +342,8 @@
               "section": "Lunch",
               "options": [],
               "hasOptions": [],
-              "calories": null
+              "calories": null,
+              "isHotSeller": true
             },
             {
               "id": 23,
@@ -347,7 +356,8 @@
               "section": "Lunch",
               "options": [],
               "hasOptions": [],
-              "calories": null
+              "calories": null,
+              "isHotSeller": true
             },
             {
               "id": 24,
@@ -373,7 +383,8 @@
               "section": "Lunch",
               "options": [],
               "hasOptions": [],
-              "calories": null
+              "calories": null,
+              "isRecommended": true
             },
             {
               "id": 26,
@@ -430,7 +441,8 @@
                   "priceModifier": 15
                 }
               ],
-              "calories": null
+              "calories": null,
+              "isRecommended": true
             },
             {
               "id": 29,
@@ -521,7 +533,8 @@
               "section": "Lunch",
               "options": [],
               "hasOptions": [],
-              "calories": null
+              "calories": null,
+              "isHotSeller": true
             },
             {
               "id": 36,
@@ -591,7 +604,8 @@
               "section": "Lunch",
               "options": [],
               "hasOptions": [],
-              "calories": null
+              "calories": null,
+              "isHotSeller": true
             },
             {
               "id": 40,
@@ -679,7 +693,8 @@
               "section": "Dinner",
               "options": [],
               "hasOptions": [],
-              "calories": null
+              "calories": null,
+              "isHotSeller": true
             },
             {
               "id": 45,
@@ -718,7 +733,8 @@
               "section": "Dinner",
               "options": [],
               "hasOptions": [],
-              "calories": null
+              "calories": null,
+              "isRecommended": true
             },
             {
               "id": 48,
@@ -783,7 +799,8 @@
               "section": "Dinner",
               "options": [],
               "hasOptions": [],
-              "calories": null
+              "calories": null,
+              "isRecommended": true
             },
             {
               "id": 53,
@@ -809,7 +826,8 @@
               "section": "Dinner",
               "options": [],
               "hasOptions": [],
-              "calories": null
+              "calories": null,
+              "isHotSeller": true
             },
             {
               "id": 55,
@@ -931,7 +949,8 @@
               "section": "Quick Bites",
               "options": [],
               "hasOptions": [],
-              "calories": null
+              "calories": null,
+              "isHotSeller": true
             },
             {
               "id": 64,
@@ -971,7 +990,8 @@
               "section": "Quick Bites",
               "options": [],
               "hasOptions": [],
-              "calories": null
+              "calories": null,
+              "isHotSeller": true
             },
             {
               "id": 67,
@@ -984,7 +1004,8 @@
               "section": "Quick Bites",
               "options": [],
               "hasOptions": [],
-              "calories": null
+              "calories": null,
+              "isRecommended": true
             },
             {
               "id": 68,
@@ -1041,7 +1062,8 @@
               "section": "Quick Bites",
               "options": [],
               "hasOptions": [],
-              "calories": null
+              "calories": null,
+              "isHotSeller": true
             },
             {
               "id": 71,
@@ -1293,7 +1315,9 @@
               "section": "Chat Specials",
               "options": [],
               "hasOptions": [],
-              "calories": null
+              "calories": null,
+              "isHotSeller": true,
+              "isRecommended": true
             },
             {
               "id": 90,
@@ -1332,7 +1356,8 @@
               "section": "Chat Specials",
               "options": [],
               "hasOptions": [],
-              "calories": null
+              "calories": null,
+              "isHotSeller": true
             },
             {
               "id": 93,
@@ -1436,7 +1461,8 @@
               "section": "Chat Specials",
               "options": [],
               "hasOptions": [],
-              "calories": null
+              "calories": null,
+              "isHotSeller": true
             }
           ]
         }

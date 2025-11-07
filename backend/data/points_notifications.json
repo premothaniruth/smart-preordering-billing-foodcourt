@@ -241,5 +241,14 @@
     "expiresAt": 1767637634298,
     "sent": false,
     "createdAt": "2025-11-06T18:27:14.306Z"
+  },
+  {
+    "id": "pts_rem_pts_1762493106309_wrm9",
+    "employeeId": "2",
+    "ledgerId": "pts_1762493106309_wrm9",
+    "remindAt": 1767072306308,
+    "expiresAt": 1767677106308,
+    "sent": false,
+    "createdAt": "2025-11-07T05:25:06.315Z"
   }
 ]

@@ -140,6 +140,16 @@ function App() {
     }
   })();
 
+  const vendorFoodCourt = (() => {
+    try {
+      if (!vendorToken) return null;
+      const payload = JSON.parse(atob(vendorToken.split('.')[1]));
+      return payload.foodCourt || null;
+    } catch {
+      return null;
+    }
+  })();
+
   const vendorIdentity = useMemo(() => {
     if (!vendorToken) return null;
     try {
@@ -1361,6 +1371,7 @@ function App() {
                         readOnly
                         activeSection={activeMenuSection}
                         onActiveSectionChange={setActiveMenuSection}
+                        vendorFoodCourt={vendorFoodCourt}
                       />
                     </div>
                     {/* Read-only user view for vendor: no cart, no order summary */}

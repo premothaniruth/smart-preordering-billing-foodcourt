@@ -607,5 +607,156 @@
       "phone": null,
       "contactPhone": null
     }
+  },
+  {
+    "id": 3,
+    "status": "submitted_admin",
+    "organizer": {
+      "employeeId": 2,
+      "name": "premtg",
+      "mobile": "+919952081560",
+      "email": "premtg@gmail.com",
+      "role": "Employee",
+      "roleSlug": "employee",
+      "department": ""
+    },
+    "organizerContact": {
+      "name": "Prem",
+      "email": "prem@infosys.com",
+      "mobile": "9984577654"
+    },
+    "eventName": "Chennai DC Induction",
+    "eventType": "Onboarding",
+    "eventTheme": "Refreshments",
+    "eventDate": "2025-11-20T00:00:00.000Z",
+    "eventStartTime": "2025-11-20T03:00:00.000Z",
+    "eventEndTime": "2025-11-20T11:00:00.000Z",
+    "location": "Big conference hall",
+    "building": "SDB5",
+    "floor": "ground floor",
+    "campus": "Mcity",
+    "notes": "",
+    "specialInstructions": "",
+    "deliverySlots": [
+      {
+        "id": "1762491865179-1ib2",
+        "label": "Breakfast",
+        "startTime": "2025-11-20T03:30:00.000Z",
+        "endTime": "2025-11-20T04:05:00.000Z",
+        "confirmed": false,
+        "notes": "",
+        "vendorConfirmation": null
+      },
+      {
+        "id": "1762491910451-t5fi",
+        "label": "Lunch",
+        "startTime": "2025-11-20T08:30:00.000Z",
+        "endTime": "2025-11-20T09:30:00.000Z",
+        "confirmed": false,
+        "notes": "",
+        "vendorConfirmation": null
+      }
+    ],
+    "itemGroups": [
+      {
+        "id": "1762492003221-dzcv",
+        "name": "Coffee, Biscuits, Veg Puffs, sandwich",
+        "itemId": null,
+        "quantity": 60,
+        "unitPrice": 80,
+        "options": [],
+        "notes": "",
+        "slotId": null
+      },
+      {
+        "id": "1762492063138-331c",
+        "name": "Samosa, Cake, Tea, chips",
+        "itemId": null,
+        "quantity": 60,
+        "unitPrice": 90,
+        "options": [],
+        "notes": "",
+        "slotId": null
+      }
+    ],
+    "attendeeGroups": [
+      {
+        "id": "1762492085973-y1xj",
+        "label": "Employee",
+        "count": 50,
+        "notes": ""
+      },
+      {
+        "id": "1762492093872-5880",
+        "label": "Host",
+        "count": 2,
+        "notes": ""
+      },
+      {
+        "id": "1762492102590-pllx",
+        "label": "presenter",
+        "count": 5,
+        "notes": ""
+      },
+      {
+        "id": "1762492115744-dqcl",
+        "label": "Facilities team",
+        "count": 3,
+        "notes": ""
+      }
+    ],
+    "subOrders": [],
+    "requestedVendors": [
+      "Fast foods"
+    ],
+    "attachments": [],
+    "metadata": {
+      "submittedByDepartment": null,
+      "organizerRole": "employee"
+    },
+    "expectedHeadcount": 60,
+    "expectedGuests": 60,
+    "pricing": {
+      "pricingType": "custom_quote",
+      "bulkDiscountPercent": 2,
+      "bulkFlatRate": 170
+    },
+    "vendorShopId": null,
+    "assignedVendors": [],
+    "vendorResponses": [],
+    "vendorMessages": [],
+    "linkedOrders": [],
+    "createdAt": "2025-11-07T05:09:46.911Z",
+    "updatedAt": "2025-11-07T05:09:46.911Z",
+    "lastStatusChangeAt": "2025-11-07T05:09:46.911Z",
+    "history": [
+      {
+        "id": "1762492186911-xcpluz",
+        "timestamp": "2025-11-07T05:09:46.912Z",
+        "type": "created",
+        "actor": {
+          "employeeId": 2,
+          "name": "premtg",
+          "mobile": "+919952081560",
+          "email": "premtg@gmail.com",
+          "role": "Employee",
+          "roleSlug": "employee",
+          "department": ""
+        },
+        "details": {
+          "status": "submitted_admin"
+        }
+      }
+    ],
+    "metadataVersion": 1,
+    "foodCourt": "fc-1",
+    "adminReview": {
+      "status": "under_review",
+      "decisions": []
+    },
+    "subtotal": 10200,
+    "discountAmount": 10030,
+    "totalAmount": 170,
+    "vendorContact": null
   }
 ]
