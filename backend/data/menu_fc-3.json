@@ -1470,7 +1470,7 @@
     },
     {
       "shopId": 4,
-      "shopName": "Foodie's Paradise",
+      "shopName": "The Urban Drinks",
       "categories": [
         {
           "categoryName": "Breakfast",
@@ -2548,7 +2548,7 @@
     },
     {
       "shopId": 3,
-      "shopName": "The Urban Drinks",
+      "shopName": "Foodie's Paradise",
       "categories": [
         {
           "categoryName": "Fast Food",
