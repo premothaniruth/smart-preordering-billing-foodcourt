@@ -341,6 +341,14 @@ function App() {
     return [...base, ...registryOptions];
   }, [foodCourts]);
 
+  const foodCourtNameMap = useMemo(() => {
+    const map = new Map();
+    foodCourts.forEach((entry) => {
+      map.set(entry.id, entry.name);
+    });
+    return map;
+  }, [foodCourts]);
+
   const vendorFoodCourtOptions = useMemo(() => {
     if (!foodCourts.length) {
       return [{ value: foodCourt, label: (foodCourt || "fc-1").toUpperCase() }];
@@ -465,15 +473,43 @@ function App() {
       setCartShopMismatch(false);
       return;
     }
-    const mismatch = currentCartShop != null && selectedShop != null && String(currentCartShop) !== String(selectedShop);
+    const cartShopId = cart.length > 0 ? cart[0]?.shopId ?? null : null;
+    const mismatch = cartShopId != null && selectedShop != null && String(cartShopId) !== String(selectedShop);
     setCartShopMismatch(mismatch);
-  }, [cart, currentCartShop, selectedShop]);
+  }, [cart, selectedShop]);
 
   useEffect(() => {
     readyNotifiedRef.current.clear();
     etaNotifiedRef.current.clear();
     readySeededRef.current = false;
   }, [userId]);
+
+  useEffect(() => {
+    if (!userId) {
+      setFavorites([]);
+      return;
+    }
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const res = await fetchFavorites(userId, foodCourt);
+        if (!cancelled) {
+          const ids = Array.isArray(res?.favorites)
+            ? res.favorites.map((fav) => (typeof fav === 'object' ? fav.itemId ?? fav.id ?? fav : fav))
+            : Array.isArray(res)
+              ? res.map((fav) => (typeof fav === 'object' ? fav.itemId ?? fav.id ?? fav : fav))
+              : [];
+          setFavorites(ids);
+        }
+      } catch {
+        if (!cancelled) setFavorites([]);
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [userId, foodCourt]);
 
   useEffect(() => {
     if (!employeeToken && ["orders", "profile"].includes(view)) {
@@ -795,6 +831,39 @@ function App() {
     setCartNotes(notes);
     setCheckoutDraft((prev) => (prev ? { ...prev, notes } : prev));
   };
+
+  const handleFavoriteToggle = useCallback(async (itemId) => {
+    if (!userId) {
+      toast.info("Login to save favorites");
+      return;
+    }
+    setFavorites((prev) => {
+      const exists = prev.includes(itemId);
+      if (exists) {
+        return prev.filter((id) => id !== itemId);
+      }
+      return [...prev, itemId];
+    });
+    try {
+      await toggleFavorite(userId, itemId, foodCourt);
+      const res = await fetchFavorites(userId, foodCourt);
+      const ids = Array.isArray(res?.favorites)
+        ? res.favorites.map((fav) => (typeof fav === 'object' ? fav.itemId ?? fav.id ?? fav : fav))
+        : Array.isArray(res)
+          ? res.map((fav) => (typeof fav === 'object' ? fav.itemId ?? fav.id ?? fav : fav))
+          : [];
+      setFavorites(ids);
+    } catch {
+      setFavorites((prev) => {
+        const exists = prev.includes(itemId);
+        if (exists) {
+          return prev.filter((id) => id !== itemId);
+        }
+        return [...prev, itemId];
+      });
+      toast.error("Failed to update favorites");
+    }
+  }, [userId, foodCourt]);
 
   const handlePaymentBack = () => {
     setView('user');
@@ -1356,7 +1425,12 @@ function App() {
     }
     try {
       const targetCourt = payload?.foodCourt || adminFoodCourt;
-      const res = await updateVendor(vendorId, payload, adminSession, targetCourt);
+      const requestBody = { ...payload };
+      if (payload?.migrate === true && payload?.migrateToFoodCourt) {
+        requestBody.migrate = true;
+        requestBody.migrateToFoodCourt = payload.migrateToFoodCourt;
+      }
+      const res = await updateVendor(vendorId, requestBody, adminSession, targetCourt);
       if (res?.status === "success") {
         if (targetCourt === adminFoodCourt) {
           setAdminManagedVendors((prev) => prev.map((vendor) => {
@@ -1718,6 +1792,7 @@ function App() {
                     <OrderHistory
                       orders={userOrders}
                       foodCourt={foodCourt}
+                      foodCourtName={foodCourtNameMap.get(foodCourt)}
                       onReorder={handleReorder}
                       onBack={() => setView("user")}
                       onClearHistory={handleClearHistory}

@@ -1,0 +1,762 @@
+[
+  {
+    "id": 1,
+    "status": "pending_vendor",
+    "organizer": {
+      "employeeId": 4,
+      "name": "hrdemo",
+      "mobile": "+918489196891",
+      "email": "hr@gmail.com",
+      "role": "HR",
+      "roleSlug": "hr",
+      "department": "HR"
+    },
+    "organizerContact": {
+      "name": "HR team lead",
+      "email": "hr@gmail.com",
+      "mobile": "8489196891"
+    },
+    "eventName": "Induction",
+    "eventType": "onboarding",
+    "eventTheme": "onboarding event",
+    "eventDate": "2025-11-26T00:00:00.000Z",
+    "eventStartTime": "2025-11-26T02:30:00.000Z",
+    "eventEndTime": "2025-11-26T13:30:00.000Z",
+    "location": "Induction block",
+    "building": "SDB 5",
+    "floor": "ground floor",
+    "campus": "tower 5",
+    "notes": "",
+    "specialInstructions": "",
+    "deliverySlots": [
+      {
+        "id": "1762075726186-q41r",
+        "label": "Breakfast",
+        "startTime": "2025-11-26T03:30:00.000Z",
+        "endTime": "2025-11-26T04:00:00.000Z",
+        "confirmed": false,
+        "notes": "",
+        "vendorConfirmation": null
+      },
+      {
+        "id": "1762075755829-he9a",
+        "label": "Lunch",
+        "startTime": "2025-11-26T07:30:00.000Z",
+        "endTime": "2025-11-26T08:30:00.000Z",
+        "confirmed": false,
+        "notes": "",
+        "vendorConfirmation": null
+      }
+    ],
+    "itemGroups": [
+      {
+        "id": "1762075795947-08rh",
+        "name": "Bulk combo 1",
+        "itemId": null,
+        "quantity": 55,
+        "unitPrice": 150,
+        "options": [],
+        "notes": "",
+        "slotId": null
+      },
+      {
+        "id": "1762075816468-adbc",
+        "name": "lunch combo 2",
+        "itemId": null,
+        "quantity": 55,
+        "unitPrice": 180,
+        "options": [],
+        "notes": "",
+        "slotId": null
+      }
+    ],
+    "attendeeGroups": [
+      {
+        "id": "1762075833255-cgla",
+        "label": "Employee",
+        "count": 50,
+        "notes": ""
+      },
+      {
+        "id": "1762075844004-n2ij",
+        "label": "host",
+        "count": 2,
+        "notes": ""
+      },
+      {
+        "id": "1762075851185-8b1r",
+        "label": "presenters",
+        "count": 3,
+        "notes": ""
+      }
+    ],
+    "subOrders": [],
+    "requestedVendors": [
+      "South Indian delights"
+    ],
+    "attachments": [],
+    "metadata": {
+      "submittedByDepartment": "HR",
+      "organizerRole": "hr"
+    },
+    "expectedHeadcount": 55,
+    "expectedGuests": 55,
+    "pricing": {
+      "pricingType": "vendor_rate",
+      "bulkDiscountPercent": 5,
+      "bulkFlatRate": 0
+    },
+    "vendorShopId": null,
+    "assignedVendors": [],
+    "vendorResponses": [],
+    "vendorMessages": [],
+    "linkedOrders": [],
+    "createdAt": "2025-11-02T09:32:23.473Z",
+    "updatedAt": "2025-11-02T09:32:23.473Z",
+    "lastStatusChangeAt": "2025-11-02T09:32:23.473Z",
+    "history": [
+      {
+        "id": "1762075943473-3dg1we",
+        "timestamp": "2025-11-02T09:32:23.473Z",
+        "type": "created",
+        "actor": {
+          "employeeId": 4,
+          "name": "hrdemo",
+          "mobile": "+918489196891",
+          "email": "hr@gmail.com",
+          "role": "HR",
+          "roleSlug": "hr",
+          "department": "HR"
+        },
+        "details": {
+          "status": "pending_vendor"
+        }
+      }
+    ],
+    "metadataVersion": 1,
+    "subtotal": 18150,
+    "discountAmount": 0,
+    "totalAmount": 18150
+  },
+  {
+    "id": 2,
+    "status": "completed",
+    "organizer": {
+      "employeeId": 3,
+      "name": "premtg",
+      "mobile": "+919952911560",
+      "email": "premtg@gmail.com",
+      "role": "Employee",
+      "roleSlug": "employee",
+      "department": ""
+    },
+    "organizerContact": {
+      "name": "Employee name",
+      "email": "premtg@gmail.com",
+      "mobile": "8489196891"
+    },
+    "eventName": "induction",
+    "eventType": "onboarding",
+    "eventTheme": "",
+    "eventDate": "2025-11-03T00:00:00.000Z",
+    "eventStartTime": "2025-11-03T02:45:00.000Z",
+    "eventEndTime": "2025-11-02T12:45:00.000Z",
+    "location": "seminar hall",
+    "building": "sdb5",
+    "floor": "ground floor",
+    "campus": "tower 5",
+    "notes": "",
+    "specialInstructions": "",
+    "deliverySlots": [
+      {
+        "id": "1762083987213-f6cs",
+        "label": "breakfast",
+        "startTime": "2025-11-03T03:30:00.000Z",
+        "endTime": "2025-11-03T04:30:00.000Z",
+        "confirmed": false,
+        "notes": "",
+        "vendorConfirmation": "confirmed"
+      },
+      {
+        "id": "1762084029152-cb6e",
+        "label": "lunch",
+        "startTime": "2025-11-03T07:30:00.000Z",
+        "endTime": "2025-11-03T08:30:00.000Z",
+        "confirmed": false,
+        "notes": "",
+        "vendorConfirmation": "confirmed"
+      }
+    ],
+    "itemGroups": [
+      {
+        "id": "1762084051460-m4kc",
+        "name": "breakfast combo-1",
+        "itemId": null,
+        "quantity": 55,
+        "unitPrice": 150,
+        "options": [],
+        "notes": "",
+        "slotId": null
+      },
+      {
+        "id": "1762084064936-2bsj",
+        "name": "lunch combo",
+        "itemId": null,
+        "quantity": 55,
+        "unitPrice": 180,
+        "options": [],
+        "notes": "",
+        "slotId": null
+      }
+    ],
+    "attendeeGroups": [
+      {
+        "id": "1762084078671-8vz3",
+        "label": "new joinees",
+        "count": 50,
+        "notes": ""
+      },
+      {
+        "id": "1762084083318-ez9m",
+        "label": "host",
+        "count": 2,
+        "notes": ""
+      },
+      {
+        "id": "1762084091578-oi1e",
+        "label": "presenters",
+        "count": 3,
+        "notes": ""
+      }
+    ],
+    "subOrders": [],
+    "requestedVendors": [
+      "South indian delights"
+    ],
+    "attachments": [],
+    "metadata": {
+      "submittedByDepartment": null,
+      "organizerRole": "employee"
+    },
+    "expectedHeadcount": 55,
+    "expectedGuests": 55,
+    "pricing": {
+      "pricingType": "custom_quote",
+      "bulkDiscountPercent": 5,
+      "bulkFlatRate": 0
+    },
+    "vendorShopId": "2",
+    "assignedVendors": [],
+    "vendorResponses": [
+      {
+        "id": "1762102653252-10tqyf",
+        "actor": {
+          "employeeId": 3,
+          "name": "premtg",
+          "mobile": "+919952911560",
+          "email": "premtg@gmail.com",
+          "role": "Employee",
+          "roleSlug": "employee",
+          "department": ""
+        },
+        "slotId": "1762083987213-f6cs",
+        "status": "confirmed",
+        "capacity": 55,
+        "message": "",
+        "timestamp": "2025-11-02T16:57:33.252Z"
+      },
+      {
+        "id": "1762101078470-3egz4v",
+        "actor": {
+          "employeeId": 3,
+          "name": "premtg",
+          "mobile": "+919952911560",
+          "email": "premtg@gmail.com",
+          "role": "Employee",
+          "roleSlug": "employee",
+          "department": ""
+        },
+        "slotId": "1762083987213-f6cs",
+        "status": "confirmed",
+        "capacity": 55,
+        "message": "",
+        "timestamp": "2025-11-02T16:31:18.470Z"
+      },
+      {
+        "id": "1762098971453-olpn44",
+        "actor": {
+          "vendorId": 2,
+          "shopId": 2,
+          "name": "southvendor",
+          "username": "southvendor",
+          "email": "",
+          "role": "vendor"
+        },
+        "slotId": "1762084029152-cb6e",
+        "status": "confirmed",
+        "capacity": 55,
+        "message": "",
+        "timestamp": "2025-11-02T15:56:11.453Z"
+      },
+      {
+        "id": "1762098964545-4p28ls",
+        "actor": {
+          "vendorId": 2,
+          "shopId": 2,
+          "name": "southvendor",
+          "username": "southvendor",
+          "email": "",
+          "role": "vendor"
+        },
+        "slotId": "1762083987213-f6cs",
+        "status": "confirmed",
+        "capacity": 55,
+        "message": "",
+        "timestamp": "2025-11-02T15:56:04.545Z"
+      }
+    ],
+    "vendorMessages": [
+      {
+        "id": "1762102617506-zsngc0",
+        "timestamp": "2025-11-02T16:56:57.506Z",
+        "actor": {
+          "employeeId": 3,
+          "name": "premtg",
+          "mobile": "+919952911560",
+          "email": "premtg@gmail.com",
+          "role": "Employee",
+          "roleSlug": "employee",
+          "department": ""
+        },
+        "message": "received"
+      },
+      {
+        "id": "1762098981311-hd71vb",
+        "timestamp": "2025-11-02T15:56:21.311Z",
+        "actor": {
+          "vendorId": 2,
+          "shopId": 2,
+          "name": "southvendor",
+          "username": "southvendor",
+          "email": "",
+          "role": "vendor"
+        },
+        "message": "confirm once received"
+      }
+    ],
+    "linkedOrders": [],
+    "createdAt": "2025-11-02T11:48:46.129Z",
+    "updatedAt": "2025-11-02T16:58:06.592Z",
+    "lastStatusChangeAt": "2025-11-02T16:58:06.592Z",
+    "history": [
+      {
+        "id": "1762102686592-k1m9t0",
+        "timestamp": "2025-11-02T16:58:06.592Z",
+        "type": "status_changed",
+        "actor": {
+          "employeeId": 3,
+          "name": "premtg",
+          "mobile": "+919952911560",
+          "email": "premtg@gmail.com",
+          "role": "Employee",
+          "roleSlug": "employee",
+          "department": ""
+        },
+        "details": {
+          "from": "confirmed",
+          "to": "completed"
+        }
+      },
+      {
+        "id": "1762102653253-dh986r",
+        "timestamp": "2025-11-02T16:57:33.253Z",
+        "type": "status_change",
+        "actor": {
+          "employeeId": 3,
+          "name": "premtg",
+          "mobile": "+919952911560",
+          "email": "premtg@gmail.com",
+          "role": "Employee",
+          "roleSlug": "employee",
+          "department": ""
+        },
+        "details": {
+          "from": "pending_vendor",
+          "to": "confirmed",
+          "slotId": "1762083987213-f6cs"
+        }
+      },
+      {
+        "id": "1762102653252-10f5wn",
+        "timestamp": "2025-11-02T16:57:33.252Z",
+        "type": "vendor_confirmation",
+        "actor": {
+          "employeeId": 3,
+          "name": "premtg",
+          "mobile": "+919952911560",
+          "email": "premtg@gmail.com",
+          "role": "Employee",
+          "roleSlug": "employee",
+          "department": ""
+        },
+        "details": {
+          "slotId": "1762083987213-f6cs",
+          "status": "confirmed",
+          "capacity": 55,
+          "message": ""
+        }
+      },
+      {
+        "id": "1762102617506-cf0pur",
+        "timestamp": "2025-11-02T16:56:57.506Z",
+        "type": "vendor_message",
+        "actor": {
+          "employeeId": 3,
+          "name": "premtg",
+          "mobile": "+919952911560",
+          "email": "premtg@gmail.com",
+          "role": "Employee",
+          "roleSlug": "employee",
+          "department": ""
+        },
+        "details": {
+          "message": "received"
+        }
+      },
+      {
+        "id": "1762101078470-cglscf",
+        "timestamp": "2025-11-02T16:31:18.470Z",
+        "type": "vendor_confirmation",
+        "actor": {
+          "employeeId": 3,
+          "name": "premtg",
+          "mobile": "+919952911560",
+          "email": "premtg@gmail.com",
+          "role": "Employee",
+          "roleSlug": "employee",
+          "department": ""
+        },
+        "details": {
+          "slotId": "1762083987213-f6cs",
+          "status": "confirmed",
+          "capacity": 55,
+          "message": ""
+        }
+      },
+      {
+        "id": "1762098981311-mlrzbv",
+        "timestamp": "2025-11-02T15:56:21.311Z",
+        "type": "vendor_message",
+        "actor": {
+          "vendorId": 2,
+          "shopId": 2,
+          "name": "southvendor",
+          "username": "southvendor",
+          "email": "",
+          "role": "vendor"
+        },
+        "details": {
+          "message": "confirm once received"
+        }
+      },
+      {
+        "id": "1762098971453-teubp2",
+        "timestamp": "2025-11-02T15:56:11.453Z",
+        "type": "vendor_confirmation",
+        "actor": {
+          "vendorId": 2,
+          "shopId": 2,
+          "name": "southvendor",
+          "username": "southvendor",
+          "email": "",
+          "role": "vendor"
+        },
+        "details": {
+          "slotId": "1762084029152-cb6e",
+          "status": "confirmed",
+          "capacity": 55,
+          "message": ""
+        }
+      },
+      {
+        "id": "1762098964545-pva5hi",
+        "timestamp": "2025-11-02T15:56:04.545Z",
+        "type": "vendor_confirmation",
+        "actor": {
+          "vendorId": 2,
+          "shopId": 2,
+          "name": "southvendor",
+          "username": "southvendor",
+          "email": "",
+          "role": "vendor"
+        },
+        "details": {
+          "slotId": "1762083987213-f6cs",
+          "status": "confirmed",
+          "capacity": 55,
+          "message": ""
+        }
+      },
+      {
+        "id": "1762098908963-kh3h4t",
+        "timestamp": "2025-11-02T15:55:08.963Z",
+        "type": "admin_sent_to_vendor",
+        "actor": {
+          "adminUsername": "infybhojans",
+          "role": "admin"
+        },
+        "details": {
+          "vendorShopId": "2"
+        }
+      },
+      {
+        "id": "1762098908962-umf33p",
+        "timestamp": "2025-11-02T15:55:08.962Z",
+        "type": "status_change",
+        "actor": {
+          "adminUsername": "infybhojans",
+          "role": "admin"
+        },
+        "details": {
+          "from": "approved_admin",
+          "to": "pending_vendor",
+          "vendorShopId": "2"
+        }
+      },
+      {
+        "id": "1762098902623-qe1190",
+        "timestamp": "2025-11-02T15:55:02.623Z",
+        "type": "status_change",
+        "actor": {
+          "adminUsername": "infybhojans",
+          "role": "admin"
+        },
+        "details": {
+          "from": "needs_revision",
+          "to": "approved_admin",
+          "comment": ""
+        }
+      },
+      {
+        "id": "1762084200244-atu0t6",
+        "timestamp": "2025-11-02T11:50:00.244Z",
+        "type": "status_change",
+        "actor": {
+          "adminUsername": "infybhojans",
+          "role": "admin"
+        },
+        "details": {
+          "from": "submitted_admin",
+          "to": "needs_revision",
+          "comment": "revise menu"
+        }
+      },
+      {
+        "id": "1762084126129-7ab3gw",
+        "timestamp": "2025-11-02T11:48:46.129Z",
+        "type": "created",
+        "actor": {
+          "employeeId": 3,
+          "name": "premtg",
+          "mobile": "+919952911560",
+          "email": "premtg@gmail.com",
+          "role": "Employee",
+          "roleSlug": "employee",
+          "department": ""
+        },
+        "details": {
+          "status": "submitted_admin"
+        }
+      }
+    ],
+    "metadataVersion": 1,
+    "adminReview": {
+      "status": "approved",
+      "decisions": [
+        {
+          "id": "1762098902624-7nw7cg",
+          "timestamp": "2025-11-02T15:55:02.624Z",
+          "action": "approve",
+          "comment": "",
+          "actor": {
+            "adminUsername": "infybhojans",
+            "role": "admin"
+          }
+        },
+        {
+          "id": "1762084200244-ik1xws",
+          "timestamp": "2025-11-02T11:50:00.244Z",
+          "action": "request_changes",
+          "comment": "revise menu",
+          "actor": {
+            "adminUsername": "infybhojans",
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "subtotal": 18150,
+    "discountAmount": 0,
+    "totalAmount": 18150,
+    "vendorContact": {
+      "vendorId": 2,
+      "shopId": 2,
+      "shopName": "South Indian Delights",
+      "email": null,
+      "contactEmail": null,
+      "phone": null,
+      "contactPhone": null
+    }
+  },
+  {
+    "id": 3,
+    "status": "submitted_admin",
+    "organizer": {
+      "employeeId": 2,
+      "name": "premtg",
+      "mobile": "+919952081560",
+      "email": "premtg@gmail.com",
+      "role": "Employee",
+      "roleSlug": "employee",
+      "department": ""
+    },
+    "organizerContact": {
+      "name": "Prem",
+      "email": "prem@infosys.com",
+      "mobile": "9984577654"
+    },
+    "eventName": "Chennai DC Induction",
+    "eventType": "Onboarding",
+    "eventTheme": "Refreshments",
+    "eventDate": "2025-11-20T00:00:00.000Z",
+    "eventStartTime": "2025-11-20T03:00:00.000Z",
+    "eventEndTime": "2025-11-20T11:00:00.000Z",
+    "location": "Big conference hall",
+    "building": "SDB5",
+    "floor": "ground floor",
+    "campus": "Mcity",
+    "notes": "",
+    "specialInstructions": "",
+    "deliverySlots": [
+      {
+        "id": "1762491865179-1ib2",
+        "label": "Breakfast",
+        "startTime": "2025-11-20T03:30:00.000Z",
+        "endTime": "2025-11-20T04:05:00.000Z",
+        "confirmed": false,
+        "notes": "",
+        "vendorConfirmation": null
+      },
+      {
+        "id": "1762491910451-t5fi",
+        "label": "Lunch",
+        "startTime": "2025-11-20T08:30:00.000Z",
+        "endTime": "2025-11-20T09:30:00.000Z",
+        "confirmed": false,
+        "notes": "",
+        "vendorConfirmation": null
+      }
+    ],
+    "itemGroups": [
+      {
+        "id": "1762492003221-dzcv",
+        "name": "Coffee, Biscuits, Veg Puffs, sandwich",
+        "itemId": null,
+        "quantity": 60,
+        "unitPrice": 80,
+        "options": [],
+        "notes": "",
+        "slotId": null
+      },
+      {
+        "id": "1762492063138-331c",
+        "name": "Samosa, Cake, Tea, chips",
+        "itemId": null,
+        "quantity": 60,
+        "unitPrice": 90,
+        "options": [],
+        "notes": "",
+        "slotId": null
+      }
+    ],
+    "attendeeGroups": [
+      {
+        "id": "1762492085973-y1xj",
+        "label": "Employee",
+        "count": 50,
+        "notes": ""
+      },
+      {
+        "id": "1762492093872-5880",
+        "label": "Host",
+        "count": 2,
+        "notes": ""
+      },
+      {
+        "id": "1762492102590-pllx",
+        "label": "presenter",
+        "count": 5,
+        "notes": ""
+      },
+      {
+        "id": "1762492115744-dqcl",
+        "label": "Facilities team",
+        "count": 3,
+        "notes": ""
+      }
+    ],
+    "subOrders": [],
+    "requestedVendors": [
+      "Fast foods"
+    ],
+    "attachments": [],
+    "metadata": {
+      "submittedByDepartment": null,
+      "organizerRole": "employee"
+    },
+    "expectedHeadcount": 60,
+    "expectedGuests": 60,
+    "pricing": {
+      "pricingType": "custom_quote",
+      "bulkDiscountPercent": 2,
+      "bulkFlatRate": 170
+    },
+    "vendorShopId": null,
+    "assignedVendors": [],
+    "vendorResponses": [],
+    "vendorMessages": [],
+    "linkedOrders": [],
+    "createdAt": "2025-11-07T05:09:46.911Z",
+    "updatedAt": "2025-11-07T05:09:46.911Z",
+    "lastStatusChangeAt": "2025-11-07T05:09:46.911Z",
+    "history": [
+      {
+        "id": "1762492186911-xcpluz",
+        "timestamp": "2025-11-07T05:09:46.912Z",
+        "type": "created",
+        "actor": {
+          "employeeId": 2,
+          "name": "premtg",
+          "mobile": "+919952081560",
+          "email": "premtg@gmail.com",
+          "role": "Employee",
+          "roleSlug": "employee",
+          "department": ""
+        },
+        "details": {
+          "status": "submitted_admin"
+        }
+      }
+    ],
+    "metadataVersion": 1,
+    "foodCourt": "fc-1",
+    "adminReview": {
+      "status": "under_review",
+      "decisions": []
+    },
+    "subtotal": 10200,
+    "discountAmount": 10030,
+    "totalAmount": 170,
+    "vendorContact": null
+  }
+]

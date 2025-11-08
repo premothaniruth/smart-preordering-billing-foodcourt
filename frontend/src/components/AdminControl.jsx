@@ -8,7 +8,7 @@ import {
   fetchAdminVendors,
   updateVendor as updateVendorApi,
   createVendor as createVendorApi,
-  deleteAdminVendor,
+  archiveAdminVendor,
   fetchArchivedVendors,
   restoreArchivedVendor
 } from "../api";
@@ -21,6 +21,14 @@ const initialCreateState = {
   email: "",
   username: "",
   password: ""
+};
+
+const initialUpdateState = {
+  username: "",
+  email: "",
+  password: "",
+  migrate: false,
+  migrateTo: ""
 };
 
 const normalizeBulkStatusFilter = (value) => {
@@ -49,8 +57,11 @@ function AdminControl({
 }) {
   const [loginForm, setLoginForm] = useState({ username: "", password: "" });
   const [createForm, setCreateForm] = useState(initialCreateState);
+  const [createVendorCourt, setCreateVendorCourt] = useState("");
+  const [updateCourtFilter, setUpdateCourtFilter] = useState("");
+  const [managedCourtFilter, setManagedCourtFilter] = useState("");
   const [selectedVendorId, setSelectedVendorId] = useState("");
-  const [updateForm, setUpdateForm] = useState({ username: "", password: "" });
+  const [updateForm, setUpdateForm] = useState({ ...initialUpdateState });
   const [bulkOrders, setBulkOrders] = useState([]);
   const [bulkStatus, setBulkStatus] = useState("all");
   const [bulkLoading, setBulkLoading] = useState(false);
@@ -59,7 +70,7 @@ function AdminControl({
   const [selectedBulkId, setSelectedBulkId] = useState(null);
   const [decisionComment, setDecisionComment] = useState("");
   const [sendVendorShopId, setSendVendorShopId] = useState("");
-  const [vendorDirectory, setVendorDirectory] = useState([]);
+  const [vendorDirectoryMap, setVendorDirectoryMap] = useState(new Map());
   const [vendorDirectoryLoading, setVendorDirectoryLoading] = useState(false);
   const [vendorDirectoryError, setVendorDirectoryError] = useState(null);
   const [archivedVendors, setArchivedVendors] = useState([]);
@@ -67,10 +78,9 @@ function AdminControl({
   const [archivedError, setArchivedError] = useState(null);
   const [activePanel, setActivePanel] = useState("bulk");
 
-  const sortedVendors = useMemo(() => {
-    const source = vendorDirectory.length ? vendorDirectory : vendors;
-    return [...source].sort((a, b) => a.shopName.localeCompare(b.shopName));
-  }, [vendorDirectory, vendors]);
+  const [newCourtName, setNewCourtName] = useState("");
+  const [renameCourtId, setRenameCourtId] = useState("");
+  const [renameCourtName, setRenameCourtName] = useState("");
 
   useEffect(() => {
     if (!Array.isArray(adminFoodCourtOptions) || adminFoodCourtOptions.length === 0) return;
@@ -82,30 +92,105 @@ function AdminControl({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [adminFoodCourtOptions]);
 
-  const createCourtOptions = useMemo(() => {
-    return adminFoodCourtOptions.filter((option) => option.value !== 'all');
+  const filteredCourtOptions = useMemo(() => adminFoodCourtOptions.filter((option) => option.value !== "all"), [adminFoodCourtOptions]);
+
+  const resolvedSelectedCourt = useMemo(() => {
+    if (!filteredCourtOptions.length) return "";
+    if (selectedFoodCourt !== "all" && filteredCourtOptions.some((option) => option.value === selectedFoodCourt)) {
+      return selectedFoodCourt;
+    }
+    return filteredCourtOptions[0]?.value || "";
+  }, [filteredCourtOptions, selectedFoodCourt]);
+
+  const updateVendorList = useMemo(() => {
+    const activeCourt = updateCourtFilter || resolvedSelectedCourt;
+    if (!activeCourt) return [];
+    return vendorDirectoryMap.get(activeCourt) || [];
+  }, [vendorDirectoryMap, updateCourtFilter, resolvedSelectedCourt]);
+
+  const sortedUpdateVendors = useMemo(() => {
+    return [...updateVendorList].sort((a, b) => a.shopName.localeCompare(b.shopName));
+  }, [updateVendorList]);
+
+  const selectedVendor = useMemo(() => {
+    if (!selectedVendorId) return null;
+    return updateVendorList.find((vendor) => String(vendor.vendorId ?? vendor.id) === String(selectedVendorId)) || null;
+  }, [selectedVendorId, updateVendorList]);
+
+  const managedVendorList = useMemo(() => {
+    const activeCourt = managedCourtFilter || resolvedSelectedCourt;
+    if (!activeCourt) return [];
+    return vendorDirectoryMap.get(activeCourt) || [];
+  }, [vendorDirectoryMap, managedCourtFilter, resolvedSelectedCourt]);
+
+  const sortedManagedVendors = useMemo(() => {
+    return [...managedVendorList].sort((a, b) => a.shopName.localeCompare(b.shopName));
+  }, [managedVendorList]);
+
+  const courtLabelById = useMemo(() => {
+    const map = new Map();
+    adminFoodCourtOptions.forEach((option) => {
+      map.set(option.value, option.label);
+    });
+    return map;
   }, [adminFoodCourtOptions]);
 
-  const handleDeleteVendor = async (vendorId) => {
+  useEffect(() => {
+    if (!filteredCourtOptions.length) {
+      setVendorDirectoryMap(new Map());
+      setCreateVendorCourt("");
+      setUpdateCourtFilter("");
+      setManagedCourtFilter("");
+      return;
+    }
+    setCreateVendorCourt((current) => {
+      if (current && filteredCourtOptions.some((option) => option.value === current)) {
+        return current;
+      }
+      return filteredCourtOptions[0]?.value || "";
+    });
+    setUpdateCourtFilter((current) => {
+      if (current && filteredCourtOptions.some((option) => option.value === current)) {
+        return current;
+      }
+      return filteredCourtOptions[0]?.value || "";
+    });
+    setManagedCourtFilter((current) => {
+      if (current && filteredCourtOptions.some((option) => option.value === current)) {
+        return current;
+      }
+      return filteredCourtOptions[0]?.value || "";
+    });
+  }, [filteredCourtOptions, resolvedSelectedCourt]);
+
+  useEffect(() => {
+    if (!updateCourtFilter || updateCourtFilter === selectedFoodCourt) return;
+    onFoodCourtChange(updateCourtFilter);
+  }, [updateCourtFilter, selectedFoodCourt, onFoodCourtChange]);
+
+  const handleArchiveVendor = async (vendorId) => {
     if (!adminSession || !vendorId) return;
-    const confirmDelete = window.confirm("Are you sure you want to remove this vendor? This will delete associated shop data.");
-    if (!confirmDelete) return;
+    const confirmArchive = window.confirm("Archive this vendor? Their data will be preserved and can be restored within 7 days.");
+    if (!confirmArchive) return;
     try {
-      const res = await deleteAdminVendor(adminSession, vendorId, selectedFoodCourt);
-      if (res?.status === "success") {
-        toast.success("Vendor removed");
+      const res = await archiveAdminVendor(adminSession, vendorId, selectedFoodCourt === "all" ? resolvedSelectedCourt : selectedFoodCourt);
+      if (res?.status === "archived") {
+        toast.success("Vendor archived");
         if (String(selectedVendorId) === String(vendorId)) {
           setSelectedVendorId("");
-          setUpdateForm(initialCreateState);
+          setUpdateForm({ ...initialUpdateState });
         }
+        setCreateForm(initialCreateState);
+        setCreateVendorCourt((current) => current || resolvedSelectedCourt);
         await refreshVendorDirectory();
+        await loadArchivedVendors();
         onRequestRefresh && onRequestRefresh();
       } else {
-        toast.error(res?.message || "Failed to remove vendor");
+        toast.error(res?.message || "Failed to archive vendor");
       }
     } catch (error) {
-      console.error("Failed to delete vendor", error);
-      toast.error("Unable to remove vendor");
+      console.error("Failed to archive vendor", error);
+      toast.error("Unable to archive vendor");
     }
   };
 
@@ -114,11 +199,11 @@ function AdminControl({
     try {
       const res = await restoreArchivedVendor(adminSession, archiveId, selectedFoodCourt);
       if (res?.status === "success") {
-        toast.success("Vendor restored successfully");
-        await Promise.all([refreshVendorDirectory(), loadArchivedVendors()]);
+        toast.success("Vendor updated");
+        await Promise.all([refreshVendorDirectory(), loadBulkOrders(adminSession, bulkStatus)]);
         onRequestRefresh && onRequestRefresh();
       } else {
-        toast.error(res?.message || "Failed to restore vendor");
+        toast.error(res?.message || "Failed to update vendor");
       }
     } catch (error) {
       console.error("Failed to restore vendor", error);
@@ -168,30 +253,52 @@ function AdminControl({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [adminSession, bulkStatus, selectedFoodCourt]);
 
-  const refreshVendorDirectory = useCallback(async () => {
+  const refreshVendorDirectory = useCallback(async (court) => {
     if (!adminSession) {
-      setVendorDirectory([]);
+      setVendorDirectoryMap(new Map());
       setVendorDirectoryError(null);
       return;
     }
     try {
       setVendorDirectoryLoading(true);
       setVendorDirectoryError(null);
-      const res = await fetchAdminVendors(adminSession, selectedFoodCourt);
+      const baseCourt = court || selectedFoodCourt;
+      const targetCourt = baseCourt && baseCourt !== "all" ? baseCourt : resolvedSelectedCourt;
+      if (!targetCourt) {
+        setVendorDirectoryLoading(false);
+        return;
+      }
+      const res = await fetchAdminVendors(adminSession, targetCourt);
       if (res?.status === "ok" && Array.isArray(res.vendors)) {
-        setVendorDirectory(res.vendors);
+        setVendorDirectoryMap((prev) => {
+          const next = new Map(prev);
+          next.set(targetCourt, res.vendors);
+          return next;
+        });
       } else {
-        setVendorDirectory([]);
+        setVendorDirectoryMap((prev) => {
+          const next = new Map(prev);
+          next.set(targetCourt, []);
+          return next;
+        });
         setVendorDirectoryError(res?.message || "Failed to load vendor directory");
       }
     } catch (error) {
       console.error("Admin vendor directory error", error);
-      setVendorDirectory([]);
+      setVendorDirectoryMap((prev) => {
+        const next = new Map(prev);
+        const baseCourt = court || selectedFoodCourt;
+        const targetCourt = baseCourt && baseCourt !== "all" ? baseCourt : resolvedSelectedCourt;
+        if (targetCourt) {
+          next.set(targetCourt, []);
+        }
+        return next;
+      });
       setVendorDirectoryError("Unable to load vendor directory");
     } finally {
       setVendorDirectoryLoading(false);
     }
-  }, [adminSession, selectedFoodCourt]);
+  }, [adminSession, selectedFoodCourt, resolvedSelectedCourt]);
 
   const loadArchivedVendors = useCallback(async () => {
     if (!adminSession) {
@@ -219,35 +326,51 @@ function AdminControl({
   }, [adminSession, selectedFoodCourt]);
 
   useEffect(() => {
-    let cancelled = false;
     if (!adminSession) {
-      setVendorDirectory([]);
+      setVendorDirectoryMap(new Map());
       setVendorDirectoryError(null);
-      setVendorDirectoryLoading(false);
       setArchivedVendors([]);
       setArchivedError(null);
-      setArchivedLoading(false);
-      return () => {
-        cancelled = true;
-      };
+      return;
     }
+    let cancelled = false;
 
     const loadVendorDirectory = async () => {
       try {
         setVendorDirectoryLoading(true);
         setVendorDirectoryError(null);
-        const res = await fetchAdminVendors(adminSession, selectedFoodCourt);
+        const effectiveCourt = selectedFoodCourt !== "all" ? selectedFoodCourt : resolvedSelectedCourt;
+        const res = await fetchAdminVendors(adminSession, effectiveCourt);
         if (cancelled) return;
         if (res?.status === "ok" && Array.isArray(res.vendors)) {
-          setVendorDirectory(res.vendors);
+          setVendorDirectoryMap((prev) => {
+            const next = new Map(prev);
+            if (effectiveCourt) {
+              next.set(effectiveCourt, res.vendors);
+            }
+            return next;
+          });
         } else {
-          setVendorDirectory([]);
+          setVendorDirectoryMap((prev) => {
+            const next = new Map(prev);
+            if (effectiveCourt) {
+              next.set(effectiveCourt, []);
+            }
+            return next;
+          });
           setVendorDirectoryError(res?.message || "Failed to load vendor directory");
         }
       } catch (error) {
         if (cancelled) return;
         console.error("Admin vendor directory error", error);
-        setVendorDirectory([]);
+        setVendorDirectoryMap((prev) => {
+          const next = new Map(prev);
+          const effectiveCourt = selectedFoodCourt !== "all" ? selectedFoodCourt : resolvedSelectedCourt;
+          if (effectiveCourt) {
+            next.set(effectiveCourt, []);
+          }
+          return next;
+        });
         setVendorDirectoryError("Unable to load vendor directory");
       } finally {
         if (!cancelled) {
@@ -262,13 +385,31 @@ function AdminControl({
     return () => {
       cancelled = true;
     };
-  }, [adminSession, selectedFoodCourt, refreshVendorDirectory, loadArchivedVendors]);
+  }, [adminSession, selectedFoodCourt, loadArchivedVendors]);
 
   useEffect(() => {
     setSelectedVendorId("");
-    setUpdateForm({ username: "", password: "" });
+    setUpdateForm({ ...initialUpdateState });
     setSendVendorShopId("");
   }, [selectedFoodCourt]);
+
+  useEffect(() => {
+    if (!adminSession) return;
+    const court = updateCourtFilter || resolvedSelectedCourt;
+    if (!court) return;
+    if (!vendorDirectoryMap.has(court)) {
+      refreshVendorDirectory(court);
+    }
+  }, [adminSession, updateCourtFilter, resolvedSelectedCourt, vendorDirectoryMap, refreshVendorDirectory]);
+
+  useEffect(() => {
+    if (!adminSession) return;
+    const court = managedCourtFilter || resolvedSelectedCourt;
+    if (!court) return;
+    if (!vendorDirectoryMap.has(court)) {
+      refreshVendorDirectory(court);
+    }
+  }, [adminSession, managedCourtFilter, resolvedSelectedCourt, vendorDirectoryMap, refreshVendorDirectory]);
 
   const handleLoginSubmit = (e) => {
     e.preventDefault();
@@ -297,14 +438,22 @@ function AdminControl({
       return;
     }
 
-    onCreateVendor({
-      shopName,
-      username,
-      password,
-      email: email || undefined,
-      foodCourt: selectedFoodCourt,
-    });
+    if (!createVendorCourt) {
+      toast.error("Assign a food court to this vendor");
+      return;
+    }
+
+    const payload = {
+      shopName: createForm.shopName,
+      email: createForm.email,
+      username: createForm.username,
+      password: createForm.password,
+      foodCourt: createVendorCourt,
+    };
+
+    onCreateVendor(payload);
     setCreateForm(initialCreateState);
+    setCreateVendorCourt(createVendorCourt);
   };
 
   const handleUpdateSubmit = (e) => {
@@ -316,25 +465,38 @@ function AdminControl({
       toast.error("Provide a username or password to update");
       return;
     }
-    const payload = {};
+    const payload = { foodCourt: updateCourtFilter };
     if (username) payload.username = username;
+    if (updateForm.email && updateForm.email.trim()) {
+      payload.email = updateForm.email.trim();
+    }
     if (password) payload.password = password;
-    onUpdateVendor(selectedVendorId, { ...payload, foodCourt: selectedFoodCourt });
-    setUpdateForm({ username: "", password: "" });
+    if (updateForm.migrate && updateForm.migrateTo) {
+      payload.migrate = true;
+      payload.migrateToFoodCourt = updateForm.migrateTo;
+    }
+
+    onUpdateVendor(selectedVendorId, payload);
+    setUpdateForm({ ...initialUpdateState });
     setSelectedVendorId("");
+    setUpdateCourtFilter(updateCourtFilter);
   };
 
   const handleVendorSelection = (vendorId) => {
     setSelectedVendorId(vendorId);
-    const source = vendorDirectory.length ? vendorDirectory : vendors;
-    const vendor = source.find((v) => String(v.vendorId ?? v.id) === String(vendorId));
+    const vendor = updateVendorList.find((v) => String(v.vendorId ?? v.id) === String(vendorId));
     if (vendor) {
       setUpdateForm({
+        ...initialUpdateState,
         username: vendor.username || "",
-        password: vendor.password || ""
+        email: vendor.email || ""
       });
+      const vendorCourt = vendor.foodCourt || vendor.foodcourt || updateCourtFilter;
+      if (vendorCourt) {
+        setUpdateCourtFilter(vendorCourt);
+      }
     } else {
-      setUpdateForm({ username: "", password: "" });
+      setUpdateForm({ ...initialUpdateState });
     }
   };
 
@@ -899,32 +1061,32 @@ function AdminControl({
       <div className="grid" style={{ display: "grid", gap: 20, gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
         <div className="card">
           <div className="card-header">Create New Vendor</div>
-          <form className="card-body" onSubmit={handleCreateSubmit}>
-            <div className="form-group">
-              <label>Active Food Court</label>
+          <form onSubmit={handleCreateSubmit} className="card-body" style={{ display: "grid", gap: 12 }}>
+            <div>
+              <label>Assign Food Court</label>
               <select
-                value={selectedFoodCourt}
-                onChange={(e) => onFoodCourtChange(e.target.value)}
-                style={{ minWidth: 160 }}
+                value={createVendorCourt}
+                onChange={(e) => setCreateVendorCourt(e.target.value)}
+                required
               >
-                {adminFoodCourtOptions.map((option) => (
+                <option value="">-- Select food court --</option>
+                {filteredCourtOptions.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
                   </option>
                 ))}
               </select>
             </div>
-            <div className="form-group">
+            <div>
               <label>Shop Name</label>
               <input
-                type="text"
                 value={createForm.shopName}
                 onChange={(e) => setCreateForm((prev) => ({ ...prev, shopName: e.target.value }))}
-                placeholder="e.g., Fast Bites"
+                required
               />
             </div>
-            <div className="form-group">
-              <label>Contact Email</label>
+            <div>
+              <label>Vendor Email</label>
               <input
                 type="email"
                 value={createForm.email}
@@ -932,25 +1094,24 @@ function AdminControl({
                 placeholder="vendor@example.com"
               />
             </div>
-            <div className="form-group">
+            <div>
               <label>Vendor Username</label>
               <input
-                type="text"
                 value={createForm.username}
                 onChange={(e) => setCreateForm((prev) => ({ ...prev, username: e.target.value }))}
-                placeholder="login username"
+                required
               />
             </div>
-            <div className="form-group">
+            <div>
               <label>Temporary Password</label>
               <input
                 type="password"
                 value={createForm.password}
                 onChange={(e) => setCreateForm((prev) => ({ ...prev, password: e.target.value }))}
-                placeholder="••••••••"
+                required
               />
             </div>
-            <button type="submit" className="primary-button" style={{ width: "100%", marginTop: 12 }}>
+            <button type="submit" className="primary-button" style={{ width: "100%" }}>
               Create Vendor &amp; Send Mail
             </button>
           </form>
@@ -958,39 +1119,100 @@ function AdminControl({
 
         <div className="card">
           <div className="card-header">Update Vendor Credentials</div>
-          <form className="card-body" onSubmit={handleUpdateSubmit}>
-            <div className="form-group">
+          <form onSubmit={handleUpdateSubmit} className="card-body" style={{ display: "grid", gap: 12 }}>
+            <div>
+              <label>Choose Food Court</label>
+              <select value={updateCourtFilter} onChange={(e) => setUpdateCourtFilter(e.target.value)}>
+                {filteredCourtOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
               <label>Select Vendor</label>
               <select value={selectedVendorId} onChange={(e) => handleVendorSelection(e.target.value)}>
                 <option value="">-- Choose a vendor --</option>
-                {sortedVendors.map((vendor) => (
+                {sortedUpdateVendors.map((vendor) => (
                   <option key={vendor.vendorId ?? vendor.id} value={vendor.vendorId ?? vendor.id}>
                     {vendor.shopName}
                   </option>
                 ))}
               </select>
             </div>
-            <div className="form-group">
+            <div>
               <label>Vendor Username</label>
               <input
-                type="text"
                 value={updateForm.username}
                 onChange={(e) => setUpdateForm((prev) => ({ ...prev, username: e.target.value }))}
-                placeholder="login username"
+                disabled={!selectedVendorId}
+                required
+              />
+            </div>
+            <div>
+              <label>Vendor Email</label>
+              <input
+                type="email"
+                value={updateForm.email}
+                onChange={(e) => setUpdateForm((prev) => ({ ...prev, email: e.target.value }))}
                 disabled={!selectedVendorId}
               />
             </div>
-            <div className="form-group">
+            <div>
+              <label>Migration</label>
+              <div style={{ display: "grid", gap: 8 }}>
+                <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <input
+                    type="radio"
+                    name="vendor-migrate"
+                    value="no"
+                    checked={!updateForm.migrate}
+                    onChange={() => setUpdateForm((prev) => ({ ...prev, migrate: false, migrateTo: "" }))}
+                    disabled={!selectedVendorId}
+                  />
+                  Keep vendor in current food court
+                </label>
+                <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <input
+                    type="radio"
+                    name="vendor-migrate"
+                    value="yes"
+                    checked={updateForm.migrate}
+                    onChange={() => setUpdateForm((prev) => ({ ...prev, migrate: true, migrateTo: "" }))}
+                    disabled={!selectedVendorId}
+                  />
+                  Migrate vendor to another food court
+                </label>
+                {updateForm.migrate && (
+                  <select
+                    value={updateForm.migrateTo}
+                    onChange={(e) => setUpdateForm((prev) => ({ ...prev, migrateTo: e.target.value }))}
+                    disabled={!selectedVendorId}
+                    required
+                  >
+                    <option value="">-- Select new food court --</option>
+                    {filteredCourtOptions
+                      .filter((option) => option.value !== updateCourtFilter)
+                      .map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                  </select>
+                )}
+              </div>
+            </div>
+            <div>
               <label>Reset Password</label>
               <input
                 type="password"
                 value={updateForm.password}
                 onChange={(e) => setUpdateForm((prev) => ({ ...prev, password: e.target.value }))}
-                placeholder="leave blank to keep the same"
                 disabled={!selectedVendorId}
               />
             </div>
-            <button type="submit" className="secondary-button" style={{ width: "100%", marginTop: 12 }} disabled={!selectedVendorId}>
+            <button type="submit" className="secondary-button" style={{ width: "100%" }} disabled={!selectedVendorId}>
               Update Credentials &amp; Notify
             </button>
           </form>
@@ -998,29 +1220,44 @@ function AdminControl({
       </div>
 
       <div className="card" style={{ marginTop: 24 }}>
-        <div className="card-header">Managed Vendors</div>
+        <div className="card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+          <span>Managed Vendors</span>
+          <select value={managedCourtFilter} onChange={(e) => setManagedCourtFilter(e.target.value)}>
+            {filteredCourtOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
         <div className="card-body" style={{ maxHeight: 220, overflowY: "auto" }}>
-          {sortedVendors.length === 0 ? (
+          {sortedManagedVendors.length === 0 ? (
             <p style={{ color: "#7f8c8d", fontSize: 14 }}>No vendors found yet. Create a vendor using the form above.</p>
           ) : (
             <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-              {sortedVendors.map((vendor) => (
-                <li key={vendor.vendorId ?? vendor.id} style={{ padding: "8px 0", borderBottom: "1px solid #ecf0f1", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+              {sortedManagedVendors.map((vendor) => {
+                const vendorKey = `${vendor.foodCourt || resolvedSelectedCourt || "fc"}-${vendor.vendorId ?? vendor.id}`;
+                return (
+                  <li key={vendorKey} style={{ padding: "8px 0", borderBottom: "1px solid #ecf0f1", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
                   <div>
                     <div style={{ fontWeight: 600 }}>{vendor.shopName}</div>
                     <div style={{ fontSize: 12, color: "#7f8c8d" }}>{vendor.email}</div>
                     <div style={{ fontSize: 12, color: "#7f8c8d" }}>{vendor.username}</div>
+                    <div style={{ fontSize: 11, color: "#95a5a6" }}>
+                      Food Court: {courtLabelById.get(vendor.foodCourt || vendor.foodcourt || "") || "Unassigned"}
+                    </div>
                   </div>
                   <button
                     type="button"
                     style={{ background: "#e74c3c", color: "#fff", border: "none", padding: "6px 12px", borderRadius: 4, cursor: "pointer" }}
-                    onClick={() => handleDeleteVendor(vendor.vendorId ?? vendor.id)}
+                    onClick={() => handleArchiveVendor(vendor.vendorId ?? vendor.id)}
                     disabled={vendorDirectoryLoading}
                   >
-                    Remove
+                    Archive
                   </button>
-                </li>
-              ))}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>
@@ -1145,9 +1382,6 @@ function AdminControl({
       </div>
     </div>
   );
-  const [newCourtName, setNewCourtName] = useState("");
-  const [renameCourtId, setRenameCourtId] = useState("");
-  const [renameCourtName, setRenameCourtName] = useState("");
 
   const handleCreateCourt = async (event) => {
     event.preventDefault();

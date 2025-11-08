@@ -174,6 +174,16 @@ export const fetchAdminVendors = async (session, foodCourt) => {
   return res.json();
 };
 
+export const archiveAdminVendor = async (session, vendorId, foodCourt) => {
+  const url = new URL(`${API_URL}/admin/vendor/${vendorId}/archive`);
+  if (foodCourt) url.searchParams.set('foodCourt', foodCourt);
+  const res = await fetch(url.toString(), {
+    method: 'POST',
+    headers: buildAdminHeaders(session),
+  });
+  return res.json();
+};
+
 export const fetchAdminFoodCourts = async (session) => {
   const res = await fetch(`${API_URL}/admin/food-courts`, {
     headers: buildAdminHeaders(session),

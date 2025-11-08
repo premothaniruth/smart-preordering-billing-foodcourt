@@ -1,0 +1,50 @@
+[
+  {
+    "id": "1762281841225-7ozxjx",
+    "shopId": "1",
+    "itemId": "4",
+    "vendorId": "1",
+    "timestamp": "2025-11-04T18:44:01.224Z",
+    "employeeId": "1",
+    "employeeMobile": "+919952911560",
+    "employeeContact": null,
+    "employeeEmail": "prem@infosys.com",
+    "employeeUsername": "prem"
+  },
+  {
+    "id": "1762362447307-7yg84n",
+    "shopId": "2",
+    "itemId": "101",
+    "vendorId": "2",
+    "timestamp": "2025-11-05T17:07:27.307Z",
+    "employeeId": "1",
+    "employeeMobile": "+919952911560",
+    "employeeContact": null,
+    "employeeEmail": "prem@infosys.com",
+    "employeeUsername": "prem"
+  },
+  {
+    "id": "1762522430759-ijop9j",
+    "shopId": "1",
+    "itemId": "65",
+    "vendorId": "1",
+    "timestamp": "2025-11-07T13:33:50.759Z",
+    "employeeId": "2",
+    "employeeMobile": "+919952081560",
+    "employeeContact": null,
+    "employeeEmail": "premtg@gmail.com",
+    "employeeUsername": "premtg"
+  },
+  {
+    "id": "1762523636658-uc80ek",
+    "shopId": "1",
+    "itemId": "66",
+    "vendorId": "1",
+    "timestamp": "2025-11-07T13:53:56.658Z",
+    "employeeId": "2",
+    "employeeMobile": "+919952081560",
+    "employeeContact": null,
+    "employeeEmail": "premtg@gmail.com",
+    "employeeUsername": "premtg"
+  }
+]

@@ -17,14 +17,15 @@ import { submitRating } from "../api";
  *  evaluateCancellation?: (order:any)=>{allowed:boolean,reason?:string,summary?:string,refundNote?:string,buttonLabel?:string}
  * }} props
  */
-const OrderHistory = ({ orders, foodCourt, onReorder, onBack, onClearHistory, onReportIssue, onCancel, evaluateCancellation }) => {
+const OrderHistory = ({ orders, foodCourt, foodCourtName, onReorder, onBack, onClearHistory, onReportIssue, onCancel, evaluateCancellation }) => {
   const byCreatedDesc = (a, b) => new Date(b.createdAt) - new Date(a.createdAt);
   const readyOrders = useMemo(() => orders.filter(o => o.status === 'ready').sort(byCreatedDesc), [orders]);
   const completedOrders = useMemo(() => orders.filter(o => o.status === 'completed').sort(byCreatedDesc), [orders]);
   const recentOrders = useMemo(() => orders.filter(o => o.status !== 'ready' && o.status !== 'completed').sort(byCreatedDesc), [orders]);
   const [ratingState, setRatingState] = useState({});
   const [showOlderCompleted, setShowOlderCompleted] = useState(false);
-  const recentOrdersHeading = foodCourt ? `Recent Orders in ${String(foodCourt).toUpperCase()}` : 'Recent Orders';
+  const courtLabel = typeof foodCourtName === 'string' && foodCourtName.trim() ? foodCourtName.trim() : (foodCourt ? String(foodCourt).toUpperCase() : null);
+  const recentOrdersHeading = courtLabel ? `Recent Orders in ${courtLabel}` : 'Recent Orders';
 
   return (
     <div>

@@ -455,7 +455,190 @@ app.get("/metrics", (req, res) => {
   }
 });
 
-app.delete("/admin/vendor/:id", authenticateAdmin, (req, res) => {
+app.put("/admin/vendor/:id", authenticateAdmin, (req, res) => {
+  try {
+    const vendorId = Number(req.params.id);
+    if (!Number.isFinite(vendorId)) {
+      return res.status(400).json({ message: "Invalid vendor ID" });
+    }
+
+    const sourceFoodCourt = getAdminFoodCourt(req);
+    const vendors = getVendors(sourceFoodCourt);
+    const sourceIndex = vendors.findIndex((v) => Number(v.vendorId) === vendorId);
+    if (sourceIndex === -1) {
+      return res.status(404).json({ message: "Vendor not found" });
+    }
+
+    const {
+      username,
+      password,
+      migrate = false,
+      migrateToFoodCourt,
+    } = req.body || {};
+
+    const nextVendorRecord = { ...vendors[sourceIndex] };
+
+    if (username != null) {
+      const trimmed = String(username).trim();
+      if (!trimmed) {
+        return res.status(400).json({ message: "Username cannot be empty" });
+      }
+
+      const normalizedUser = trimmed.toLowerCase();
+      const conflict = vendors.some((v, idx) => idx !== sourceIndex && String(v.username || '').toLowerCase() === normalizedUser);
+      if (conflict) {
+        return res.status(409).json({ message: "Username already exists in this food court" });
+      }
+      nextVendorRecord.username = trimmed;
+    }
+
+    if (email != null) {
+      const trimmedEmail = String(email).trim();
+      if (trimmedEmail) {
+        nextVendorRecord.email = trimmedEmail;
+      } else {
+        delete nextVendorRecord.email;
+      }
+    }
+
+    if (password != null) {
+      const trimmedPassword = String(password).trim();
+      if (trimmedPassword.length < 4) {
+        return res.status(400).json({ message: "Password must be at least 4 characters" });
+      }
+      nextVendorRecord.passwordHash = bcrypt.hashSync(trimmedPassword, 10);
+    }
+
+    const wantsMigration = typeof migrate === 'boolean' ? migrate : String(migrate).toLowerCase() === 'true';
+    const rawTargetCourt = migrateToFoodCourt || req.body?.targetFoodCourt;
+    const normalizedTargetCourt = wantsMigration ? resolveFoodCourtId(rawTargetCourt, null) : null;
+
+    const migrateVendorData = normalizedTargetCourt && normalizedTargetCourt !== sourceFoodCourt;
+
+    const sanitizeVendor = (vendor, court) => ({
+      vendorId: vendor.vendorId,
+      id: vendor.vendorId,
+      shopId: vendor.shopId,
+      username: vendor.username,
+      email: vendor.email || null,
+      shopName: vendor.shopName || null,
+      foodCourt: court,
+    });
+
+    if (!migrateVendorData) {
+      vendors[sourceIndex] = nextVendorRecord;
+      saveVendors(vendors, sourceFoodCourt);
+      invalidateVendorDirectoryCache(sourceFoodCourt);
+      return res.json({ status: 'ok', vendor: sanitizeVendor(nextVendorRecord, sourceFoodCourt), migrated: false });
+    }
+
+    const targetFoodCourt = normalizedTargetCourt;
+    const targetVendors = getVendors(targetFoodCourt);
+    const normalizedUser = String(nextVendorRecord.username || '').toLowerCase();
+    const usernameConflict = targetVendors.some((v) => String(v.username || '').toLowerCase() === normalizedUser);
+    if (usernameConflict) {
+      return res.status(409).json({ message: 'Username already exists in target food court' });
+    }
+
+    const shopId = nextVendorRecord.shopId != null ? String(nextVendorRecord.shopId) : null;
+
+    const extractShopEntries = (collection = []) => {
+      if (!Array.isArray(collection)) return { keep: [], migrate: [] };
+      return collection.reduce((acc, item) => {
+        if (String(item?.shopId) === shopId) {
+          acc.migrate.push(item);
+        } else {
+          acc.keep.push(item);
+        }
+        return acc;
+      }, { keep: [], migrate: [] });
+    };
+
+    const extractVendorEntries = (collection = []) => {
+      if (!Array.isArray(collection)) return { keep: [], migrate: [] };
+      return collection.reduce((acc, item) => {
+        if (String(item?.vendorId) === String(vendorId)) {
+          acc.migrate.push(item);
+        } else {
+          acc.keep.push(item);
+        }
+        return acc;
+      }, { keep: [], migrate: [] });
+    };
+
+    // Vendors
+    vendors.splice(sourceIndex, 1);
+    saveVendors(vendors, sourceFoodCourt);
+
+    const targetVendorList = getVendors(targetFoodCourt);
+    targetVendorList.push({ ...nextVendorRecord, foodCourt: targetFoodCourt });
+    saveVendors(targetVendorList, targetFoodCourt);
+
+    // Menu
+    const menuSource = getMenu(sourceFoodCourt);
+    const { keep: menuKeep, migrate: menuMove } = extractShopEntries(menuSource);
+    saveMenu(menuKeep, sourceFoodCourt);
+    const targetMenu = getMenu(targetFoodCourt);
+    const filteredTargetMenu = Array.isArray(targetMenu) ? targetMenu.filter((entry) => String(entry?.shopId) !== shopId) : [];
+    saveMenu([...filteredTargetMenu, ...menuMove], targetFoodCourt);
+
+    // Orders
+    const ordersSource = getOrders(sourceFoodCourt);
+    const { keep: ordersKeep, migrate: ordersMove } = extractShopEntries(ordersSource);
+    saveOrders(ordersKeep, sourceFoodCourt);
+    const targetOrders = getOrders(targetFoodCourt);
+    saveOrders([...(Array.isArray(targetOrders) ? targetOrders : []), ...ordersMove], targetFoodCourt);
+
+    // Combos
+    const combosSource = getCombos(sourceFoodCourt);
+    const { keep: combosKeep, migrate: combosMove } = extractShopEntries(combosSource);
+    saveCombos(combosKeep, sourceFoodCourt);
+    const targetCombos = getCombos(targetFoodCourt);
+    const filteredTargetCombos = Array.isArray(targetCombos) ? targetCombos.filter((entry) => String(entry?.shopId) !== shopId) : [];
+    saveCombos([...filteredTargetCombos, ...combosMove], targetFoodCourt);
+
+    // Offers
+    const offersSource = getOffers(sourceFoodCourt);
+    const { keep: offersKeep, migrate: offersMove } = extractShopEntries(offersSource);
+    saveOffers(offersKeep, sourceFoodCourt);
+    const targetOffers = getOffers(targetFoodCourt);
+    const filteredTargetOffers = Array.isArray(targetOffers) ? targetOffers.filter((entry) => String(entry?.shopId) !== shopId) : [];
+    saveOffers([...filteredTargetOffers, ...offersMove], targetFoodCourt);
+
+    // Favorites
+    const favoritesSource = getFavorites(sourceFoodCourt);
+    const { keep: favoritesKeep, migrate: favoritesMove } = extractVendorEntries(favoritesSource);
+    saveFavorites(favoritesKeep, sourceFoodCourt);
+    const targetFavorites = getFavorites(targetFoodCourt);
+    saveFavorites([...(Array.isArray(targetFavorites) ? targetFavorites : []), ...favoritesMove], targetFoodCourt);
+
+    // Interest
+    const interestSource = getItemInterestRecords(sourceFoodCourt);
+    const { keep: interestKeep, migrate: interestMove } = extractShopEntries(interestSource);
+    saveItemInterestRecords(interestKeep, sourceFoodCourt);
+    const targetInterest = getItemInterestRecords(targetFoodCourt);
+    const filteredTargetInterest = Array.isArray(targetInterest) ? targetInterest.filter((entry) => String(entry?.shopId) !== shopId) : [];
+    saveItemInterestRecords([...filteredTargetInterest, ...interestMove], targetFoodCourt);
+
+    // Bulk orders
+    const bulkSource = getBulkOrders(sourceFoodCourt);
+    const { keep: bulkKeep, migrate: bulkMove } = extractVendorEntries(bulkSource);
+    saveBulkOrders(bulkKeep, sourceFoodCourt);
+    const targetBulk = getBulkOrders(targetFoodCourt);
+    const updatedBulkMove = bulkMove.map((entry) => ({ ...entry, foodCourt: targetFoodCourt }));
+    saveBulkOrders([...(Array.isArray(targetBulk) ? targetBulk : []), ...updatedBulkMove], targetFoodCourt);
+
+    invalidateVendorDirectoryCache(sourceFoodCourt);
+    invalidateVendorDirectoryCache(targetFoodCourt);
+
+    return res.json({ status: 'ok', vendor: sanitizeVendor(nextVendorRecord, targetFoodCourt), migrated: true });
+  } catch (error) {
+    console.error('Failed to update vendor', error);
+    res.status(500).json({ message: 'Failed to update vendor' });
+  }
+});
+
+app.post("/admin/vendor/:id/archive", authenticateAdmin, (req, res) => {
   try {
     const vendorId = Number(req.params.id);
     if (!Number.isFinite(vendorId)) {
@@ -464,132 +647,53 @@ app.delete("/admin/vendor/:id", authenticateAdmin, (req, res) => {
 
     const foodCourt = getAdminFoodCourt(req);
     const vendors = getVendors(foodCourt);
-    const index = vendors.findIndex((v) => Number(v.vendorId) === vendorId);
-    if (index === -1) {
+    const vendorIndex = vendors.findIndex((vendor) => Number(vendor.vendorId) === vendorId);
+    if (vendorIndex === -1) {
       return res.status(404).json({ message: "Vendor not found" });
     }
 
-    const removedVendor = vendors[index];
-    const shopIdValue = Number(removedVendor.shopId);
+    const vendor = vendors[vendorIndex];
+    const shopId = vendor.shopId != null ? String(vendor.shopId) : null;
 
-    const archivePayload = {
-      archiveId: `vendor-${removedVendor.vendorId}-${Date.now()}`,
-      vendorId: removedVendor.vendorId,
-      shopId: removedVendor.shopId,
-      username: removedVendor.username,
-      email: removedVendor.email || null,
-      shopName: removedVendor.shopName || null,
-      passwordHash: removedVendor.passwordHash,
-      deletedAt: new Date().toISOString(),
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    const snapshot = {
+      vendorId,
+      shopId,
+      username: vendor.username,
+      passwordHash: vendor.passwordHash,
+      email: vendor.email || null,
+      shopName: vendor.shopName || null,
       foodCourt,
-      data: {
-        vendorRecord: removedVendor,
-        menuSnapshot: getMenu(foodCourt),
-        combos: getCombos(foodCourt),
-        offers: getOffers(foodCourt),
-        procurementTemplates: listTemplates(removedVendor.vendorId),
-        procurementOrders: listOrders(removedVendor.vendorId),
-        procurementTasks: listProcurementTasks(removedVendor.vendorId),
-        grievances: getVendorGrievances(),
-        orders: getOrders(foodCourt),
-        headcount: getVendorHeadcountEntries(removedVendor.vendorId),
-      },
+      createdAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      data: {},
     };
 
-    appendVendorArchive(archivePayload);
+    snapshot.data.menuSnapshot = getMenu(foodCourt);
+    snapshot.data.combos = getCombos(foodCourt);
+    snapshot.data.offers = getOffers(foodCourt);
+    snapshot.data.orders = getOrders(foodCourt).filter((order) => String(order.shopId) === shopId);
+    snapshot.data.bulkOrders = getBulkOrders(foodCourt).filter((order) => String(order.vendorId) === String(vendorId));
+    snapshot.data.favorites = getFavorites(foodCourt).filter((fav) => String(fav.vendorId) === String(vendorId));
+    snapshot.data.interest = getItemInterestRecords(foodCourt).filter((entry) => String(entry.shopId) === shopId);
 
-    vendors.splice(index, 1);
+    vendors.splice(vendorIndex, 1);
     saveVendors(vendors, foodCourt);
 
-    const rawMenu = getMenu(foodCourt);
-    const purgeShopFromMenu = (data) => {
-      if (Array.isArray(data)) {
-        return data.filter((shop) => Number(shop?.shopId) !== Number(removedVendor.shopId));
-      }
-      if (data && typeof data === "object") {
-        const next = { ...data };
-        if (Array.isArray(next.shops)) {
-          next.shops = next.shops.filter((shop) => Number(shop?.shopId) !== Number(removedVendor.shopId));
-        }
-        return next;
-      }
-      return data;
-    };
+    saveMenu((getMenu(foodCourt) || []).filter((entry) => String(entry?.shopId) !== shopId), foodCourt);
+    saveCombos((getCombos(foodCourt) || []).filter((entry) => String(entry?.shopId) !== shopId), foodCourt);
+    saveOffers((getOffers(foodCourt) || []).filter((entry) => String(entry?.shopId) !== shopId), foodCourt);
+    saveOrders(getOrders(foodCourt).filter((order) => String(order.shopId) !== shopId), foodCourt);
+    saveBulkOrders(getBulkOrders(foodCourt).filter((order) => String(order.vendorId) !== String(vendorId)), foodCourt);
+    saveFavorites(getFavorites(foodCourt).filter((fav) => String(fav.vendorId) !== String(vendorId)), foodCourt);
+    saveItemInterestRecords(getItemInterestRecords(foodCourt).filter((entry) => String(entry.shopId) !== shopId), foodCourt);
 
-    const updatedMenu = purgeShopFromMenu(rawMenu);
-    if (updatedMenu !== rawMenu) {
-      saveMenu(updatedMenu, foodCourt);
-    }
-
-    const filterByShop = (collection) => collection.filter((entry) => Number(entry.shopId) !== shopIdValue);
-
-    const combos = getCombos(foodCourt);
-    const nextCombos = filterByShop(combos);
-    if (nextCombos.length !== combos.length) {
-      saveCombos(nextCombos, foodCourt);
-    }
-
-    const offers = getOffers(foodCourt);
-    const nextOffers = filterByShop(offers);
-    if (nextOffers.length !== offers.length) {
-      saveOffers(nextOffers, foodCourt);
-    }
-
-    try {
-      removeTemplatesForVendor(removedVendor.vendorId);
-    } catch (error) {
-      console.warn("Failed to clean procurement templates for vendor", removedVendor.vendorId, error);
-    }
-
-    try {
-      removeOrdersForVendor(removedVendor.vendorId);
-    } catch (error) {
-      console.warn("Failed to clean procurement orders for vendor", removedVendor.vendorId, error);
-    }
-
-    try {
-      removeTasksForVendor(removedVendor.vendorId);
-    } catch (error) {
-      console.warn("Failed to clean procurement tasks for vendor", removedVendor.vendorId, error);
-    }
-
-    const grievances = getVendorGrievances();
-    const nextGrievances = grievances.filter((g) => Number(g.vendorId) !== Number(removedVendor.vendorId));
-    if (nextGrievances.length !== grievances.length) {
-      saveVendorGrievances(nextGrievances);
-    }
-
-    const historicalOrders = getOrders(foodCourt);
-    const ordersAfterPurge = historicalOrders.filter((order) => Number(order.shopId) !== shopIdValue);
-    if (ordersAfterPurge.length !== historicalOrders.length) {
-      saveOrders(ordersAfterPurge, foodCourt);
-    }
-
-    try {
-      removeVendorHeadcount(removedVendor.vendorId);
-    } catch (error) {
-      console.warn("Failed to remove headcount history for vendor", removedVendor.vendorId, error);
-    }
-
-    try {
-      analyticsIngestor?.deleteShopHistory?.(shopIdValue);
-    } catch (error) {
-      console.warn("Failed to purge realtime analytics history", error);
-    }
-
-    try {
-      analyticsQueryService?.deleteVendorSnapshots?.(shopIdValue);
-    } catch (error) {
-      console.warn("Failed to purge analytics snapshots", error);
-    }
-
+    appendVendorArchive(snapshot);
     invalidateVendorDirectoryCache(foodCourt);
 
-    res.json({ status: "success", message: "Vendor removed", vendorId, archiveId: archivePayload.archiveId });
+    res.json({ status: "archived", vendorId, archiveId: snapshot.archiveId || null });
   } catch (error) {
-    console.error("Error deleting vendor", error);
-    res.status(500).json({ message: "Error deleting vendor" });
+    console.error("Failed to archive vendor", error);
+    res.status(500).json({ message: "Failed to archive vendor" });
   }
 });
 
@@ -799,6 +903,7 @@ function ensureCourtDataFiles(targetCourts = null) {
 
     const defaultContent = readJsonFrom(file, fallback);
     const serializedDefault = JSON.stringify(defaultContent, null, 2);
+    const serializedFallback = JSON.stringify(fallback, null, 2);
 
     for (const court of uniqueCourts) {
       if (court === FC_DEFAULT) continue;
@@ -806,7 +911,7 @@ function ensureCourtDataFiles(targetCourts = null) {
       if (fs.existsSync(courtFile)) continue;
 
       try {
-        fs.writeFileSync(courtFile, serializedDefault);
+        fs.writeFileSync(courtFile, serializedFallback);
       } catch (error) {
         console.warn(`Failed to seed data file for ${courtFile}, writing fallback`, error);
         ensureFileWithFallback(courtFile, fallback);
@@ -2605,15 +2710,25 @@ const getItemInterestRecords = (foodCourt = FC_DEFAULT) => {
   try {
     const raw = fs.readFileSync(resolveCourtFile(itemInterestFile, foodCourt), 'utf8');
     const parsed = JSON.parse(raw || '[]');
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
+    if (Array.isArray(parsed)) return parsed;
+    return [];
+  } catch (error) {
+    if (error.code !== 'ENOENT') {
+      console.warn('Failed to read item interest records', error);
+    }
     return [];
   }
 };
 
 const saveItemInterestRecords = (records, foodCourt = FC_DEFAULT) => {
-  const payload = Array.isArray(records) ? records : [];
-  fs.writeFileSync(resolveCourtFile(itemInterestFile, foodCourt), JSON.stringify(payload, null, 2));
+  if (!Array.isArray(records)) {
+    throw new Error('Item interest records must be an array');
+  }
+  try {
+    fs.writeFileSync(resolveCourtFile(itemInterestFile, foodCourt), JSON.stringify(records, null, 2));
+  } catch (error) {
+    console.error('Failed to save item interest records', error);
+  }
 };
 
 const getVendorInterestThresholds = () => {
@@ -3334,7 +3449,8 @@ const sanitizeBulkOrder = (order, foodCourt = FC_DEFAULT) => {
 };
 
 const buildVendorDirectory = (foodCourt = FC_DEFAULT) => {
-  const vendors = getVendors(foodCourt);
+  const normalizedCourt = resolveFoodCourtId(foodCourt);
+  const vendors = getVendors(normalizedCourt);
   const menu = getMenu(foodCourt);
   const shops = Array.isArray(menu)
     ? menu
@@ -3358,9 +3474,11 @@ const buildVendorDirectory = (foodCourt = FC_DEFAULT) => {
       vendorId: vendor.vendorId ?? vendor.id ?? null,
       shopId: vendor.shopId ?? null,
       username: vendor.username || '',
+      email: vendor.email || vendor.contactEmail || null,
       shopName: meta?.shopName || (key ? `Shop ${key}` : 'Unknown shop'),
       contactEmail: meta?.contactEmail || null,
       contactPhone: meta?.contactPhone || null,
+      foodCourt: vendor.foodCourt || normalizedCourt,
     };
   });
 };
@@ -5903,32 +6021,27 @@ app.put("/admin/vendor/:id", authenticateAdmin, (req, res) => {
     if (!Number.isFinite(vendorId)) {
       return res.status(400).json({ message: "Invalid vendor ID" });
     }
-    const foodCourt = getAdminFoodCourt(req);
-    const vendors = getVendors(foodCourt);
-    const index = vendors.findIndex((v) => v.vendorId === vendorId);
-    if (index === -1) {
+
+    const sourceFoodCourt = getAdminFoodCourt(req);
+    const vendors = getVendors(sourceFoodCourt);
+    const sourceIndex = vendors.findIndex((v) => v.vendorId === vendorId);
+    if (sourceIndex === -1) {
       return res.status(404).json({ message: "Vendor not found" });
     }
 
-    const { username, password, shopName, shopId, email } = req.body || {};
-    const vendor = vendors[index];
-    const originalShopId = vendor.shopId != null ? Number(vendor.shopId) : null;
+    const {
+      username,
+      password,
+      migrateToFoodCourt,
+      migrate = false,
+    } = req.body || {};
 
-    const trimmedUsername = username != null ? String(username).trim() : null;
-    const trimmedShopName = shopName != null ? String(shopName).trim() : null;
-    const trimmedEmail = email != null ? String(email).trim() : null;
+    const nextVendorRecord = { ...vendors[sourceIndex] };
 
-    if (trimmedUsername) {
-      vendor.username = trimmedUsername;
-    }
-    if (password != null && password !== "") {
-      vendor.passwordHash = bcrypt.hashSync(String(password), 10);
-    }
-
-    let newShopIdValue = originalShopId;
-    if (shopId != null && shopId !== '') {
-      const candidateShopId = Number(shopId);
-      if (!Number.isFinite(candidateShopId) || candidateShopId <= 0) {
+    if (username != null) {
+      const trimmed = String(username).trim();
+      if (!trimmed) {
+        return res.status(400).json({ message: "Username cannot be empty" });
         return res.status(400).json({ message: 'Invalid shopId' });
       }
       const vendorsWithoutCurrent = vendors.filter((v) => v.vendorId !== vendorId);
