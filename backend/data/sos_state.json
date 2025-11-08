@@ -1,10 +1,36 @@
 {
   "active": false,
-  "lastTriggeredAt": "2025-11-05T17:40:24.544Z",
+  "lastTriggeredAt": "2025-11-07T13:58:20.348Z",
   "lastTriggeredBy": "southfoods",
   "message": null,
   "currentEventId": null,
   "events": [
+    {
+      "id": "sos-1762523900348",
+      "resolvedAt": "2025-11-07T13:58:28.668Z",
+      "resolvedBy": "southfoods",
+      "note": "Cleared by control"
+    },
+    {
+      "id": "sos-1762523900348",
+      "triggeredAt": "2025-11-07T13:58:20.348Z",
+      "triggeredBy": "southfoods",
+      "role": "vendor",
+      "message": "Emergency reported by southfoods"
+    },
+    {
+      "id": "sos-1762522511180",
+      "resolvedAt": "2025-11-07T13:37:05.975Z",
+      "resolvedBy": "southfoods",
+      "note": "Cleared by control"
+    },
+    {
+      "id": "sos-1762522511180",
+      "triggeredAt": "2025-11-07T13:35:11.180Z",
+      "triggeredBy": "northfoods",
+      "role": "vendor",
+      "message": "Emergency reported by northfoods"
+    },
     {
       "id": "sos-1762364424544",
       "resolvedAt": "2025-11-05T17:41:09.874Z",
@@ -19,6 +45,6 @@
       "message": "Emergency reported by southfoods"
     }
   ],
-  "lastResolvedAt": "2025-11-05T17:41:09.874Z",
-  "lastResolvedBy": "infybhojans"
+  "lastResolvedAt": "2025-11-07T13:58:28.668Z",
+  "lastResolvedBy": "southfoods"
 }

@@ -4068,7 +4068,8 @@ app.get('/vendor/interest/summary', authenticateVendor, requirePermission('analy
 
     const thresholdsMap = getVendorInterestThresholds();
     const baseThreshold = getVendorThresholdValue(vendorId, thresholdsMap);
-    const aggregated = aggregateInterest(getItemInterestRecords());
+    const foodCourt = req.vendor?.foodCourt || FC_DEFAULT;
+    const aggregated = aggregateInterest(getItemInterestRecords(foodCourt));
 
     const items = aggregated
       .filter((entry) => {

@@ -14,12 +14,12 @@
               "isVeg": true,
               "image": "/images/aloo-paratha.jpg",
               "prepTime": 10,
-              "inventory": 8,
+              "inventory": 80,
               "section": "Breakfast",
               "options": [],
               "hasOptions": [],
               "calories": "222 kcal",
-              "restockedAt": "2025-11-05T17:37:50.149Z"
+              "restockedAt": "2025-11-07T13:56:28.422Z"
             },
             {
               "id": 2,
@@ -958,7 +958,8 @@
               "section": "Quick Bites",
               "options": [],
               "hasOptions": [],
-              "calories": null
+              "calories": null,
+              "restockedAt": "2025-11-07T13:56:37.401Z"
             },
             {
               "id": 66,
@@ -971,7 +972,8 @@
               "section": "Quick Bites",
               "options": [],
               "hasOptions": [],
-              "calories": null
+              "calories": null,
+              "restockedAt": "2025-11-07T13:56:37.401Z"
             },
             {
               "id": 67,
@@ -980,7 +982,7 @@
               "isVeg": true,
               "image": "/images/aloo-tikki.jpg",
               "prepTime": 5,
-              "inventory": 100,
+              "inventory": 99,
               "section": "Quick Bites",
               "options": [],
               "hasOptions": [],
@@ -1006,7 +1008,7 @@
               "isVeg": true,
               "image": "/images/veg-momos.jpg",
               "prepTime": 11,
-              "inventory": 100,
+              "inventory": 13,
               "hasOptions": [
                 {
                   "name": "Veg",
@@ -1028,7 +1030,8 @@
                   "priceModifier": 10
                 }
               ],
-              "calories": null
+              "calories": null,
+              "restockedAt": "2025-11-07T13:19:35.786Z"
             },
             {
               "id": 70,

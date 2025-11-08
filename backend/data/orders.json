@@ -1243,7 +1243,7 @@
     "shopId": 1,
     "user": "+919952911560",
     "scheduledTime": "2025-11-05T08:00",
-    "status": "ready",
+    "status": "completed",
     "createdAt": "2025-11-04T17:55:30.290Z",
     "billingId": "00012",
     "estimatedReadyTime": "2025-11-04T18:37:30.290Z",
@@ -1269,7 +1269,9 @@
       "provider": "razorpay-open",
       "reference": "PG-1762278930290"
     },
-    "readyAt": "2025-11-05T16:47:49.796Z"
+    "readyAt": "2025-11-05T16:47:49.796Z",
+    "pickedAt": "2025-11-07T13:30:54.895Z",
+    "completedAt": "2025-11-07T13:30:54.895Z"
   },
   {
     "id": 31,
@@ -1302,7 +1304,7 @@
     "shopId": 1,
     "user": "+919952911560",
     "scheduledTime": "2025-11-05T08:00",
-    "status": "ready",
+    "status": "completed",
     "createdAt": "2025-11-04T17:55:42.916Z",
     "billingId": "00013",
     "estimatedReadyTime": "2025-11-04T18:40:42.916Z",
@@ -1328,7 +1330,9 @@
       "provider": "razorpay-open",
       "reference": "PG-1762278942916"
     },
-    "readyAt": "2025-11-05T16:47:49.974Z"
+    "readyAt": "2025-11-05T16:47:49.974Z",
+    "pickedAt": "2025-11-07T13:30:54.161Z",
+    "completedAt": "2025-11-07T13:30:54.161Z"
   },
   {
     "id": 32,
@@ -2721,7 +2725,7 @@
     "shopId": 1,
     "user": "+919952911560",
     "scheduledTime": "2025-11-07T08:00",
-    "status": "pending",
+    "status": "completed",
     "createdAt": "2025-11-06T09:11:39.882Z",
     "billingId": "00005",
     "estimatedReadyTime": "2025-11-06T09:23:39.881Z",
@@ -2746,7 +2750,10 @@
       "amount": 55,
       "provider": "razorpay-open",
       "reference": "PG-1762420299882"
-    }
+    },
+    "readyAt": "2025-11-07T13:30:48.511Z",
+    "pickedAt": "2025-11-07T13:30:53.344Z",
+    "completedAt": "2025-11-07T13:30:53.344Z"
   },
   {
     "id": 49,
@@ -2787,7 +2794,7 @@
     "shopId": 1,
     "user": "+919952911560",
     "scheduledTime": "2025-11-07T08:00",
-    "status": "pending",
+    "status": "completed",
     "createdAt": "2025-11-06T09:12:06.795Z",
     "billingId": "00006",
     "estimatedReadyTime": "2025-11-06T09:53:06.795Z",
@@ -2812,7 +2819,10 @@
       "amount": 240,
       "provider": "razorpay-open",
       "reference": "PG-1762420326795"
-    }
+    },
+    "readyAt": "2025-11-07T13:30:47.297Z",
+    "pickedAt": "2025-11-07T13:30:52.030Z",
+    "completedAt": "2025-11-07T13:30:52.030Z"
   },
   {
     "id": 50,
@@ -3190,5 +3200,277 @@
     "cancellationPolicy": "Full refund (cancel ≥ 60 minutes before scheduled time)",
     "cancellationRefundPercent": 1,
     "cancellationLeadMinutes": 440.85383333333334
+  },
+  {
+    "id": 57,
+    "items": [
+      {
+        "id": 65,
+        "name": "Veg Puff",
+        "price": 30,
+        "quantity": 93,
+        "option": null,
+        "prepTime": 5
+      }
+    ],
+    "shopId": 1,
+    "user": "+919952081560",
+    "scheduledTime": null,
+    "status": "pending",
+    "createdAt": "2025-11-07T13:16:59.495Z",
+    "billingId": "00007",
+    "estimatedReadyTime": "2025-11-07T13:35:59.494Z",
+    "prepTime": 19,
+    "baseEstimatedReadyTime": "2025-11-07T13:25:59.494Z",
+    "basePrepTime": 9,
+    "rating": null,
+    "feedback": null,
+    "totalAmount": 2790,
+    "subtotalBeforeDiscount": 2790,
+    "discountTotal": 0,
+    "offerSummary": {
+      "subtotalBeforeDiscount": 2790,
+      "discountTotal": 0,
+      "totalPayable": 2790,
+      "appliedOffers": [],
+      "extraItems": []
+    },
+    "notes": null,
+    "payment": {
+      "method": "gateway",
+      "amount": 2790,
+      "provider": "razorpay-open",
+      "reference": "PG-1762521419495"
+    },
+    "_originalPrepTimeDefined": true,
+    "_originalEstimatedReadyTimeDefined": true,
+    "originalPrepTime": 9,
+    "originalEstimatedReadyTime": "2025-11-07T13:25:59.494Z",
+    "etaExtendedAt": "2025-11-07T13:18:08.351Z",
+    "etaExtensionMinutes": 10
+  },
+  {
+    "id": 58,
+    "items": [
+      {
+        "id": 43,
+        "name": "Butter Chicken",
+        "price": 180,
+        "quantity": 1,
+        "option": "Boneless",
+        "prepTime": 20
+      },
+      {
+        "id": 44,
+        "name": "Paneer Butter Masala",
+        "price": 125,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 13
+      }
+    ],
+    "shopId": 1,
+    "user": "+919952081560",
+    "scheduledTime": "2025-11-07T20:10",
+    "status": "completed",
+    "createdAt": "2025-11-07T13:28:49.204Z",
+    "billingId": "00008",
+    "estimatedReadyTime": "2025-11-07T14:07:49.203Z",
+    "prepTime": 39,
+    "baseEstimatedReadyTime": "2025-11-07T14:07:49.203Z",
+    "basePrepTime": 39,
+    "rating": null,
+    "feedback": null,
+    "totalAmount": 305,
+    "subtotalBeforeDiscount": 305,
+    "discountTotal": 0,
+    "offerSummary": {
+      "subtotalBeforeDiscount": 305,
+      "discountTotal": 0,
+      "totalPayable": 305,
+      "appliedOffers": [],
+      "extraItems": []
+    },
+    "notes": null,
+    "payment": {
+      "method": "cash",
+      "amount": 305
+    },
+    "etaExtendedAt": null,
+    "etaExtensionMinutes": 0,
+    "readyAt": "2025-11-07T13:56:00.938Z",
+    "pickedAt": "2025-11-07T13:56:06.269Z",
+    "completedAt": "2025-11-07T13:56:06.269Z"
+  },
+  {
+    "id": 59,
+    "items": [
+      {
+        "id": 65,
+        "name": "Veg Puff",
+        "price": 30,
+        "quantity": 18,
+        "option": null,
+        "prepTime": 5
+      }
+    ],
+    "shopId": 1,
+    "user": "+919952081560",
+    "scheduledTime": "2025-11-07T19:05",
+    "status": "completed",
+    "createdAt": "2025-11-07T13:33:41.548Z",
+    "billingId": "00009",
+    "estimatedReadyTime": "2025-11-07T13:42:41.547Z",
+    "prepTime": 9,
+    "baseEstimatedReadyTime": "2025-11-07T13:42:41.547Z",
+    "basePrepTime": 9,
+    "rating": null,
+    "feedback": null,
+    "totalAmount": 540,
+    "subtotalBeforeDiscount": 540,
+    "discountTotal": 0,
+    "offerSummary": {
+      "subtotalBeforeDiscount": 540,
+      "discountTotal": 0,
+      "totalPayable": 540,
+      "appliedOffers": [],
+      "extraItems": []
+    },
+    "notes": null,
+    "payment": {
+      "method": "cash",
+      "amount": 540
+    },
+    "readyAt": "2025-11-07T13:56:01.989Z",
+    "pickedAt": "2025-11-07T13:56:07.317Z",
+    "completedAt": "2025-11-07T13:56:07.317Z"
+  },
+  {
+    "id": 60,
+    "items": [
+      {
+        "id": 66,
+        "name": "Egg Puff",
+        "price": 35,
+        "quantity": 100,
+        "option": null,
+        "prepTime": 6
+      }
+    ],
+    "shopId": 1,
+    "user": "+919952081560",
+    "scheduledTime": null,
+    "status": "pending",
+    "createdAt": "2025-11-07T13:51:09.429Z",
+    "billingId": "00010",
+    "estimatedReadyTime": "2025-11-07T14:03:09.429Z",
+    "prepTime": 12,
+    "baseEstimatedReadyTime": "2025-11-07T14:03:09.429Z",
+    "basePrepTime": 12,
+    "rating": null,
+    "feedback": null,
+    "totalAmount": 3500,
+    "subtotalBeforeDiscount": 3500,
+    "discountTotal": 0,
+    "offerSummary": {
+      "subtotalBeforeDiscount": 3500,
+      "discountTotal": 0,
+      "totalPayable": 3500,
+      "appliedOffers": [],
+      "extraItems": []
+    },
+    "notes": null,
+    "payment": {
+      "method": "gateway",
+      "amount": 3500,
+      "provider": "razorpay-open",
+      "reference": "PG-1762523469429"
+    }
+  },
+  {
+    "id": 61,
+    "items": [
+      {
+        "id": 65,
+        "name": "Veg Puff",
+        "price": 30,
+        "quantity": 2,
+        "option": null,
+        "prepTime": 5
+      }
+    ],
+    "shopId": 1,
+    "user": "+919952081560",
+    "scheduledTime": "2025-11-07T19:25",
+    "status": "pending",
+    "createdAt": "2025-11-07T13:54:18.049Z",
+    "billingId": "00011",
+    "estimatedReadyTime": "2025-11-07T14:07:18.049Z",
+    "prepTime": 13,
+    "baseEstimatedReadyTime": "2025-11-07T14:07:18.049Z",
+    "basePrepTime": 13,
+    "rating": null,
+    "feedback": null,
+    "totalAmount": 60,
+    "subtotalBeforeDiscount": 60,
+    "discountTotal": 0,
+    "offerSummary": {
+      "subtotalBeforeDiscount": 60,
+      "discountTotal": 0,
+      "totalPayable": 60,
+      "appliedOffers": [],
+      "extraItems": []
+    },
+    "notes": null,
+    "payment": {
+      "method": "cash",
+      "amount": 60
+    }
+  },
+  {
+    "id": 62,
+    "items": [
+      {
+        "id": 67,
+        "name": "Aloo Tikki",
+        "price": 35,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 5
+      }
+    ],
+    "shopId": 1,
+    "user": "+919952081560",
+    "scheduledTime": "2025-11-08T11:15",
+    "status": "completed",
+    "createdAt": "2025-11-07T13:54:50.904Z",
+    "billingId": "00012",
+    "estimatedReadyTime": "2025-11-07T14:09:50.904Z",
+    "prepTime": 15,
+    "baseEstimatedReadyTime": "2025-11-07T14:09:50.904Z",
+    "basePrepTime": 15,
+    "rating": null,
+    "feedback": null,
+    "totalAmount": 35,
+    "subtotalBeforeDiscount": 35,
+    "discountTotal": 0,
+    "offerSummary": {
+      "subtotalBeforeDiscount": 35,
+      "discountTotal": 0,
+      "totalPayable": 35,
+      "appliedOffers": [],
+      "extraItems": []
+    },
+    "notes": null,
+    "payment": {
+      "method": "wallet",
+      "amount": 35,
+      "walletBalance": 65
+    },
+    "etaExtendedAt": null,
+    "etaExtensionMinutes": 0,
+    "readyAt": "2025-11-07T13:55:59.803Z",
+    "pickedAt": "2025-11-07T13:56:05.379Z",
+    "completedAt": "2025-11-07T13:56:05.379Z"
   }
 ]

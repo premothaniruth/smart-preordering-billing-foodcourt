@@ -5,13 +5,44 @@
     "email": "premtg@gmail.com",
     "mobile": "+919952081560",
     "passwordHash": "$2b$10$xpGfsxJ1kz2ITvpdwu.RK.nWDd3Nyl8eavWrSG7YIGqTDBmGDsZ/i",
-    "pinHash": "$2b$10$uY.nDSEQEzlt2WSiGxf8yuIc/HQP9n5mFAvcsQgpDunJ26fNAhKCO",
+    "pinHash": "$2b$10$WFnTsqaIZAtCVzu0689mMOeUR9J54/tLFKjj9awRaDrCjhPQssuEC",
     "role": "Employee",
     "roleSlug": "employee",
     "department": "",
     "bulkOrderEligible": false,
-    "walletBalance": 0,
-    "walletTransactions": [],
+    "walletBalance": 65,
+    "walletTransactions": [
+      {
+        "id": "1762523690905-0sbrp7",
+        "timestamp": "2025-11-07T13:54:50.905Z",
+        "type": "debit",
+        "reason": "order-payment",
+        "orderBillingId": "00012",
+        "amount": 35,
+        "status": "success"
+      },
+      {
+        "id": "1762522421607-bn06kq",
+        "timestamp": "2025-11-07T13:33:41.607Z",
+        "type": "credit",
+        "reason": "points-conversion",
+        "amount": 3,
+        "metadata": {
+          "pointsConverted": 30,
+          "pointsLedgerId": "pts_1762522421564_mytj"
+        },
+        "status": "success"
+      },
+      {
+        "id": "1762522156503-71y48j",
+        "timestamp": "2025-11-07T13:29:16.503Z",
+        "type": "credit",
+        "reason": "wallet-topup",
+        "provider": "google-pay",
+        "amount": 100,
+        "status": "success"
+      }
+    ],
     "birthday": "2025-10-28"
   }
 ]
