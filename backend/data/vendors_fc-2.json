@@ -11,7 +11,7 @@
     "vendorId": 102,
     "shopId": 6,
     "username": "havemore",
-    "passwordHash": "$2b$10$4.4309XmP50LhPuLouI3I.qR47FrV0db/Er.CUQQFBN882oAx0ZF2",
+    "passwordHash": "$2b$10$wZhiCyNdga3cuy3HkbtPLuvTyuphZ2s7nFEgOLqwfb0qPAyUu796O",
     "email": "havemore.fc2@infosys.com",
     "shopName": "Havemore Delights"
   },
@@ -19,7 +19,7 @@
     "vendorId": 103,
     "shopId": 7,
     "username": "germanbreads",
-    "passwordHash": "$2b$10$Bgtg6yR1.NKv4fv/5IJtR.HMRloIEjBAybKt3P0VBiAP7h0pzKnBa",
+    "passwordHash": "$2b$10$uc/b8IlOyWXFLnGe5iPlSeD.RO4wFJzpM/d7HgKB.0nt.l9cPoZO2",
     "email": "docksidebrew.fc2@example.com",
     "shopName": "The German Breads"
   },
@@ -27,7 +27,7 @@
     "vendorId": 104,
     "shopId": 8,
     "username": "sipnchill",
-    "passwordHash": "$2b$10$Mnp6EU7UTRg.WCeyvT1/P.uQ9.yo6XFrA4TreJ6UDne7rAXwal9g.",
+    "passwordHash": "$2b$10$OV.hms03OUwbAbmPR6BOS.H.8RDBh9e6IW4zIjquyXFUhviV1gr2m",
     "email": "sipnchill.fc2@infosys.com",
     "shopName": "Sip n Chill"
   }

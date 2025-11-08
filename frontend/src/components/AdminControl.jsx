@@ -467,7 +467,7 @@ function AdminControl({
     setCreateVendorCourt(createVendorCourt);
   };
 
-  const handleUpdateSubmit = (e) => {
+  const handleUpdateSubmit = async (e) => {
     e.preventDefault();
     if (!selectedVendorId) return;
     const username = String(updateForm.username || "").trim();
@@ -491,7 +491,15 @@ function AdminControl({
       payload.migrateToFoodCourt = updateForm.migrateTo;
     }
 
-    onUpdateVendor(selectedVendorId, payload);
+    const success = await onUpdateVendor(selectedVendorId, payload);
+    if (success) {
+      const courtsToRefresh = new Set();
+      if (updateCourtFilter) courtsToRefresh.add(updateCourtFilter);
+      if (managedCourtFilter) courtsToRefresh.add(managedCourtFilter);
+      courtsToRefresh.add(resolvedSelectedCourt);
+      await Promise.all(Array.from(courtsToRefresh).map((court) => refreshVendorDirectory(court)));
+    }
+
     setUpdateForm({ ...initialUpdateState });
     setSelectedVendorId("");
     setUpdateCourtFilter(updateCourtFilter);

@@ -39,6 +39,7 @@ const ADMIN_FOOD_COURT_STORAGE_KEY = "adminSelectedFoodCourtV2";
 const LEGACY_ADMIN_FOOD_COURT_KEY = "adminSelectedFoodCourt";
 
 const DEFAULT_ADMIN_FOOD_COURT = "all";
+const adminVendorCache = new Map();
 
 const getLegacyAdminCourts = () => {
   try {
@@ -1421,7 +1422,7 @@ function App() {
     if (!adminSession) {
       console.warn("Update vendor attempted without admin session", vendorId, payload);
       toast.error("Admin session expired. Please log in again before updating vendors.");
-      return;
+      return false;
     }
     try {
       const targetCourt = payload?.foodCourt || adminFoodCourt;
@@ -1442,13 +1443,18 @@ function App() {
             return updated;
           }));
         }
+        adminVendorCache.set(targetCourt, null);
+        await refreshAdminManagedVendors();
         toast.success("Vendor credentials updated and notification sent");
+        return true;
       } else {
         toast.error(res?.message || "Failed to update vendor");
+        return false;
       }
     } catch (error) {
       console.error("Error updating vendor", error);
       toast.error("Error updating vendor");
+      return false;
     }
   };
 

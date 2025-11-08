@@ -535,9 +535,35 @@ app.put("/admin/vendor/:id", authenticateAdmin, (req, res) => {
       foodCourt: court,
     });
 
+    const sourceShopId = nextVendorRecord.shopId != null ? String(nextVendorRecord.shopId) : null;
+    const pendingShopName = typeof shopName === 'string' ? shopName.trim() : null;
+
+    const applyMenuRename = (menuEntries, matchShopId = sourceShopId) => {
+      if (!pendingShopName || !matchShopId || !Array.isArray(menuEntries)) return menuEntries;
+      const normalizedMatch = String(matchShopId);
+      return menuEntries.map((entry) => {
+        if (!entry) return entry;
+        const currentId = entry.shopId != null ? String(entry.shopId) : entry.id != null ? String(entry.id) : null;
+        if (currentId !== normalizedMatch) return entry;
+        return { ...entry, shopName: pendingShopName };
+      });
+    };
+
     if (!migrateVendorData) {
       vendors[sourceIndex] = nextVendorRecord;
       saveVendors(vendors, sourceFoodCourt);
+
+      if (pendingShopName && sourceShopId) {
+        const currentMenu = getMenu(sourceFoodCourt);
+        if (Array.isArray(currentMenu)) {
+          const updatedMenu = applyMenuRename(currentMenu, sourceShopId);
+          saveMenu(updatedMenu, sourceFoodCourt);
+        } else if (currentMenu && Array.isArray(currentMenu.shops)) {
+          const updatedShops = applyMenuRename(currentMenu.shops, sourceShopId);
+          saveMenu({ ...currentMenu, shops: updatedShops }, sourceFoodCourt);
+        }
+      }
+
       invalidateVendorDirectoryCache(sourceFoodCourt);
       return res.json({ status: 'ok', vendor: sanitizeVendor(nextVendorRecord, sourceFoodCourt), migrated: false });
     }
@@ -550,12 +576,31 @@ app.put("/admin/vendor/:id", authenticateAdmin, (req, res) => {
       return res.status(409).json({ message: 'Username already exists in target food court' });
     }
 
-    const shopId = nextVendorRecord.shopId != null ? String(nextVendorRecord.shopId) : null;
+    const allocateShopId = (existingEntries) => {
+      const taken = new Set();
+      existingEntries.forEach((entry) => {
+        const value = entry?.shopId ?? entry?.id;
+        if (value != null) taken.add(Number(value));
+      });
+      let candidate = nextVendorRecord.shopId != null ? Number(nextVendorRecord.shopId) : null;
+      if (candidate != null && !taken.has(candidate)) {
+        return candidate;
+      }
+      candidate = 1;
+      while (taken.has(candidate)) {
+        candidate += 1;
+      }
+      return candidate;
+    };
 
-    const extractShopEntries = (collection = []) => {
+    const extractShopEntries = (collection = [], matchShopId = sourceShopId) => {
       if (!Array.isArray(collection)) return { keep: [], migrate: [] };
+      const targetMatch = matchShopId != null ? String(matchShopId) : null;
+      if (targetMatch == null) {
+        return { keep: [...collection], migrate: [] };
+      }
       return collection.reduce((acc, item) => {
-        if (String(item?.shopId) === shopId) {
+        if (String(item?.shopId) === targetMatch) {
           acc.migrate.push(item);
         } else {
           acc.keep.push(item);
@@ -576,59 +621,115 @@ app.put("/admin/vendor/:id", authenticateAdmin, (req, res) => {
       }, { keep: [], migrate: [] });
     };
 
-    // Vendors
-    vendors.splice(sourceIndex, 1);
-    saveVendors(vendors, sourceFoodCourt);
-
     const targetVendorList = getVendors(targetFoodCourt);
-    targetVendorList.push({ ...nextVendorRecord, foodCourt: targetFoodCourt });
-    saveVendors(targetVendorList, targetFoodCourt);
+    const existingVendors = Array.isArray(targetVendorList) ? targetVendorList : [];
+
+    const targetMenuRaw = getMenu(targetFoodCourt);
+    const targetMenuEntries = Array.isArray(targetMenuRaw)
+      ? targetMenuRaw
+      : targetMenuRaw && Array.isArray(targetMenuRaw.shops)
+        ? targetMenuRaw.shops
+        : [];
+
+    const targetShopId = allocateShopId([...existingVendors, ...targetMenuEntries]);
+    const targetShopIdString = String(targetShopId);
+    const migratedVendorRecord = { ...nextVendorRecord, shopId: targetShopId };
+    const targetVendorRecord = { ...migratedVendorRecord, foodCourt: targetFoodCourt };
+    saveVendors([...existingVendors, targetVendorRecord], targetFoodCourt);
 
     // Menu
-    const menuSource = getMenu(sourceFoodCourt);
-    const { keep: menuKeep, migrate: menuMove } = extractShopEntries(menuSource);
-    saveMenu(menuKeep, sourceFoodCourt);
-    const targetMenu = getMenu(targetFoodCourt);
-    const filteredTargetMenu = Array.isArray(targetMenu) ? targetMenu.filter((entry) => String(entry?.shopId) !== shopId) : [];
-    saveMenu([...filteredTargetMenu, ...menuMove], targetFoodCourt);
+    const menuSourceRaw = getMenu(sourceFoodCourt);
+    const menuSourceInfo = Array.isArray(menuSourceRaw)
+      ? { kind: 'array', entries: menuSourceRaw }
+      : menuSourceRaw && Array.isArray(menuSourceRaw.shops)
+        ? { kind: 'object', entries: menuSourceRaw.shops }
+        : { kind: 'unknown', entries: [] };
+
+    const { keep: menuKeep, migrate: menuMove } = extractShopEntries(menuSourceInfo.entries || [], sourceShopId);
+
+    if (menuSourceInfo.kind === 'array') {
+      saveMenu(menuKeep, sourceFoodCourt);
+    } else if (menuSourceInfo.kind === 'object') {
+      saveMenu({ ...menuSourceRaw, shops: menuKeep }, sourceFoodCourt);
+    }
+
+    const targetMenuInfo = Array.isArray(targetMenuRaw)
+      ? { kind: 'array', entries: targetMenuRaw }
+      : targetMenuRaw && Array.isArray(targetMenuRaw.shops)
+        ? { kind: 'object', entries: targetMenuRaw.shops }
+        : { kind: 'unknown', entries: [] };
+
+    let updatedMenuMove = menuMove;
+    if (Array.isArray(menuMove)) {
+      updatedMenuMove = menuMove.map((entry) => {
+        if (!entry) return entry;
+        const updated = { ...entry };
+        if (entry.shopId != null) {
+          updated.shopId = targetShopId;
+        }
+        if (pendingShopName) {
+          updated.shopName = pendingShopName;
+        } else if (nextVendorRecord.shopName) {
+          updated.shopName = nextVendorRecord.shopName;
+        }
+        return updated;
+      });
+    }
+
+    const renamedMenuMove = applyMenuRename(updatedMenuMove, targetShopIdString);
+
+    if (targetMenuInfo.kind === 'array') {
+      const filteredTargetMenu = targetMenuInfo.entries.filter((entry) => String(entry?.shopId ?? entry?.id) !== targetShopIdString);
+      saveMenu([...filteredTargetMenu, ...(Array.isArray(renamedMenuMove) ? renamedMenuMove : [])], targetFoodCourt);
+    } else if (targetMenuInfo.kind === 'object') {
+      const filteredTargetMenu = targetMenuInfo.entries.filter((entry) => String(entry?.shopId ?? entry?.id) !== targetShopIdString);
+      saveMenu({ ...targetMenuRaw, shops: [...filteredTargetMenu, ...(Array.isArray(renamedMenuMove) ? renamedMenuMove : [])] }, targetFoodCourt);
+    } else if (Array.isArray(renamedMenuMove) && renamedMenuMove.length > 0) {
+      saveMenu(renamedMenuMove, targetFoodCourt);
+    }
 
     // Orders
     const ordersSource = getOrders(sourceFoodCourt);
-    const { keep: ordersKeep, migrate: ordersMove } = extractShopEntries(ordersSource);
+    const { keep: ordersKeep, migrate: ordersMove } = extractShopEntries(ordersSource, sourceShopId);
     saveOrders(ordersKeep, sourceFoodCourt);
     const targetOrders = getOrders(targetFoodCourt);
-    saveOrders([...(Array.isArray(targetOrders) ? targetOrders : []), ...ordersMove], targetFoodCourt);
+    const normalizedOrdersMove = ordersMove.map((order) => ({ ...order, shopId: targetShopId, vendorId, foodCourt: targetFoodCourt }));
+    saveOrders([...(Array.isArray(targetOrders) ? targetOrders : []), ...normalizedOrdersMove], targetFoodCourt);
 
     // Combos
     const combosSource = getCombos(sourceFoodCourt);
-    const { keep: combosKeep, migrate: combosMove } = extractShopEntries(combosSource);
+    const { keep: combosKeep, migrate: combosMove } = extractShopEntries(combosSource, sourceShopId);
     saveCombos(combosKeep, sourceFoodCourt);
     const targetCombos = getCombos(targetFoodCourt);
-    const filteredTargetCombos = Array.isArray(targetCombos) ? targetCombos.filter((entry) => String(entry?.shopId) !== shopId) : [];
-    saveCombos([...filteredTargetCombos, ...combosMove], targetFoodCourt);
+    const filteredTargetCombos = Array.isArray(targetCombos) ? targetCombos.filter((entry) => String(entry?.shopId) !== targetShopIdString) : [];
+    const normalizedCombosMove = combosMove.map((combo) => ({ ...combo, shopId: targetShopId }));
+    saveCombos([...filteredTargetCombos, ...normalizedCombosMove], targetFoodCourt);
 
     // Offers
     const offersSource = getOffers(sourceFoodCourt);
-    const { keep: offersKeep, migrate: offersMove } = extractShopEntries(offersSource);
+    const { keep: offersKeep, migrate: offersMove } = extractShopEntries(offersSource, sourceShopId);
     saveOffers(offersKeep, sourceFoodCourt);
     const targetOffers = getOffers(targetFoodCourt);
-    const filteredTargetOffers = Array.isArray(targetOffers) ? targetOffers.filter((entry) => String(entry?.shopId) !== shopId) : [];
-    saveOffers([...filteredTargetOffers, ...offersMove], targetFoodCourt);
+    const filteredTargetOffers = Array.isArray(targetOffers) ? targetOffers.filter((entry) => String(entry?.shopId) !== targetShopIdString) : [];
+    const normalizedOffersMove = offersMove.map((offer) => ({ ...offer, shopId: targetShopId }));
+    saveOffers([...filteredTargetOffers, ...normalizedOffersMove], targetFoodCourt);
 
     // Favorites
     const favoritesSource = getFavorites(sourceFoodCourt);
     const { keep: favoritesKeep, migrate: favoritesMove } = extractVendorEntries(favoritesSource);
     saveFavorites(favoritesKeep, sourceFoodCourt);
     const targetFavorites = getFavorites(targetFoodCourt);
-    saveFavorites([...(Array.isArray(targetFavorites) ? targetFavorites : []), ...favoritesMove], targetFoodCourt);
+    const normalizedFavoritesMove = favoritesMove.map((favorite) => ({ ...favorite, vendorId }));
+    saveFavorites([...(Array.isArray(targetFavorites) ? targetFavorites : []), ...normalizedFavoritesMove], targetFoodCourt);
 
     // Interest
     const interestSource = getItemInterestRecords(sourceFoodCourt);
-    const { keep: interestKeep, migrate: interestMove } = extractShopEntries(interestSource);
+    const { keep: interestKeep, migrate: interestMove } = extractShopEntries(interestSource, sourceShopId);
     saveItemInterestRecords(interestKeep, sourceFoodCourt);
     const targetInterest = getItemInterestRecords(targetFoodCourt);
-    const filteredTargetInterest = Array.isArray(targetInterest) ? targetInterest.filter((entry) => String(entry?.shopId) !== shopId) : [];
-    saveItemInterestRecords([...filteredTargetInterest, ...interestMove], targetFoodCourt);
+    const filteredTargetInterest = Array.isArray(targetInterest) ? targetInterest.filter((entry) => String(entry?.shopId) !== targetShopIdString) : [];
+    const normalizedInterestMove = interestMove.map((entry) => ({ ...entry, shopId: targetShopId }));
+    saveItemInterestRecords([...filteredTargetInterest, ...normalizedInterestMove], targetFoodCourt);
 
     // Bulk orders
     const bulkSource = getBulkOrders(sourceFoodCourt);
@@ -641,7 +742,7 @@ app.put("/admin/vendor/:id", authenticateAdmin, (req, res) => {
     invalidateVendorDirectoryCache(sourceFoodCourt);
     invalidateVendorDirectoryCache(targetFoodCourt);
 
-    return res.json({ status: 'ok', vendor: sanitizeVendor(nextVendorRecord, targetFoodCourt), migrated: true });
+    return res.json({ status: 'ok', vendor: sanitizeVendor(migratedVendorRecord, targetFoodCourt), migrated: true });
   } catch (error) {
     console.error('Failed to update vendor', error);
     res.status(500).json({ message: 'Failed to update vendor' });

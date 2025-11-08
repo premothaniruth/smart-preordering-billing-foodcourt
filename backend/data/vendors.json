@@ -10,10 +10,10 @@
   {
     "vendorId": 2,
     "shopId": 2,
-    "username": "southfoods",
+    "username": "siicespot",
     "passwordHash": "$2b$10$4.4309XmP50LhPuLouI3I.qR47FrV0db/Er.CUQQFBN882oAx0ZF2",
-    "email": "southvendor@infosys.com",
-    "shopName": "South Indian Delights"
+    "email": "siicespotvendor@infosys.com",
+    "shopName": "The Siice Spot"
   },
   {
     "vendorId": 3,
@@ -30,5 +30,13 @@
     "passwordHash": "$2b$10$Mnp6EU7UTRg.WCeyvT1/P.uQ9.yo6XFrA4TreJ6UDne7rAXwal9g.",
     "email": "fastfoodvendor@infosys.com",
     "shopName": "Fast Food & Desserts"
+  },
+  {
+    "vendorId": 2,
+    "shopId": 2,
+    "username": "spicespot",
+    "passwordHash": "$2b$10$f6vdXbzjlirKoxlohwgMmexbXNVeOpuML6y3Zjc5PgJDVh1Hr0vx2",
+    "email": "spicespotvendor@infosys.com",
+    "shopName": "The Spice Spot"
   }
 ]

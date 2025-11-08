@@ -17,53 +17,5 @@
         "overridePrice": 50
       }
     ]
-  },
-  {
-    "id": "si-breakfast-combo-1",
-    "shopId": 2,
-    "name": "South Breakfast Combo",
-    "price": 95,
-    "active": true,
-    "hidden": false,
-    "availableStart": null,
-    "availableEnd": null,
-    "components": [
-      {
-        "itemId": 107,
-        "quantity": 2,
-        "overridePrice": 90
-      },
-      {
-        "itemId": 106,
-        "quantity": 1,
-        "name": "",
-        "option": "",
-        "overridePrice": 77
-      }
-    ]
-  },
-  {
-    "id": "si-snack-combo-1",
-    "shopId": 2,
-    "name": "Dosa Combo",
-    "price": 119,
-    "active": true,
-    "hidden": false,
-    "availableStart": null,
-    "availableEnd": null,
-    "components": [
-      {
-        "itemId": 102,
-        "quantity": 1,
-        "overridePrice": null
-      },
-      {
-        "itemId": 117,
-        "quantity": 1,
-        "name": "",
-        "option": "",
-        "overridePrice": null
-      }
-    ]
   }
 ]

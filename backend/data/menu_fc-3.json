@@ -2,7 +2,7 @@
   "shops": [
     {
       "shopId": 1,
-      "shopName": "North Indian Dhamaka",
+      "shopName": "The Hungry Hub",
       "categories": [
         {
           "categoryName": "Breakfast",
@@ -2525,7 +2525,7 @@
     },
     {
       "shopId": 3,
-      "shopName": "Beverage Corner",
+      "shopName": "The Urban Drinks",
       "categories": [
         {
           "categoryName": "Beverages",
@@ -2806,7 +2806,7 @@
     },
     {
       "shopId": 4,
-      "shopName": "Fast Food & Desserts",
+      "shopName": "Foodie's Paradise",
       "categories": [
         {
           "categoryName": "Fast Food",
