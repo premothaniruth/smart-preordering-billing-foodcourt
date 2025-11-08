@@ -1,7 +1,7 @@
 [
   {
     "id": "bev-happy-hour-1",
-    "shopId": 3,
+    "shopId": 2,
     "name": "Cafe Duo",
     "price": 89,
     "active": true,
@@ -20,20 +20,27 @@
   },
   {
     "id": "bev-happy-hour-1",
-    "shopId": 2,
-    "name": "Cafe Duo",
-    "price": 89,
+    "shopId": 3,
+    "name": "South Special",
+    "price": 150,
     "active": true,
+    "hidden": false,
+    "availableStart": null,
+    "availableEnd": null,
     "components": [
       {
-        "itemId": 50,
-        "quantity": 1
+        "itemId": 102,
+        "quantity": 1,
+        "name": "",
+        "option": "",
+        "overridePrice": 70
       },
       {
-        "itemId": 52,
+        "itemId": 133,
         "quantity": 1,
-        "option": "Vanilla",
-        "overridePrice": 50
+        "name": "",
+        "option": "",
+        "overridePrice": 150
       }
     ]
   }

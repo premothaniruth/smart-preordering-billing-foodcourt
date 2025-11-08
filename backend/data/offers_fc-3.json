@@ -1,7 +1,7 @@
 [
   {
     "id": "bev-combo-30",
-    "shopId": 3,
+    "shopId": 2,
     "title": "🥤 Beverages Combo Deal ₹30 Off",
     "bannerText": "Happy Hour: ₹30 off on Cafe Duo",
     "discountPercent": null,
@@ -17,20 +17,108 @@
     "maxDiscountAmount": 30
   },
   {
-    "id": "bev-combo-30",
-    "shopId": 2,
-    "title": "🥤 Beverages Combo Deal ₹30 Off",
-    "bannerText": "Happy Hour: ₹30 off on Cafe Duo",
-    "discountPercent": null,
-    "discountAmount": 30,
+    "id": 1762619485735,
+    "shopId": 3,
+    "title": "🥤 South Combo Deal ₹30 Off",
+    "bannerText": "Happy Hour: ₹30 off on South special",
+    "description": "",
+    "active": true,
+    "stackable": true,
+    "priority": 0,
+    "maxDiscountAmount": 30,
+    "discountPercent": 5,
+    "discountAmount": null,
     "applicableSections": [],
     "applicableComboIds": [
       "bev-happy-hour-1"
     ],
-    "start": "2025-10-01T00:00:00Z",
-    "end": "2025-12-31T23:59:59Z",
-    "active": true,
-    "stackable": false,
-    "maxDiscountAmount": 30
+    "start": null,
+    "end": null,
+    "timeStart": null,
+    "timeEnd": null,
+    "daysOfWeek": null,
+    "schedule": null,
+    "conditions": [
+      {
+        "type": "combo_quantity",
+        "comboIds": [
+          "bev-happy-hour-1"
+        ],
+        "minQuantity": 1
+      }
+    ],
+    "rewards": [],
+    "metadata": {
+      "template": "percent_order",
+      "applicableComboIds": [
+        "bev-happy-hour-1"
+      ],
+      "applicableSections": [],
+      "configSnapshot": {
+        "template": "combo_buy_item_free",
+        "minTotal": "",
+        "percent": "5",
+        "amount": "",
+        "buyQuantity": "1",
+        "freeQuantity": "1",
+        "freeItemId": "",
+        "freeItemLabel": "",
+        "freeItemPrice": "",
+        "freeItems": [],
+        "targetItems": [],
+        "targetItemIds": [],
+        "targetMatchMode": "specific",
+        "discountPercent": "",
+        "selection": {
+          "buy": {
+            "mode": "fixed",
+            "allowAny": false,
+            "priceCap": "",
+            "items": []
+          },
+          "free": {
+            "mode": "fixed",
+            "allowAny": false,
+            "priceCap": "",
+            "items": []
+          }
+        },
+        "summaryText": "Customer buys 1 item (selected manually), gets 1 item (selected manually) free. Paid items are charged on higher-priced selections, free items apply to the lowest-priced eligible items."
+      },
+      "config": {
+        "template": "combo_buy_item_free",
+        "minTotal": "",
+        "percent": "5",
+        "amount": "",
+        "buyQuantity": "1",
+        "freeQuantity": "1",
+        "freeItemId": "",
+        "freeItemLabel": "",
+        "freeItemPrice": "",
+        "freeItems": [],
+        "targetItems": [],
+        "targetItemIds": [],
+        "targetMatchMode": "specific",
+        "discountPercent": "",
+        "selection": {
+          "buy": {
+            "mode": "fixed",
+            "allowAny": false,
+            "priceCap": "",
+            "items": []
+          },
+          "free": {
+            "mode": "fixed",
+            "allowAny": false,
+            "priceCap": "",
+            "items": []
+          }
+        },
+        "summaryText": "Customer buys 1 item (selected manually), gets 1 item (selected manually) free. Paid items are charged on higher-priced selections, free items apply to the lowest-priced eligible items."
+      },
+      "summaryText": "Customer buys 1 item (selected manually), gets 1 item (selected manually) free. Paid items are charged on higher-priced selections, free items apply to the lowest-priced eligible items."
+    },
+    "createdAt": "2025-11-08T16:33:26.066Z",
+    "updatedAt": "2025-11-08T16:52:51.247Z"
   }
 ]

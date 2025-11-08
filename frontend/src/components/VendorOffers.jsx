@@ -1097,7 +1097,11 @@ const VendorOffers = ({ token }) => {
         };
         current.template = value;
         const baseConfig = sanitizeConfig(defaults[value] || {});
+        const preservedCombos = Array.isArray(current.applicableComboIds)
+          ? current.applicableComboIds
+          : [];
         current.config = { ...baseConfig, template: value };
+        current.applicableComboIds = preservedCombos;
       } else {
         current[field] = value;
       }
@@ -1189,7 +1193,12 @@ const VendorOffers = ({ token }) => {
           discountAmount,
           maxDiscountAmount: (o.maxDiscountAmount == null || o.maxDiscountAmount === "") ? null : Number(o.maxDiscountAmount),
           applicableSections: Array.isArray(o.applicableSections) ? o.applicableSections : [],
-          applicableComboIds: Array.isArray(o.applicableComboIds) ? o.applicableComboIds.map((cid) => Number(cid)) : [],
+          applicableComboIds: Array.isArray(o.applicableComboIds)
+            ? o.applicableComboIds.map((cid) => {
+                const num = Number(cid);
+                return Number.isFinite(num) ? num : String(cid);
+              })
+            : [],
           conditions,
           rewards,
           config: configSnapshot,
