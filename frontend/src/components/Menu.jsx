@@ -118,6 +118,8 @@ const Menu = ({
   foodCourt,
   onFoodCourtChange,
   vendorFoodCourt,
+  foodCourtOptions: foodCourtOptionsProp = [],
+  foodCourtsLoading = false,
 }) => {
   const [vegOnly, setVegOnly] = useState(false);
   const [nonVegOnly, setNonVegOnly] = useState(false);
@@ -142,18 +144,18 @@ const Menu = ({
 
   const effectiveFoodCourt = vendorFoodCourt || foodCourt;
 
-  const foodCourtOptions = useMemo(
-    () => [
-      { value: 'fc-1', label: 'FC-1' },
-      { value: 'fc-2', label: 'FC-2' },
-    ],
-    []
-  );
+  const foodCourtOptions = useMemo(() => {
+    if (!Array.isArray(foodCourtOptionsProp) || foodCourtOptionsProp.length === 0) {
+      if (!foodCourt) return [];
+      return [{ value: foodCourt, label: foodCourt.toUpperCase() }];
+    }
+    return foodCourtOptionsProp;
+  }, [foodCourtOptionsProp, foodCourt]);
 
   const selectedFoodCourtLabel = useMemo(() => {
     const match = foodCourtOptions.find((option) => option.value === foodCourt);
-    return match ? match.label : 'Select Food Court';
-  }, [foodCourtOptions, foodCourt]);
+    return match ? match.label : foodCourtsLoading ? 'Loading…' : 'Select Food Court';
+  }, [foodCourtOptions, foodCourt, foodCourtsLoading]);
 
   const todayDateId = useMemo(() => getDateId(new Date()), [currentHm]);
 
@@ -1152,6 +1154,12 @@ const Menu = ({
               </button>
               {foodCourtMenuOpen && (
                 <div className="concern-dropdown" style={{ minWidth: 180 }}>
+                  {foodCourtsLoading && (
+                    <div style={{ padding: '8px 12px', fontSize: 13, color: '#7f8c8d' }}>Loading…</div>
+                  )}
+                  {!foodCourtsLoading && foodCourtOptions.length === 0 && (
+                    <div style={{ padding: '8px 12px', fontSize: 13, color: '#7f8c8d' }}>No food courts available</div>
+                  )}
                   {foodCourtOptions.map((option) => (
                     <button
                       type="button"
@@ -1163,8 +1171,22 @@ const Menu = ({
                           onActiveSectionChange(null);
                         }
                       }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '8px 12px',
+                        border: 'none',
+                        background: option.value === foodCourt ? '#ecf0f1' : 'transparent',
+                        cursor: 'pointer',
+                        width: '100%'
+                      }}
+                      disabled={foodCourtsLoading}
                     >
-                      <span className="shop-name">{option.label}</span>
+                      <span>{option.label}</span>
+                      {option.value === foodCourt && (
+                        <span style={{ fontSize: 12, color: '#2d98da' }}>Active</span>
+                      )}
                     </button>
                   ))}
                 </div>

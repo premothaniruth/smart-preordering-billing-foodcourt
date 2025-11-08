@@ -174,6 +174,42 @@ export const fetchAdminVendors = async (session, foodCourt) => {
   return res.json();
 };
 
+export const fetchAdminFoodCourts = async (session) => {
+  const res = await fetch(`${API_URL}/admin/food-courts`, {
+    headers: buildAdminHeaders(session),
+  });
+  return res.json();
+};
+
+export const fetchFoodCourts = async () => {
+  const res = await fetch(`${API_URL}/food-courts`);
+  return res.json();
+};
+
+export const createAdminFoodCourt = async (session, payload) => {
+  const res = await fetch(`${API_URL}/admin/food-courts`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...buildAdminHeaders(session),
+    },
+    body: JSON.stringify(payload || {}),
+  });
+  return res.json();
+};
+
+export const updateAdminFoodCourt = async (session, id, payload) => {
+  const res = await fetch(`${API_URL}/admin/food-courts/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      ...buildAdminHeaders(session),
+    },
+    body: JSON.stringify(payload || {}),
+  });
+  return res.json();
+};
+
 export const deleteAdminVendor = async (session, vendorId, foodCourt) => {
   const url = new URL(`${API_URL}/admin/vendor/${vendorId}`);
   if (foodCourt) url.searchParams.set('foodCourt', foodCourt);

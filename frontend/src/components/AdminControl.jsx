@@ -23,12 +23,6 @@ const initialCreateState = {
   password: ""
 };
 
-const FOOD_COURT_OPTIONS = [
-  { value: 'all', label: 'All Courts' },
-  { value: 'fc-1', label: 'Food Court 1' },
-  { value: 'fc-2', label: 'Food Court 2' },
-];
-
 const normalizeBulkStatusFilter = (value) => {
   if (!value || value === "all") return null;
   if (value === "under_review") return "submitted_admin";
@@ -45,6 +39,13 @@ function AdminControl({
   onRequestRefresh,
   selectedFoodCourt = 'all',
   onFoodCourtChange = () => {},
+  adminFoodCourtOptions = [],
+  foodCourts = [],
+  foodCourtsLoading = false,
+  foodCourtsError = null,
+  onCreateFoodCourt,
+  onUpdateFoodCourt,
+  onRefreshFoodCourts,
 }) {
   const [loginForm, setLoginForm] = useState({ username: "", password: "" });
   const [createForm, setCreateForm] = useState(initialCreateState);
@@ -70,6 +71,20 @@ function AdminControl({
     const source = vendorDirectory.length ? vendorDirectory : vendors;
     return [...source].sort((a, b) => a.shopName.localeCompare(b.shopName));
   }, [vendorDirectory, vendors]);
+
+  useEffect(() => {
+    if (!Array.isArray(adminFoodCourtOptions) || adminFoodCourtOptions.length === 0) return;
+    const allowed = new Set(adminFoodCourtOptions.map((option) => option.value));
+    if (!allowed.has(selectedFoodCourt)) {
+      const fallback = adminFoodCourtOptions[0]?.value || 'all';
+      onFoodCourtChange(fallback);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adminFoodCourtOptions]);
+
+  const createCourtOptions = useMemo(() => {
+    return adminFoodCourtOptions.filter((option) => option.value !== 'all');
+  }, [adminFoodCourtOptions]);
 
   const handleDeleteVendor = async (vendorId) => {
     if (!adminSession || !vendorId) return;
@@ -892,7 +907,7 @@ function AdminControl({
                 onChange={(e) => onFoodCourtChange(e.target.value)}
                 style={{ minWidth: 160 }}
               >
-                {FOOD_COURT_OPTIONS.map((option) => (
+                {adminFoodCourtOptions.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
                   </option>
@@ -1130,10 +1145,133 @@ function AdminControl({
       </div>
     </div>
   );
+  const [newCourtName, setNewCourtName] = useState("");
+  const [renameCourtId, setRenameCourtId] = useState("");
+  const [renameCourtName, setRenameCourtName] = useState("");
+
+  const handleCreateCourt = async (event) => {
+    event.preventDefault();
+    const trimmedName = newCourtName.trim();
+    if (!trimmedName) {
+      toast.error("Provide a name for the food court");
+      return;
+    }
+    const result = await onCreateFoodCourt?.({ name: trimmedName });
+    if (result) {
+      setNewCourtName("");
+    }
+  };
+
+  const handleRenameCourt = async (event) => {
+    event.preventDefault();
+    if (!renameCourtId) {
+      toast.error("Select a food court to rename");
+      return;
+    }
+    const trimmed = renameCourtName.trim();
+    if (!trimmed) {
+      toast.error("Provide a new display name");
+      return;
+    }
+    const result = await onUpdateFoodCourt?.(renameCourtId, { name: trimmed });
+    if (result) {
+      setRenameCourtName("");
+    }
+  };
+
+  const foodCourtPanel = (
+    <div>
+      <div className="card" style={{ marginBottom: 16 }}>
+        <div className="card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span>Food Court Registry</span>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button type="button" className="secondary-button" onClick={onRefreshFoodCourts} disabled={foodCourtsLoading}>
+              Refresh
+            </button>
+          </div>
+        </div>
+        <div className="card-body">
+          {foodCourtsLoading && <div>Loading food courts…</div>}
+          {foodCourtsError && <div style={{ color: "#c0392b" }}>{foodCourtsError}</div>}
+          {!foodCourtsLoading && !foodCourtsError && foodCourts.length === 0 && (
+            <div style={{ color: "#7f8c8d" }}>No food courts found. Create one using the form below.</div>
+          )}
+          {!foodCourtsLoading && !foodCourtsError && foodCourts.length > 0 && (
+            <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 12 }}>
+              {foodCourts.map((court) => (
+                <li key={court.id} style={{ padding: 12, border: "1px solid #ecf0f1", borderRadius: 8, background: "#f8f9fb" }}>
+                  <div style={{ fontWeight: 600 }}>{court.name}</div>
+                  <div style={{ fontSize: 12, color: "#7f8c8d" }}>ID: {court.id}</div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+
+      <div className="grid" style={{ display: "grid", gap: 20, gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
+        <div className="card">
+          <div className="card-header">Create Food Court</div>
+          <form className="card-body" onSubmit={handleCreateCourt}>
+            <div className="form-group">
+              <label>Display Name</label>
+              <input
+                type="text"
+                value={newCourtName}
+                onChange={(e) => setNewCourtName(e.target.value)}
+                placeholder="e.g., Food Court 3"
+              />
+            </div>
+            <button type="submit" className="primary-button" style={{ width: "100%" }} disabled={foodCourtsLoading}>
+              Create
+            </button>
+          </form>
+        </div>
+
+        <div className="card">
+          <div className="card-header">Rename Food Court</div>
+          <form className="card-body" onSubmit={handleRenameCourt}>
+            <div className="form-group">
+              <label>Select Food Court</label>
+              <select
+                value={renameCourtId}
+                onChange={(e) => {
+                  setRenameCourtId(e.target.value);
+                  const meta = foodCourts.find((court) => court.id === e.target.value);
+                  setRenameCourtName(meta?.name || "");
+                }}
+              >
+                <option value="">-- Choose a court --</option>
+                {foodCourts.map((court) => (
+                  <option key={court.id} value={court.id}>
+                    {court.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="form-group">
+              <label>New Display Name</label>
+              <input
+                type="text"
+                value={renameCourtName}
+                onChange={(e) => setRenameCourtName(e.target.value)}
+                placeholder="Enter new name"
+                disabled={!renameCourtId}
+              />
+            </div>
+            <button type="submit" className="secondary-button" style={{ width: "100%" }} disabled={!renameCourtId || foodCourtsLoading}>
+              Rename
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
 
   const panelByKey = {
     bulk: bulkOrdersPanel,
     vendors: vendorManagementPanel,
+    "food-courts": foodCourtPanel,
     users: userManagementPanel,
     analytics: analyticsPanel,
     procurement: procurementPanel,
@@ -1163,6 +1301,13 @@ function AdminControl({
             onClick={() => setActivePanel("vendors")}
           >
             Manage Vendors
+          </button>
+          <button
+            type="button"
+            style={navButtonStyle(activePanel === "food-courts")}
+            onClick={() => setActivePanel("food-courts")}
+          >
+            Food Court Control
           </button>
           <button
             type="button"
@@ -1223,6 +1368,23 @@ AdminControl.propTypes = {
   onRequestRefresh: PropTypes.func,
   selectedFoodCourt: PropTypes.string,
   onFoodCourtChange: PropTypes.func,
+  adminFoodCourtOptions: PropTypes.arrayOf(
+    PropTypes.shape({
+      value: PropTypes.string.isRequired,
+      label: PropTypes.string.isRequired,
+    })
+  ),
+  foodCourts: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.string.isRequired,
+      name: PropTypes.string.isRequired,
+    })
+  ),
+  foodCourtsLoading: PropTypes.bool,
+  foodCourtsError: PropTypes.string,
+  onCreateFoodCourt: PropTypes.func,
+  onUpdateFoodCourt: PropTypes.func,
+  onRefreshFoodCourts: PropTypes.func,
 };
 
 export default AdminControl;

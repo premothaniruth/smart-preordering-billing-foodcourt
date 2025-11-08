@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import PropTypes from "prop-types";
 import { vendorLogin } from "../api";
 import { toast } from "react-toastify";
@@ -9,22 +9,55 @@ import { toast } from "react-toastify";
  * @param {{ onLogin: (token:string)=>void }} props
  */
 
-const Login = ({ onLogin, onBack }) => {
+const Login = ({ onLogin, onBack, foodCourts = [], defaultFoodCourt = "fc-1", onFoodCourtChange, foodCourtsLoading = false }) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [foodCourt, setFoodCourt] = useState(() => {
-    try {
-      return localStorage.getItem("vendorSelectedFoodCourt") || "fc-1";
-    } catch {
-      return "fc-1";
+  const normalizedOptions = useMemo(() => {
+    if (!Array.isArray(foodCourts) || foodCourts.length === 0) {
+      const fallback = defaultFoodCourt || "fc-1";
+      return [{ value: fallback, label: fallback.toUpperCase() }];
     }
-  });
+    return foodCourts.map((option) => {
+      if (typeof option === "string") {
+        const value = option.trim();
+        return { value, label: value.toUpperCase() };
+      }
+      const value = String(option?.value ?? option?.id ?? "").trim();
+      const labelSource = option?.label ?? option?.name ?? value;
+      const label = String((labelSource || "Food Court"));
+      return { value: value || "", label: label || value.toUpperCase() };
+    }).filter((option) => option.value);
+  }, [foodCourts, defaultFoodCourt]);
+
+  const initialFoodCourt = useMemo(() => {
+    const fallback = normalizedOptions[0]?.value || defaultFoodCourt || "fc-1";
+    try {
+      const stored = localStorage.getItem("vendorSelectedFoodCourt");
+      if (stored && normalizedOptions.some((option) => option.value === stored)) {
+        return stored;
+      }
+    } catch {}
+    return fallback;
+  }, [defaultFoodCourt, normalizedOptions]);
+
+  const [foodCourt, setFoodCourt] = useState(initialFoodCourt);
+
+  useEffect(() => {
+    if (normalizedOptions.length === 0) return;
+    if (!normalizedOptions.some((option) => option.value === foodCourt)) {
+      setFoodCourt(normalizedOptions[0].value);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [normalizedOptions]);
 
   useEffect(() => {
     try {
       localStorage.setItem("vendorSelectedFoodCourt", foodCourt);
     } catch {}
+    if (typeof onFoodCourtChange === "function") {
+      onFoodCourtChange(foodCourt);
+    }
   }, [foodCourt]);
 
   // Attempt vendor login via API
@@ -37,7 +70,9 @@ const Login = ({ onLogin, onBack }) => {
           localStorage.setItem("vendorSelectedFoodCourt", data.foodCourt || foodCourt);
         } catch {}
         onLogin({ token: data.token, foodCourt: data.foodCourt });
-        toast.success(`Logged into ${(data.foodCourt || "fc-1").toUpperCase()} successfully`);
+        const label = normalizedOptions.find((option) => option.value === (data.foodCourt || foodCourt))?.label
+          || (data.foodCourt || foodCourt || "fc-1").toUpperCase();
+        toast.success(`Logged into ${label} successfully`);
       } else {
         toast.error(data.message || "Login failed");
       }
@@ -64,28 +99,21 @@ const Login = ({ onLogin, onBack }) => {
         <br />
         <div style={{ margin: "12px 0" }}>
           <div style={{ fontSize: 13, color: "#7f8c8d", marginBottom: 6 }}>Select Food Court</div>
-          <label style={{ display: "inline-flex", alignItems: "center", marginRight: 16 }}>
-            <input
-              type="radio"
-              name="vendor-food-court"
-              value="fc-1"
-              checked={foodCourt === "fc-1"}
-              onChange={(e) => setFoodCourt(e.target.value)}
-              style={{ marginRight: 6 }}
-            />
-            1
-          </label>
-          <label style={{ display: "inline-flex", alignItems: "center" }}>
-            <input
-              type="radio"
-              name="vendor-food-court"
-              value="fc-2"
-              checked={foodCourt === "fc-2"}
-              onChange={(e) => setFoodCourt(e.target.value)}
-              style={{ marginRight: 6 }}
-            />
-            2
-          </label>
+          <select
+            value={foodCourt}
+            onChange={(e) => setFoodCourt(e.target.value)}
+            disabled={foodCourtsLoading || normalizedOptions.length === 0}
+            style={{ minWidth: 200 }}
+          >
+            {normalizedOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          {foodCourtsLoading && (
+            <div style={{ fontSize: 12, color: "#7f8c8d", marginTop: 6 }}>Refreshing food courts…</div>
+          )}
         </div>
         <br />
         <div style={{ position: "relative", display: "inline-block" }}>
@@ -154,6 +182,28 @@ const Login = ({ onLogin, onBack }) => {
 Login.propTypes = {
   onLogin: PropTypes.func.isRequired,
   onBack: PropTypes.func,
+  foodCourts: PropTypes.arrayOf(
+    PropTypes.oneOfType([
+      PropTypes.string,
+      PropTypes.shape({
+        value: PropTypes.string,
+        label: PropTypes.string,
+        id: PropTypes.string,
+        name: PropTypes.string,
+      }),
+    ])
+  ),
+  defaultFoodCourt: PropTypes.string,
+  onFoodCourtChange: PropTypes.func,
+  foodCourtsLoading: PropTypes.bool,
+};
+
+Login.defaultProps = {
+  onBack: undefined,
+  foodCourts: [],
+  defaultFoodCourt: "fc-1",
+  onFoodCourtChange: undefined,
+  foodCourtsLoading: false,
 };
 
 export default Login;

@@ -40,7 +40,7 @@ const DEFAULT_SUMMARY = {
   history: [],
 };
 
-const Analytics = ({ token }) => {
+const Analytics = ({ token, defaultFoodCourt = "fc-1", foodCourtOptions = [] }) => {
   const [data, setData] = useState(DEFAULT_SUMMARY);
   const [period, setPeriod] = useState("weekly");
   const [granularity, setGranularity] = useState("hour");
@@ -54,12 +54,12 @@ const Analytics = ({ token }) => {
       const payload = JSON.parse(atob(token.split('.')[1] || ""));
       return {
         vendorShopId: payload?.shopId || 0,
-        vendorFoodCourt: payload?.foodCourt || "fc-1"
+        vendorFoodCourt: payload?.foodCourt || defaultFoodCourt
       };
     } catch {
-      return { vendorShopId: 0, vendorFoodCourt: "fc-1" };
+      return { vendorShopId: 0, vendorFoodCourt: defaultFoodCourt };
     }
-  }, [token]);
+  }, [token, defaultFoodCourt]);
 
   const baseColor = useMemo(() => {
     const palette = [
@@ -104,7 +104,7 @@ const Analytics = ({ token }) => {
     return () => {
       active = false;
     };
-  }, [token, period, granularity]);
+  }, [token, vendorFoodCourt, period, granularity]);
 
   const ordersSeries = useMemo(() => data.timeSeries.map((row) => ({ ...row, orders: row.orders || 0 })), [data.timeSeries]);
   const revenueSeries = useMemo(() => data.timeSeries.map((row) => ({ ...row, revenue: row.revenue || 0 })), [data.timeSeries]);
@@ -182,6 +182,20 @@ const Analytics = ({ token }) => {
       </ResponsiveContainer>
     );
   };
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetchAnalytics(token, period, granularity, vendorFoodCourt);
+      setData(res || DEFAULT_SUMMARY);
+    } catch (err) {
+      setError(err?.message || 'Failed to load analytics');
+      setData(DEFAULT_SUMMARY);
+    } finally {
+      setLoading(false);
+    }
+  }, [token, vendorFoodCourt, period, granularity]);
 
   const handleExport = async () => {
     setExporting(true);

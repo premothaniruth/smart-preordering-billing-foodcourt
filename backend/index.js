@@ -71,6 +71,211 @@ const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET || "MySuperSecretKeyForJWT";
 
 const analyticsBootstrapStateFile = path.join(__dirname, "data", "analytics_bootstrap_state.json");
+const foodCourtsRegistryFile = path.join(__dirname, "data", "food_courts.json");
+
+const FC_DEFAULT = "fc-1";
+const DEFAULT_FOOD_COURT_REGISTRY = [
+  { id: "fc-1", name: "Food Court 1" },
+  { id: "fc-2", name: "Food Court 2" },
+];
+
+const normalizeFoodCourtId = (value) => {
+  if (value == null) return null;
+  const id = String(value).trim().toLowerCase();
+  return id || null;
+};
+
+const normalizeFoodCourtEntry = (entry, index) => {
+  if (!entry) return null;
+  if (typeof entry === "string") {
+    const id = normalizeFoodCourtId(entry);
+    if (!id) return null;
+    return { id, name: `Food Court ${index + 1}` };
+  }
+  if (typeof entry === "object") {
+    const id = normalizeFoodCourtId(entry.id);
+    if (!id) return null;
+    const name = String(entry.name || entry.label || id.toUpperCase()).trim();
+    return { id, name: name || id.toUpperCase() };
+  }
+  return null;
+};
+
+const writeFoodCourtRegistry = (entries) => {
+  fs.writeFileSync(foodCourtsRegistryFile, JSON.stringify(entries, null, 2));
+};
+
+const loadFoodCourtRegistryFromDisk = () => {
+  try {
+    if (!fs.existsSync(foodCourtsRegistryFile)) {
+      writeFoodCourtRegistry(DEFAULT_FOOD_COURT_REGISTRY);
+    }
+    const raw = fs.readFileSync(foodCourtsRegistryFile, "utf8");
+    const parsed = JSON.parse(raw || "[]");
+    const normalized = Array.isArray(parsed)
+      ? parsed
+          .map((entry, index) => normalizeFoodCourtEntry(entry, index))
+          .filter(Boolean)
+      : [];
+
+    const deduped = [];
+    const seen = new Set();
+    normalized.forEach((entry) => {
+      if (entry && !seen.has(entry.id)) {
+        seen.add(entry.id);
+        deduped.push(entry);
+      }
+    });
+
+    if (!deduped.length) {
+      writeFoodCourtRegistry(DEFAULT_FOOD_COURT_REGISTRY);
+      return DEFAULT_FOOD_COURT_REGISTRY;
+    }
+
+    if (!seen.has(FC_DEFAULT)) {
+      const fallbackName = DEFAULT_FOOD_COURT_REGISTRY.find((entry) => entry.id === FC_DEFAULT)?.name || "Food Court 1";
+      deduped.unshift({ id: FC_DEFAULT, name: fallbackName });
+    }
+
+    if (deduped.length !== normalized.length) {
+      writeFoodCourtRegistry(deduped);
+    }
+
+    return deduped;
+  } catch (error) {
+    console.warn("Failed to load food court registry, resetting to defaults", error);
+    writeFoodCourtRegistry(DEFAULT_FOOD_COURT_REGISTRY);
+    return DEFAULT_FOOD_COURT_REGISTRY;
+  }
+};
+
+let foodCourtRegistryCache = loadFoodCourtRegistryFromDisk();
+
+const refreshFoodCourtRegistry = () => {
+  foodCourtRegistryCache = loadFoodCourtRegistryFromDisk();
+  return foodCourtRegistryCache;
+};
+
+const getFoodCourtRegistry = () => {
+  if (!Array.isArray(foodCourtRegistryCache) || !foodCourtRegistryCache.length) {
+    refreshFoodCourtRegistry();
+  }
+  return foodCourtRegistryCache;
+};
+
+const getFoodCourts = () => getFoodCourtRegistry().map((entry) => entry.id);
+
+const getFoodCourtMetaById = (id) => getFoodCourtRegistry().find((entry) => entry.id === id) || null;
+
+const resolveFoodCourtId = (candidate, fallback = FC_DEFAULT) => {
+  const normalizedFallback = normalizeFoodCourtId(fallback) || FC_DEFAULT;
+  const normalized = normalizeFoodCourtId(candidate);
+  if (!normalized) return normalizedFallback;
+  const courts = getFoodCourts();
+  if (courts.includes(normalized)) {
+    return normalized;
+  }
+  return courts.includes(normalizedFallback) ? normalizedFallback : FC_DEFAULT;
+};
+
+const slugifyFoodCourtName = (value) => {
+  if (!value) return null;
+  let slug = String(value || "").trim().toLowerCase();
+  if (!slug) return null;
+  slug = slug.replace(/food\s*court/g, "fc");
+  slug = slug.replace(/[^a-z0-9]+/g, "-");
+  slug = slug.replace(/^-+|-+$/g, "");
+  slug = slug.replace(/-+/g, "-");
+  if (!slug) return null;
+  if (!slug.startsWith("fc")) {
+    slug = `fc-${slug}`;
+  } else if (!slug.startsWith("fc-")) {
+    slug = slug.replace(/^fc/, "fc-");
+  }
+  return slug;
+};
+
+const addFoodCourtToRegistry = ({ id, name }) => {
+  const registry = getFoodCourtRegistry().map((entry) => ({ ...entry }));
+  const existingIds = new Set(registry.map((entry) => entry.id));
+
+  let label = String(name || "").trim();
+  if (!label) {
+    label = `Food Court ${registry.length + 1}`;
+  } else {
+    label = label.slice(0, 80);
+  }
+
+  let candidateId = normalizeFoodCourtId(id);
+  if (candidateId) {
+    if (existingIds.has(candidateId)) {
+      const error = new Error(`Food court '${candidateId}' already exists`);
+      error.code = "FOOD_COURT_EXISTS";
+      throw error;
+    }
+  } else {
+    const slugCandidate = slugifyFoodCourtName(label);
+    if (slugCandidate && !existingIds.has(slugCandidate)) {
+      candidateId = slugCandidate;
+    }
+  }
+
+  if (!candidateId) {
+    let sequence = registry.length + 1;
+    do {
+      candidateId = `fc-${sequence}`;
+      sequence += 1;
+    } while (existingIds.has(candidateId));
+  } else if (!id && existingIds.has(candidateId)) {
+    let suffix = 2;
+    const baseCandidate = candidateId;
+    while (existingIds.has(`${baseCandidate}-${suffix}`)) {
+      suffix += 1;
+    }
+    candidateId = `${baseCandidate}-${suffix}`;
+  }
+
+  const entry = { id: candidateId, name: label };
+  registry.push(entry);
+  writeFoodCourtRegistry(registry);
+  refreshFoodCourtRegistry();
+  ensureCourtDataFiles([candidateId]);
+  return entry;
+};
+
+const updateFoodCourtInRegistry = (id, updates = {}) => {
+  const normalizedId = normalizeFoodCourtId(id);
+  if (!normalizedId) {
+    const error = new Error("Invalid food court identifier");
+    error.code = "FOOD_COURT_INVALID";
+    throw error;
+  }
+
+  const registry = getFoodCourtRegistry().map((entry) => ({ ...entry }));
+  const index = registry.findIndex((entry) => entry.id === normalizedId);
+  if (index === -1) {
+    const error = new Error(`Food court '${normalizedId}' not found`);
+    error.code = "FOOD_COURT_NOT_FOUND";
+    throw error;
+  }
+
+  const entry = registry[index];
+  if (updates && Object.prototype.hasOwnProperty.call(updates, "name")) {
+    const nextName = String(updates.name || "").trim();
+    if (!nextName) {
+      const error = new Error("Food court name cannot be empty");
+      error.code = "FOOD_COURT_INVALID";
+      throw error;
+    }
+    entry.name = nextName.slice(0, 80);
+  }
+
+  registry[index] = entry;
+  writeFoodCourtRegistry(registry);
+  refreshFoodCourtRegistry();
+  ensureCourtDataFiles([normalizedId]);
+  return entry;
+};
 
 const loadAnalyticsBootstrapState = () => {
   try {
@@ -95,7 +300,7 @@ const bootstrapAnalyticsFromOrders = async () => {
   const nextByCourt = { ...previousByCourt };
   let globalMaxOrderId = Number(state?.lastOrderId || 0);
 
-  for (const foodCourt of FOOD_COURTS) {
+  for (const foodCourt of getFoodCourts()) {
     const lastOrderId = Number(previousByCourt?.[foodCourt] ?? state?.lastOrderId ?? 0);
     const orders = getOrders(foodCourt);
     const pending = orders.filter((order) => Number(order.id) > lastOrderId);
@@ -173,7 +378,7 @@ const enrichVendorContext = (decoded) => {
   vendorCtx.vendorId = vendorCtx.vendorId ?? vendorCtx.id ?? vendorCtx.vendorID ?? null;
   vendorCtx.shopId = vendorCtx.shopId ?? vendorCtx.shopID ?? vendorCtx.shop ?? null;
   vendorCtx.role = "vendor-admin";
-  vendorCtx.foodCourt = FOOD_COURTS.includes(String(vendorCtx.foodCourt)) ? String(vendorCtx.foodCourt) : FC_DEFAULT;
+  vendorCtx.foodCourt = resolveFoodCourtId(vendorCtx.foodCourt);
   const permissions = new Set(["analytics:read", "analytics:write", "procurement:manage"]);
   vendorCtx.permissions = Array.from(permissions);
   return vendorCtx;
@@ -526,10 +731,6 @@ app.get("/analytics/status", authenticateVendor, requirePermission("analytics:re
 }));
 
 // File paths
-const FC_DEFAULT = "fc-1";
-const FC_SECONDARY = "fc-2";
-const FOOD_COURTS = [FC_DEFAULT, FC_SECONDARY];
-
 const menuFile = __dirname + "/data/menu.json";
 const ordersFile = __dirname + "/data/orders.json";
 const vendorsFile = __dirname + "/data/vendors.json";
@@ -549,7 +750,7 @@ const vendorInterestThresholdsFile = path.join(__dirname, 'data', 'vendor_intere
 const bulkOrdersFile = path.join(__dirname, 'data', 'bulk_orders.json');
 
 const resolveCourtFile = (baseFile, foodCourt) => {
-  const targetCourt = FOOD_COURTS.includes(String(foodCourt)) ? String(foodCourt) : FC_DEFAULT;
+  const targetCourt = resolveFoodCourtId(foodCourt);
   if (targetCourt === FC_DEFAULT) return baseFile;
   const parsed = path.parse(baseFile);
   return path.join(parsed.dir, `${parsed.name}_${targetCourt}${parsed.ext}`);
@@ -570,17 +771,45 @@ const writeJsonTo = (filePath, payload) => {
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
 };
 
-function ensureCourtDataFiles() {
-  const bases = [menuFile, ordersFile, vendorsFile, combosFile, offersFile, favoritesFile, itemInterestFile];
-  for (const base of bases) {
-    const secondaryPath = resolveCourtFile(base, FC_SECONDARY);
-    if (!fs.existsSync(secondaryPath)) {
+const COURT_DATA_BASES = [
+  { file: menuFile, fallback: [] },
+  { file: ordersFile, fallback: [] },
+  { file: vendorsFile, fallback: [] },
+  { file: combosFile, fallback: [] },
+  { file: offersFile, fallback: [] },
+  { file: favoritesFile, fallback: [] },
+  { file: itemInterestFile, fallback: [] },
+  { file: bulkOrdersFile, fallback: [] },
+];
+
+const ensureFileWithFallback = (filePath, fallback) => {
+  if (fs.existsSync(filePath)) return;
+  fs.writeFileSync(filePath, JSON.stringify(fallback, null, 2));
+};
+
+function ensureCourtDataFiles(targetCourts = null) {
+  const courts = targetCourts && Array.isArray(targetCourts) && targetCourts.length
+    ? Array.from(new Set(targetCourts.map((court) => resolveFoodCourtId(court))))
+    : getFoodCourts();
+
+  const uniqueCourts = Array.from(new Set([FC_DEFAULT, ...courts]));
+
+  for (const { file, fallback } of COURT_DATA_BASES) {
+    ensureFileWithFallback(file, fallback);
+
+    const defaultContent = readJsonFrom(file, fallback);
+    const serializedDefault = JSON.stringify(defaultContent, null, 2);
+
+    for (const court of uniqueCourts) {
+      if (court === FC_DEFAULT) continue;
+      const courtFile = resolveCourtFile(file, court);
+      if (fs.existsSync(courtFile)) continue;
+
       try {
-        const primaryContent = fs.readFileSync(base, "utf8");
-        fs.writeFileSync(secondaryPath, primaryContent);
+        fs.writeFileSync(courtFile, serializedDefault);
       } catch (error) {
-        const defaultContent = Array.isArray(readJsonFrom(base, [])) ? [] : {};
-        fs.writeFileSync(secondaryPath, JSON.stringify(defaultContent, null, 2));
+        console.warn(`Failed to seed data file for ${courtFile}, writing fallback`, error);
+        ensureFileWithFallback(courtFile, fallback);
       }
     }
   }
@@ -605,15 +834,11 @@ const getVendorThresholdValue = (vendorId, thresholdsMap, { foodCourt } = {}) =>
   return DEFAULT_INTEREST_THRESHOLD;
 };
 
-const getVendorFoodCourt = (req) => {
-  const candidate = req?.vendor?.foodCourt;
-  return FOOD_COURTS.includes(String(candidate)) ? String(candidate) : FC_DEFAULT;
-};
+const getVendorFoodCourt = (req) => resolveFoodCourtId(req?.vendor?.foodCourt);
 
-const getAdminFoodCourt = (req) => {
-  const candidate = req?.query?.foodCourt || req?.body?.foodCourt || req?.params?.foodCourt;
-  return FOOD_COURTS.includes(String(candidate)) ? String(candidate) : FC_DEFAULT;
-};
+const getAdminFoodCourt = (req) => resolveFoodCourtId(
+  req?.query?.foodCourt || req?.body?.foodCourt || req?.params?.foodCourt
+);
 
 const loadVendorMenu = (req) => getMenu(getVendorFoodCourt(req));
 const loadVendorOrders = (req) => getOrders(getVendorFoodCourt(req));
@@ -623,10 +848,9 @@ const saveVendorCombos = (req, combos) => saveCombos(combos, getVendorFoodCourt(
 const loadVendorOffers = (req) => getOffers(getVendorFoodCourt(req));
 const saveVendorOffers = (req, offers) => saveOffers(offers, getVendorFoodCourt(req));
 
-const getUserFoodCourt = (req) => {
-  const candidate = req?.query?.foodCourt || req?.body?.foodCourt || req?.headers?.["x-food-court"] || req?.params?.foodCourt;
-  return FOOD_COURTS.includes(String(candidate)) ? String(candidate) : FC_DEFAULT;
-};
+const getUserFoodCourt = (req) => resolveFoodCourtId(
+  req?.query?.foodCourt || req?.body?.foodCourt || req?.headers?.["x-food-court"] || req?.params?.foodCourt
+);
 
 const loadUserMenu = (req) => getMenu(getUserFoodCourt(req));
 const loadUserCombos = (req) => getCombos(getUserFoodCourt(req));
@@ -1668,12 +1892,8 @@ app.get('/admin/bulk-orders', authenticateAdmin, (req, res) => {
     const requestedFoodCourt = req.query.foodCourt ? String(req.query.foodCourt).toLowerCase() : null;
 
     const courtsToFetch = requestedFoodCourt === 'all'
-      ? FOOD_COURTS
-      : [
-          FOOD_COURTS.includes(requestedFoodCourt)
-            ? requestedFoodCourt
-            : getAdminFoodCourt(req)
-        ];
+      ? getFoodCourts()
+      : [resolveFoodCourtId(requestedFoodCourt)];
 
     const aggregated = courtsToFetch.flatMap((court) => {
       const orders = getBulkOrders(court);
@@ -1698,13 +1918,59 @@ app.get('/admin/bulk-orders', authenticateAdmin, (req, res) => {
   }
 });
 
+app.get('/food-courts', (req, res) => {
+  try {
+    const registry = getFoodCourtRegistry();
+    res.json({ status: 'ok', foodCourts: registry });
+  } catch (error) {
+    console.error('Public food courts fetch error', error);
+    res.status(500).json({ status: 'error', message: 'Failed to load food courts' });
+  }
+});
+
 app.get('/admin/vendors', authenticateAdmin, (req, res) => {
   try {
     const foodCourt = getAdminFoodCourt(req);
     const vendors = buildVendorDirectory(foodCourt);
     res.json({ status: 'ok', vendors });
   } catch (error) {
-    res.status(500).json({ message: 'Failed to load vendors' });
+    console.error('Admin vendor directory error', error);
+    res.status(500).json({ status: 'error', message: 'Failed to load vendor directory' });
+  }
+});
+
+app.get('/admin/food-courts', authenticateAdmin, (req, res) => {
+  try {
+    const registry = getFoodCourtRegistry();
+    res.json({ status: 'ok', foodCourts: registry });
+  } catch (error) {
+    console.error('Admin list food courts error', error);
+    res.status(500).json({ status: 'error', message: 'Failed to load food courts' });
+  }
+});
+
+app.post('/admin/food-courts', authenticateAdmin, (req, res) => {
+  try {
+    const { id, name } = req.body || {};
+    const entry = addFoodCourtToRegistry({ id, name });
+    res.status(201).json({ status: 'created', foodCourt: entry });
+  } catch (error) {
+    console.error('Admin create food court error', error);
+    const status = error?.code === 'FOOD_COURT_EXISTS' ? 409 : 400;
+    res.status(status).json({ status: 'error', message: error.message || 'Unable to create food court' });
+  }
+});
+
+app.patch('/admin/food-courts/:id', authenticateAdmin, (req, res) => {
+  try {
+    const { id } = req.params;
+    const entry = updateFoodCourtInRegistry(id, req.body || {});
+    res.json({ status: 'ok', foodCourt: entry });
+  } catch (error) {
+    console.error('Admin update food court error', error);
+    let status = 400;
+    if (error?.code === 'FOOD_COURT_NOT_FOUND') status = 404;
+    res.status(status).json({ status: 'error', message: error.message || 'Unable to update food court' });
   }
 });
 
@@ -4704,7 +4970,7 @@ app.post("/order/cancel/:id", (req, res) => {
     let orders = getOrders(targetFoodCourt);
     let index = orders.findIndex((o) => Number(o.id) === orderId);
     if (index === -1) {
-      for (const fc of FOOD_COURTS) {
+      for (const fc of getFoodCourts()) {
         if (fc === targetFoodCourt) continue;
         const candidateOrders = getOrders(fc);
         const candidateIndex = candidateOrders.findIndex((o) => Number(o.id) === orderId);
@@ -4910,7 +5176,7 @@ app.post("/rating", (req, res) => {
       let orders = getOrders(targetFoodCourt);
       let order = orders.find(o => o.id === orderId);
       if (!order) {
-        for (const fc of FOOD_COURTS) {
+        for (const fc of getFoodCourts()) {
           if (fc === targetFoodCourt) continue;
           const candidateOrders = getOrders(fc);
           const candidate = candidateOrders.find(o => o.id === orderId);
@@ -5106,7 +5372,7 @@ app.patch("/admin/vendor-grievances/:id", authenticateAdmin, (req, res) => {
 app.post("/vendor/login", async (req, res) => {
   try {
     const { username, password, foodCourt } = req.body || {};
-    const targetCourt = FOOD_COURTS.includes(String(foodCourt)) ? String(foodCourt) : FC_DEFAULT;
+    const targetCourt = resolveFoodCourtId(foodCourt);
     const vendors = getVendors(targetCourt);
 
     const vendor = vendors.find((v) => v.username === username);
@@ -5264,7 +5530,7 @@ app.put('/combos', authenticateVendor, (req, res) => {
   try {
     const incoming = Array.isArray(req.body.combos) ? req.body.combos : [];
     const bodyCourt = req.body?.foodCourt;
-    const foodCourt = FOOD_COURTS.includes(String(bodyCourt)) ? String(bodyCourt) : getVendorFoodCourt(req);
+    const foodCourt = resolveFoodCourtId(bodyCourt, getVendorFoodCourt(req));
     const all = getCombos(foodCourt);
     const rest = all.filter(c => String(c.shopId) !== String(req.vendor.shopId));
     const normalized = incoming.map(c => ({
@@ -5294,7 +5560,7 @@ app.get('/offers/active', (req, res) => {
     const now = new Date();
     const shopId = req.query.shopId ? String(req.query.shopId) : null;
     const requestedCourt = req.query.foodCourt ? String(req.query.foodCourt) : null;
-    const foodCourt = FOOD_COURTS.includes(requestedCourt) ? requestedCourt : getUserFoodCourt(req);
+    const foodCourt = resolveFoodCourtId(requestedCourt);
     const offers = getOffers(foodCourt).filter(o => {
       if (shopId && String(o.shopId) !== shopId) return false;
       const start = o.start ? new Date(o.start) : null;
@@ -5317,7 +5583,7 @@ app.put('/offers', authenticateVendor, (req, res) => {
   try {
     const incoming = Array.isArray(req.body.offers) ? req.body.offers : [];
     const bodyCourt = req.body?.foodCourt;
-    const foodCourt = FOOD_COURTS.includes(String(bodyCourt)) ? String(bodyCourt) : getVendorFoodCourt(req);
+    const foodCourt = resolveFoodCourtId(bodyCourt, getVendorFoodCourt(req));
     const all = getOffers(foodCourt);
     const rest = all.filter(o => String(o.shopId) !== String(req.vendor.shopId));
     const normalized = incoming.map(o => normalizeOfferInputForStorage(o, req.vendor.shopId));

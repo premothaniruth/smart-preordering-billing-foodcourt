@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
-import { fetchMenu, placeOrder, fetchUserOrders, fetchFavorites, toggleFavorite, submitRating, cancelOrder, employeeProfile, triggerSosAlert, resolveSosAlert, fetchSosStatus, previewOffers, createVendor, updateVendor, fetchAdminVendors } from "./api";
+import { fetchMenu, placeOrder, fetchUserOrders, fetchFavorites, toggleFavorite, submitRating, cancelOrder, employeeProfile, triggerSosAlert, resolveSosAlert, fetchSosStatus, previewOffers, createVendor, updateVendor, fetchAdminVendors, createAdminFoodCourt, updateAdminFoodCourt, fetchFoodCourts } from "./api";
 import Menu from "./components/Menu.jsx";
 import Cart from "./components/Cart.jsx";
 import Login from "./components/Login.jsx";
@@ -38,27 +38,37 @@ const ADMIN_VENDORS_STORAGE_KEY = "adminManagedVendors";
 const ADMIN_FOOD_COURT_STORAGE_KEY = "adminSelectedFoodCourtV2";
 const LEGACY_ADMIN_FOOD_COURT_KEY = "adminSelectedFoodCourt";
 
-const ADMIN_FOOD_COURT_CHOICES = new Set(["all", "fc-1", "fc-2"]);
+const DEFAULT_ADMIN_FOOD_COURT = "all";
 
-const getAdminSelectedFoodCourt = () => {
+const getLegacyAdminCourts = () => {
+  try {
+    const legacy = localStorage.getItem(LEGACY_ADMIN_FOOD_COURT_KEY);
+    if (!legacy) return [];
+    return [legacy];
+  } catch {
+    return [];
+  }
+};
+
+const getAdminSelectedFoodCourt = (validOptions = []) => {
+  const choices = new Set([DEFAULT_ADMIN_FOOD_COURT, ...validOptions.map((entry) => entry.id)]);
   try {
     const stored = localStorage.getItem(ADMIN_FOOD_COURT_STORAGE_KEY);
-    if (stored && ADMIN_FOOD_COURT_CHOICES.has(stored)) {
+    if (stored && choices.has(stored)) {
       return stored;
     }
 
-    const legacy = localStorage.getItem(LEGACY_ADMIN_FOOD_COURT_KEY);
-    if (legacy && ADMIN_FOOD_COURT_CHOICES.has(legacy)) {
+    const [legacy] = getLegacyAdminCourts();
+    if (legacy && choices.has(legacy)) {
       localStorage.removeItem(LEGACY_ADMIN_FOOD_COURT_KEY);
-      const normalized = ADMIN_FOOD_COURT_CHOICES.has(legacy) ? legacy : "all";
-      localStorage.setItem(ADMIN_FOOD_COURT_STORAGE_KEY, normalized);
-      return normalized;
+      localStorage.setItem(ADMIN_FOOD_COURT_STORAGE_KEY, legacy);
+      return legacy;
     }
 
-    localStorage.setItem(ADMIN_FOOD_COURT_STORAGE_KEY, "all");
-    return "all";
+    localStorage.setItem(ADMIN_FOOD_COURT_STORAGE_KEY, DEFAULT_ADMIN_FOOD_COURT);
+    return DEFAULT_ADMIN_FOOD_COURT;
   } catch {
-    return "all";
+    return DEFAULT_ADMIN_FOOD_COURT;
   }
 };
 
@@ -146,7 +156,10 @@ function App() {
       return 'fc-1';
     }
   });
-  const [adminFoodCourt, setAdminFoodCourt] = useState(() => getAdminSelectedFoodCourt());
+  const [adminFoodCourt, setAdminFoodCourt] = useState(() => getAdminSelectedFoodCourt([]));
+  const [foodCourts, setFoodCourts] = useState([]);
+  const [foodCourtsLoading, setFoodCourtsLoading] = useState(false);
+  const [foodCourtsError, setFoodCourtsError] = useState(null);
 
   const userId = employeeMobile || null;
   const vendorShopId = (() => {
@@ -268,6 +281,48 @@ function App() {
     return () => clearTimeout(splashTimeout);
   }, []);
 
+  const loadFoodCourts = useCallback(async () => {
+    try {
+      setFoodCourtsLoading(true);
+      setFoodCourtsError(null);
+      const res = await fetchFoodCourts();
+      if (res?.status === "ok" && Array.isArray(res.foodCourts)) {
+        const registry = res.foodCourts.map((entry) => ({
+          id: String(entry.id || "").trim() || "fc-1",
+          name: String(entry.name || entry.label || "").trim() || String(entry.id || "").toUpperCase() || "Food Court",
+        }));
+        setFoodCourts(registry);
+        const identifiers = new Set(registry.map((entry) => entry.id));
+        if (!identifiers.has(foodCourt)) {
+          const fallback = registry[0]?.id || "fc-1";
+          setFoodCourt(fallback);
+          try {
+            localStorage.setItem('selectedFoodCourt', fallback);
+          } catch {}
+        }
+        const adminChoices = new Set(["all", ...identifiers]);
+        if (!adminChoices.has(adminFoodCourt)) {
+          setAdminFoodCourt("all");
+        }
+      } else {
+        setFoodCourts([]);
+        setFoodCourtsError(res?.message || "Unable to load food courts");
+        if (adminFoodCourt !== "all") {
+          setAdminFoodCourt("all");
+        }
+      }
+    } catch (error) {
+      console.error("Failed to fetch food court registry", error);
+      setFoodCourts([]);
+      setFoodCourtsError("Unable to load food courts");
+      if (adminFoodCourt !== "all") {
+        setAdminFoodCourt("all");
+      }
+    } finally {
+      setFoodCourtsLoading(false);
+    }
+  }, [adminFoodCourt, foodCourt]);
+
   const refreshAdminManagedVendors = useCallback(async () => {
     if (!adminSession) return;
     try {
@@ -279,6 +334,76 @@ function App() {
       console.error("Failed to refresh admin vendors", error);
     }
   }, [adminSession, adminFoodCourt]);
+
+  const adminFoodCourtOptions = useMemo(() => {
+    const base = [{ value: "all", label: "All Courts" }];
+    const registryOptions = foodCourts.map((entry) => ({ value: entry.id, label: entry.name }));
+    return [...base, ...registryOptions];
+  }, [foodCourts]);
+
+  const vendorFoodCourtOptions = useMemo(() => {
+    if (!foodCourts.length) {
+      return [{ value: foodCourt, label: (foodCourt || "fc-1").toUpperCase() }];
+    }
+    return foodCourts.map((entry) => ({ value: entry.id, label: entry.name }));
+  }, [foodCourts, foodCourt]);
+
+  const vendorDefaultFoodCourt = useMemo(() => {
+    return vendorFoodCourt || vendorFoodCourtOptions[0]?.value || foodCourt;
+  }, [vendorFoodCourt, vendorFoodCourtOptions, foodCourt]);
+
+  const handleCreateFoodCourt = useCallback(async (payload) => {
+    if (!adminSession) {
+      toast.error("Admin session expired. Please log in again before managing food courts.");
+      return null;
+    }
+    try {
+      const res = await createAdminFoodCourt(adminSession, payload);
+      if (res?.status === "created" || res?.status === "ok") {
+        const createdEntry = res.foodCourt || null;
+        await loadFoodCourts();
+        refreshAdminManagedVendors();
+        if (createdEntry?.id && adminFoodCourt === "all") {
+          setAdminFoodCourt(createdEntry.id);
+        }
+        toast.success(`Created ${createdEntry?.name || "food court"}`);
+        return createdEntry;
+      }
+      toast.error(res?.message || "Failed to create food court");
+      return null;
+    } catch (error) {
+      console.error("Failed to create food court", error);
+      toast.error("Unable to create food court");
+      return null;
+    }
+  }, [adminSession, adminFoodCourt, loadFoodCourts, refreshAdminManagedVendors]);
+
+  const handleUpdateFoodCourt = useCallback(async (id, payload) => {
+    if (!adminSession) {
+      toast.error("Admin session expired. Please log in again before managing food courts.");
+      return null;
+    }
+    try {
+      const res = await updateAdminFoodCourt(adminSession, id, payload);
+      if (res?.status === "ok") {
+        const updated = res.foodCourt || null;
+        await loadFoodCourts();
+        refreshAdminManagedVendors();
+        toast.success(`Updated ${updated?.name || id}`);
+        return updated;
+      }
+      toast.error(res?.message || "Failed to update food court");
+      return null;
+    } catch (error) {
+      console.error("Failed to update food court", error);
+      toast.error("Unable to update food court");
+      return null;
+    }
+  }, [adminSession, loadFoodCourts, refreshAdminManagedVendors]);
+
+  useEffect(() => {
+    loadFoodCourts();
+  }, [loadFoodCourts]);
 
   useEffect(() => {
     const storedSession = adminSession;
@@ -336,10 +461,13 @@ function App() {
   }, [foodCourt, loadMenu]);
 
   useEffect(() => {
-    if (cart.length === 0) {
-      setCartFoodCourt(null);
+    if (!cart.length) {
+      setCartShopMismatch(false);
+      return;
     }
-  }, [cart.length]);
+    const mismatch = currentCartShop != null && selectedShop != null && String(currentCartShop) !== String(selectedShop);
+    setCartShopMismatch(mismatch);
+  }, [cart, currentCartShop, selectedShop]);
 
   useEffect(() => {
     readyNotifiedRef.current.clear();
@@ -435,117 +563,20 @@ function App() {
   }, [menu]);
 
   useEffect(() => {
-    if (!cart.length || !selectedShop) {
-      setOfferPreview(null);
-      setOffersLoading(false);
-      return;
+    if (!cart.length) {
+      setCartFoodCourt(null);
     }
-
-    const itemsPayload = cart.map((c) => ({
-      id: c.item.id,
-      name: c.item.name,
-      price: c.item.finalPrice,
-      quantity: c.quantity,
-      comboId: c.item.comboId ?? null,
-      option: c.item.selectedOption?.name || null,
-      prepTime: c.item.prepTime
-    }));
-
-    let cancelled = false;
-    setOffersLoading(true);
-    previewOffers({ shopId: selectedShop, items: itemsPayload, scheduledTime: scheduledTime || undefined, foodCourt })
-      .then((data) => {
-        if (cancelled) return;
-        if (data?.status === 'ok') {
-          setOfferPreview(data);
-        } else {
-          setOfferPreview(null);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setOfferPreview(null);
-      })
-      .finally(() => {
-        if (!cancelled) setOffersLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [cart, selectedShop, scheduledTime]);
-
-  const loadFavorites = useCallback(() => {
-    if (!userId) return;
-    fetchFavorites(userId, foodCourt).then(setFavorites);
-  }, [userId, foodCourt]);
-
-  const handleFavoriteToggle = useCallback(async (itemId) => {
-    if (!userId) {
-      toast.info('Login to manage favourites', { autoClose: 3000 });
-      return;
-    }
-    try {
-      await toggleFavorite(userId, itemId, foodCourt);
-      loadFavorites();
-    } catch (error) {
-      console.error('Failed to toggle favorite', error);
-      toast.error('Failed to update favorites');
-    }
-  }, [userId, loadFavorites, foodCourt]);
-
-  const applyWalletPayload = useCallback((payload = {}) => {
-    const balance = Number(payload.balance || 0);
-    const transactions = Array.isArray(payload.transactions) ? payload.transactions : [];
-    setWallet({ balance, transactions });
-  }, []);
-
-  const loadWallet = useCallback(async (tokenOverride = null) => {
-    const authToken = tokenOverride || employeeToken;
-    if (!authToken) {
-      applyWalletPayload({ balance: 0, transactions: [] });
-      return;
-    }
-    try {
-      const res = await employeeProfile(authToken);
-      if (res?.status === 'ok') {
-        const walletData = res?.wallet || {};
-        applyWalletPayload(walletData);
-      }
-    } catch (err) {
-      console.warn('Failed to load wallet', err);
-    }
-  }, [employeeToken, applyWalletPayload]);
+  }, [cart.length]);
 
   useEffect(() => {
-    if (userId) {
-      loadFavorites();
-    } else {
-      setFavorites([]);
+    if (!employeeToken && ["orders", "profile"].includes(view)) {
+      setView("user");
     }
-  }, [userId, loadFavorites]);
+  }, [employeeToken, view]);
 
   useEffect(() => {
-    if (employeeToken) {
-      loadWallet(employeeToken);
-    } else {
-      applyWalletPayload({ balance: 0, transactions: [] });
-    }
-  }, [employeeToken, loadWallet, applyWalletPayload]);
-
-  useEffect(() => {
-    document.title = "Infy Bhojans";
-    const cleanup = loadMenu();
-    return () => {
-      if (typeof cleanup === "function") cleanup();
-    };
-  }, [loadMenu]);
-
-  // Refresh menu when other parts of app (e.g., AdminDashboard) update inventory
-  useEffect(() => {
-    const handler = () => loadMenu();
-    window.addEventListener('menu:updated', handler);
-    return () => window.removeEventListener('menu:updated', handler);
-  }, [loadMenu]);
+    setPointsRefreshNonce(0);
+  }, [employeeToken]);
 
   // Global navigation events from child components (e.g., AdminDashboard)
   useEffect(() => {
@@ -1413,11 +1444,35 @@ function App() {
                 {view === "printer-setup" && (
                   <PrinterSetupPage onBack={() => setView("dashboard")} />
                 )}
-                {view === "analytics" && <Analytics token={vendorToken} />}
+                {view === "analytics" && (
+                  <Analytics
+                    token={vendorToken}
+                    defaultFoodCourt={vendorDefaultFoodCourt}
+                    foodCourtOptions={vendorFoodCourtOptions}
+                  />
+                )}
                 {view === "vendor-data-upload" && <VendorDataUpload token={vendorToken} />}
-                {view === "procurement" && <ProcurementManager token={vendorToken} />}
-                {view === "vendor-combos" && <VendorCombos token={vendorToken} />}
-                {view === "vendor-offers" && <VendorOffers token={vendorToken} />}
+                {view === "procurement" && (
+                  <ProcurementManager
+                    token={vendorToken}
+                    defaultFoodCourt={vendorDefaultFoodCourt}
+                    foodCourtOptions={vendorFoodCourtOptions}
+                  />
+                )}
+                {view === "vendor-combos" && (
+                  <VendorCombos
+                    token={vendorToken}
+                    defaultFoodCourt={vendorDefaultFoodCourt}
+                    foodCourtOptions={vendorFoodCourtOptions}
+                  />
+                )}
+                {view === "vendor-offers" && (
+                  <VendorOffers
+                    token={vendorToken}
+                    defaultFoodCourt={vendorDefaultFoodCourt}
+                    foodCourtOptions={vendorFoodCourtOptions}
+                  />
+                )}
                 {view === "grievances" && <VendorGrievances token={vendorToken} />}
                 {view === "feedbacks" && <VendorFeedbacks token={vendorToken} />}
                 {view === "user" && (
@@ -1439,6 +1494,8 @@ function App() {
                         activeSection={activeMenuSection}
                         onActiveSectionChange={setActiveMenuSection}
                         vendorFoodCourt={vendorFoodCourt}
+                        foodCourtOptions={vendorFoodCourtOptions}
+                        foodCourtsLoading={foodCourtsLoading}
                       />
                     </div>
                     {/* Read-only user view for vendor: no cart, no order summary */}
@@ -1546,6 +1603,8 @@ function App() {
                               onActiveSectionChange={setActiveMenuSection}
                               foodCourt={foodCourt}
                               onFoodCourtChange={handleFoodCourtChange}
+                              foodCourtOptions={vendorFoodCourtOptions}
+                              foodCourtsLoading={foodCourtsLoading}
                               cartFoodCourt={cartFoodCourt}
                             />
                             {/* Inline feedback form for employees */}
@@ -1637,7 +1696,13 @@ function App() {
 
                   {view === "login" && !vendorToken && (
                     <div className="vendor-auth-container">
-                      <Login onLogin={handleLogin} onBack={() => setView("landing")} />
+                      <Login
+                        onLogin={handleLogin}
+                        onBack={() => setView("landing")}
+                        foodCourts={vendorFoodCourtOptions}
+                        defaultFoodCourt={foodCourt}
+                        onFoodCourtChange={setFoodCourt}
+                      />
                     </div>
                   )}
 
@@ -1711,6 +1776,13 @@ function App() {
                           }}
                           selectedFoodCourt={adminFoodCourt}
                           onFoodCourtChange={setAdminFoodCourt}
+                          adminFoodCourtOptions={adminFoodCourtOptions}
+                          foodCourts={foodCourts}
+                          foodCourtsLoading={foodCourtsLoading}
+                          foodCourtsError={foodCourtsError}
+                          onCreateFoodCourt={handleCreateFoodCourt}
+                          onUpdateFoodCourt={handleUpdateFoodCourt}
+                          onRefreshFoodCourts={loadFoodCourts}
                           sosState={sosState}
                           onTriggerSos={() => handleSosTrigger("admin")}
                           onResolveSos={() => handleSosResolve("admin")}
