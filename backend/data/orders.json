@@ -1,39 +1,5 @@
 [
   {
-    "id": 1,
-    "items": [
-      {
-        "id": 5,
-        "name": "Cold Coffee",
-        "price": 40,
-        "available": true,
-        "shopId": 3
-      }
-    ],
-    "shopId": 3,
-    "user": "Employee XYZ",
-    "scheduledTime": "2025-10-24T22:40",
-    "status": "pending",
-    "createdAt": "2025-10-24T17:11:00.912Z"
-  },
-  {
-    "id": 2,
-    "items": [
-      {
-        "id": 6,
-        "name": "Mango Juice",
-        "price": 30,
-        "available": true,
-        "shopId": 3
-      }
-    ],
-    "shopId": 3,
-    "user": "Employee XYZ",
-    "scheduledTime": null,
-    "status": "pending",
-    "createdAt": "2025-10-24T17:11:16.572Z"
-  },
-  {
     "id": 3,
     "items": [
       {

@@ -22,5 +22,13 @@
     "passwordHash": "$2b$10$bchUCkPtZhUbe3Rc/G9CK.tpPG7y3hcUz1pr2MHcOyhCt6VY1HWyW",
     "email": "foodievendor@infosys.com",
     "shopName": "Foodie's Paradise"
+  },
+  {
+    "vendorId": 2,
+    "shopId": 2,
+    "username": "beverages",
+    "passwordHash": "$2b$10$5GmwLsdrzgE8.qVjK68FXuV4bJiQ1343jPtg8ibzRv3A2VJvkBXjW",
+    "email": "beveragevendor@infosys.com",
+    "shopName": "Beverage Corner"
   }
 ]

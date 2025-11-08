@@ -1129,13 +1129,18 @@ export const fetchPublicFeedbacks = async ({ ratingMin, days } = {}) => {
  * @param {number} itemId
  * @returns {Promise<any>}
  */
-export const toggleFavorite = async (userId, itemId, foodCourt) => {
+export const toggleFavorite = async (userId, itemId, foodCourt, metadata = {}) => {
   const headers = { "Content-Type": "application/json" };
   if (foodCourt) headers['x-food-court'] = foodCourt;
+  const payload = { userId, itemId };
+  if (metadata && typeof metadata === "object") {
+    if (metadata.shopId != null) payload.shopId = metadata.shopId;
+    if (metadata.vendorId != null) payload.vendorId = metadata.vendorId;
+  }
   const res = await fetch(`${API_URL}/favorites`, {
     method: "POST",
     headers,
-    body: JSON.stringify({ userId, itemId }),
+    body: JSON.stringify(payload),
   });
   return res.json();
 };

@@ -371,20 +371,31 @@ const Menu = ({
     return { lowStock, soldOut };
   };
 
-  const favoriteIds = useMemo(() => {
-    if (!Array.isArray(favorites)) return new Set();
-    return new Set(favorites.map((fav) => (typeof fav === 'object' ? fav.id ?? fav : fav)));
+  const favoriteIndex = useMemo(() => {
+    if (!Array.isArray(favorites)) return new Map();
+    const map = new Map();
+    favorites.forEach((fav) => {
+      if (!fav) return;
+      const itemId = typeof fav === 'object' ? fav.itemId ?? fav.id ?? null : fav;
+      if (itemId != null) {
+        map.set(String(itemId), fav);
+      }
+    });
+    return map;
   }, [favorites]);
 
-  const isFavorite = useCallback((itemId) => favoriteIds.has(itemId), [favoriteIds]);
+  const isFavorite = useCallback((itemId) => favoriteIndex.has(String(itemId)), [favoriteIndex]);
 
   const handleFavoriteClick = useCallback((itemId, event) => {
     event?.preventDefault?.();
     event?.stopPropagation?.();
     if (typeof onFavoriteToggle === 'function') {
-      onFavoriteToggle(itemId);
+      const current = favoriteIndex.get(String(itemId));
+      const vendorId = current && typeof current === 'object' ? current.vendorId ?? null : null;
+      const shopId = current && typeof current === 'object' ? current.shopId ?? selectedShop ?? null : selectedShop ?? null;
+      onFavoriteToggle(itemId, shopId, vendorId);
     }
-  }, [onFavoriteToggle]);
+  }, [onFavoriteToggle, favoriteIndex, selectedShop]);
 
   const offersForActiveSection = useMemo(() => {
     if (!Array.isArray(offers)) return [];

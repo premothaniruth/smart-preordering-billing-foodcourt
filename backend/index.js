@@ -582,6 +582,10 @@ app.put("/admin/vendor/:id", authenticateAdmin, (req, res) => {
         const value = entry?.shopId ?? entry?.id;
         if (value != null) taken.add(Number(value));
       });
+      const desiredFromVendor = nextVendorRecord.vendorId != null ? Number(nextVendorRecord.vendorId) : null;
+      if (Number.isFinite(desiredFromVendor) && !taken.has(desiredFromVendor)) {
+        return desiredFromVendor;
+      }
       let candidate = nextVendorRecord.shopId != null ? Number(nextVendorRecord.shopId) : null;
       if (candidate != null && !taken.has(candidate)) {
         return candidate;
@@ -612,7 +616,9 @@ app.put("/admin/vendor/:id", authenticateAdmin, (req, res) => {
     const extractVendorEntries = (collection = []) => {
       if (!Array.isArray(collection)) return { keep: [], migrate: [] };
       return collection.reduce((acc, item) => {
-        if (String(item?.vendorId) === String(vendorId)) {
+        const matchesVendor = item?.vendorId != null && String(item.vendorId) === String(vendorId);
+        const matchesShop = sourceShopId != null && item?.shopId != null && String(item.shopId) === sourceShopId;
+        if (matchesVendor || matchesShop) {
           acc.migrate.push(item);
         } else {
           acc.keep.push(item);
@@ -623,6 +629,9 @@ app.put("/admin/vendor/:id", authenticateAdmin, (req, res) => {
 
     const targetVendorList = getVendors(targetFoodCourt);
     const existingVendors = Array.isArray(targetVendorList) ? targetVendorList : [];
+
+    const sourceVendorsAfterRemoval = vendors.filter((_, idx) => idx !== sourceIndex);
+    saveVendors(sourceVendorsAfterRemoval, sourceFoodCourt);
 
     const targetMenuRaw = getMenu(targetFoodCourt);
     const targetMenuEntries = Array.isArray(targetMenuRaw)
@@ -685,7 +694,7 @@ app.put("/admin/vendor/:id", authenticateAdmin, (req, res) => {
       const filteredTargetMenu = targetMenuInfo.entries.filter((entry) => String(entry?.shopId ?? entry?.id) !== targetShopIdString);
       saveMenu({ ...targetMenuRaw, shops: [...filteredTargetMenu, ...(Array.isArray(renamedMenuMove) ? renamedMenuMove : [])] }, targetFoodCourt);
     } else if (Array.isArray(renamedMenuMove) && renamedMenuMove.length > 0) {
-      saveMenu(renamedMenuMove, targetFoodCourt);
+      saveMenu({ shops: renamedMenuMove }, targetFoodCourt);
     }
 
     // Orders
@@ -719,7 +728,11 @@ app.put("/admin/vendor/:id", authenticateAdmin, (req, res) => {
     const { keep: favoritesKeep, migrate: favoritesMove } = extractVendorEntries(favoritesSource);
     saveFavorites(favoritesKeep, sourceFoodCourt);
     const targetFavorites = getFavorites(targetFoodCourt);
-    const normalizedFavoritesMove = favoritesMove.map((favorite) => ({ ...favorite, vendorId }));
+    const normalizedFavoritesMove = favoritesMove.map((favorite) => ({
+      ...favorite,
+      vendorId,
+      shopId: targetShopId,
+    }));
     saveFavorites([...(Array.isArray(targetFavorites) ? targetFavorites : []), ...normalizedFavoritesMove], targetFoodCourt);
 
     // Interest
@@ -2212,6 +2225,24 @@ app.post('/admin/vendor', authenticateAdmin, async (req, res) => {
     const vendorId = vendors.reduce((max, vendor) => Math.max(max, Number(vendor.vendorId) || 0), 0) + 1;
 
     const rawMenu = getMenu(foodCourt);
+    const normalizeMenuShops = (menu) => {
+      if (!menu) return [];
+      if (Array.isArray(menu)) {
+        return menu.map((shop, index) => ({
+          ...shop,
+          shopId: shop?.shopId ?? shop?.id ?? index + 1,
+        }));
+      }
+      if (menu && typeof menu === 'object') {
+        const shops = Array.isArray(menu.shops) ? menu.shops : [];
+        return shops.map((shop, index) => ({
+          ...shop,
+          shopId: shop?.shopId ?? shop?.id ?? index + 1,
+        }));
+      }
+      return [];
+    };
+    const normalizedMenu = normalizeMenuShops(rawMenu);
     const collectShopIds = (menuData) => {
       const ids = new Set();
       if (Array.isArray(menuData)) {
@@ -2226,7 +2257,7 @@ app.post('/admin/vendor', authenticateAdmin, async (req, res) => {
       return ids;
     };
 
-    const existingShopIds = collectShopIds(rawMenu);
+    const existingShopIds = collectShopIds(normalizedMenu);
     let resolvedShopId;
     if (shopId != null && shopId !== '') {
       resolvedShopId = Number(shopId);
@@ -2735,7 +2766,19 @@ app.post('/employee/apple-login', async (req, res) => {
  * @param {string=} foodCourt
  * @returns {Array|Object}
  */
-const getMenu = (foodCourt = FC_DEFAULT) => readJsonFrom(resolveCourtFile(menuFile, foodCourt), []);
+const ensureMenuStructure = (menu) => {
+  if (menu && typeof menu === 'object' && !Array.isArray(menu)) {
+    const shops = Array.isArray(menu.shops) ? menu.shops : [];
+    return { ...menu, shops };
+  }
+  const shops = Array.isArray(menu) ? menu : [];
+  return { shops };
+};
+
+const getMenu = (foodCourt = FC_DEFAULT) => ensureMenuStructure(readJsonFrom(
+  resolveCourtFile(menuFile, foodCourt),
+  { shops: [] }
+));
 
 /**
  * Normalize menu shops to ensure consistent structure.
@@ -2743,12 +2786,18 @@ const getMenu = (foodCourt = FC_DEFAULT) => readJsonFrom(resolveCourtFile(menuFi
  * @returns {Array}
  */
 const normalizeMenuShops = (raw) => {
-  if (!raw || !Array.isArray(raw.shops)) return [];
-  return raw.shops.map((shop) => {
-    const items = Array.isArray(shop.categories)
-      ? shop.categories.flatMap((cat) => Array.isArray(cat.items) ? cat.items.map((it) => normalizeItem({ ...it, section: cat.categoryName || 'All Items' })) : [])
-      : Array.isArray(shop.items) ? shop.items.map(normalizeItem) : [];
-    return { ...shop, items };
+  const menu = ensureMenuStructure(raw);
+  return menu.shops.map((shop, index) => {
+    const shopId = shop?.shopId ?? shop?.id ?? index + 1;
+    const baseShop = { ...shop, shopId };
+    const items = Array.isArray(baseShop.categories)
+      ? baseShop.categories.flatMap((cat) => Array.isArray(cat.items)
+        ? cat.items.map((it) => normalizeItem({ ...it, section: cat.categoryName || 'All Items' }))
+        : [])
+      : Array.isArray(baseShop.items)
+        ? baseShop.items.map(normalizeItem)
+        : [];
+    return { ...baseShop, items };
   });
 };
 
@@ -2780,7 +2829,10 @@ const normalizeItem = (it) => {
  * @param {any} menu - Full menu array
  * @returns {void}
  */
-const saveMenu = (menu, foodCourt = FC_DEFAULT) => writeJsonTo(resolveCourtFile(menuFile, foodCourt), menu);
+const saveMenu = (menu, foodCourt = FC_DEFAULT) => {
+  const normalized = ensureMenuStructure(menu);
+  writeJsonTo(resolveCourtFile(menuFile, foodCourt), normalized);
+};
 
 /**
  * Read orders JSON from disk.
@@ -2869,6 +2921,22 @@ const getVendorIdForShop = (shopId, foodCourt = FC_DEFAULT) => {
   }
 };
 
+const getVendorIdForItem = (itemId, foodCourt = FC_DEFAULT) => {
+  if (itemId == null) return null;
+  try {
+    const menu = normalizeMenuShops(getMenu(foodCourt));
+    for (const shop of menu) {
+      const items = Array.isArray(shop.items) ? shop.items : [];
+      if (items.some((item) => String(item?.id) === String(itemId))) {
+        return getVendorIdForShop(shop.shopId, foodCourt);
+      }
+    }
+  } catch (error) {
+    console.warn('Failed to resolve vendorId for item', itemId, error);
+  }
+  return null;
+};
+
 const buildInterestKey = ({ shopId, itemId }) => `${shopId || 'unknown'}:${itemId || 'unknown'}`;
 
 const aggregateInterest = (records) => {
@@ -2913,9 +2981,9 @@ const aggregateInterest = (records) => {
       vendorId: entry.vendorId,
       uniqueEmployees: entry.uniqueEmployees.size,
       totalClicks: entry.totalClicks,
-      history: sortedHistory,
       firstExpressedAt,
       lastExpressedAt,
+      history: sortedHistory,
     };
   });
 };
@@ -3036,8 +3104,8 @@ const resolveVendorContactForOrder = (order, foodCourt = FC_DEFAULT) => {
   if (!vendorShopId) return existing;
 
   try {
-    const directoryMap = getVendorDirectoryMap(foodCourt);
-    const entry = directoryMap.get(vendorShopId);
+    const directory = getVendorDirectoryMap(foodCourt);
+    const entry = directory.get(vendorShopId);
     if (!entry) return existing;
 
     return {
@@ -3586,9 +3654,9 @@ const buildVendorDirectory = (foodCourt = FC_DEFAULT) => {
       shopId: vendor.shopId ?? null,
       username: vendor.username || '',
       email: vendor.email || vendor.contactEmail || null,
-      shopName: meta?.shopName || (key ? `Shop ${key}` : 'Unknown shop'),
-      contactEmail: meta?.contactEmail || null,
-      contactPhone: meta?.contactPhone || null,
+      shopName: meta?.shopName || vendor.shopName || (key ? `Shop ${key}` : 'Unknown shop'),
+      contactEmail: meta?.contactEmail || vendor.contactEmail || null,
+      contactPhone: meta?.contactPhone || vendor.contactPhone || null,
       foodCourt: vendor.foodCourt || normalizedCourt,
     };
   });
@@ -5364,7 +5432,9 @@ app.post("/favorites", (req, res) => {
       saveFavorites(favorites, foodCourt);
       res.json({ status: "removed", message: "Removed from favorites" });
     } else {
-      favorites.push({ userId, itemId });
+      const vendorId = getVendorIdForItem(itemId, foodCourt);
+      const shopId = vendorId != null ? getVendorDirectoryMap(foodCourt)[vendorId]?.shopId ?? null : null;
+      favorites.push({ userId, itemId, vendorId, shopId });
       saveFavorites(favorites, foodCourt);
       res.json({ status: "added", message: "Added to favorites" });
     }
@@ -5382,8 +5452,10 @@ app.get("/favorites/:userId", (req, res) => {
   try {
     const foodCourt = getUserFoodCourt(req);
     const favorites = getFavorites(foodCourt);
-    const userFavorites = favorites.filter(f => f.userId === req.params.userId).map(f => f.itemId);
-    res.json(userFavorites);
+    const userFavorites = favorites
+      .filter(f => f.userId === req.params.userId)
+      .map(f => ({ itemId: f.itemId, vendorId: f.vendorId ?? null, shopId: f.shopId ?? null }));
+    res.json({ favorites: userFavorites });
   } catch (error) {
     res.status(500).json({ message: "Error fetching favorites" });
   }

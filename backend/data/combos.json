@@ -1,24 +1,5 @@
 [
   {
-    "id": "bev-happy-hour-1",
-    "shopId": 3,
-    "name": "Cafe Duo",
-    "price": 89,
-    "active": true,
-    "components": [
-      {
-        "itemId": 50,
-        "quantity": 1
-      },
-      {
-        "itemId": 52,
-        "quantity": 1,
-        "option": "Vanilla",
-        "overridePrice": 50
-      }
-    ]
-  },
-  {
     "id": "si-breakfast-combo-1",
     "shopId": 2,
     "name": "South Breakfast Combo",

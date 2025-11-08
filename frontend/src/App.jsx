@@ -495,12 +495,23 @@ function App() {
       try {
         const res = await fetchFavorites(userId, foodCourt);
         if (!cancelled) {
-          const ids = Array.isArray(res?.favorites)
-            ? res.favorites.map((fav) => (typeof fav === 'object' ? fav.itemId ?? fav.id ?? fav : fav))
-            : Array.isArray(res)
-              ? res.map((fav) => (typeof fav === 'object' ? fav.itemId ?? fav.id ?? fav : fav))
-              : [];
-          setFavorites(ids);
+          const entries = Array.isArray(res?.favorites)
+            ? res.favorites
+                .map((fav) => {
+                  if (!fav || typeof fav !== 'object') {
+                    return { itemId: fav, vendorId: null, shopId: null };
+                  }
+                  const itemId = fav.itemId ?? fav.id ?? null;
+                  if (itemId == null) return null;
+                  return {
+                    itemId,
+                    vendorId: fav.vendorId ?? null,
+                    shopId: fav.shopId ?? null,
+                  };
+                })
+                .filter(Boolean)
+            : [];
+          setFavorites(entries);
         }
       } catch {
         if (!cancelled) setFavorites([]);
@@ -833,38 +844,57 @@ function App() {
     setCheckoutDraft((prev) => (prev ? { ...prev, notes } : prev));
   };
 
-  const handleFavoriteToggle = useCallback(async (itemId) => {
+  const handleFavoriteToggle = useCallback(async (itemId, overrideShopId = null, overrideVendorId = null) => {
     if (!userId) {
       toast.info("Login to save favorites");
       return;
     }
     setFavorites((prev) => {
-      const exists = prev.includes(itemId);
+      const exists = prev.some((entry) => entry.itemId === itemId);
       if (exists) {
-        return prev.filter((id) => id !== itemId);
+        return prev.filter((entry) => entry.itemId !== itemId);
       }
-      return [...prev, itemId];
+      return [...prev, {
+        itemId,
+        shopId: overrideShopId ?? selectedShop ?? null,
+        vendorId: overrideVendorId ?? null,
+      }];
     });
     try {
       await toggleFavorite(userId, itemId, foodCourt);
       const res = await fetchFavorites(userId, foodCourt);
-      const ids = Array.isArray(res?.favorites)
-        ? res.favorites.map((fav) => (typeof fav === 'object' ? fav.itemId ?? fav.id ?? fav : fav))
-        : Array.isArray(res)
-          ? res.map((fav) => (typeof fav === 'object' ? fav.itemId ?? fav.id ?? fav : fav))
-          : [];
-      setFavorites(ids);
+      const entries = Array.isArray(res?.favorites)
+        ? res.favorites
+            .map((fav) => {
+              if (!fav || typeof fav !== 'object') {
+                return { itemId: fav, vendorId: null, shopId: null };
+              }
+              const mappedItemId = fav.itemId ?? fav.id ?? null;
+              if (mappedItemId == null) return null;
+              return {
+                itemId: mappedItemId,
+                vendorId: fav.vendorId ?? null,
+                shopId: fav.shopId ?? null,
+              };
+            })
+            .filter(Boolean)
+        : [];
+      setFavorites(entries);
     } catch {
       setFavorites((prev) => {
-        const exists = prev.includes(itemId);
+        const exists = prev.some((entry) => entry.itemId === itemId);
         if (exists) {
-          return prev.filter((id) => id !== itemId);
+          return prev.filter((entry) => entry.itemId !== itemId);
         }
-        return [...prev, itemId];
+        return [...prev, {
+          itemId,
+          shopId: overrideShopId ?? selectedShop ?? null,
+          vendorId: overrideVendorId ?? null,
+        }];
       });
       toast.error("Failed to update favorites");
     }
-  }, [userId, foodCourt]);
+  }, [userId, foodCourt, selectedShop]);
 
   const handlePaymentBack = () => {
     setView('user');

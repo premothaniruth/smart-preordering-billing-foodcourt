@@ -2,41 +2,33 @@
   {
     "vendorId": 1,
     "shopId": 1,
-    "username": "northfoods",
-    "passwordHash": "$2b$10$ZQ/PMJ05FtQyYYqm6GjeruKHDQjVsPuXeEVvqcGbLF.v0o0Gu2Kvm",
-    "email": "northvendor@infosys.com",
-    "shopName": "North Indian Dhamaka"
+    "username": "fastfoods",
+    "passwordHash": "$2b$10$yMgMDlZ7gV.o.sZpXagg6eMk4VVVEgjzNobDK3E1AHhTTJmieOXE.",
+    "email": "fastfoodvendor@infosys.com",
+    "shopName": "Fast Food and Desserts"
   },
   {
     "vendorId": 2,
     "shopId": 2,
-    "username": "siicespot",
-    "passwordHash": "$2b$10$4.4309XmP50LhPuLouI3I.qR47FrV0db/Er.CUQQFBN882oAx0ZF2",
-    "email": "siicespotvendor@infosys.com",
-    "shopName": "The Siice Spot"
+    "username": "southvendor",
+    "passwordHash": "$2b$10$3Pnq9XSTNuXQJa.JsDgPQ.wV6jJbihJHXao10lfWhHOIlVTb0TBva",
+    "email": "southvendor@infosys.com",
+    "shopName": "South Indian Delights"
   },
   {
     "vendorId": 3,
     "shopId": 3,
     "username": "beverages",
-    "passwordHash": "$2b$10$Bgtg6yR1.NKv4fv/5IJtR.HMRloIEjBAybKt3P0VBiAP7h0pzKnBa",
+    "passwordHash": "$2b$10$5GmwLsdrzgE8.qVjK68FXuV4bJiQ1343jPtg8ibzRv3A2VJvkBXjW",
     "email": "beveragevendor@infosys.com",
     "shopName": "Beverage Corner"
   },
   {
     "vendorId": 4,
     "shopId": 4,
-    "username": "fastfoods",
-    "passwordHash": "$2b$10$Mnp6EU7UTRg.WCeyvT1/P.uQ9.yo6XFrA4TreJ6UDne7rAXwal9g.",
-    "email": "fastfoodvendor@infosys.com",
-    "shopName": "Fast Food & Desserts"
-  },
-  {
-    "vendorId": 2,
-    "shopId": 2,
-    "username": "spicespot",
-    "passwordHash": "$2b$10$f6vdXbzjlirKoxlohwgMmexbXNVeOpuML6y3Zjc5PgJDVh1Hr0vx2",
-    "email": "spicespotvendor@infosys.com",
-    "shopName": "The Spice Spot"
+    "username": "northvendor",
+    "passwordHash": "$2b$10$gnWvF2wfXC4ZAZqd8o2QO.LAlXoXlDQ/oicVSURZXedD7LOKF2i6a",
+    "email": "northvendor@infosys.com",
+    "shopName": "North Indian Dhamaka"
   }
 ]

@@ -1,22 +1,5 @@
 [
   {
-    "id": "bev-combo-30",
-    "shopId": 3,
-    "title": "🥤 Beverages Combo Deal ₹30 Off",
-    "bannerText": "Happy Hour: ₹30 off on Cafe Duo",
-    "discountPercent": null,
-    "discountAmount": 30,
-    "applicableSections": [],
-    "applicableComboIds": [
-      "bev-happy-hour-1"
-    ],
-    "start": "2025-10-01T00:00:00Z",
-    "end": "2025-12-31T23:59:59Z",
-    "active": true,
-    "stackable": false,
-    "maxDiscountAmount": 30
-  },
-  {
     "id": 1762361650374,
     "shopId": 2,
     "title": "Buy 2 get 1",
