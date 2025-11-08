@@ -1,94 +1,140 @@
 [
   {
     "userId": "Employee XYZ",
-    "itemId": 3
+    "itemId": 3,
+    "shopId": "5",
+    "vendorId": "101"
   },
   {
     "userId": "premtg@gmail.com",
-    "itemId": 3
+    "itemId": 3,
+    "shopId": "5",
+    "vendorId": "101"
   },
   {
     "userId": "+919952911560",
-    "itemId": 3
+    "itemId": 3,
+    "shopId": "5",
+    "vendorId": "101"
   },
   {
     "userId": "+919952911560",
-    "itemId": 22
+    "itemId": 22,
+    "shopId": "5",
+    "vendorId": "101"
   },
   {
     "userId": "+919952911560",
-    "itemId": 144
+    "itemId": 144,
+    "shopId": "6",
+    "vendorId": "102"
   },
   {
     "userId": "+919952911560",
-    "itemId": 143
+    "itemId": 143,
+    "shopId": "6",
+    "vendorId": "102"
   },
   {
     "userId": "+919952911560",
-    "itemId": 142
+    "itemId": 142,
+    "shopId": "6",
+    "vendorId": "102"
   },
   {
     "userId": "+919952911560",
-    "itemId": 133
+    "itemId": 133,
+    "shopId": "6",
+    "vendorId": "102"
   },
   {
     "userId": "+919952911560",
-    "itemId": 62
+    "itemId": 62,
+    "shopId": "5",
+    "vendorId": "101"
   },
   {
     "userId": "+919952911560",
-    "itemId": 5
+    "itemId": 5,
+    "shopId": "5",
+    "vendorId": "101"
   },
   {
     "userId": "+919952911560",
-    "itemId": 4
+    "itemId": 4,
+    "shopId": "5",
+    "vendorId": "101"
   },
   {
     "userId": "+919952911560",
-    "itemId": 83
+    "itemId": 83,
+    "shopId": "5",
+    "vendorId": "101"
   },
   {
     "userId": "+919952081560",
-    "itemId": 22
+    "itemId": 22,
+    "shopId": "5",
+    "vendorId": "101"
   },
   {
     "userId": "+919952081560",
-    "itemId": 302
+    "itemId": 302,
+    "shopId": "7",
+    "vendorId": "103"
   },
   {
     "userId": "+919952081560",
-    "itemId": 163
+    "itemId": 163,
+    "shopId": "6",
+    "vendorId": "102"
   },
   {
     "userId": "+919952081560",
-    "itemId": 402
+    "itemId": 402,
+    "shopId": "8",
+    "vendorId": "104"
   },
   {
     "userId": "+919952081560",
-    "itemId": 502
+    "itemId": 502,
+    "shopId": "8",
+    "vendorId": "104"
   },
   {
     "userId": "+919952081560",
-    "itemId": 27
+    "itemId": 27,
+    "shopId": "5",
+    "vendorId": "101"
   },
   {
     "userId": "+919952081560",
-    "itemId": 30
+    "itemId": 30,
+    "shopId": "5",
+    "vendorId": "101"
   },
   {
     "userId": "+919952081560",
-    "itemId": 31
+    "itemId": 31,
+    "shopId": "5",
+    "vendorId": "101"
   },
   {
     "userId": "+919952081560",
-    "itemId": 45
+    "itemId": 45,
+    "shopId": "5",
+    "vendorId": "101"
   },
   {
     "userId": "+919952081560",
-    "itemId": 43
+    "itemId": 43,
+    "shopId": "5",
+    "vendorId": "101"
   },
   {
     "userId": "+919952081560",
-    "itemId": 49
+    "itemId": 49,
+    "shopId": "5",
+    "vendorId": "101"
   }
 ]

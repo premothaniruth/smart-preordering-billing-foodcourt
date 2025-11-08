@@ -768,56 +768,77 @@ app.post("/admin/vendor/:id/archive", authenticateAdmin, (req, res) => {
     if (!Number.isFinite(vendorId)) {
       return res.status(400).json({ message: "Invalid vendor ID" });
     }
-
+    
     const foodCourt = getAdminFoodCourt(req);
     const vendors = getVendors(foodCourt);
-    const vendorIndex = vendors.findIndex((vendor) => Number(vendor.vendorId) === vendorId);
+    const vendorIndex = vendors.findIndex((v) => Number(v.vendorId) === vendorId);
+    
     if (vendorIndex === -1) {
-      return res.status(404).json({ message: "Vendor not found" });
+      return res.status(404).json({ message: "Vendor not found in the specified food court" });
     }
-
+    
     const vendor = vendors[vendorIndex];
-    const shopId = vendor.shopId != null ? String(vendor.shopId) : null;
-
+    const shopId = vendor.shopId;
+    
+    // Create a snapshot of vendor data
     const snapshot = {
+      archiveId: `vendor_${vendorId}_${Date.now()}`,
       vendorId,
       shopId,
       username: vendor.username,
+      email: vendor.email,
+      shopName: vendor.shopName,
       passwordHash: vendor.passwordHash,
-      email: vendor.email || null,
-      shopName: vendor.shopName || null,
       foodCourt,
-      createdAt: new Date().toISOString(),
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-      data: {},
+      archivedAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
+      data: {
+        menuSnapshot: getMenu(foodCourt),
+        combos: getCombos(foodCourt).filter(c => Number(c.shopId) === Number(shopId)),
+        offers: getOffers(foodCourt).filter(o => Number(o.shopId) === Number(shopId)),
+        orders: getOrders(foodCourt).filter(o => Number(o.shopId) === Number(shopId)),
+        procurementTemplates: getTemplates().filter(t => Number(t.vendorId) === vendorId),
+        procurementOrders: getOrders().filter(o => o.vendorId === vendorId),
+        procurementTasks: getTasks().filter(t => t.vendorId === vendorId),
+        grievances: getVendorGrievances().filter(g => Number(g.vendorId) === vendorId),
+        headcount: getVendorHeadcountEntries(vendorId),
+        analyticsSnapshot: analyticsQueryService?.getVendorSnapshots?.(shopId) || null
+      }
     };
-
-    snapshot.data.menuSnapshot = getMenu(foodCourt);
-    snapshot.data.combos = getCombos(foodCourt);
-    snapshot.data.offers = getOffers(foodCourt);
-    snapshot.data.orders = getOrders(foodCourt).filter((order) => String(order.shopId) === shopId);
-    snapshot.data.bulkOrders = getBulkOrders(foodCourt).filter((order) => String(order.vendorId) === String(vendorId));
-    snapshot.data.favorites = getFavorites(foodCourt).filter((fav) => String(fav.vendorId) === String(vendorId));
-    snapshot.data.interest = getItemInterestRecords(foodCourt).filter((entry) => String(entry.shopId) === shopId);
-
+    
+    // Remove vendor and associated data
     vendors.splice(vendorIndex, 1);
     saveVendors(vendors, foodCourt);
-
-    saveMenu((getMenu(foodCourt) || []).filter((entry) => String(entry?.shopId) !== shopId), foodCourt);
-    saveCombos((getCombos(foodCourt) || []).filter((entry) => String(entry?.shopId) !== shopId), foodCourt);
-    saveOffers((getOffers(foodCourt) || []).filter((entry) => String(entry?.shopId) !== shopId), foodCourt);
-    saveOrders(getOrders(foodCourt).filter((order) => String(order.shopId) !== shopId), foodCourt);
-    saveBulkOrders(getBulkOrders(foodCourt).filter((order) => String(order.vendorId) !== String(vendorId)), foodCourt);
-    saveFavorites(getFavorites(foodCourt).filter((fav) => String(fav.vendorId) !== String(vendorId)), foodCourt);
-    saveItemInterestRecords(getItemInterestRecords(foodCourt).filter((entry) => String(entry.shopId) !== shopId), foodCourt);
-
+    
+    // Clean up vendor-specific data
+    const menu = getMenu(foodCourt);
+    if (Array.isArray(menu)) {
+      const updatedMenu = menu.filter(item => Number(item.shopId) !== Number(shopId));
+      if (updatedMenu.length !== menu.length) {
+        saveMenu(updatedMenu, foodCourt);
+      }
+    }
+    
+    // Remove vendor's combos and offers
+    saveCombos(getCombos(foodCourt).filter(c => Number(c.shopId) !== Number(shopId)), foodCourt);
+    saveOffers(getOffers(foodCourt).filter(o => Number(o.shopId) !== Number(shopId)), foodCourt);
+    
+    // Clean up other vendor data
+    saveFavorites(getFavorites(foodCourt).filter(fav => Number(fav.vendorId) !== vendorId), foodCourt);
+    saveItemInterestRecords(
+      getItemInterestRecords(foodCourt).filter(entry => Number(entry.shopId) !== Number(shopId)),
+      foodCourt
+    );
+    
+    // Save the archive
     appendVendorArchive(snapshot);
     invalidateVendorDirectoryCache(foodCourt);
-
-    res.json({ status: "archived", vendorId, archiveId: snapshot.archiveId || null });
+    
+    res.json({ status: "archived", vendorId, archiveId: snapshot.archiveId });
   } catch (error) {
-    console.error("Failed to archive vendor", error);
-    res.status(500).json({ message: "Failed to archive vendor" });
+    console.error('Failed to archive vendor', error);
+    console.error('Failed to archive vendor', error);
+    res.status(500).json({ message: 'Failed to archive vendor' });
   }
 });
 
@@ -2921,20 +2942,27 @@ const getVendorIdForShop = (shopId, foodCourt = FC_DEFAULT) => {
   }
 };
 
-const getVendorIdForItem = (itemId, foodCourt = FC_DEFAULT) => {
+const getShopIdForItem = (itemId, foodCourt = FC_DEFAULT) => {
   if (itemId == null) return null;
   try {
     const menu = normalizeMenuShops(getMenu(foodCourt));
     for (const shop of menu) {
       const items = Array.isArray(shop.items) ? shop.items : [];
       if (items.some((item) => String(item?.id) === String(itemId))) {
-        return getVendorIdForShop(shop.shopId, foodCourt);
+        return shop.shopId != null ? String(shop.shopId) : null;
       }
     }
   } catch (error) {
-    console.warn('Failed to resolve vendorId for item', itemId, error);
+    console.warn('Failed to resolve shopId for item', itemId, error);
   }
   return null;
+};
+
+const getVendorIdForItem = (itemId, foodCourt = FC_DEFAULT) => {
+  if (itemId == null) return null;
+  const shopId = getShopIdForItem(itemId, foodCourt);
+  if (shopId == null) return null;
+  return getVendorIdForShop(shopId, foodCourt);
 };
 
 const buildInterestKey = ({ shopId, itemId }) => `${shopId || 'unknown'}:${itemId || 'unknown'}`;
@@ -5421,25 +5449,90 @@ app.get("/orders/user/:userId", (req, res) => {
  */
 app.post("/favorites", (req, res) => {
   try {
-    const { userId, itemId } = req.body;
+    const { userId, itemId, shopId: bodyShopId = null, vendorId: bodyVendorId = null } = req.body || {};
+    if (!userId || itemId == null) {
+      return res.status(400).json({ status: "error", message: "userId and itemId are required" });
+    }
+
     const foodCourt = getUserFoodCourt(req);
     let favorites = getFavorites(foodCourt);
+    if (!Array.isArray(favorites)) {
+      favorites = [];
+    }
 
-    const existingIndex = favorites.findIndex(f => f.userId === userId && f.itemId === itemId);
+    const normalizedItemId = String(itemId);
+    const normalizedShopId = bodyShopId != null ? String(bodyShopId) : getShopIdForItem(itemId, foodCourt);
+    const normalizedVendorId = bodyVendorId != null
+      ? String(bodyVendorId)
+      : (normalizedShopId != null ? getVendorIdForShop(normalizedShopId, foodCourt) : null);
+
+    const matchesFavorite = (favorite) => {
+      if (!favorite || favorite.userId !== userId) return false;
+      if (String(favorite.itemId) !== normalizedItemId) return false;
+      const favShop = favorite.shopId != null ? String(favorite.shopId) : null;
+      const favVendor = favorite.vendorId != null ? String(favorite.vendorId) : null;
+      if ((normalizedShopId != null || favShop != null) && favShop !== normalizedShopId) return false;
+      if ((normalizedVendorId != null || favVendor != null) && favVendor !== normalizedVendorId) return false;
+      return true;
+    };
+
+    let existingIndex = favorites.findIndex(matchesFavorite);
+
+    if (existingIndex < 0 && normalizedShopId != null) {
+      const fallbackIndex = favorites.findIndex((favorite) =>
+        favorite?.userId === userId &&
+        String(favorite?.itemId) === normalizedItemId &&
+        favorite?.shopId == null &&
+        favorite?.vendorId == null
+      );
+      if (fallbackIndex >= 0) {
+        favorites[fallbackIndex] = {
+          ...favorites[fallbackIndex],
+          shopId: normalizedShopId,
+          vendorId: normalizedVendorId ?? favorites[fallbackIndex].vendorId ?? null,
+        };
+        existingIndex = fallbackIndex;
+      }
+    }
 
     if (existingIndex >= 0) {
       favorites.splice(existingIndex, 1);
       saveFavorites(favorites, foodCourt);
-      res.json({ status: "removed", message: "Removed from favorites" });
-    } else {
-      const vendorId = getVendorIdForItem(itemId, foodCourt);
-      const shopId = vendorId != null ? getVendorDirectoryMap(foodCourt)[vendorId]?.shopId ?? null : null;
-      favorites.push({ userId, itemId, vendorId, shopId });
-      saveFavorites(favorites, foodCourt);
-      res.json({ status: "added", message: "Added to favorites" });
+      return res.json({ status: "removed", message: "Removed from favorites" });
     }
+
+    const key = `${userId}:${normalizedShopId ?? 'null'}:${normalizedItemId}`;
+    const seenKeys = new Set();
+    favorites = favorites.filter((favorite) => {
+      if (!favorite || favorite.userId !== userId || String(favorite.itemId) !== normalizedItemId) {
+        return true;
+      }
+      const favShop = favorite.shopId != null ? String(favorite.shopId) : null;
+      const favVendor = favorite.vendorId != null ? String(favorite.vendorId) : null;
+      const entryKey = `${userId}:${favShop ?? 'null'}:${String(favorite.itemId)}:${favVendor ?? 'null'}`;
+      if (seenKeys.has(entryKey)) {
+        return false;
+      }
+      seenKeys.add(entryKey);
+      if (favShop == null && normalizedShopId != null) {
+        favorite.shopId = normalizedShopId;
+      }
+      if (favVendor == null && (favorite.shopId != null || normalizedVendorId != null)) {
+        favorite.vendorId = getVendorIdForShop(favorite.shopId ?? normalizedShopId, foodCourt) ?? null;
+      }
+      return true;
+    });
+
+    favorites.push({
+      userId,
+      itemId,
+      shopId: normalizedShopId ?? null,
+      vendorId: normalizedVendorId ?? null,
+    });
+    saveFavorites(favorites, foodCourt);
+    return res.json({ status: "added", message: "Added to favorites" });
   } catch (error) {
-    res.status(500).json({ message: "Error updating favorites" });
+    return res.status(500).json({ message: "Error updating favorites" });
   }
 });
 
@@ -5451,10 +5544,68 @@ app.post("/favorites", (req, res) => {
 app.get("/favorites/:userId", (req, res) => {
   try {
     const foodCourt = getUserFoodCourt(req);
-    const favorites = getFavorites(foodCourt);
-    const userFavorites = favorites
-      .filter(f => f.userId === req.params.userId)
-      .map(f => ({ itemId: f.itemId, vendorId: f.vendorId ?? null, shopId: f.shopId ?? null }));
+    let favorites = getFavorites(foodCourt);
+    if (!Array.isArray(favorites)) {
+      favorites = [];
+    }
+
+    const targetUser = req.params.userId;
+    const seenKeys = new Set();
+    let updated = false;
+    const normalizedFavorites = [];
+    const userFavorites = [];
+
+    favorites.forEach((favorite) => {
+      if (!favorite || favorite.userId == null || favorite.itemId == null) {
+        return;
+      }
+
+      const normalizedItemId = String(favorite.itemId);
+      let normalizedShopId = favorite.shopId != null ? String(favorite.shopId) : null;
+      if (normalizedShopId == null) {
+        normalizedShopId = getShopIdForItem(favorite.itemId, foodCourt);
+        if (normalizedShopId != null) {
+          updated = true;
+        }
+      }
+
+      let normalizedVendorId = favorite.vendorId != null ? String(favorite.vendorId) : null;
+      if (normalizedVendorId == null && normalizedShopId != null) {
+        normalizedVendorId = getVendorIdForShop(normalizedShopId, foodCourt);
+        if (normalizedVendorId != null) {
+          updated = true;
+        }
+      }
+
+      const normalizedEntry = {
+        ...favorite,
+        itemId: favorite.itemId,
+        shopId: normalizedShopId ?? null,
+        vendorId: normalizedVendorId ?? null,
+      };
+
+      if (favorite.userId === targetUser) {
+        const key = `${normalizedShopId ?? 'null'}:${normalizedItemId}`;
+        if (!seenKeys.has(key)) {
+          seenKeys.add(key);
+          userFavorites.push({
+            itemId: favorite.itemId,
+            vendorId: normalizedVendorId ?? null,
+            shopId: normalizedShopId ?? null,
+          });
+        } else {
+          updated = true;
+          return;
+        }
+      }
+
+      normalizedFavorites.push(normalizedEntry);
+    });
+
+    if (updated) {
+      saveFavorites(normalizedFavorites, foodCourt);
+    }
+
     res.json({ favorites: userFavorites });
   } catch (error) {
     res.status(500).json({ message: "Error fetching favorites" });
@@ -6212,23 +6363,37 @@ app.put("/admin/vendor/:id", authenticateAdmin, (req, res) => {
       return res.status(404).json({ message: "Vendor not found" });
     }
 
-    const {
-      username,
-      password,
-      migrateToFoodCourt,
-      migrate = false,
-    } = req.body || {};
+    const { username, password, shopId, shopName, email } = req.body || {};
+    const vendor = vendors[sourceIndex];
+    const trimmedUsername = username != null ? String(username).trim() : null;
+    const trimmedShopName = shopName != null ? String(shopName).trim() : null;
+    const trimmedEmail = email != null ? String(email).trim() : null;
+    let newShopIdValue = null;
 
-    const nextVendorRecord = { ...vendors[sourceIndex] };
+    // Validate username if provided
+    if (trimmedUsername) {
+      const usernameConflict = vendors.some(
+        v => v.vendorId !== vendorId && 
+             String(v.username || '').toLowerCase() === trimmedUsername.toLowerCase()
+      );
+      if (usernameConflict) {
+        return res.status(409).json({ message: 'Username already exists' });
+      }
+      vendor.username = trimmedUsername;
+    }
 
-    if (username != null) {
-      const trimmed = String(username).trim();
-      if (!trimmed) {
-        return res.status(400).json({ message: "Username cannot be empty" });
+    // Validate shop ID if provided
+    if (shopId !== undefined) {
+      const candidateShopId = Number(shopId);
+      if (!Number.isFinite(candidateShopId) || candidateShopId <= 0) {
         return res.status(400).json({ message: 'Invalid shopId' });
       }
-      const vendorsWithoutCurrent = vendors.filter((v) => v.vendorId !== vendorId);
-      const shopIdConflict = vendorsWithoutCurrent.some((v) => Number(v.shopId) === candidateShopId);
+      
+      const shopIdConflict = vendors.some(
+        v => v.vendorId !== vendorId && 
+             Number(v.shopId) === candidateShopId
+      );
+      
       if (shopIdConflict) {
         return res.status(409).json({ message: 'Shop ID already in use by another vendor' });
       }
@@ -6240,54 +6405,28 @@ app.put("/admin/vendor/:id", authenticateAdmin, (req, res) => {
       vendor.shopName = trimmedShopName;
     }
     if (trimmedEmail !== null) {
-      if (trimmedEmail) {
-        vendor.email = trimmedEmail;
-      } else {
-        delete vendor.email;
-      }
+      vendor.email = trimmedEmail || null;
+    }
+    if (password) {
+      vendor.passwordHash = bcrypt.hashSync(String(password), 10);
     }
 
-    saveVendors(vendors, foodCourt);
+    saveVendors(vendors, sourceFoodCourt);
+    invalidateVendorDirectoryCache(sourceFoodCourt);
 
-    const rawMenu = getMenu(foodCourt);
-    const updateShopEntry = (menuData) => {
-      const applyUpdate = (shop) => {
-        if (!shop) return shop;
-        if (Number(shop.shopId) !== Number(originalShopId)) {
-          return shop;
-        }
-        const updatedShop = { ...shop };
-        if (newShopIdValue != null) updatedShop.shopId = newShopIdValue;
-        if (trimmedShopName) updatedShop.shopName = trimmedShopName;
-        if (trimmedEmail !== null) {
-          if (trimmedEmail) {
-            updatedShop.contactEmail = trimmedEmail;
-          } else {
-            delete updatedShop.contactEmail;
-          }
-        }
-        return updatedShop;
-      };
-
-      if (Array.isArray(menuData)) {
-        return menuData.map(applyUpdate);
+    // Update menu if shop ID or name changed
+    if (newShopIdValue !== null || trimmedShopName) {
+      const rawMenu = getMenu(sourceFoodCourt);
+      const updatedMenu = updateShopEntry(rawMenu, {
+        originalShopId: vendor.shopId,
+        newShopId: newShopIdValue,
+        newShopName: trimmedShopName,
+        newEmail: trimmedEmail
+      });
+      if (updatedMenu !== rawMenu) {
+        saveMenu(updatedMenu, sourceFoodCourt);
       }
-      if (menuData && typeof menuData === 'object') {
-        const next = { ...menuData };
-        if (Array.isArray(next.shops)) {
-          next.shops = next.shops.map(applyUpdate);
-        }
-        return next;
-      }
-      return menuData;
-    };
-
-    const updatedMenu = updateShopEntry(rawMenu);
-    if (updatedMenu !== rawMenu) {
-      saveMenu(updatedMenu, foodCourt);
     }
-
-    invalidateVendorDirectoryCache(foodCourt);
 
     const sanitizedVendor = {
       vendorId: vendor.vendorId,
@@ -6298,11 +6437,46 @@ app.put("/admin/vendor/:id", authenticateAdmin, (req, res) => {
       shopName: vendor.shopName || null,
     };
 
-    res.json({ status: "success", message: "Vendor updated successfully", vendor: sanitizedVendor });
+    res.json({ 
+      status: "success", 
+      message: "Vendor updated successfully", 
+      vendor: sanitizedVendor 
+    });
+
   } catch (error) {
+    console.error('Error updating vendor:', error);
     res.status(500).json({ message: "Error updating vendor" });
   }
 });
+
+// Helper function to update shop entry in menu
+function updateShopEntry(menuData, { originalShopId, newShopId, newShopName, newEmail }) {
+  const applyUpdate = (shop) => {
+    if (!shop) return shop;
+    if (Number(shop.shopId) !== Number(originalShopId)) {
+      return shop;
+    }
+    const updatedShop = { ...shop };
+    if (newShopId !== undefined) updatedShop.shopId = newShopId;
+    if (newShopName !== undefined) updatedShop.shopName = newShopName;
+    if (newEmail !== undefined) {
+      updatedShop.contactEmail = newEmail || undefined;
+    }
+    return updatedShop;
+  };
+
+  if (Array.isArray(menuData)) {
+    return menuData.map(applyUpdate);
+  }
+  if (menuData && typeof menuData === 'object') {
+    const next = { ...menuData };
+    if (Array.isArray(next.shops)) {
+      next.shops = next.shops.map(applyUpdate);
+    }
+    return next;
+  }
+  return menuData;
+}
 
 // Extend preparation time for an order (in minutes)
 /**

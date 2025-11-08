@@ -485,6 +485,27 @@ function App() {
     readySeededRef.current = false;
   }, [userId]);
 
+  const normalizeFavoriteEntries = useCallback((rawEntries) => {
+    if (!Array.isArray(rawEntries)) return [];
+    const map = new Map();
+    rawEntries.forEach((entry) => {
+      if (!entry) return;
+      const itemId = entry.itemId ?? entry.id ?? null;
+      if (itemId == null) return;
+      const shopId = entry.shopId != null ? String(entry.shopId) : null;
+      const vendorId = entry.vendorId != null ? String(entry.vendorId) : null;
+      const key = `${shopId ?? 'null'}:${String(itemId)}`;
+      if (!map.has(key)) {
+        map.set(key, {
+          itemId,
+          shopId,
+          vendorId,
+        });
+      }
+    });
+    return Array.from(map.values());
+  }, []);
+
   useEffect(() => {
     if (!userId) {
       setFavorites([]);
@@ -495,23 +516,8 @@ function App() {
       try {
         const res = await fetchFavorites(userId, foodCourt);
         if (!cancelled) {
-          const entries = Array.isArray(res?.favorites)
-            ? res.favorites
-                .map((fav) => {
-                  if (!fav || typeof fav !== 'object') {
-                    return { itemId: fav, vendorId: null, shopId: null };
-                  }
-                  const itemId = fav.itemId ?? fav.id ?? null;
-                  if (itemId == null) return null;
-                  return {
-                    itemId,
-                    vendorId: fav.vendorId ?? null,
-                    shopId: fav.shopId ?? null,
-                  };
-                })
-                .filter(Boolean)
-            : [];
-          setFavorites(entries);
+          const entries = Array.isArray(res?.favorites) ? res.favorites : [];
+          setFavorites(normalizeFavoriteEntries(entries));
         }
       } catch {
         if (!cancelled) setFavorites([]);
@@ -521,7 +527,7 @@ function App() {
     return () => {
       cancelled = true;
     };
-  }, [userId, foodCourt]);
+  }, [userId, foodCourt, normalizeFavoriteEntries]);
 
   useEffect(() => {
     if (!employeeToken && ["orders", "profile"].includes(view)) {
@@ -849,52 +855,39 @@ function App() {
       toast.info("Login to save favorites");
       return;
     }
-    setFavorites((prev) => {
-      const exists = prev.some((entry) => entry.itemId === itemId);
-      if (exists) {
-        return prev.filter((entry) => entry.itemId !== itemId);
-      }
-      return [...prev, {
-        itemId,
-        shopId: overrideShopId ?? selectedShop ?? null,
-        vendorId: overrideVendorId ?? null,
-      }];
-    });
-    try {
-      await toggleFavorite(userId, itemId, foodCourt);
-      const res = await fetchFavorites(userId, foodCourt);
-      const entries = Array.isArray(res?.favorites)
-        ? res.favorites
-            .map((fav) => {
-              if (!fav || typeof fav !== 'object') {
-                return { itemId: fav, vendorId: null, shopId: null };
-              }
-              const mappedItemId = fav.itemId ?? fav.id ?? null;
-              if (mappedItemId == null) return null;
-              return {
-                itemId: mappedItemId,
-                vendorId: fav.vendorId ?? null,
-                shopId: fav.shopId ?? null,
-              };
-            })
-            .filter(Boolean)
-        : [];
-      setFavorites(entries);
-    } catch {
+    const targetShopId = overrideShopId != null ? String(overrideShopId) : (selectedShop != null ? String(selectedShop) : null);
+    const targetVendorId = overrideVendorId != null ? String(overrideVendorId) : null;
+
+    const applyLocalToggle = () => {
       setFavorites((prev) => {
-        const exists = prev.some((entry) => entry.itemId === itemId);
-        if (exists) {
-          return prev.filter((entry) => entry.itemId !== itemId);
-        }
-        return [...prev, {
-          itemId,
-          shopId: overrideShopId ?? selectedShop ?? null,
-          vendorId: overrideVendorId ?? null,
-        }];
+        const itemKey = String(itemId);
+        const shopKey = targetShopId ?? null;
+        const exists = prev.some((entry) => String(entry.itemId) === itemKey && (entry.shopId ?? null) === shopKey);
+        const next = exists
+          ? prev.filter((entry) => !(String(entry.itemId) === itemKey && (entry.shopId ?? null) === shopKey))
+          : [...prev, {
+              itemId,
+              shopId: shopKey,
+              vendorId: targetVendorId,
+            }];
+        return normalizeFavoriteEntries(next);
       });
+    };
+
+    applyLocalToggle();
+    try {
+      await toggleFavorite(userId, itemId, foodCourt, {
+        shopId: targetShopId,
+        vendorId: targetVendorId,
+      });
+      const res = await fetchFavorites(userId, foodCourt);
+      const entries = Array.isArray(res?.favorites) ? res.favorites : [];
+      setFavorites(normalizeFavoriteEntries(entries));
+    } catch {
+      applyLocalToggle();
       toast.error("Failed to update favorites");
     }
-  }, [userId, foodCourt, selectedShop]);
+  }, [userId, foodCourt, selectedShop, normalizeFavoriteEntries]);
 
   const handlePaymentBack = () => {
     setView('user');

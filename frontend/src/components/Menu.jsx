@@ -377,22 +377,29 @@ const Menu = ({
     favorites.forEach((fav) => {
       if (!fav) return;
       const itemId = typeof fav === 'object' ? fav.itemId ?? fav.id ?? null : fav;
+      const shopId = typeof fav === 'object' && fav.shopId != null ? String(fav.shopId) : null;
       if (itemId != null) {
-        map.set(String(itemId), fav);
+        map.set(`${shopId ?? 'null'}:${String(itemId)}`, fav);
       }
     });
     return map;
   }, [favorites]);
 
-  const isFavorite = useCallback((itemId) => favoriteIndex.has(String(itemId)), [favoriteIndex]);
+  const isFavorite = useCallback((itemId) => {
+    const shopKey = selectedShop != null ? String(selectedShop) : 'null';
+    const key = `${shopKey}:${String(itemId)}`;
+    return favoriteIndex.has(key);
+  }, [favoriteIndex, selectedShop]);
 
   const handleFavoriteClick = useCallback((itemId, event) => {
     event?.preventDefault?.();
     event?.stopPropagation?.();
     if (typeof onFavoriteToggle === 'function') {
-      const current = favoriteIndex.get(String(itemId));
+      const shopKey = selectedShop != null ? String(selectedShop) : 'null';
+      const key = `${shopKey}:${String(itemId)}`;
+      const current = favoriteIndex.get(key) || null;
       const vendorId = current && typeof current === 'object' ? current.vendorId ?? null : null;
-      const shopId = current && typeof current === 'object' ? current.shopId ?? selectedShop ?? null : selectedShop ?? null;
+      const shopId = current && typeof current === 'object' ? (current.shopId != null ? String(current.shopId) : selectedShop ?? null) : selectedShop ?? null;
       onFavoriteToggle(itemId, shopId, vendorId);
     }
   }, [onFavoriteToggle, favoriteIndex, selectedShop]);

@@ -14,12 +14,13 @@
               "isVeg": true,
               "image": "/images/aloo-paratha.jpg",
               "prepTime": 10,
-              "inventory": 80,
+              "inventory": 9,
               "section": "Breakfast",
               "options": [],
               "hasOptions": [],
               "calories": "222 kcal",
-              "restockedAt": "2025-11-07T13:56:28.422Z"
+              "restockedAt": "2025-11-07T04:27:34.016Z",
+              "isRecommended": true
             },
             {
               "id": 2,
@@ -41,7 +42,7 @@
               "isVeg": true,
               "image": "/images/chole-bhature.jpg",
               "prepTime": 12,
-              "inventory": 88,
+              "inventory": 87,
               "section": "Breakfast",
               "options": [],
               "hasOptions": [],
@@ -54,12 +55,13 @@
               "isVeg": true,
               "image": "/images/aloo-puri.jpg",
               "prepTime": 10,
-              "inventory": 100,
+              "inventory": 99,
               "section": "Breakfast",
               "options": [],
               "hasOptions": [],
               "restockedAt": "2025-11-04T19:40:35.532Z",
-              "calories": null
+              "calories": null,
+              "isHotSeller": true
             },
             {
               "id": 5,
@@ -68,11 +70,12 @@
               "isVeg": true,
               "image": "/images/paneer-paratha.jpg",
               "prepTime": 12,
-              "inventory": 95,
+              "inventory": 94,
               "section": "Breakfast",
               "options": [],
               "hasOptions": [],
-              "calories": null
+              "calories": null,
+              "isHotSeller": true
             },
             {
               "id": 6,
@@ -137,7 +140,8 @@
               "section": "Breakfast",
               "options": [],
               "hasOptions": [],
-              "calories": null
+              "calories": null,
+              "isHotSeller": true
             },
             {
               "id": 11,
@@ -150,7 +154,8 @@
               "section": "Breakfast",
               "options": [],
               "hasOptions": [],
-              "calories": null
+              "calories": null,
+              "isRecommended": true
             },
             {
               "id": 12,
@@ -189,7 +194,8 @@
               "section": "Breakfast",
               "options": [],
               "hasOptions": [],
-              "calories": null
+              "calories": null,
+              "isRecommended": true
             },
             {
               "id": 15,
@@ -215,7 +221,8 @@
               "section": "Breakfast",
               "options": [],
               "hasOptions": [],
-              "calories": null
+              "calories": null,
+              "isHotSeller": true
             },
             {
               "id": 17,
@@ -281,7 +288,7 @@
               "isVeg": true,
               "image": "/images/sweet-lassi.jpg",
               "prepTime": 5,
-              "inventory": 99,
+              "inventory": 98,
               "hasOptions": [
                 {
                   "name": "Classic",
@@ -321,7 +328,8 @@
               "section": "Lunch",
               "options": [],
               "hasOptions": [],
-              "calories": null
+              "calories": null,
+              "isHotSeller": true
             },
             {
               "id": 22,
@@ -334,7 +342,8 @@
               "section": "Lunch",
               "options": [],
               "hasOptions": [],
-              "calories": null
+              "calories": null,
+              "isHotSeller": true
             },
             {
               "id": 23,
@@ -347,7 +356,8 @@
               "section": "Lunch",
               "options": [],
               "hasOptions": [],
-              "calories": null
+              "calories": null,
+              "isHotSeller": true
             },
             {
               "id": 24,
@@ -369,11 +379,12 @@
               "isVeg": true,
               "image": "/images/rajma-chawal.jpg",
               "prepTime": 16,
-              "inventory": 100,
+              "inventory": 98,
               "section": "Lunch",
               "options": [],
               "hasOptions": [],
-              "calories": null
+              "calories": null,
+              "isRecommended": true
             },
             {
               "id": 26,
@@ -430,7 +441,8 @@
                   "priceModifier": 15
                 }
               ],
-              "calories": null
+              "calories": null,
+              "isRecommended": true
             },
             {
               "id": 29,
@@ -521,7 +533,8 @@
               "section": "Lunch",
               "options": [],
               "hasOptions": [],
-              "calories": null
+              "calories": null,
+              "isHotSeller": true
             },
             {
               "id": 36,
@@ -556,7 +569,7 @@
               "isVeg": true,
               "image": "/images/veg-biryani.jpg",
               "prepTime": 18,
-              "inventory": 100,
+              "inventory": 96,
               "hasOptions": [
                 {
                   "name": "Classic",
@@ -591,7 +604,8 @@
               "section": "Lunch",
               "options": [],
               "hasOptions": [],
-              "calories": null
+              "calories": null,
+              "isHotSeller": true
             },
             {
               "id": 40,
@@ -679,7 +693,8 @@
               "section": "Dinner",
               "options": [],
               "hasOptions": [],
-              "calories": null
+              "calories": null,
+              "isHotSeller": true
             },
             {
               "id": 45,
@@ -718,7 +733,8 @@
               "section": "Dinner",
               "options": [],
               "hasOptions": [],
-              "calories": null
+              "calories": null,
+              "isRecommended": true
             },
             {
               "id": 48,
@@ -783,7 +799,8 @@
               "section": "Dinner",
               "options": [],
               "hasOptions": [],
-              "calories": null
+              "calories": null,
+              "isRecommended": true
             },
             {
               "id": 53,
@@ -809,7 +826,8 @@
               "section": "Dinner",
               "options": [],
               "hasOptions": [],
-              "calories": null
+              "calories": null,
+              "isHotSeller": true
             },
             {
               "id": 55,
@@ -931,7 +949,8 @@
               "section": "Quick Bites",
               "options": [],
               "hasOptions": [],
-              "calories": null
+              "calories": null,
+              "isHotSeller": true
             },
             {
               "id": 64,
@@ -958,8 +977,7 @@
               "section": "Quick Bites",
               "options": [],
               "hasOptions": [],
-              "calories": null,
-              "restockedAt": "2025-11-07T13:56:37.401Z"
+              "calories": null
             },
             {
               "id": 66,
@@ -973,7 +991,7 @@
               "options": [],
               "hasOptions": [],
               "calories": null,
-              "restockedAt": "2025-11-07T13:56:37.401Z"
+              "isHotSeller": true
             },
             {
               "id": 67,
@@ -982,11 +1000,12 @@
               "isVeg": true,
               "image": "/images/aloo-tikki.jpg",
               "prepTime": 5,
-              "inventory": 99,
+              "inventory": 100,
               "section": "Quick Bites",
               "options": [],
               "hasOptions": [],
-              "calories": null
+              "calories": null,
+              "isRecommended": true
             },
             {
               "id": 68,
@@ -1008,7 +1027,7 @@
               "isVeg": true,
               "image": "/images/veg-momos.jpg",
               "prepTime": 11,
-              "inventory": 13,
+              "inventory": 100,
               "hasOptions": [
                 {
                   "name": "Veg",
@@ -1030,8 +1049,7 @@
                   "priceModifier": 10
                 }
               ],
-              "calories": null,
-              "restockedAt": "2025-11-07T13:19:35.786Z"
+              "calories": null
             },
             {
               "id": 70,
@@ -1044,7 +1062,8 @@
               "section": "Quick Bites",
               "options": [],
               "hasOptions": [],
-              "calories": null
+              "calories": null,
+              "isHotSeller": true
             },
             {
               "id": 71,
@@ -1296,7 +1315,9 @@
               "section": "Chat Specials",
               "options": [],
               "hasOptions": [],
-              "calories": null
+              "calories": null,
+              "isHotSeller": true,
+              "isRecommended": true
             },
             {
               "id": 90,
@@ -1335,7 +1356,8 @@
               "section": "Chat Specials",
               "options": [],
               "hasOptions": [],
-              "calories": null
+              "calories": null,
+              "isHotSeller": true
             },
             {
               "id": 93,
@@ -1439,6 +1461,1085 @@
               "section": "Chat Specials",
               "options": [],
               "hasOptions": [],
+              "calories": null,
+              "isHotSeller": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "shopId": 4,
+      "shopName": "Foodie's Paradise",
+      "categories": [
+        {
+          "categoryName": "Breakfast",
+          "items": [
+            {
+              "id": 101,
+              "name": "Idli",
+              "price": 40,
+              "isVeg": true,
+              "image": "/images/idli.jpg",
+              "prepTime": 7,
+              "inventory": 100,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": [],
+              "sectionOrder": 7,
+              "calories": "~58-102 kcal",
+              "isHotSeller": true,
+              "restockedAt": "2025-11-05T17:10:54.523Z"
+            },
+            {
+              "id": 102,
+              "name": "Dosa",
+              "price": 55,
+              "isVeg": true,
+              "image": "/images/dosa.jpg",
+              "prepTime": 10,
+              "inventory": 99,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 103,
+              "name": "Upma",
+              "price": 50,
+              "isVeg": true,
+              "image": "/images/upma_south.jpg",
+              "prepTime": 8,
+              "inventory": 100,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 104,
+              "name": "Pongal",
+              "price": 55,
+              "isVeg": true,
+              "image": "/images/pongal.jpg",
+              "prepTime": 12,
+              "inventory": 100,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": [],
+              "calories": "~150-230 kcal",
+              "restockedAt": "2025-11-05T17:10:43.025Z"
+            },
+            {
+              "id": 105,
+              "name": "Medu Vada",
+              "price": 50,
+              "isVeg": true,
+              "image": "/images/medu-vada.jpg",
+              "prepTime": 8,
+              "inventory": 99,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 106,
+              "name": "Puttu",
+              "price": 55,
+              "isVeg": true,
+              "image": "/images/puttu.jpg",
+              "prepTime": 13,
+              "inventory": 100,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 107,
+              "name": "Idiyappam",
+              "price": 50,
+              "isVeg": true,
+              "image": "/images/idiyappam.jpg",
+              "prepTime": 13,
+              "inventory": 100,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 108,
+              "name": "Appam",
+              "price": 55,
+              "isVeg": true,
+              "image": "/images/appam.jpg",
+              "prepTime": 14,
+              "inventory": 100,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 109,
+              "name": "Pesarattu",
+              "price": 60,
+              "isVeg": true,
+              "image": "/images/pesarattu.jpg",
+              "prepTime": 12,
+              "inventory": 100,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 110,
+              "name": "Uttapam",
+              "price": 55,
+              "isVeg": true,
+              "image": "/images/uttapam.jpg",
+              "prepTime": 12,
+              "inventory": 100,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 111,
+              "name": "Paniyaram",
+              "price": 50,
+              "isVeg": true,
+              "image": "/images/paniyaram.jpg",
+              "prepTime": 10,
+              "inventory": 100,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 112,
+              "name": "Adai",
+              "price": 55,
+              "isVeg": true,
+              "image": "/images/adai.jpg",
+              "prepTime": 11,
+              "inventory": 100,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 113,
+              "name": "Neer Dosa",
+              "price": 55,
+              "isVeg": true,
+              "image": "/images/neer-dosa.jpg",
+              "prepTime": 9,
+              "inventory": 100,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": [],
+              "calories": "~90-110 kcal",
+              "restockedAt": "2025-11-05T17:10:54.523Z"
+            },
+            {
+              "id": 114,
+              "name": "Rava Idli",
+              "price": 50,
+              "isVeg": true,
+              "image": "/images/rava-idli.jpg",
+              "prepTime": 9,
+              "inventory": 100,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 115,
+              "name": "Akki Roti",
+              "price": 45,
+              "isVeg": true,
+              "image": "/images/akki-roti.jpg",
+              "prepTime": 7,
+              "inventory": 100,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 116,
+              "name": "Set Dosa",
+              "price": 60,
+              "isVeg": true,
+              "image": "/images/set-dosa.jpg",
+              "prepTime": 10,
+              "inventory": 100,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 117,
+              "name": "Masala Dosa",
+              "price": 65,
+              "isVeg": true,
+              "image": "/images/masala-dosa.jpg",
+              "prepTime": 11,
+              "inventory": 99,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 118,
+              "name": "Ragi Dosa",
+              "price": 55,
+              "isVeg": true,
+              "image": "/images/ragi-dosa.jpg",
+              "prepTime": 10,
+              "inventory": 100,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 119,
+              "name": "Poori",
+              "price": 50,
+              "isVeg": true,
+              "image": "/images/poori_south.jpg",
+              "prepTime": 12,
+              "inventory": 100,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 120,
+              "name": "Semiya Upma",
+              "price": 50,
+              "isVeg": true,
+              "image": "/images/semiya-upma.jpg",
+              "prepTime": 9,
+              "inventory": 100,
+              "section": "Breakfast",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            }
+          ]
+        },
+        {
+          "categoryName": "Lunch",
+          "items": [
+            {
+              "id": 121,
+              "name": "Curd Rice",
+              "price": 40,
+              "isVeg": true,
+              "image": "/images/curd-rice.jpg",
+              "prepTime": 12,
+              "inventory": 100,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 122,
+              "name": "Lemon Rice",
+              "price": 38,
+              "isVeg": true,
+              "image": "/images/lemon-rice.jpg",
+              "prepTime": 12,
+              "inventory": 100,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 123,
+              "name": "Bisi Bele Bath",
+              "price": 45,
+              "isVeg": true,
+              "image": "/images/bisi-bele-bath.jpg",
+              "prepTime": 15,
+              "inventory": 91,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": [],
+              "calories": null,
+              "isHotSeller": true
+            },
+            {
+              "id": 124,
+              "name": "Vazhakkai Varuval",
+              "price": 50,
+              "isVeg": true,
+              "image": "/images/vazhakkai-fry.jpg",
+              "prepTime": 10,
+              "inventory": 100,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 125,
+              "name": "Paruppu Vadai",
+              "price": 35,
+              "isVeg": true,
+              "image": "/images/paruppu-vadai.jpg",
+              "prepTime": 8,
+              "inventory": 99,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 126,
+              "name": "Rasam",
+              "price": 35,
+              "isVeg": true,
+              "image": "/images/rasam.jpg",
+              "prepTime": 10,
+              "inventory": 99,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 127,
+              "name": "Appalam",
+              "price": 20,
+              "isVeg": true,
+              "image": "/images/appalam.jpg",
+              "prepTime": 5,
+              "inventory": 100,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 128,
+              "name": "Aviyal",
+              "price": 55,
+              "isVeg": true,
+              "image": "/images/aviyal.jpg",
+              "prepTime": 14,
+              "inventory": 99,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 129,
+              "name": "Poriyal",
+              "price": 40,
+              "isVeg": true,
+              "image": "/images/poriyal.jpg",
+              "prepTime": 8,
+              "inventory": 99,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 130,
+              "name": "Ghee Rice",
+              "price": 45,
+              "isVeg": true,
+              "image": "/images/ghee-rice.jpg",
+              "prepTime": 10,
+              "inventory": 99,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 131,
+              "name": "Tomato Rice",
+              "price": 42,
+              "isVeg": true,
+              "image": "/images/tomato-rice.jpg",
+              "prepTime": 12,
+              "inventory": 100,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 132,
+              "name": "Chicken Biryani",
+              "price": 120,
+              "isVeg": false,
+              "image": "/images/chicken-biryani.jpg",
+              "prepTime": 20,
+              "inventory": 100,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 133,
+              "name": "Fish Fry",
+              "price": 140,
+              "isVeg": false,
+              "image": "/images/fish-fry.jpg",
+              "prepTime": 15,
+              "inventory": 89,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 134,
+              "name": "Pesarattu",
+              "price": 60,
+              "isVeg": true,
+              "image": "/images/pesarattu.jpg",
+              "prepTime": 12,
+              "inventory": 100,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 135,
+              "name": "Rava Idli",
+              "price": 50,
+              "isVeg": true,
+              "image": "/images/rava-idli.jpg",
+              "prepTime": 10,
+              "inventory": 100,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 136,
+              "name": "Payasam",
+              "price": 40,
+              "isVeg": true,
+              "image": "/images/payasam.jpg",
+              "prepTime": 15,
+              "inventory": 99,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 137,
+              "name": "Tamarind Rice (Puliyogare)",
+              "price": 45,
+              "isVeg": true,
+              "image": "/images/tamarind-rice.jpg",
+              "prepTime": 14,
+              "inventory": 100,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 138,
+              "name": "Coconut Rice",
+              "price": 40,
+              "isVeg": true,
+              "image": "/images/coconut-rice.jpg",
+              "prepTime": 12,
+              "inventory": 100,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 139,
+              "name": "Mor Kuzhambu",
+              "price": 50,
+              "isVeg": true,
+              "image": "/images/mor-kuzhambu.jpg",
+              "prepTime": 15,
+              "inventory": 100,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 140,
+              "name": "Avial",
+              "price": 55,
+              "isVeg": true,
+              "image": "/images/avial.jpg",
+              "prepTime": 14,
+              "inventory": 93,
+              "section": "Lunch",
+              "options": [],
+              "hasOptions": [],
+              "calories": null,
+              "isRecommended": true
+            }
+          ]
+        },
+        {
+          "categoryName": "Dinner",
+          "items": [
+            {
+              "id": 141,
+              "name": "Plain Dosa",
+              "price": 45,
+              "isVeg": true,
+              "image": "/images/plain-dosa.jpg",
+              "prepTime": 12,
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 142,
+              "name": "Masala Dosa",
+              "price": 65,
+              "isVeg": true,
+              "image": "/images/masala-dosa.jpg",
+              "prepTime": 13,
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": [],
+              "calories": null,
+              "isHotSeller": true
+            },
+            {
+              "id": 143,
+              "name": "Pesarattu",
+              "price": 60,
+              "isVeg": true,
+              "image": "/images/pesarattu.jpg",
+              "prepTime": 12,
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": [],
+              "calories": null,
+              "isRecommended": true
+            },
+            {
+              "id": 144,
+              "name": "Appam",
+              "price": 55,
+              "isVeg": true,
+              "image": "/images/appam.jpg",
+              "prepTime": 14,
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 145,
+              "name": "Adai",
+              "price": 55,
+              "isVeg": true,
+              "image": "/images/adai.jpg",
+              "prepTime": 11,
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 146,
+              "name": "Uthappam",
+              "price": 60,
+              "isVeg": true,
+              "image": "/images/utthappam.jpg",
+              "prepTime": 13,
+              "inventory": 20,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": [],
+              "calories": null,
+              "isHotSeller": true,
+              "isRecommended": true,
+              "restockedAt": "2025-11-05T16:56:35.059Z"
+            },
+            {
+              "id": 147,
+              "name": "Idli",
+              "price": 45,
+              "isVeg": true,
+              "image": "/images/idli.jpg",
+              "prepTime": 10,
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 148,
+              "name": "Rava Idli",
+              "price": 50,
+              "isVeg": true,
+              "image": "/images/rava-idli.jpg",
+              "prepTime": 11,
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 149,
+              "name": "Puttu",
+              "price": 55,
+              "isVeg": true,
+              "image": "/images/puttu.jpg",
+              "prepTime": 15,
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 150,
+              "name": "Idiyappam",
+              "price": 50,
+              "isVeg": true,
+              "image": "/images/idiyappam.jpg",
+              "prepTime": 13,
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 151,
+              "name": "Set Dosa",
+              "price": 60,
+              "isVeg": true,
+              "image": "/images/set-dosa.jpg",
+              "prepTime": 12,
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 152,
+              "name": "Keema Curry",
+              "price": 140,
+              "isVeg": false,
+              "image": "/images/keema-curry.jpg",
+              "prepTime": 20,
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 153,
+              "name": "Chicken Chettinad",
+              "price": 160,
+              "isVeg": false,
+              "image": "/images/chicken-chettinad.jpg",
+              "prepTime": 25,
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 154,
+              "name": "Fish Curry (Kerala)",
+              "price": 150,
+              "isVeg": false,
+              "image": "/images/fish-curry-kerala.jpg",
+              "prepTime": 22,
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 155,
+              "name": "Kara Kuzhambu",
+              "price": 60,
+              "isVeg": true,
+              "image": "/images/kara-kuzhambu.jpg",
+              "prepTime": 15,
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 156,
+              "name": "Kadala Curry",
+              "price": 55,
+              "isVeg": true,
+              "image": "/images/kadala-curry.jpg",
+              "prepTime": 14,
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 157,
+              "name": "Kootu",
+              "price": 50,
+              "isVeg": true,
+              "image": "/images/kootu.jpg",
+              "prepTime": 12,
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 158,
+              "name": "Mor Kuzhambu",
+              "price": 50,
+              "isVeg": true,
+              "image": "/images/mor-kuzhambu.jpg",
+              "prepTime": 15,
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 159,
+              "name": "Avial (Kerala)",
+              "price": 55,
+              "isVeg": true,
+              "image": "/images/avial-kerala.jpg",
+              "prepTime": 14,
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 160,
+              "name": "Fish Fry",
+              "price": 140,
+              "isVeg": false,
+              "image": "/images/fish-fry.jpg",
+              "prepTime": 15,
+              "inventory": 100,
+              "section": "Dinner",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            }
+          ]
+        },
+        {
+          "categoryName": "Quick Bites",
+          "items": [
+            {
+              "id": 161,
+              "name": "Medu Vada",
+              "price": 50,
+              "isVeg": true,
+              "image": "/images/medu-vada.jpg",
+              "prepTime": 8,
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 162,
+              "name": "Masala Vada",
+              "price": 45,
+              "isVeg": true,
+              "image": "/images/masala-vada.jpg",
+              "prepTime": 8,
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 163,
+              "name": "Bonda",
+              "price": 50,
+              "isVeg": true,
+              "image": "/images/bonda.jpg",
+              "prepTime": 9,
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 164,
+              "name": "Mysore Bonda",
+              "price": 50,
+              "isVeg": true,
+              "image": "/images/mysore-bonda.jpg",
+              "prepTime": 9,
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 165,
+              "name": "Pazhampori",
+              "price": 35,
+              "isVeg": true,
+              "image": "/images/pazhampori.jpg",
+              "prepTime": 7,
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 166,
+              "name": "Bajji (Veg Fritters)",
+              "price": 45,
+              "isVeg": true,
+              "image": "/images/bajji.jpg",
+              "prepTime": 8,
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 167,
+              "name": "Ulli Vada",
+              "price": 50,
+              "isVeg": true,
+              "image": "/images/ulli-vada.jpg",
+              "prepTime": 9,
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 168,
+              "name": "Murukku (Chakli)",
+              "price": 40,
+              "isVeg": true,
+              "image": "/images/murukku.jpg",
+              "prepTime": 8,
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 169,
+              "name": "Ribbon Pakoda",
+              "price": 35,
+              "isVeg": true,
+              "image": "/images/ribbon-pakoda.jpg",
+              "prepTime": 7,
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 170,
+              "name": "Omapodi (Sev)",
+              "price": 30,
+              "isVeg": true,
+              "image": "/images/omapodi.jpg",
+              "prepTime": 6,
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 171,
+              "name": "Thattai (Rice Crackers)",
+              "price": 30,
+              "isVeg": true,
+              "image": "/images/thattai.jpg",
+              "prepTime": 7,
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 172,
+              "name": "Seedai",
+              "price": 30,
+              "isVeg": true,
+              "image": "/images/seedai.jpg",
+              "prepTime": 6,
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 173,
+              "name": "Kara Boondi",
+              "price": 40,
+              "isVeg": true,
+              "image": "/images/kara-boondi.jpg",
+              "prepTime": 7,
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 174,
+              "name": "Aloo Bonda",
+              "price": 45,
+              "isVeg": true,
+              "image": "/images/aloo-bonda.jpg",
+              "prepTime": 8,
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 175,
+              "name": "Punugulu",
+              "price": 45,
+              "isVeg": true,
+              "image": "/images/punugulu.jpg",
+              "prepTime": 8,
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 176,
+              "name": "Appam",
+              "price": 50,
+              "isVeg": true,
+              "image": "/images/appam.jpg",
+              "prepTime": 12,
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 177,
+              "name": "Kuzhi Paniyaram",
+              "price": 50,
+              "isVeg": true,
+              "image": "/images/kuzhi-paniyaram.jpg",
+              "prepTime": 10,
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 178,
+              "name": "Maddur Vada",
+              "price": 55,
+              "isVeg": true,
+              "image": "/images/maddur-vada.jpg",
+              "prepTime": 10,
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 179,
+              "name": "Goli Baje",
+              "price": 45,
+              "isVeg": true,
+              "image": "/images/goli-baje.jpg",
+              "prepTime": 9,
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": [],
+              "calories": null
+            },
+            {
+              "id": 180,
+              "name": "Banana Chips",
+              "price": 40,
+              "isVeg": true,
+              "image": "/images/banana-chips.jpg",
+              "prepTime": 5,
+              "inventory": 100,
+              "section": "Quick Bites",
+              "options": [],
+              "hasOptions": [],
               "calories": null
             }
           ]
@@ -1448,287 +2549,6 @@
     {
       "shopId": 3,
       "shopName": "The Urban Drinks",
-      "categories": [
-        {
-          "categoryName": "Beverages",
-          "items": [
-            {
-              "id": 301,
-              "name": "Cold Coffee",
-              "price": 40,
-              "isVeg": true,
-              "image": "/images/cold-coffee.jpg",
-              "prepTime": 5,
-              "inventory": 100,
-              "hasOptions": [
-                {
-                  "name": "Regular",
-                  "priceModifier": 0
-                },
-                {
-                  "name": "Chocolate",
-                  "priceModifier": 5
-                },
-                {
-                  "name": "Hazelnut",
-                  "priceModifier": 7
-                }
-              ]
-            },
-            {
-              "id": 302,
-              "name": "Mango Juice",
-              "price": 30,
-              "isVeg": true,
-              "image": "/images/mango-juice.jpg",
-              "prepTime": 4,
-              "inventory": 100
-            },
-            {
-              "id": 303,
-              "name": "Green Tea",
-              "price": 25,
-              "isVeg": true,
-              "image": "/images/green-tea.jpg",
-              "prepTime": 5,
-              "inventory": 100
-            },
-            {
-              "id": 304,
-              "name": "Lemonade",
-              "price": 30,
-              "isVeg": true,
-              "image": "/images/lemonade.jpg",
-              "prepTime": 4,
-              "inventory": 100,
-              "hasOptions": [
-                {
-                  "name": "Classic",
-                  "priceModifier": 0
-                },
-                {
-                  "name": "Mint",
-                  "priceModifier": 5
-                }
-              ]
-            },
-            {
-              "id": 305,
-              "name": "Herbal Tea",
-              "price": 35,
-              "isVeg": true,
-              "image": "/images/herbal-tea.jpg",
-              "prepTime": 5,
-              "inventory": 100,
-              "hasOptions": [
-                {
-                  "name": "Chamomile",
-                  "priceModifier": 0
-                },
-                {
-                  "name": "Lemongrass",
-                  "priceModifier": 0
-                },
-                {
-                  "name": "Ginger",
-                  "priceModifier": 2
-                }
-              ]
-            },
-            {
-              "id": 306,
-              "name": "Iced Tea",
-              "price": 35,
-              "isVeg": true,
-              "image": "/images/iced-tea.jpg",
-              "prepTime": 4,
-              "inventory": 100
-            },
-            {
-              "id": 307,
-              "name": "Coconut Water",
-              "price": 40,
-              "isVeg": true,
-              "image": "/images/coconut-water.jpg",
-              "prepTime": 3,
-              "inventory": 100
-            },
-            {
-              "id": 308,
-              "name": "Water",
-              "price": 10,
-              "isVeg": true,
-              "image": "/images/water.jpg",
-              "prepTime": 1,
-              "inventory": 100
-            },
-            {
-              "id": 309,
-              "name": "Energy Drink",
-              "price": 50,
-              "isVeg": true,
-              "image": "/images/energy-drink.jpg",
-              "prepTime": 2,
-              "inventory": 100
-            },
-            {
-              "id": 310,
-              "name": "Fruit Mojito",
-              "price": 55,
-              "isVeg": true,
-              "image": "/images/fruit-mojito.jpg",
-              "prepTime": 5,
-              "inventory": 100,
-              "hasOptions": [
-                {
-                  "name": "Classic Mint",
-                  "priceModifier": 0
-                },
-                {
-                  "name": "Mango",
-                  "priceModifier": 5
-                },
-                {
-                  "name": "Watermelon",
-                  "priceModifier": 5
-                },
-                {
-                  "name": "Pineapple",
-                  "priceModifier": 5
-                }
-              ]
-            },
-            {
-              "id": 311,
-              "name": "Ginger Lemonade",
-              "price": 35,
-              "isVeg": true,
-              "image": "/images/ginger-lemonade.jpg",
-              "prepTime": 4,
-              "inventory": 100
-            },
-            {
-              "id": 312,
-              "name": "Strawberry Smoothie",
-              "price": 55,
-              "isVeg": true,
-              "image": "/images/strawberry-smoothie.jpg",
-              "prepTime": 6,
-              "inventory": 100,
-              "hasOptions": [
-                {
-                  "name": "Classic",
-                  "priceModifier": 0
-                },
-                {
-                  "name": "Low Sugar",
-                  "priceModifier": 0
-                }
-              ]
-            },
-            {
-              "id": 313,
-              "name": "Mango Lassi",
-              "price": 50,
-              "isVeg": true,
-              "image": "/images/mango-lassi.jpg",
-              "prepTime": 5,
-              "inventory": 100
-            },
-            {
-              "id": 314,
-              "name": "Buttermilk",
-              "price": 25,
-              "isVeg": true,
-              "image": "/images/buttermilk.jpg",
-              "prepTime": 3,
-              "inventory": 100
-            },
-            {
-              "id": 315,
-              "name": "Chocolate Milkshake",
-              "price": 50,
-              "isVeg": true,
-              "image": "/images/chocolate-milkshake.jpg",
-              "prepTime": 5,
-              "inventory": 100,
-              "hasOptions": [
-                {
-                  "name": "Chocolate",
-                  "priceModifier": 0
-                },
-                {
-                  "name": "Strawberry",
-                  "priceModifier": 2
-                },
-                {
-                  "name": "Vanilla",
-                  "priceModifier": 0
-                }
-              ]
-            },
-            {
-              "id": 316,
-              "name": "Vanilla Milkshake",
-              "price": 50,
-              "isVeg": true,
-              "image": "/images/vanilla-milkshake.jpg",
-              "prepTime": 5,
-              "inventory": 100
-            },
-            {
-              "id": 317,
-              "name": "Strawberry Milkshake",
-              "price": 55,
-              "isVeg": true,
-              "image": "/images/strawberry-milkshake.jpg",
-              "prepTime": 5,
-              "inventory": 100
-            },
-            {
-              "id": 318,
-              "name": "Rose Milk",
-              "price": 40,
-              "isVeg": true,
-              "image": "/images/rose-milk.jpg",
-              "prepTime": 4,
-              "inventory": 100
-            },
-            {
-              "id": 319,
-              "name": "Sangria Punch",
-              "price": 60,
-              "isVeg": true,
-              "image": "/images/sangria-punch.jpg",
-              "prepTime": 5,
-              "inventory": 100
-            },
-            {
-              "id": 320,
-              "name": "Lassi (Sweet / Salty)",
-              "price": 45,
-              "isVeg": true,
-              "image": "/images/lassi.jpg",
-              "prepTime": 5,
-              "inventory": 100,
-              "hasOptions": [
-                {
-                  "name": "Sweet",
-                  "priceModifier": 0
-                },
-                {
-                  "name": "Salty",
-                  "priceModifier": 0
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "shopId": 4,
-      "shopName": "Foodie's Paradise",
       "categories": [
         {
           "categoryName": "Fast Food",
@@ -2217,287 +3037,6 @@
               "image": "/images/apple-crumble.jpg",
               "prepTime": 12,
               "inventory": 100
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "shopId": 2,
-      "shopName": "Beverage Corner",
-      "categories": [
-        {
-          "categoryName": "Beverages",
-          "items": [
-            {
-              "id": 301,
-              "name": "Cold Coffee",
-              "price": 40,
-              "isVeg": true,
-              "image": "/images/cold-coffee.jpg",
-              "prepTime": 5,
-              "inventory": 100,
-              "hasOptions": [
-                {
-                  "name": "Regular",
-                  "priceModifier": 0
-                },
-                {
-                  "name": "Chocolate",
-                  "priceModifier": 5
-                },
-                {
-                  "name": "Hazelnut",
-                  "priceModifier": 7
-                }
-              ]
-            },
-            {
-              "id": 302,
-              "name": "Mango Juice",
-              "price": 30,
-              "isVeg": true,
-              "image": "/images/mango-juice.jpg",
-              "prepTime": 4,
-              "inventory": 100
-            },
-            {
-              "id": 303,
-              "name": "Green Tea",
-              "price": 25,
-              "isVeg": true,
-              "image": "/images/green-tea.jpg",
-              "prepTime": 5,
-              "inventory": 100
-            },
-            {
-              "id": 304,
-              "name": "Lemonade",
-              "price": 30,
-              "isVeg": true,
-              "image": "/images/lemonade.jpg",
-              "prepTime": 4,
-              "inventory": 100,
-              "hasOptions": [
-                {
-                  "name": "Classic",
-                  "priceModifier": 0
-                },
-                {
-                  "name": "Mint",
-                  "priceModifier": 5
-                }
-              ]
-            },
-            {
-              "id": 305,
-              "name": "Herbal Tea",
-              "price": 35,
-              "isVeg": true,
-              "image": "/images/herbal-tea.jpg",
-              "prepTime": 5,
-              "inventory": 100,
-              "hasOptions": [
-                {
-                  "name": "Chamomile",
-                  "priceModifier": 0
-                },
-                {
-                  "name": "Lemongrass",
-                  "priceModifier": 0
-                },
-                {
-                  "name": "Ginger",
-                  "priceModifier": 2
-                }
-              ]
-            },
-            {
-              "id": 306,
-              "name": "Iced Tea",
-              "price": 35,
-              "isVeg": true,
-              "image": "/images/iced-tea.jpg",
-              "prepTime": 4,
-              "inventory": 100
-            },
-            {
-              "id": 307,
-              "name": "Coconut Water",
-              "price": 40,
-              "isVeg": true,
-              "image": "/images/coconut-water.jpg",
-              "prepTime": 3,
-              "inventory": 100
-            },
-            {
-              "id": 308,
-              "name": "Water",
-              "price": 10,
-              "isVeg": true,
-              "image": "/images/water.jpg",
-              "prepTime": 1,
-              "inventory": 100
-            },
-            {
-              "id": 309,
-              "name": "Energy Drink",
-              "price": 50,
-              "isVeg": true,
-              "image": "/images/energy-drink.jpg",
-              "prepTime": 2,
-              "inventory": 100
-            },
-            {
-              "id": 310,
-              "name": "Fruit Mojito",
-              "price": 55,
-              "isVeg": true,
-              "image": "/images/fruit-mojito.jpg",
-              "prepTime": 5,
-              "inventory": 100,
-              "hasOptions": [
-                {
-                  "name": "Classic Mint",
-                  "priceModifier": 0
-                },
-                {
-                  "name": "Mango",
-                  "priceModifier": 5
-                },
-                {
-                  "name": "Watermelon",
-                  "priceModifier": 5
-                },
-                {
-                  "name": "Pineapple",
-                  "priceModifier": 5
-                }
-              ]
-            },
-            {
-              "id": 311,
-              "name": "Ginger Lemonade",
-              "price": 35,
-              "isVeg": true,
-              "image": "/images/ginger-lemonade.jpg",
-              "prepTime": 4,
-              "inventory": 100
-            },
-            {
-              "id": 312,
-              "name": "Strawberry Smoothie",
-              "price": 55,
-              "isVeg": true,
-              "image": "/images/strawberry-smoothie.jpg",
-              "prepTime": 6,
-              "inventory": 100,
-              "hasOptions": [
-                {
-                  "name": "Classic",
-                  "priceModifier": 0
-                },
-                {
-                  "name": "Low Sugar",
-                  "priceModifier": 0
-                }
-              ]
-            },
-            {
-              "id": 313,
-              "name": "Mango Lassi",
-              "price": 50,
-              "isVeg": true,
-              "image": "/images/mango-lassi.jpg",
-              "prepTime": 5,
-              "inventory": 100
-            },
-            {
-              "id": 314,
-              "name": "Buttermilk",
-              "price": 25,
-              "isVeg": true,
-              "image": "/images/buttermilk.jpg",
-              "prepTime": 3,
-              "inventory": 100
-            },
-            {
-              "id": 315,
-              "name": "Chocolate Milkshake",
-              "price": 50,
-              "isVeg": true,
-              "image": "/images/chocolate-milkshake.jpg",
-              "prepTime": 5,
-              "inventory": 100,
-              "hasOptions": [
-                {
-                  "name": "Chocolate",
-                  "priceModifier": 0
-                },
-                {
-                  "name": "Strawberry",
-                  "priceModifier": 2
-                },
-                {
-                  "name": "Vanilla",
-                  "priceModifier": 0
-                }
-              ]
-            },
-            {
-              "id": 316,
-              "name": "Vanilla Milkshake",
-              "price": 50,
-              "isVeg": true,
-              "image": "/images/vanilla-milkshake.jpg",
-              "prepTime": 5,
-              "inventory": 100
-            },
-            {
-              "id": 317,
-              "name": "Strawberry Milkshake",
-              "price": 55,
-              "isVeg": true,
-              "image": "/images/strawberry-milkshake.jpg",
-              "prepTime": 5,
-              "inventory": 100
-            },
-            {
-              "id": 318,
-              "name": "Rose Milk",
-              "price": 40,
-              "isVeg": true,
-              "image": "/images/rose-milk.jpg",
-              "prepTime": 4,
-              "inventory": 100
-            },
-            {
-              "id": 319,
-              "name": "Sangria Punch",
-              "price": 60,
-              "isVeg": true,
-              "image": "/images/sangria-punch.jpg",
-              "prepTime": 5,
-              "inventory": 100
-            },
-            {
-              "id": 320,
-              "name": "Lassi (Sweet / Salty)",
-              "price": 45,
-              "isVeg": true,
-              "image": "/images/lassi.jpg",
-              "prepTime": 5,
-              "inventory": 100,
-              "hasOptions": [
-                {
-                  "name": "Sweet",
-                  "priceModifier": 0
-                },
-                {
-                  "name": "Salty",
-                  "priceModifier": 0
-                }
-              ]
             }
           ]
         }

@@ -1,70 +1,116 @@
 [
   {
     "userId": "Employee XYZ",
-    "itemId": 3
+    "itemId": 3,
+    "shopId": "1",
+    "vendorId": "1"
   },
   {
     "userId": "premtg@gmail.com",
-    "itemId": 3
+    "itemId": 3,
+    "shopId": "1",
+    "vendorId": "1"
   },
   {
     "userId": "+919952911560",
-    "itemId": 3
+    "itemId": 3,
+    "shopId": "1",
+    "vendorId": "1"
   },
   {
     "userId": "+919952911560",
-    "itemId": 144
+    "itemId": 144,
+    "shopId": null,
+    "vendorId": null
   },
   {
     "userId": "+919952911560",
-    "itemId": 143
+    "itemId": 143,
+    "shopId": null,
+    "vendorId": null
   },
   {
     "userId": "+919952911560",
-    "itemId": 142
+    "itemId": 142,
+    "shopId": null,
+    "vendorId": null
   },
   {
     "userId": "+919952911560",
-    "itemId": 133
+    "itemId": 133,
+    "shopId": null,
+    "vendorId": null
   },
   {
     "userId": "+919952911560",
-    "itemId": 62
+    "itemId": 62,
+    "shopId": "1",
+    "vendorId": "1"
   },
   {
     "userId": "+919952911560",
-    "itemId": 82
+    "itemId": 82,
+    "shopId": "1",
+    "vendorId": "1"
   },
   {
     "userId": "+919952081560",
-    "itemId": 3
+    "itemId": 3,
+    "shopId": "1",
+    "vendorId": "1"
   },
   {
     "userId": "+919952081560",
-    "itemId": 63
+    "itemId": 63,
+    "shopId": "1",
+    "vendorId": "1"
   },
   {
     "userId": "+919952081560",
-    "itemId": 304
+    "itemId": 304,
+    "shopId": "3",
+    "vendorId": "3"
   },
   {
     "userId": "+919952081560",
-    "itemId": 64
+    "itemId": 64,
+    "shopId": "1",
+    "vendorId": "1"
   },
   {
     "userId": "+919952081560",
-    "itemId": 5
+    "itemId": 5,
+    "shopId": "1",
+    "vendorId": "1"
   },
   {
     "userId": "+919952081560",
-    "itemId": 305
+    "itemId": 303,
+    "shopId": "3",
+    "vendorId": "3"
   },
   {
     "userId": "+919952081560",
-    "itemId": 303
+    "itemId": 404,
+    "shopId": "4",
+    "vendorId": "4"
   },
   {
     "userId": "+919952081560",
-    "itemId": 404
+    "itemId": 301,
+    "shopId": "2",
+    "vendorId": "2"
+  },
+  {
+    "userId": "+919952081560",
+    "itemId": 307,
+    "shopId": "3",
+    "vendorId": "3"
+  },
+  {
+    "userId": "+919952081560",
+    "itemId": 306,
+    "shopId": "3",
+    "vendorId": "3"
   }
 ]

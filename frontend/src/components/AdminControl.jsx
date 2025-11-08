@@ -757,7 +757,7 @@ function AdminControl({
               type="text"
               value={loginForm.username}
               onChange={(e) => setLoginForm((prev) => ({ ...prev, username: e.target.value }))}
-              placeholder="admin@example.com"
+              placeholder="admin@infosys.com"
             />
           </div>
           <div className="form-group">
@@ -1142,7 +1142,7 @@ function AdminControl({
         </div>
 
         <div className="card">
-          <div className="card-header">Update Vendor Credentials</div>
+          <div className="card-header">Update Vendor</div>
           <form onSubmit={handleUpdateSubmit} className="card-body" style={{ display: "grid", gap: 12 }}>
             <div>
               <label>Choose Food Court</label>
@@ -1246,7 +1246,7 @@ function AdminControl({
               />
             </div>
             <button type="submit" className="secondary-button" style={{ width: "100%" }} disabled={!selectedVendorId}>
-              Update Credentials &amp; Notify
+              Update &amp; Notify
             </button>
           </form>
         </div>
