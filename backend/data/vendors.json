@@ -22,5 +22,13 @@
     "passwordHash": "$2b$10$gnWvF2wfXC4ZAZqd8o2QO.LAlXoXlDQ/oicVSURZXedD7LOKF2i6a",
     "email": "northvendor@infosys.com",
     "shopName": "North Indian Dhamaka"
+  },
+  {
+    "vendorId": 2,
+    "shopId": 2,
+    "username": "southvendor",
+    "passwordHash": "$2b$10$TRCK28UwhgMGMAuyv/uC/uUB4bg4HNDHeoIIfzkbEthkJ.qmQ6XtW",
+    "email": "southvendor@infosys.com",
+    "shopName": "South Indian Delights"
   }
 ]

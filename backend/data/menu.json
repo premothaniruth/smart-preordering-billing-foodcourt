@@ -1,7 +1,7 @@
 {
   "shops": [
     {
-      "shopId": 1,
+      "shopId": 4,
       "shopName": "North Indian Dhamaka",
       "categories": [
         {
@@ -2524,7 +2524,7 @@
       ]
     },
     {
-      "shopId": 4,
+      "shopId": 1,
       "shopName": "Fast Food and Desserts",
       "categories": [
         {
