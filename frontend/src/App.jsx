@@ -1431,7 +1431,7 @@ function App() {
         requestBody.migrateToFoodCourt = payload.migrateToFoodCourt;
       }
       const res = await updateVendor(vendorId, requestBody, adminSession, targetCourt);
-      if (res?.status === "success") {
+      if (res?.status === "success" || res?.status === "ok") {
         if (targetCourt === adminFoodCourt) {
           setAdminManagedVendors((prev) => prev.map((vendor) => {
             if (String(vendor.vendorId ?? vendor.id) !== String(vendorId)) return vendor;

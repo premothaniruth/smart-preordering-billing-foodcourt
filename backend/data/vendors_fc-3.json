@@ -19,9 +19,9 @@
     "vendorId": 3,
     "shopId": 3,
     "username": "urbandrinks",
-    "passwordHash": "infyurban",
-    "email": "beveragevendor@infosys.com",
-    "shopName": "Beverage Corner"
+    "passwordHash": "$2b$10$7IkpxoocI3nrshy4QKv6h.3LlsyYOcX27.ucYN9uLGZtcXWHdP36S",
+    "email": "urbandrinksvendor@infosys.com",
+    "shopName": "The Urban Drinks"
   },
   {
     "vendorId": 4,

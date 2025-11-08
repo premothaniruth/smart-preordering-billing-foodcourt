@@ -25,6 +25,7 @@ const initialCreateState = {
 
 const initialUpdateState = {
   username: "",
+  shopName: "",
   email: "",
   password: "",
   migrate: false,
@@ -363,9 +364,9 @@ function AdminControl({
       } catch (error) {
         if (cancelled) return;
         console.error("Admin vendor directory error", error);
+        const effectiveCourt = selectedFoodCourt !== "all" ? selectedFoodCourt : resolvedSelectedCourt;
         setVendorDirectoryMap((prev) => {
           const next = new Map(prev);
-          const effectiveCourt = selectedFoodCourt !== "all" ? selectedFoodCourt : resolvedSelectedCourt;
           if (effectiveCourt) {
             next.set(effectiveCourt, []);
           }
@@ -392,6 +393,16 @@ function AdminControl({
     setUpdateForm({ ...initialUpdateState });
     setSendVendorShopId("");
   }, [selectedFoodCourt]);
+
+  const activeVendorDirectoryCourt = useMemo(() => {
+    if (selectedFoodCourt !== "all" && selectedFoodCourt) return selectedFoodCourt;
+    return resolvedSelectedCourt;
+  }, [selectedFoodCourt, resolvedSelectedCourt]);
+
+  const vendorDirectory = useMemo(() => {
+    if (!activeVendorDirectoryCourt) return [];
+    return vendorDirectoryMap.get(activeVendorDirectoryCourt) || [];
+  }, [vendorDirectoryMap, activeVendorDirectoryCourt]);
 
   useEffect(() => {
     if (!adminSession) return;
@@ -467,6 +478,10 @@ function AdminControl({
     }
     const payload = { foodCourt: updateCourtFilter };
     if (username) payload.username = username;
+    const trimmedShopName = String(updateForm.shopName || "").trim();
+    if (trimmedShopName) {
+      payload.shopName = trimmedShopName;
+    }
     if (updateForm.email && updateForm.email.trim()) {
       payload.email = updateForm.email.trim();
     }
@@ -489,6 +504,7 @@ function AdminControl({
       setUpdateForm({
         ...initialUpdateState,
         username: vendor.username || "",
+        shopName: vendor.shopName || "",
         email: vendor.email || ""
       });
       const vendorCourt = vendor.foodCourt || vendor.foodcourt || updateCourtFilter;
@@ -552,9 +568,9 @@ function AdminControl({
 
   const vendorDirectoryByShopId = useMemo(() => {
     const map = new Map();
-    vendorDirectory.forEach((vendor) => {
-      if (vendor && vendor.shopId != null) {
-        map.set(String(vendor.shopId), vendor);
+    vendorDirectory.forEach((entry) => {
+      if (entry && entry.shopId != null) {
+        map.set(String(entry.shopId), entry);
       }
     });
     return map;
@@ -562,11 +578,11 @@ function AdminControl({
 
   const vendorDirectoryOptions = useMemo(() => {
     return vendorDirectory
-      .filter((vendor) => vendor && vendor.shopId != null)
-      .map((vendor) => ({
-        value: String(vendor.shopId),
-        label: vendor.shopName || `Shop ${vendor.shopId}`,
-        subtitle: vendor.contactEmail || vendor.email || "",
+      .filter((entry) => entry && entry.shopId != null)
+      .map((entry) => ({
+        value: String(entry.shopId),
+        label: entry.shopName || `Shop ${entry.shopId}`,
+        subtitle: entry.contactEmail || entry.email || "",
       }))
       .sort((a, b) => a.label.localeCompare(b.label));
   }, [vendorDirectory]);
@@ -1146,6 +1162,15 @@ function AdminControl({
               <input
                 value={updateForm.username}
                 onChange={(e) => setUpdateForm((prev) => ({ ...prev, username: e.target.value }))}
+                disabled={!selectedVendorId}
+                required
+              />
+            </div>
+            <div>
+              <label>Shop Name</label>
+              <input
+                value={updateForm.shopName}
+                onChange={(e) => setUpdateForm((prev) => ({ ...prev, shopName: e.target.value }))}
                 disabled={!selectedVendorId}
                 required
               />

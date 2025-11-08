@@ -471,6 +471,8 @@ app.put("/admin/vendor/:id", authenticateAdmin, (req, res) => {
 
     const {
       username,
+      email,
+      shopName,
       password,
       migrate = false,
       migrateToFoodCourt,
@@ -499,6 +501,14 @@ app.put("/admin/vendor/:id", authenticateAdmin, (req, res) => {
       } else {
         delete nextVendorRecord.email;
       }
+    }
+
+    if (shopName != null) {
+      const trimmedShopName = String(shopName).trim();
+      if (!trimmedShopName) {
+        return res.status(400).json({ message: "Shop name cannot be empty" });
+      }
+      nextVendorRecord.shopName = trimmedShopName;
     }
 
     if (password != null) {
