@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useCallback } from "react";
+import React, { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import PropTypes from "prop-types";
 import { toast } from "react-toastify";
 import {
@@ -78,6 +78,8 @@ function AdminControl({
   const [archivedLoading, setArchivedLoading] = useState(false);
   const [archivedError, setArchivedError] = useState(null);
   const [activePanel, setActivePanel] = useState("bulk");
+
+  const lastSelectedCourtRef = useRef(selectedFoodCourt);
 
   const [newCourtName, setNewCourtName] = useState("");
   const [renameCourtId, setRenameCourtId] = useState("");
@@ -163,6 +165,34 @@ function AdminControl({
       return filteredCourtOptions[0]?.value || "";
     });
   }, [filteredCourtOptions, resolvedSelectedCourt]);
+
+  useEffect(() => {
+    if (!filteredCourtOptions.length) return;
+    if (lastSelectedCourtRef.current === selectedFoodCourt) return;
+
+    lastSelectedCourtRef.current = selectedFoodCourt;
+
+    const preferred = (() => {
+      if (
+        selectedFoodCourt &&
+        selectedFoodCourt !== "all" &&
+        filteredCourtOptions.some((option) => option.value === selectedFoodCourt)
+      ) {
+        return selectedFoodCourt;
+      }
+      if (
+        resolvedSelectedCourt &&
+        filteredCourtOptions.some((option) => option.value === resolvedSelectedCourt)
+      ) {
+        return resolvedSelectedCourt;
+      }
+      return filteredCourtOptions[0]?.value || "";
+    })();
+
+    setCreateVendorCourt((current) => (current === preferred ? current : preferred));
+    setUpdateCourtFilter((current) => (current === preferred ? current : preferred));
+    setManagedCourtFilter((current) => (current === preferred ? current : preferred));
+  }, [selectedFoodCourt, resolvedSelectedCourt, filteredCourtOptions]);
 
   useEffect(() => {
     if (!updateCourtFilter || updateCourtFilter === selectedFoodCourt) return;

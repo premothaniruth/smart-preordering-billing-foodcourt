@@ -3682,9 +3682,9 @@ const buildVendorDirectory = (foodCourt = FC_DEFAULT) => {
       shopId: vendor.shopId ?? null,
       username: vendor.username || '',
       email: vendor.email || vendor.contactEmail || null,
-      shopName: meta?.shopName || vendor.shopName || (key ? `Shop ${key}` : 'Unknown shop'),
-      contactEmail: meta?.contactEmail || vendor.contactEmail || null,
-      contactPhone: meta?.contactPhone || vendor.contactPhone || null,
+      shopName: vendor.shopName || meta?.shopName || (key ? `Shop ${key}` : 'Unknown shop'),
+      contactEmail: vendor.contactEmail || vendor.email || meta?.contactEmail || null,
+      contactPhone: vendor.contactPhone || meta?.contactPhone || null,
       foodCourt: vendor.foodCourt || normalizedCourt,
     };
   });

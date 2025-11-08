@@ -10,10 +10,10 @@
   {
     "vendorId": 3,
     "shopId": 3,
-    "username": "urbandrinks",
-    "passwordHash": "$2b$10$7IkpxoocI3nrshy4QKv6h.3LlsyYOcX27.ucYN9uLGZtcXWHdP36S",
-    "email": "urbandrinksvendor@infosys.com",
-    "shopName": "The Urban Drinks"
+    "username": "spicespot",
+    "passwordHash": "$2b$10$z7xn3RCjWR3wsiofiPE4huft29eYwYw2NAdwCSqw6RuiRSKTmOczm",
+    "email": "spicespotvendor@infosys.com",
+    "shopName": "The Spice Spot"
   },
   {
     "vendorId": 4,

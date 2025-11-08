@@ -1469,8 +1469,8 @@
       ]
     },
     {
-      "shopId": 4,
-      "shopName": "The Urban Drinks",
+      "shopId": 3,
+      "shopName": "The Spice Spot",
       "categories": [
         {
           "categoryName": "Breakfast",
@@ -2547,7 +2547,7 @@
       ]
     },
     {
-      "shopId": 3,
+      "shopId": 4,
       "shopName": "Foodie's Paradise",
       "categories": [
         {
