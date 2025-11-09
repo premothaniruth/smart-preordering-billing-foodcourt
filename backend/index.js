@@ -431,7 +431,13 @@ const recordAuditEvent = ({ actorType, actorId, shopId, vendorId, action, metada
   });
 };
 
-app.use(cors());
+app.use(cors({
+  origin: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "X-Food-Court"],
+  exposedHeaders: ["Content-Disposition"],
+  credentials: false,
+}));
 app.use(bodyParser.json({ limit: "10mb" }));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "public")));
@@ -3400,11 +3406,26 @@ const generateBulkOrderId = (existing = []) => {
   return max + 1;
 };
 
-const clampString = (value, max = 120) => {
-  if (value == null) return '';
-  const str = String(value).trim();
-  if (max <= 0) return str;
-  return str.slice(0, max);
+const clampString = (value, maxLength = 200) => {
+  if (typeof value !== "string") return "";
+  return value.length > maxLength ? `${value.slice(0, maxLength)}…` : value;
+};
+
+const DEFAULT_VENDOR_PERMISSIONS = ["analytics:read", "analytics:write", "procurement:manage"];
+
+const resolveVendorPermissions = (vendor) => {
+  if (!vendor) return [...DEFAULT_VENDOR_PERMISSIONS];
+  const permissions = Array.isArray(vendor.permissions) ? vendor.permissions.filter(Boolean) : [];
+  if (permissions.length > 0) {
+    return permissions;
+  }
+  return [...DEFAULT_VENDOR_PERMISSIONS];
+};
+
+const identifierLooksLikePhone = (value) => {
+  if (value == null) return false;
+  const digits = String(value).replace(/[^0-9]/g, "");
+  return digits.length >= 10 && digits.length <= 13;
 };
 
 const BULK_DEFAULT_PRICE_MODE = 'vendor_rate';
@@ -4759,7 +4780,17 @@ app.put('/vendor/interest/threshold', authenticateVendor, requirePermission('ana
  */
 app.post("/order", (req, res) => {
   try {
-    const { items, user, scheduledTime, shopId, paymentMethod = 'gateway', paymentPayload = {}, orderNotes = '', employeeToken: explicitEmployeeToken = null } = req.body;
+    const {
+      items,
+      user,
+      userContact,
+      scheduledTime,
+      shopId,
+      paymentMethod = 'gateway',
+      paymentPayload = {},
+      orderNotes = '',
+      employeeToken: explicitEmployeeToken = null,
+    } = req.body;
     const foodCourt = getUserFoodCourt(req);
     // Validate inventory and decrement (supports combo expansion)
     const raw = getMenu(foodCourt);
@@ -5046,6 +5077,43 @@ app.post("/order", (req, res) => {
 
     let totalAmount = offerSummary.totalPayable;
 
+    const resolvedEmployee = (() => {
+      const explicit = explicitEmployeeToken ? resolveEmployeeFromToken(explicitEmployeeToken) : null;
+      if (explicit?.employee) return explicit;
+      if (!user && !userContact) return null;
+      const identifierLower = String(user || '').trim().toLowerCase();
+      const contactLower = String(userContact || '').trim().toLowerCase();
+      const employees = getEmployees();
+      const employeeIndex = employees.findIndex((emp) => {
+        const mobileLower = String(emp.mobile || '').toLowerCase();
+        const usernameLower = String(emp.username || '').toLowerCase();
+        if (identifierLower && (mobileLower === identifierLower || usernameLower === identifierLower)) return true;
+        if (contactLower && contactLower === mobileLower) return true;
+        return false;
+      });
+      if (employeeIndex === -1) return null;
+      const employee = employees[employeeIndex];
+      return { employee, employees, index: employeeIndex };
+    })();
+
+    const resolvedEmployeeData = resolvedEmployee?.employee || null;
+    const resolvedUsername = String(resolvedEmployeeData?.username || '').trim();
+    const resolvedContact = String(resolvedEmployeeData?.mobile || '').trim();
+    const requestedUsername = String(user || '').trim();
+    const requestedContact = String(userContact || '').trim();
+
+    let customerUsername = resolvedUsername || requestedUsername || '';
+    if (!customerUsername || identifierLooksLikePhone(customerUsername)) {
+      customerUsername = resolvedUsername || '';
+    }
+    if (!customerUsername) {
+      customerUsername = 'Anonymous';
+    }
+
+    const fallbackContact = identifierLooksLikePhone(requestedUsername) ? requestedUsername : '';
+    const customerContact = resolvedContact || requestedContact || fallbackContact || '';
+    const orderActorId = customerContact || requestedContact || requestedUsername || null;
+
     const prepTime = calculatePreparationTime(items, shopId, foodCourt);
     const estimatedReadyTime = new Date(Date.now() + prepTime * 60000).toISOString();
 
@@ -5055,7 +5123,8 @@ app.post("/order", (req, res) => {
       id: orders.length + 1,
       items: flatItems,
       shopId,
-      user: user || "Anonymous",
+      user: customerUsername,
+      userContact: customerContact || null,
       scheduledTime: scheduledTime || null,
       status: "pending",
       createdAt: new Date().toISOString(),
@@ -5081,8 +5150,20 @@ app.post("/order", (req, res) => {
     let paymentSummary = { method: paymentMethod, amount: totalAmount };
 
     if (paymentMethod === 'wallet') {
-      const employees = getEmployees();
-      const employeeIndex = employees.findIndex((emp) => String(emp.mobile || '').toLowerCase() === String(user || '').toLowerCase());
+      const employees = resolvedEmployee?.employees || getEmployees();
+      let employeeIndex = resolvedEmployee?.index;
+      if (employeeIndex == null || employeeIndex < 0 || !employees[employeeIndex]) {
+        const contactLower = String(customerContact || '').toLowerCase();
+        const identifierLower = String(requestedUsername || '').toLowerCase();
+        employeeIndex = employees.findIndex((emp) => {
+          const mobileLower = String(emp.mobile || '').toLowerCase();
+          const usernameLower = String(emp.username || '').toLowerCase();
+          if (contactLower && mobileLower === contactLower) return true;
+          if (identifierLower && (mobileLower === identifierLower || usernameLower === identifierLower)) return true;
+          return false;
+        });
+      }
+
       if (employeeIndex === -1) {
         return res.status(400).json({ status: 'error', message: 'Wallet not available for this user' });
       }
@@ -5144,13 +5225,14 @@ app.post("/order", (req, res) => {
     }
 
     emitOrderCreatedEvent(newOrder, {
-      user: user || null,
+      user: customerUsername || null,
       payment: paymentSummary,
       excludedItems: Array.isArray(req._excludedItems) ? req._excludedItems : null,
       meta: {
         requestId: req.headers["x-request-id"] || null,
         source: req.headers["x-client-source"] || "frontend",
       },
+      contact: customerContact || null,
     });
 
     for (const adj of inventoryAdjustments) {
@@ -5160,7 +5242,7 @@ app.post("/order", (req, res) => {
         billingId,
         actor: {
           type: "order-system",
-          userId: user || null,
+          userId: orderActorId,
         },
       });
     }
@@ -5168,6 +5250,7 @@ app.post("/order", (req, res) => {
     const orderSummary = {
       billingId,
       user: newOrder.user,
+      userContact: newOrder.userContact || null,
       totalAmount,
       items: flatItems,
       estimatedReadyTime,
@@ -5177,17 +5260,6 @@ app.post("/order", (req, res) => {
       appliedOffers,
       offerExtras: offerExtras
     };
-
-    const resolvedEmployee = (() => {
-      const explicit = explicitEmployeeToken ? resolveEmployeeFromToken(explicitEmployeeToken) : null;
-      if (explicit?.employee) return explicit;
-      if (!user) return null;
-      const employees = getEmployees();
-      const employeeIndex = employees.findIndex((emp) => String(emp.mobile || '').toLowerCase() === String(user || '').toLowerCase());
-      if (employeeIndex === -1) return null;
-      const employee = employees[employeeIndex];
-      return { employee, employees, index: employeeIndex };
-    })();
 
     if (resolvedEmployee?.employee) {
       try {

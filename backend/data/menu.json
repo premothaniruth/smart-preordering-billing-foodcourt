@@ -1240,7 +1240,7 @@
               "isVeg": true,
               "image": "/images/aloo-tikki-chaat.jpg",
               "prepTime": 7,
-              "inventory": 100,
+              "inventory": 99,
               "section": "Chat Specials",
               "options": [],
               "hasOptions": [],

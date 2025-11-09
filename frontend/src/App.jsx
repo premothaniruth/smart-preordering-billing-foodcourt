@@ -113,6 +113,7 @@ function App() {
   const [vendorToken, setVendorToken] = useState(null);
   const [employeeToken, setEmployeeToken] = useState(null);
   const [employeeMobile, setEmployeeMobile] = useState("");
+  const [employeeUsername, setEmployeeUsername] = useState(null);
   const [employeeRole, setEmployeeRole] = useState({
     role: null,
     roleSlug: null,
@@ -162,7 +163,17 @@ function App() {
   const [foodCourtsLoading, setFoodCourtsLoading] = useState(false);
   const [foodCourtsError, setFoodCourtsError] = useState(null);
 
-  const userId = employeeMobile || null;
+  const applyWalletPayload = useCallback((nextWallet) => {
+    if (!nextWallet || typeof nextWallet !== 'object') {
+      setWallet({ balance: 0, transactions: [] });
+      return;
+    }
+    const balance = Number(nextWallet.balance) || 0;
+    const transactions = Array.isArray(nextWallet.transactions) ? nextWallet.transactions : [];
+    setWallet({ balance, transactions });
+  }, []);
+
+  const userId = employeeUsername || employeeMobile || null;
   const vendorShopId = (() => {
     try {
       if (!vendorToken) return null;
@@ -335,6 +346,20 @@ function App() {
       console.error("Failed to refresh admin vendors", error);
     }
   }, [adminSession, adminFoodCourt]);
+
+  const loadRecommendations = useCallback(async () => {
+    if (!vendorToken) {
+      setRecommendationsState({ loading: false, error: null, data: null });
+      return;
+    }
+    setRecommendationsState({ loading: true, error: null, data: null });
+    try {
+      const data = await fetchRecommendations(vendorToken, foodCourt);
+      setRecommendationsState({ loading: false, error: null, data });
+    } catch (error) {
+      setRecommendationsState({ loading: false, error: error.message || "Failed to fetch recommendations", data: null });
+    }
+  }, [vendorToken, foodCourt]);
 
   const adminFoodCourtOptions = useMemo(() => {
     const base = [{ value: "all", label: "All Courts" }];
@@ -1161,7 +1186,7 @@ function App() {
       }
 
       if (userId) {
-        fetchUserOrders(userId, foodCourt).then((orders) => {
+        fetchUserOrders(employeeUsername || employeeMobile, foodCourt).then((orders) => {
           try {
             const today = new Date();
             const isSameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
@@ -1341,9 +1366,10 @@ function App() {
     toast.info("Logged out from vendor account");
   };
 
-  const handleEmployeeLogin = ({ token, mobile, role, roleSlug, department, bulkOrderEligible }) => {
+  const handleEmployeeLogin = ({ token, mobile, username, role, roleSlug, department, bulkOrderEligible }) => {
     setEmployeeToken(token);
     setEmployeeMobile(mobile);
+    setEmployeeUsername(username || null);
     setEmployeeRole({
       role: role || null,
       roleSlug: roleSlug || null,
@@ -1362,6 +1388,7 @@ function App() {
   const handleEmployeeLogout = () => {
     setEmployeeToken(null);
     setEmployeeMobile("");
+    setEmployeeUsername(null);
     setEmployeeRole({ role: null, roleSlug: null, department: null, bulkOrderEligible: false });
     setCart([]);
     setOrderSummary(null);
@@ -1676,7 +1703,7 @@ function App() {
                           </button>
                           <div style={{ marginLeft: 'auto', display: 'flex' }}>
                             <button
-                              onClick={() => { fetchUserOrders(userId, foodCourt).then(setUserOrders); setView("orders"); }}
+                              onClick={() => { fetchUserOrders(employeeUsername || employeeMobile, foodCourt).then(setUserOrders); setView("orders"); }}
                               className="primary-button"
                               style={{ minWidth: 150, width: 150 }}
                             >
@@ -1767,7 +1794,7 @@ function App() {
                                   <div style={{ marginTop: 10 }}>
                                     <span
                                       role="button"
-                                      onClick={() => { fetchUserOrders(userId, foodCourt).then(setUserOrders); setView("orders"); }}
+                                      onClick={() => { fetchUserOrders(employeeUsername || employeeMobile, foodCourt).then(setUserOrders); setView("orders"); }}
                                       style={{ cursor: 'pointer', color: '#2c3e50', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
                                     >
                                       View recent orders

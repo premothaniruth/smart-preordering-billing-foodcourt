@@ -119,6 +119,7 @@ const EmployeeLogin = ({ onSuccess, onBack }) => {
         onSuccess({
           token: res.token,
           mobile: res.mobile,
+          username: res.username,
           role: res.role || res.roleLabel,
           roleSlug: res.roleSlug,
           department: res.department,
@@ -162,6 +163,7 @@ const EmployeeLogin = ({ onSuccess, onBack }) => {
         onSuccess({
           token: res.token,
           mobile: res.mobile,
+          username: res.username,
           role: res.role || res.roleLabel,
           roleSlug: res.roleSlug,
           department: res.department,
@@ -169,7 +171,7 @@ const EmployeeLogin = ({ onSuccess, onBack }) => {
         });
         toast.dismiss();
         toast.success(res?.message || `Welcome back, ${res.username || pinUsername.trim()}!`);
-        persistPinIdentity({ username: pinUsername.trim(), mobile: res.mobile, email: res.email });
+        persistPinIdentity({ username: res.username || pinUsername.trim(), mobile: res.mobile, email: res.email });
       } else {
         toast.error(res?.message || "PIN login failed");
       }

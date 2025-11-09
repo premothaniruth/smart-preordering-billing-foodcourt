@@ -2199,7 +2199,7 @@
     "shopId": 1,
     "user": "+919952081560",
     "scheduledTime": null,
-    "status": "pending",
+    "status": "ready",
     "createdAt": "2025-11-07T13:16:59.495Z",
     "billingId": "00007",
     "estimatedReadyTime": "2025-11-07T13:35:59.494Z",
@@ -2230,7 +2230,8 @@
     "originalPrepTime": 9,
     "originalEstimatedReadyTime": "2025-11-07T13:25:59.494Z",
     "etaExtendedAt": "2025-11-07T13:18:08.351Z",
-    "etaExtensionMinutes": 10
+    "etaExtensionMinutes": 10,
+    "readyAt": "2025-11-09T11:41:39.875Z"
   },
   {
     "id": 58,
@@ -2343,7 +2344,7 @@
     "shopId": 1,
     "user": "+919952081560",
     "scheduledTime": null,
-    "status": "pending",
+    "status": "ready",
     "createdAt": "2025-11-07T13:51:09.429Z",
     "billingId": "00010",
     "estimatedReadyTime": "2025-11-07T14:03:09.429Z",
@@ -2368,7 +2369,8 @@
       "amount": 3500,
       "provider": "razorpay-open",
       "reference": "PG-1762523469429"
-    }
+    },
+    "readyAt": "2025-11-09T11:41:38.823Z"
   },
   {
     "id": 61,
@@ -2385,7 +2387,7 @@
     "shopId": 1,
     "user": "+919952081560",
     "scheduledTime": "2025-11-07T19:25",
-    "status": "pending",
+    "status": "ready",
     "createdAt": "2025-11-07T13:54:18.049Z",
     "billingId": "00011",
     "estimatedReadyTime": "2025-11-07T14:07:18.049Z",
@@ -2408,7 +2410,8 @@
     "payment": {
       "method": "cash",
       "amount": 60
-    }
+    },
+    "readyAt": "2025-11-09T11:41:37.908Z"
   },
   {
     "id": 62,
@@ -2493,5 +2496,46 @@
     "createdAt": "2025-10-24T17:11:16.572Z",
     "vendorId": 3,
     "foodCourt": "fc-3"
+  },
+  {
+    "id": 56,
+    "items": [
+      {
+        "id": 64,
+        "name": "Kathi Roll",
+        "price": 50,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 9
+      }
+    ],
+    "shopId": 1,
+    "user": "+919952081560",
+    "scheduledTime": null,
+    "status": "ready",
+    "createdAt": "2025-11-09T11:39:54.871Z",
+    "billingId": "00002",
+    "estimatedReadyTime": "2025-11-09T11:54:54.871Z",
+    "prepTime": 15,
+    "baseEstimatedReadyTime": "2025-11-09T11:54:54.871Z",
+    "basePrepTime": 15,
+    "rating": null,
+    "feedback": null,
+    "totalAmount": 50,
+    "subtotalBeforeDiscount": 50,
+    "discountTotal": 0,
+    "offerSummary": {
+      "subtotalBeforeDiscount": 50,
+      "discountTotal": 0,
+      "totalPayable": 50,
+      "appliedOffers": [],
+      "extraItems": []
+    },
+    "notes": null,
+    "payment": {
+      "method": "cash",
+      "amount": 50
+    },
+    "readyAt": "2025-11-09T13:12:05.295Z"
   }
 ]

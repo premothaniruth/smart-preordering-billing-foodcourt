@@ -8,6 +8,22 @@
           "categoryName": "Breakfast",
           "items": [
             {
+              "id": 1762688676445,
+              "name": "",
+              "price": 0,
+              "available": true,
+              "image": "",
+              "isRecommended": false,
+              "isHotSeller": false,
+              "isVeg": true,
+              "prepTime": 10,
+              "calories": null,
+              "inventory": 0,
+              "hasOptions": [],
+              "options": [],
+              "section": "Breakfast"
+            },
+            {
               "id": 1,
               "name": "Aloo Paratha",
               "price": 60,
@@ -959,7 +975,7 @@
               "isVeg": false,
               "image": "/images/kathi-roll.jpg",
               "prepTime": 9,
-              "inventory": 11,
+              "inventory": 10,
               "section": "Quick Bites",
               "options": [],
               "hasOptions": [],

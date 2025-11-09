@@ -4,6 +4,11 @@
     "shopId": 1,
     "entries": [
       {
+        "headcount": 509,
+        "source": "manual",
+        "timestamp": "2025-11-09T12:37:41.967Z"
+      },
+      {
         "headcount": 500,
         "source": "manual",
         "timestamp": "2025-11-04T05:47:06.796Z"

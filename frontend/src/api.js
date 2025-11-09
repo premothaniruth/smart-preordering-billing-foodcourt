@@ -12,8 +12,11 @@ export const fetchMenu = async (foodCourt) => {
   return res.json();
 };
 
-export const fetchForecast = async (token) => {
-  const res = await fetch(`${API_URL}/analytics/forecast`, {
+export const fetchForecast = async (token, foodCourt) => {
+  const params = new URLSearchParams();
+  if (foodCourt) params.set('foodCourt', foodCourt);
+  const suffix = params.size ? `?${params.toString()}` : '';
+  const res = await fetch(`${API_URL}/analytics/forecast${suffix}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) {

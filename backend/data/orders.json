@@ -4457,5 +4457,47 @@
     "readyAt": "2025-11-07T07:17:58.221Z",
     "pickedAt": "2025-11-07T07:18:01.506Z",
     "completedAt": "2025-11-07T07:18:01.506Z"
+  },
+  {
+    "id": 70,
+    "items": [
+      {
+        "id": 85,
+        "name": "Aloo Tikki Chaat",
+        "price": 40,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 7
+      }
+    ],
+    "shopId": 4,
+    "user": "+919952081560",
+    "scheduledTime": null,
+    "status": "pending",
+    "createdAt": "2025-11-09T11:39:30.456Z",
+    "billingId": "00001",
+    "estimatedReadyTime": "2025-11-09T11:46:30.456Z",
+    "prepTime": 7,
+    "baseEstimatedReadyTime": "2025-11-09T11:46:30.456Z",
+    "basePrepTime": 7,
+    "rating": null,
+    "feedback": null,
+    "totalAmount": 40,
+    "subtotalBeforeDiscount": 40,
+    "discountTotal": 0,
+    "offerSummary": {
+      "subtotalBeforeDiscount": 40,
+      "discountTotal": 0,
+      "totalPayable": 40,
+      "appliedOffers": [],
+      "extraItems": []
+    },
+    "notes": null,
+    "payment": {
+      "method": "gateway",
+      "amount": 40,
+      "provider": "razorpay-open",
+      "reference": "PG-1762688370456"
+    }
   }
 ]

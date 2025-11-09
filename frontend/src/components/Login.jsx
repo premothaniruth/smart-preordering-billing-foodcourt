@@ -9,7 +9,14 @@ import { toast } from "react-toastify";
  * @param {{ onLogin: (token:string)=>void }} props
  */
 
-const Login = ({ onLogin, onBack, foodCourts = [], defaultFoodCourt = "fc-1", onFoodCourtChange, foodCourtsLoading = false }) => {
+const Login = ({
+  onLogin,
+  onBack = undefined,
+  foodCourts = [],
+  defaultFoodCourt = "fc-1",
+  onFoodCourtChange = undefined,
+  foodCourtsLoading = false,
+}) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -196,14 +203,6 @@ Login.propTypes = {
   defaultFoodCourt: PropTypes.string,
   onFoodCourtChange: PropTypes.func,
   foodCourtsLoading: PropTypes.bool,
-};
-
-Login.defaultProps = {
-  onBack: undefined,
-  foodCourts: [],
-  defaultFoodCourt: "fc-1",
-  onFoodCourtChange: undefined,
-  foodCourtsLoading: false,
 };
 
 export default Login;
