@@ -1,0 +1,3 @@
+# Allowed patterns for git-secrets across the repo
+# Ignore GPG key fingerprints within readable-stream README shipped under node_modules
+node_modules/.*readable-stream/README\.md:.*Release GPG key: [0-9A-Fa-f]{40}
