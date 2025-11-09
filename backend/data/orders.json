@@ -4473,7 +4473,7 @@
     "shopId": 4,
     "user": "+919952081560",
     "scheduledTime": null,
-    "status": "pending",
+    "status": "ready",
     "createdAt": "2025-11-09T11:39:30.456Z",
     "billingId": "00001",
     "estimatedReadyTime": "2025-11-09T11:46:30.456Z",
@@ -4498,6 +4498,7 @@
       "amount": 40,
       "provider": "razorpay-open",
       "reference": "PG-1762688370456"
-    }
+    },
+    "readyAt": "2025-11-09T15:02:28.494Z"
   }
 ]

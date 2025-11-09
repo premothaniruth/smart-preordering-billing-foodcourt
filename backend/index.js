@@ -434,7 +434,7 @@ const recordAuditEvent = ({ actorType, actorId, shopId, vendorId, action, metada
 app.use(cors({
   origin: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "X-Food-Court"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "X-Food-Court", "X-Admin-Username", "X-Admin-Password"],
   exposedHeaders: ["Content-Disposition"],
   credentials: false,
 }));

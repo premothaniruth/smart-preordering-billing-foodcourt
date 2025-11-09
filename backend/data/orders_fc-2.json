@@ -3268,7 +3268,7 @@
     "shopId": 5,
     "user": "+919952081560",
     "scheduledTime": null,
-    "status": "pending",
+    "status": "ready",
     "createdAt": "2025-11-07T05:25:06.294Z",
     "billingId": "00005",
     "estimatedReadyTime": "2025-11-07T05:35:06.293Z",
@@ -3293,7 +3293,8 @@
       "amount": 130,
       "provider": "razorpay-open",
       "reference": "PG-1762493106294"
-    }
+    },
+    "readyAt": "2025-11-09T15:05:24.248Z"
   },
   {
     "id": 59,
@@ -3328,7 +3329,7 @@
     "shopId": 5,
     "user": "+919952081560",
     "scheduledTime": null,
-    "status": "pending",
+    "status": "ready",
     "createdAt": "2025-11-07T06:35:17.343Z",
     "billingId": "00006",
     "estimatedReadyTime": "2025-11-07T07:11:17.343Z",
@@ -3442,6 +3443,215 @@
       "amount": 575,
       "provider": "razorpay-open",
       "reference": "PG-1762497317343"
+    },
+    "readyAt": "2025-11-09T15:05:24.898Z"
+  },
+  {
+    "id": 60,
+    "items": [
+      {
+        "id": 100,
+        "name": "Masala Corn",
+        "price": 45,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 5
+      }
+    ],
+    "shopId": 5,
+    "user": "premtg",
+    "userContact": "+919952081560",
+    "scheduledTime": "2025-11-10T21:05",
+    "status": "pending",
+    "createdAt": "2025-11-09T16:29:30.663Z",
+    "billingId": "00003",
+    "estimatedReadyTime": "2025-11-09T16:34:30.661Z",
+    "prepTime": 5,
+    "baseEstimatedReadyTime": "2025-11-09T16:34:30.661Z",
+    "basePrepTime": 5,
+    "rating": null,
+    "feedback": null,
+    "totalAmount": 45,
+    "subtotalBeforeDiscount": 45,
+    "discountTotal": 0,
+    "offerSummary": {
+      "subtotalBeforeDiscount": 45,
+      "discountTotal": 0,
+      "totalPayable": 45,
+      "appliedOffers": [],
+      "extraItems": []
+    },
+    "notes": null,
+    "payment": {
+      "method": "gateway",
+      "amount": 45,
+      "provider": "razorpay-open",
+      "reference": "PG-1762705770663"
+    }
+  },
+  {
+    "id": 61,
+    "items": [
+      {
+        "id": 16,
+        "name": "Besan Bread Toast",
+        "price": 45,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 7
+      },
+      {
+        "id": 5,
+        "name": "Paneer Paratha",
+        "price": 75,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 12
+      },
+      {
+        "id": 10,
+        "name": "Dhokla",
+        "price": 55,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 14
+      }
+    ],
+    "shopId": 5,
+    "user": "premtg",
+    "userContact": "+919952081560",
+    "scheduledTime": "2025-11-10T08:00",
+    "status": "pending",
+    "createdAt": "2025-11-09T17:03:28.618Z",
+    "billingId": "00004",
+    "estimatedReadyTime": "2025-11-09T17:38:28.618Z",
+    "prepTime": 35,
+    "baseEstimatedReadyTime": "2025-11-09T17:38:28.618Z",
+    "basePrepTime": 35,
+    "rating": null,
+    "feedback": null,
+    "totalAmount": 175,
+    "subtotalBeforeDiscount": 175,
+    "discountTotal": 0,
+    "offerSummary": {
+      "subtotalBeforeDiscount": 175,
+      "discountTotal": 0,
+      "totalPayable": 175,
+      "appliedOffers": [],
+      "extraItems": []
+    },
+    "notes": null,
+    "payment": {
+      "method": "cash",
+      "amount": 175
+    }
+  },
+  {
+    "id": 62,
+    "items": [
+      {
+        "id": 16,
+        "name": "Besan Bread Toast",
+        "price": 45,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 7
+      },
+      {
+        "id": 10,
+        "name": "Dhokla",
+        "price": 55,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 14
+      }
+    ],
+    "shopId": 5,
+    "user": "premtg",
+    "userContact": "+919952081560",
+    "scheduledTime": "2025-11-10T08:00",
+    "status": "cancelled",
+    "createdAt": "2025-11-09T17:35:08.477Z",
+    "billingId": "00005",
+    "estimatedReadyTime": "2025-11-09T18:00:08.476Z",
+    "prepTime": 25,
+    "baseEstimatedReadyTime": "2025-11-09T18:00:08.476Z",
+    "basePrepTime": 25,
+    "rating": null,
+    "feedback": null,
+    "totalAmount": 100,
+    "subtotalBeforeDiscount": 100,
+    "discountTotal": 0,
+    "offerSummary": {
+      "subtotalBeforeDiscount": 100,
+      "discountTotal": 0,
+      "totalPayable": 100,
+      "appliedOffers": [],
+      "extraItems": []
+    },
+    "notes": null,
+    "payment": {
+      "method": "cash",
+      "amount": 100
+    },
+    "cancelledAt": "2025-11-09T17:52:45.142Z",
+    "cancelledBy": "premtg",
+    "cancellationReason": "demo",
+    "refundAmount": 100,
+    "cancellationFee": 0,
+    "cancellationPolicy": "Full refund (cancel ≥ 60 minutes before scheduled time)",
+    "cancellationRefundPercent": 1,
+    "cancellationLeadMinutes": 517.2478833333333
+  },
+  {
+    "id": 63,
+    "items": [
+      {
+        "id": 14,
+        "name": "Methi Thepla",
+        "price": 55,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 10
+      },
+      {
+        "id": 11,
+        "name": "Litti Chokha",
+        "price": 70,
+        "quantity": 1,
+        "option": null,
+        "prepTime": 15
+      }
+    ],
+    "shopId": 5,
+    "user": "premtg",
+    "userContact": "+919952081560",
+    "scheduledTime": "2025-11-10T08:00",
+    "status": "pending",
+    "createdAt": "2025-11-09T17:52:34.731Z",
+    "billingId": "00006",
+    "estimatedReadyTime": "2025-11-09T18:23:34.730Z",
+    "prepTime": 31,
+    "baseEstimatedReadyTime": "2025-11-09T18:23:34.730Z",
+    "basePrepTime": 31,
+    "rating": null,
+    "feedback": null,
+    "totalAmount": 125,
+    "subtotalBeforeDiscount": 125,
+    "discountTotal": 0,
+    "offerSummary": {
+      "subtotalBeforeDiscount": 125,
+      "discountTotal": 0,
+      "totalPayable": 125,
+      "appliedOffers": [],
+      "extraItems": []
+    },
+    "notes": null,
+    "payment": {
+      "method": "gateway",
+      "amount": 125,
+      "provider": "razorpay-open",
+      "reference": "PG-1762710754731"
     }
   }
 ]

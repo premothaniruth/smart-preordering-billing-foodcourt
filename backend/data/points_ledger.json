@@ -553,5 +553,50 @@
     "expiresAt": "2026-01-06T13:51:09.439Z",
     "walletTxId": null,
     "createdAt": "2025-11-07T13:51:09.439Z"
+  },
+  {
+    "id": "pts_1762705770720_eb6x",
+    "employeeId": "2",
+    "type": "bonus",
+    "subType": "streak",
+    "points": 1,
+    "rupees": null,
+    "orderId": null,
+    "itemCount": null,
+    "streakDate": "2025-11-09",
+    "metadata": null,
+    "expiresAt": "2026-01-08T16:29:30.719Z",
+    "walletTxId": null,
+    "createdAt": "2025-11-09T16:29:30.721Z"
+  },
+  {
+    "id": "pts_1762707808629_f4sj",
+    "employeeId": "2",
+    "type": "earn",
+    "subType": "order",
+    "points": 2,
+    "rupees": null,
+    "orderId": 61,
+    "itemCount": 3,
+    "streakDate": null,
+    "metadata": null,
+    "expiresAt": "2026-01-08T17:03:28.629Z",
+    "walletTxId": null,
+    "createdAt": "2025-11-09T17:03:28.629Z"
+  },
+  {
+    "id": "pts_1762710754742_9dkn",
+    "employeeId": "2",
+    "type": "bonus",
+    "subType": "streak",
+    "points": 1,
+    "rupees": null,
+    "orderId": null,
+    "itemCount": null,
+    "streakDate": "2025-11-09",
+    "metadata": null,
+    "expiresAt": "2026-01-08T17:52:34.742Z",
+    "walletTxId": null,
+    "createdAt": "2025-11-09T17:52:34.742Z"
   }
 ]

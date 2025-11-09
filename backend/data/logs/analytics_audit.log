@@ -227,3 +227,12 @@
 {"timestamp":"2025-11-09T13:42:28.472Z","actorType":"vendor","actorId":1,"shopId":1,"vendorId":1,"action":"vendor.login.success","metadata":{"username":"hungryhub","foodCourt":"fc-3"}}
 {"timestamp":"2025-11-09T13:46:02.498Z","actorType":"vendor","actorId":1,"shopId":1,"vendorId":1,"action":"vendor.login.success","metadata":{"username":"hungryhub","foodCourt":"fc-3"}}
 {"timestamp":"2025-11-09T13:53:41.329Z","actorType":"vendor","actorId":1,"shopId":1,"vendorId":1,"action":"vendor.login.success","metadata":{"username":"hungryhub","foodCourt":"fc-3"}}
+{"timestamp":"2025-11-09T15:02:24.165Z","actorType":"vendor","actorId":4,"shopId":4,"vendorId":4,"action":"vendor.login.success","metadata":{"username":"northvendor","foodCourt":"fc-1"}}
+{"timestamp":"2025-11-09T15:05:21.135Z","actorType":"vendor","actorId":101,"shopId":5,"vendorId":101,"action":"vendor.login.success","metadata":{"username":"centralgrill","foodCourt":"fc-2"}}
+{"timestamp":"2025-11-09T15:10:26.005Z","actorType":"vendor","actorId":101,"shopId":5,"vendorId":101,"action":"vendor.login.success","metadata":{"username":"centralgrill","foodCourt":"fc-2"}}
+{"timestamp":"2025-11-09T16:06:36.381Z","actorType":"vendor","actorId":101,"shopId":5,"vendorId":101,"action":"vendor.login.success","metadata":{"username":"centralgrill","foodCourt":"fc-2"}}
+{"type":"points:order-processed","actor":{"type":"system","source":"order.create"},"employeeId":2,"orderId":60,"pointsEarned":0,"streakBonuses":1,"pointsConverted":0}
+{"timestamp":"2025-11-09T16:30:11.237Z","actorType":"vendor","actorId":101,"shopId":5,"vendorId":101,"action":"vendor.login.success","metadata":{"username":"centralgrill","foodCourt":"fc-2"}}
+{"type":"points:order-processed","actor":{"type":"system","source":"order.create"},"employeeId":2,"orderId":61,"pointsEarned":2,"streakBonuses":0,"pointsConverted":0}
+{"type":"points:order-processed","actor":{"type":"system","source":"order.create"},"employeeId":2,"orderId":62,"pointsEarned":0,"streakBonuses":0,"pointsConverted":0}
+{"type":"points:order-processed","actor":{"type":"system","source":"order.create"},"employeeId":2,"orderId":63,"pointsEarned":0,"streakBonuses":1,"pointsConverted":0}
