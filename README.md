@@ -141,6 +141,21 @@ cd ../frontend
 npm install
 ```
 
+### Environment setup
+
+Copy the example environment files before running or building:
+
+```bash
+copy backend\.env.example backend\.env        # Windows PowerShell/CMD
+copy frontend\.env.example frontend\.env
+
+# macOS/Linux equivalent
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env
+```
+
+Update the newly created `.env` files with production secrets (JWT, Redis, Influx, etc.) and store the real values in your secret manager for deployment.
+
 ### Running Locally
 
 ```bash
