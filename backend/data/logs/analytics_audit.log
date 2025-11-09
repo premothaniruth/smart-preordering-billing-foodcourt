@@ -236,3 +236,4 @@
 {"type":"points:order-processed","actor":{"type":"system","source":"order.create"},"employeeId":2,"orderId":61,"pointsEarned":2,"streakBonuses":0,"pointsConverted":0}
 {"type":"points:order-processed","actor":{"type":"system","source":"order.create"},"employeeId":2,"orderId":62,"pointsEarned":0,"streakBonuses":0,"pointsConverted":0}
 {"type":"points:order-processed","actor":{"type":"system","source":"order.create"},"employeeId":2,"orderId":63,"pointsEarned":0,"streakBonuses":1,"pointsConverted":0}
+{"type":"points:order-processed","actor":{"type":"system","source":"order.create"},"employeeId":2,"orderId":64,"pointsEarned":0,"streakBonuses":0,"pointsConverted":0}
